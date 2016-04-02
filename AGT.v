@@ -551,6 +551,10 @@ Proof.
 
   inversion H. 
     rewrite H2 in *. rewrite H3 in *. clear H H2 H3 H0. clear t t1_1 t1_2.
+    specialize (IHt1_1 t2_1).
+    specialize (IHt1_2 t2_2).
+    apply IHt1_1.
+    intros.
     admit.
 
     clear H0 H1 H2 H4 t11 t12 t21 t22.
@@ -564,16 +568,14 @@ Proof.
     unfold t2pt.
     simpl t2gt.
     simpl g2pt.
+    inversion H0.
+    inversion H2.
+    inversion H6.
+    inversion H8.
+    clear H0 H2 H6 H8.
     split.
-      inversion H0.
-      inversion H2.
-      inversion H6.
-      inversion H8.
-      clear H0 H2 H6 H8.
       congruence.
-      split; constructor.
-        
-    admit.
+      split; constructor; unfold t2pt in *; congruence.
 
   constructor.
 
