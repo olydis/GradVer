@@ -235,6 +235,12 @@ exists a' b', pred a' b' /\ ptSpt (t2pt a') a /\ ptSpt (t2pt b') b.
 Definition glift (pred : type -> type -> Prop) (a b : gtype) : Prop :=
 plift pred (g2pt a) (g2pt b).
 
+(*strict predicate lifting (to simulate partial function lifting)*)
+Definition pliftF (pred : type -> type -> Prop) (a b : ptype) : Prop :=
+forall b', exists a', pred a' b' /\ ptSpt (t2pt a') a /\ ptSpt (t2pt b') b.
+Definition gliftF (pred : type -> type -> Prop) (a b : gtype) : Prop :=
+pliftF pred (g2pt a) (g2pt b).
+
 (*Definition 5 - alpha*)
 Fixpoint pt2g (t : ptype) : gtype := match t with
 | PTypeSingletonPrim t => GPrimitive t
@@ -796,3 +802,5 @@ Proof.
     constructor.
 Qed.
 
+(*collecting lifting defs*)
+Definition pcod : ptype -> ptype -> Prop := pliftF tcod.
