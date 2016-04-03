@@ -2,12 +2,15 @@ Require Import Coq.Unicode.Utf8 Arith Bool Ring Setoid String.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Sets.Powerset.
 Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Coq.Classes.EquivDec.
+Require Export Coq.Classes.SetoidClass.
+Require Import Coq.Logic.Decidable.
 
 (*set*)
 
 (*
 Inductive set (t : Type) : Type :=
-| SetEmpty : set t
+| SetEmpty : set te
 | SetCons : t -> set t -> set t.
 
 Fixpoint set_in (t : Type) (x : t) (s : set t) :=
@@ -34,9 +37,41 @@ Inductive type : Set :=
 | TFunc : type -> type -> type.
 
 Inductive gtype : Set :=
-| GPrimitive : primitive_type -> gtype
-| GFunc : gtype -> gtype -> gtype
+| GStatic : type -> gtype
 | GUnknown : gtype.
+
+Definition dom (t : type) : option type := match t with
+| TPrimitive _ => None
+| TFunc a _ => Some a
+end.
+
+Definition cod (t : type) : option type := match t with
+| TPrimitive _ => None
+| TFunc _ a => Some a
+end.
+
+Eval compute in (equiv_decb Bool Int).
+
+Check (EqDec primitive_type eq).
+
+Lemma asd : ∀ n m : primitive_type, {n = m} + {n ≠ m}.
+Proof.
+  intros.
+  destruct n, m; auto.
+  assert (Int ≠ Bool).
+  unfold not. intros. inversion H. auto.
+  assert (Bool ≠ Int).
+  unfold not. intros. inversion H. auto.
+Qed.
+Program Instance primitive_type_EqDec : EqDec primitive_type eq := asd.
+
+Eval compute in equiv_decb Int Int.
+Eval compute in equiv_decb Bool Int.
+Eval compute in equiv_decb 4 4.
+Eval compute in equiv_decb 4 5.
+Eval compute in equiv_dec Int Int.
+
+Definition equate (a b : type) : option type := if a == b then Some a else None.
 
 Inductive tdom : type -> type -> Prop := 
 | TDom : forall t a b, t = TFunc a b -> tdom t a.
