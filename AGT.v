@@ -399,111 +399,223 @@ Proof.
     congruence.
 Qed.
 
-(*
-  apply GTypeConsAbs.
-    apply IHt1_1.
-    inversion H0;
-    inversion H1;
-    destruct x;
-    destruct x0;
-    try (contradict H4; compute; congruence).
-
-    clear H2 H3 a a0 H0 H1 IHt1_1 IHt1_2.
-    destruct t1_1, t2_1; simpl.
-      exists (TPrimitive p).
-      exists (TPrimitive p0).
-      apply funcLift in H4.
-      apply funcLift in H6.
-      inversion H4.
-      inversion H6.
-      inversion H.
-      clear H H4 H6.
-      split.
-        congruence.
-        split; compute; apply PSPrefl.
-
-      inversion H. apply funcLift in H4. apply funcLift in H6. inversion H4. inversion H6. congruence.
-
-      exists (TPrimitive p).
-      exists (TPrimitive p).
-      split.
-        congruence.
-        split; compute; constructor.
-
-      inversion H. apply funcLift in H4. apply funcLift in H6. inversion H4. inversion H6. congruence.
-
-      apply funcLift in H4.
-      apply funcLift in H6.
-      inversion H4.
-      inversion H6.
-      inversion H.
-      clear H H4 H6.
-      exists x1.
-      exists x0_1.
-      split.
-        congruence.
-        split; unfold t2pt.
-          symmetry in H0. rewrite H0. simpl g2pt. constructor.
-          symmetry in H2. rewrite H2. simpl g2pt. constructor.
-
-      apply funcLift in H4.
-      apply funcLift in H6.
-      inversion H4.
-      inversion H6.
-      inversion H.
-      clear H H4 H6.
-      exists x1.
-      exists x1.
-      split.
-        congruence.
-        split; unfold t2pt.
-          symmetry in H0. rewrite H0. simpl g2pt. constructor.
-          constructor.
-
-      exists (TPrimitive p).
-      exists (TPrimitive p).
-      split.
-        congruence.
-        split; compute; constructor.
-
-      apply funcLift in H4.
-      apply funcLift in H6.
-      inversion H4.
-      inversion H6.
-      inversion H.
-      clear H H4 H6.
-      exists x0_1.
-      exists x0_1.
-      split.
-        congruence.
-        split; unfold t2pt.
-          constructor.
-          symmetry in H2. rewrite H2. simpl g2pt. constructor.
-
-      exists x1.
-      exists x1.
-      split.
-        congruence.
-        split; compute; constructor.
-
-      decide 
-      specialize (IHt1_1 t2_1).
-      apply IHt1_1.
-      .
-      exists x1.
-      exists x2.
-        split.
-          congruence.
-          split; compute; constructor.
-
-    assert (p = p0).
+Lemma eqCycle : forall x, x = pt2t (g2pt (t2gt x)).
+Proof.
+  intros.
+  induction x.
+    compute; congruence.
+    simpl t2gt.
+    simpl g2pt.
+    simpl pt2t.
+    symmetry in IHx1.
+    symmetry in IHx2.
+    rewrite IHx1.
+    rewrite IHx2.
     congruence.
+Qed.
+
+Lemma eqGfunc : forall x t1 t2, t2pt x = PTypeMFunc t1 t2 -> x = TFunc (pt2t t1) (pt2t t2).
+Proof.
+  intros.
+  induction x.
+    compute in H. congruence.
+
+    apply f_equal2; inversion H; apply eqCycle.
+Qed.
+
+Lemma ptSptLift : forall a b, ptSpt a b -> exists x, ptSpt (t2pt x) a /\ ptSpt (t2pt x) b.
+Proof.
+  induction a.
+    intros.
+    inversion H. 
+      exists (TPrimitive p). split; compute; constructor.
+      exists (TPrimitive p). split; compute; constructor.
+
+    intros.
+    inversion H; exists (TPrimitive Bool); split; compute; constructor.
+
+    intros.
+    inversion H. 
+      exists (TFunc (pt2t a1) (pt2t a2)).
+      split; unfold t2pt; simpl t2gt; simpl g2pt; apply PSPlift; apply drawSample.
+
+      exists (TFunc (pt2t a1) (pt2t a2)).
+      split; unfold t2pt; simpl t2gt; simpl g2pt; try (apply PSPlift; apply drawSample); try constructor.
+
+      symmetry in H0. symmetry in H1. rewrite H0 in *. rewrite H1 in *. symmetry in H3. rewrite H3 in *.
+      clear H H3 H0 H1.
+      specialize (IHa1 t12 H2).
+      specialize (IHa2 t22 H4).
+      clear H2 H4 b.
+      elim IHa1. intros.
+      elim IHa2. intros.
+      inversion H.
+      inversion H0.
+      clear IHa1 IHa2 H H0.
+      exists (TFunc x x0).
+      split; unfold t2pt; simpl t2gt; simpl g2pt; apply PSPlift; assumption.
+Qed.
+
+Lemma ptSptTrans : forall a b c, ptSpt a b /\ ptSpt b c -> ptSpt a c.
+Proof.
+  induction a, b, c; firstorder; inversion H; inversion H0; try congruence.
+  constructor.
+  clear H1 H2 H3 H5 H7 H8 H9 H11 t0 t1 t2 t3 t11 t12 t21 t22 H H0.
+  specialize (IHa1 b1 c1).
+  specialize (IHa2 b2 c2).
+  intuition.
+  constructor; assumption.
+Qed.
+
+Lemma ptSptGfunc1 : forall x t1_1 t1_2 t2_1 t2_2,
+ptSpt (t2pt x) (g2pt (GFunc t1_1 t1_2)) ->
+ptSpt (t2pt x) (g2pt (GFunc t2_1 t2_2)) ->
+exists a' b' : type, stfl_Tcons a' b' ∧ ptSpt (t2pt a') (g2pt t1_1) ∧ ptSpt (t2pt b') (g2pt t2_1).
+Proof.
+  intros.
+  inversion H; inversion H0; clear H H0.
+    clear H1 H2 a a0.
+    apply eqGfunc in H3.
+    apply eqGfunc in H5.
+    rewrite H3 in H5.
+    inversion H5.
+    exists (pt2t (g2pt t1_1)).
+    exists (pt2t (g2pt t2_1)).
+    split. congruence. split; apply drawSample.
+
+    clear H1 a.
+    apply ptSptLift in H6.
+    apply ptSptLift in H7.
+    elim H6. intros.
+    elim H7. intros.
+    inversion H.
+    inversion H0.
+    clear H H0 H6 H7.
+    exists x0.
+    exists x0.
+    split. 
+      constructor.
+      split.
+        rewrite H3 in H2.
+        inversion H2.
+        congruence.
+        assumption.
+
+    clear H6 a.
+    apply ptSptLift in H4.
+    apply ptSptLift in H5.
+    elim H4. intros.
+    elim H5. intros.
+    inversion H.
+    inversion H0.
+    clear H H0 H4 H5.
+    exists x0.
+    exists x0.
+    split. 
+      constructor.
+      split.
+        assumption.
+        rewrite H8 in H1.
+        inversion H1.
+        congruence.
+
+    symmetry in H2. rewrite H2 in *.
+    symmetry in H3. rewrite H3 in *.
+    symmetry in H7. rewrite H7 in *.
+    symmetry in H8. rewrite H8 in *.
+    clear H2 H3 H7 H8 t2_1 t2_2 t1_1 t1_2.
+    symmetry in H6.
+    rewrite H6 in H1. 
+    inversion H1.
+    rewrite H0 in *.
+    rewrite H2 in *.
+    clear H6 H1 H0 H2.
+    exists (pt2t t0).
+    exists (pt2t t0).
+    split. 
+      constructor.
+
+      assert (ptSpt (t2pt (pt2t t0)) t0).
+      apply drawSample.
+      split.
+        specialize (ptSptTrans (t2pt (pt2t t0)) t0 t12). intuition.
+        specialize (ptSptTrans (t2pt (pt2t t0)) t0 t1). intuition.
+Qed.
+
+Lemma ptSptGfunc2 : forall x t1_1 t1_2 t2_1 t2_2,
+ptSpt (t2pt x) (g2pt (GFunc t1_1 t1_2)) ->
+ptSpt (t2pt x) (g2pt (GFunc t2_1 t2_2)) ->
+exists a' b' : type, stfl_Tcons a' b' ∧ ptSpt (t2pt a') (g2pt t1_2) ∧ ptSpt (t2pt b') (g2pt t2_2).
+Proof.
+  intros.
+  inversion H; inversion H0; clear H H0.
+    clear H1 H2 a a0.
+    apply eqGfunc in H3.
+    apply eqGfunc in H5.
+    rewrite H3 in H5.
+    inversion H5.
+    exists (pt2t (g2pt t1_2)).
+    exists (pt2t (g2pt t2_2)).
+    split. congruence. split; apply drawSample.
+
+    clear H1 a.
+    apply ptSptLift in H6.
+    apply ptSptLift in H7.
+    elim H6. intros.
+    elim H7. intros.
+    inversion H.
+    inversion H0.
+    clear H H0 H6 H7.
+    exists x1.
+    exists x1.
+    split. 
+      constructor.
+      split.
+        rewrite H3 in H2.
+        inversion H2.
+        congruence.
+        assumption.
+
+    clear H6 a.
+    apply ptSptLift in H4.
+    apply ptSptLift in H5.
+    elim H4. intros.
+    elim H5. intros.
+    inversion H.
+    inversion H0.
+    clear H H0 H4 H5.
+    exists x1.
+    exists x1.
+    split. 
+      constructor.
+      split.
+        assumption.
+        rewrite H8 in H1.
+        inversion H1.
+        congruence.
+
+    symmetry in H2. rewrite H2 in *.
+    symmetry in H3. rewrite H3 in *.
+    symmetry in H7. rewrite H7 in *.
+    symmetry in H8. rewrite H8 in *.
+    clear H2 H3 H7 H8 t2_1 t2_2 t1_1 t1_2.
+    symmetry in H6.
+    rewrite H6 in H1. 
+    inversion H1.
+    rewrite H0 in *.
+    rewrite H2 in *.
+    clear H6 H1 H0 H2.
+    exists (pt2t t2).
+    exists (pt2t t2).
     split.
-    congruence.
+      constructor.
 
-
-  unfold g2pt in H0, H1;
-  inversion H0; inversion H1.*)
+      assert (ptSpt (t2pt (pt2t t2)) t2).
+      apply drawSample.
+      split.
+        specialize (ptSptTrans (t2pt (pt2t t2)) t2 t22). intuition.
+        specialize (ptSptTrans (t2pt (pt2t t2)) t2 t3). intuition.
+Qed.
 
 (*Proposition 2 - consistency as lifted equality*)
 Theorem consistencyAsLiftedEq : forall t1 t2, glift (stfl_Tcons) t1 t2 <-> class_gtype_cons t1 t2.
@@ -547,15 +659,41 @@ Proof.
 
   inversion H.
 
-  admit.
+  constructor; try (apply IHt1_1); try (apply IHt1_2); clear IHt1_1 IHt1_2.
+    inversion H.
+    rewrite H2 in *; clear H2 x H.
+    specialize (ptSptGfunc1 x0 t1_1 t1_2 t2_1 t2_2).
+    auto.
+    inversion H.
+    rewrite H2 in *; clear H2 x H.
+    specialize (ptSptGfunc2 x0 t1_1 t1_2 t2_1 t2_2).
+    auto.
 
   inversion H. 
     rewrite H2 in *. rewrite H3 in *. clear H H2 H3 H0. clear t t1_1 t1_2.
     specialize (IHt1_1 t2_1).
     specialize (IHt1_2 t2_2).
-    apply IHt1_1.
-    intros.
-    admit.
+    assert (class_gtype_cons t2_1 t2_1). constructor.
+    assert (class_gtype_cons t2_2 t2_2). constructor.
+    apply IHt1_1 in H.
+    apply IHt1_2 in H0.
+    elim H; intros.
+    elim H1; intros.
+    elim H0; intros.
+    elim H3; intros.
+    inversion H2.
+    inversion H6.
+    inversion H4.
+    inversion H10.
+    clear H H0 H1 H2 H3 H4 H6 H10 IHt1_1 IHt1_2.
+    exists (TFunc x x1).
+    exists (TFunc x0 x2).
+    unfold t2pt.
+    simpl t2gt.
+    simpl g2pt.
+    split.
+      congruence.
+      split; constructor; unfold t2pt in *; congruence.
 
     clear H0 H1 H2 H4 t11 t12 t21 t22.
     apply IHt1_1 in H3.
@@ -633,14 +771,28 @@ Proof.
 Qed.
 
 (*Proposition 4 - alpha optimal*)
-Theorem soundnessAlpha : forall pt gt, ptSpt pt (g2pt gt) -> .
+Theorem optimalAlpha : forall pt gt, ptSpt pt (g2pt gt) -> gtSgt (pt2g pt) gt.
 Proof.
-  apply ptype_ind.
-  intros.
-  apply PSPrefl.
-  apply PSPrefl.
-  intros.
-  simpl.
-  apply PSPlift; congruence.
+  unfold gtSgt.
+  induction pt; firstorder.
+  compute. fold g2pt. fold pt2g.
+  induction gt; simpl pt2g; inversion H; firstorder.
+    compute. fold g2pt. fold pt2g.
+    specialize (IHpt1 gt1).
+    specialize (IHpt2 gt2).
+    symmetry in H2. rewrite H2 in *.
+    symmetry in H3. rewrite H3 in *.
+    clear H2 H3 H H0 a IHgt1 IHgt2.
+    constructor; try (apply IHpt1); try (apply IHpt2); constructor.
+
+    compute. fold g2pt. fold pt2g.
+    specialize (IHpt1 gt1).
+    specialize (IHpt2 gt2).
+    symmetry in H2. rewrite H2 in *.
+    symmetry in H4. rewrite H4 in *.
+    clear H2 H4 H IHgt1 IHgt2 H0 H1 t11 t21.
+    constructor; firstorder.
+
+    constructor.
 Qed.
 
