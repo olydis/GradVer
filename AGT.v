@@ -947,7 +947,7 @@ Proof.
   inversion H0.
 Qed.
 
-Lemma gdom2help1 : forall a b, ~ gdom2 (GPrimitive a) b.
+(*Lemma gdom2help1 : forall a b, ~ gdom2 (GPrimitive a) b.
 Proof.
   unfold not.
   intros.
@@ -970,9 +970,9 @@ Proof.
 
   compute in H3.
   inversion H3.
-Qed.
+Qed.*)
 
-Lemma tdomhelp2 : forall a b c, tdom (TFunc a b) c -> a = c.
+Lemma tdomhelp : forall a b c, tdom (TFunc a b) c -> a = c.
 Proof.
   intros.
   inversion H.
@@ -995,4 +995,20 @@ Proof.
 Qed.
 
 (*Proposition 5 codom*)
-Theorem Fdom : forall a b c, gdom a b <-> 
+Theorem Fdom : forall a b, gdom a b <-> exists c, a = GFunc b c.
+Proof.
+  intros.
+  split; intros.
+  inversion H.
+  exists b0.
+  assumption.
+  exists b.
+  .
+
+  rewrite H0.
+  split.
+  assumption.
+
+
+
+
