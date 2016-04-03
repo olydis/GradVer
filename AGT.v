@@ -1,6 +1,7 @@
 Require Import Coq.Unicode.Utf8 Arith Bool Ring Setoid String.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Sets.Powerset.
+Require Import Coq.Logic.Classical_Pred_Type.
 
 (*set*)
 
@@ -234,12 +235,6 @@ Definition plift (pred : type -> type -> Prop) (a b : ptype) : Prop :=
 exists a' b', pred a' b' /\ ptSpt (t2pt a') a /\ ptSpt (t2pt b') b.
 Definition glift (pred : type -> type -> Prop) (a b : gtype) : Prop :=
 plift pred (g2pt a) (g2pt b).
-
-(*strict predicate lifting (to simulate partial function lifting)*)
-Definition pliftF (pred : type -> type -> Prop) (a b : ptype) : Prop :=
-forall b', exists a', pred a' b' /\ ptSpt (t2pt a') a /\ ptSpt (t2pt b') b.
-Definition gliftF (pred : type -> type -> Prop) (a b : gtype) : Prop :=
-pliftF pred (g2pt a) (g2pt b).
 
 (*Definition 5 - alpha*)
 Fixpoint pt2g (t : ptype) : gtype := match t with
@@ -802,5 +797,202 @@ Proof.
     constructor.
 Qed.
 
+
+(*strict predicate lifting (to simulate partial function lifting)*)
+Definition pliftF (pred : type -> type -> Prop) (a b : ptype) : Prop :=
+forall b', ptSpt (t2pt b') b <-> exists a', pred a' b' /\ ptSpt (t2pt a') a.
+Definition gliftF (pred : type -> type -> Prop) (a b : gtype) : Prop :=
+exists x, pliftF pred (g2pt a) x /\ b = pt2g x.
+
 (*collecting lifting defs*)
+Definition pdom : ptype -> ptype -> Prop := pliftF tdom.
 Definition pcod : ptype -> ptype -> Prop := pliftF tcod.
+Definition gdom2 : gtype -> gtype -> Prop := gliftF tdom.
+Definition gcod2 : gtype -> gtype -> Prop := gliftF tcod.
+
+Theorem liftCod1 : forall a, pcod (g2pt GUnknown) a -> gcod GUnknown (pt2g a).
+Proof.
+  firstorder.
+  assert ((pt2g a) = GUnknown).
+  destruct a; compute.
+  compute in H; fold g2pt in H; fold t2gt in H.
+  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
+  inversion H.
+  contradict H1.
+  clear.
+  unfold not.
+  firstorder.
+  specialize (H (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool)))).
+  assert (tcod
+      (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool))
+         (TFunc (TPrimitive Bool) (TPrimitive Bool)))
+      (TFunc (TPrimitive Bool) (TPrimitive Bool))
+    ∧ ptSpt
+        (g2pt
+           (t2gt
+              (TFunc
+                 (TFunc (TPrimitive Bool) (TPrimitive Bool))
+                 (TFunc (TPrimitive Bool) (TPrimitive Bool)))))
+        PTypeTotal).
+  split.
+  apply (TCod (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))) (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))). auto.
+  constructor.
+  intuition.
+  inversion H0.
+
+  constructor.
+  contradict H.
+  unfold not.
+  firstorder.
+  compute in H; fold g2pt in H; fold t2gt in H.
+  specialize (H (TPrimitive Bool)).
+  inversion H.
+  contradict H1.
+  clear.
+  unfold not.
+  firstorder.
+  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
+  assert (tcod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool)
+    ∧ ptSpt (g2pt (t2gt (TFunc (TPrimitive Bool) (TPrimitive Bool)))) PTypeTotal).
+  split.
+  apply (TCod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool) (TPrimitive Bool)). auto.
+  constructor.
+  intuition.
+  compute in H0. inversion H0.
+
+  rewrite H0.
+  constructor.
+Qed.
+
+Theorem liftCod2 : forall a, pcod (g2pt GUnknown) a -> pt2g a = pt2g PTypeTotal.
+Proof.
+  firstorder.
+  compute in H; fold g2pt in H; fold t2gt in H.
+  destruct a; try congruence.
+
+  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
+  inversion H.
+  contradict H1.
+  clear.
+  unfold not.
+  firstorder.
+  specialize (H (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool)))).
+  assert (tcod
+      (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool))
+         (TFunc (TPrimitive Bool) (TPrimitive Bool)))
+      (TFunc (TPrimitive Bool) (TPrimitive Bool))
+    ∧ ptSpt
+        (g2pt
+           (t2gt
+              (TFunc
+                 (TFunc (TPrimitive Bool) (TPrimitive Bool))
+                 (TFunc (TPrimitive Bool) (TPrimitive Bool)))))
+        PTypeTotal).
+  split.
+  apply (TCod (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))) (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))). auto.
+  constructor.
+  intuition.
+  inversion H0.
+
+  specialize (H (TPrimitive Bool)).
+  inversion H.
+  contradict H1.
+  clear.
+  unfold not.
+  firstorder.
+  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
+  assert (tcod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool)
+    ∧ ptSpt (g2pt (t2gt (TFunc (TPrimitive Bool) (TPrimitive Bool)))) PTypeTotal).
+  split.
+  apply (TCod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool) (TPrimitive Bool)). auto.
+  constructor.
+  intuition.
+  compute in H0. inversion H0.
+Qed.
+
+Theorem liftCod' : forall a, ~ pcod (g2pt (GPrimitive Int)) a.
+Proof.
+  unfold not.
+  firstorder.
+  compute in H; fold g2pt in H; fold t2gt in H.
+  
+  specialize (H (pt2t a)).
+  inversion H.
+  contradict H0.
+  clear.
+  unfold not.
+  firstorder.
+  assert (ptSpt (g2pt (t2gt (pt2t a))) a).
+  apply drawSample.
+  intuition.
+  elim H1. intros.
+  inversion H.
+
+  inversion H3.
+  destruct x.
+    inversion H6.
+    rewrite H7 in *.
+    inversion H2.
+    inversion H5.
+
+    inversion H6.
+Qed.
+
+Lemma tdomhelp1 : forall a b, ~ tdom (TPrimitive a) b.
+Proof.
+  unfold not.
+  intros.
+  destruct b; 
+  inversion H;
+  inversion H0.
+Qed.
+
+Lemma gdom2help1 : forall a b, ~ gdom2 (GPrimitive a) b.
+Proof.
+  unfold not.
+  intros.
+  inversion H.
+  inversion H0.
+  clear H H0 H2 b.
+  compute in H1. fold g2pt in H1. fold t2gt in H1.
+  elim H1.
+  intros.
+
+  specialize (H (pt2t x)).
+  assert (ptSpt (g2pt (t2gt (pt2t x))) x). apply drawSample.
+  intuition.
+  clear H0 H1.
+  destruct x0.
+
+  compute in H3.
+  inversion H.
+  inversion H0.
+
+  compute in H3.
+  inversion H3.
+Qed.
+
+Lemma tdomhelp2 : forall a b c, tdom (TFunc a b) c -> a = c.
+Proof.
+  intros.
+  inversion H.
+  inversion H0.
+  auto.
+Qed.
+
+Lemma g2ptEq : forall a b, g2pt a = g2pt b -> a = b.
+Proof.
+  induction a, b;
+  intros;
+  compute in H;
+  inversion H;
+  try congruence.
+  fold g2pt in *.
+  specialize (IHa1 b1).
+  specialize (IHa2 b2).
+  intuition.
+  apply f_equal2; auto.
+Qed.
+
+(*Proposition 5 codom*)
+Theorem Fdom : forall a b c, gdom a b <-> 
