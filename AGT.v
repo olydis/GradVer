@@ -3,96 +3,118 @@ Require Import Coq.Lists.ListSet.
 Require Import Coq.Sets.Powerset.
 Require Import Coq.Logic.Classical_Pred_Type.
 Require Import Coq.Classes.EquivDec.
-Require Export Coq.Classes.SetoidClass.
+Require Import Coq.Classes.SetoidClass.
 Require Import Coq.Logic.Decidable.
+Require Import Coq.Structures.Equalities.
+Require Import Coq.Logic.Eqdep_dec.
+Require Import Coq.Logic.ClassicalFacts.
 
-(*set*)
+(**Helpers (probably out there but I was too stupid to find)**)
+Definition obind {t u : Type} (a : option t) (b : t -> option u) : option u := 
+match a with
+| None => None
+| Some x => b x
+end.
 
-(*
-Inductive set (t : Type) : Type :=
-| SetEmpty : set te
-| SetCons : t -> set t -> set t.
-
-Fixpoint set_in (t : Type) (x : t) (s : set t) :=
-  match s with
-  | SetEmpty _ => False
-  | SetCons _ x' s' => x = x' \/ set_in t x s'
-  end.*)
-
-(*recusive approach... nope
-Inductive type' (nested_type : Set) : Set :=
-| Int : type' nested_type
-| Bool : type' nested_type
-| Func : nested_type -> nested_type -> type' nested_type.
-*)
+Ltac unfeq := unfold equiv_decb, equiv_decb, equiv_dec in *.
 
 (**Types**)
-
 Inductive primitive_type : Set :=
 | Int : primitive_type
 | Bool : primitive_type.
+Definition primitive_type_dec : ∀ n m : primitive_type, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance primitive_type_EqDec : EqDec primitive_type eq := primitive_type_dec.
+Hint Resolve primitive_type_dec.
 
-Inductive type : Set :=
-| TPrimitive : primitive_type -> type
-| TFunc : type -> type -> type.
+Inductive type_leaf : Set :=
+| TPrim : primitive_type -> type_leaf.
+Definition type_leaf_dec : ∀ n m : type_leaf, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance type_leaf_EqDec : EqDec type_leaf eq := type_leaf_dec.
+Hint Resolve type_leaf_dec.
 
-Inductive gtype : Set :=
-| GStatic : type -> gtype
-| GUnknown : gtype.
+Inductive gtype_leaf : Set :=
+| GPrim : primitive_type -> gtype_leaf
+| GUnk : gtype_leaf.
+Definition gtype_leaf_dec : ∀ n m : gtype_leaf, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance gtype_leaf_EqDec : EqDec gtype_leaf eq := gtype_leaf_dec.
+Hint Resolve gtype_leaf_dec.
 
-Definition dom (t : type) : option type := match t with
-| TPrimitive _ => None
-| TFunc a _ => Some a
+Inductive unk_leaf_type (TLeaf : Set) : Type :=
+| Leaf : TLeaf -> unk_leaf_type TLeaf
+| Func : unk_leaf_type TLeaf -> unk_leaf_type TLeaf -> unk_leaf_type TLeaf.
+
+Definition type := unk_leaf_type type_leaf.
+Definition type_dec : ∀ n m : type, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance type_EqDec : EqDec type eq := type_dec.
+Hint Resolve type_dec.
+Hint Unfold type_EqDec.
+
+Definition gtype := unk_leaf_type gtype_leaf.
+Definition gtype_dec : ∀ n m : gtype, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance gtype_EqDec : EqDec gtype eq := gtype_dec.
+
+Definition ptype := type -> bool.
+
+(*convenience*)
+Definition TLeaf := Leaf type_leaf.
+Definition TFunc := Func type_leaf.
+Definition TPrimitive := fun x => TLeaf (TPrim x).
+Definition TInt := TPrimitive Int.
+Definition TBool := TPrimitive Bool.
+
+Definition GLeaf := Leaf gtype_leaf.
+Definition GFunc := Func gtype_leaf.
+Definition GPrimitive := fun x => GLeaf (GPrim x).
+Definition GInt := GPrimitive Int.
+Definition GBool := GPrimitive Bool.
+Definition GUnknown := GLeaf GUnk.
+
+Definition PEmpty : ptype := fun t => false.
+Definition PTotal : ptype := fun t => true.
+Definition PSingleton (t' : type) : ptype := fun t => t' ==b t.
+Definition PLift (a b : ptype) : ptype := fun t =>
+match t with
+| Func _ a' b' => andb (a a') (b b')
+| _ => false
 end.
+Definition PisEmpty (pt : ptype) := forall t, pt t = PEmpty t.
+Definition PisTotal (pt : ptype) := forall t, pt t = PTotal t.
+Definition PisSingleton (pt : ptype) (t' : type) := forall t, pt t = PSingleton t' t.
+Definition PisLift (pt : ptype) (a b : ptype) := forall t, pt t = PLift a b t.
 
-Definition cod (t : type) : option type := match t with
-| TPrimitive _ => None
-| TFunc _ a => Some a
-end.
-
-Eval compute in (equiv_decb Bool Int).
-
-Check (EqDec primitive_type eq).
-
-Lemma asd : ∀ n m : primitive_type, {n = m} + {n ≠ m}.
+Lemma ptSingleton : forall x t, PSingleton t x = true -> t = x.
 Proof.
   intros.
-  destruct n, m; auto.
-  assert (Int ≠ Bool).
-  unfold not. intros. inversion H. auto.
-  assert (Bool ≠ Int).
-  unfold not. intros. inversion H. auto.
+  unfold PSingleton in H.
+  unfeq.
+  destruct (type_EqDec t x).
+  auto.
+  inversion H.
 Qed.
-Program Instance primitive_type_EqDec : EqDec primitive_type eq := asd.
 
-Eval compute in equiv_decb Int Int.
-Eval compute in equiv_decb Bool Int.
-Eval compute in equiv_decb 4 4.
-Eval compute in equiv_decb 4 5.
-Eval compute in equiv_dec Int Int.
+(**Operations**)
+Definition dom {a : Set} (t : unk_leaf_type a) : option (unk_leaf_type a) := match t with
+| Leaf _ _ => None
+| Func _ a _ => Some a
+end.
+Definition cod {a : Set} (t : unk_leaf_type a) : option (unk_leaf_type a) := match t with
+| Leaf _ _ => None
+| Func _ _ a => Some a
+end.
 
-Definition equate (a b : type) : option type := if a == b then Some a else None.
+Definition tequate (a b : type) : option type := if a == b then Some a else None.
 
-Inductive tdom : type -> type -> Prop := 
-| TDom : forall t a b, t = TFunc a b -> tdom t a.
-Inductive tcod : type -> type -> Prop := 
-| TCod : forall t a b, t = TFunc a b -> tcod t b.
-Inductive tequate : type -> type -> type -> Prop :=
-| TEquate : forall t, tequate t t t.
+Fixpoint gequate (a b : gtype) : option gtype := match (a, b) with
+| (Leaf _ GUnk, _) => Some a
+| (_, Leaf _ GUnk) => Some b
+| (Func _ a1 b1, Func _ a2 b2) => obind (gequate a1 a2) (fun a => 
+                                  obind (gequate b1 b2) (fun b => Some (Func gtype_leaf a b)))
+| (x, y) => if x == y then Some x else None
+end.
 
-Inductive gdom : gtype -> gtype -> Prop := 
-| GDom : forall t a b, t = GFunc a b -> gdom t a
-| GDomU : gdom GUnknown GUnknown.
-Inductive gcod : gtype -> gtype -> Prop := 
-| GCod : forall t a b, t = GFunc a b -> gcod t b
-| GCodU : gcod GUnknown GUnknown.
-Inductive gequate : gtype -> gtype -> gtype -> Prop :=
-| GEquatePrim : forall t, gequate (GPrimitive t) (GPrimitive t) (GPrimitive t)
-| GEquateUL : forall t, gequate GUnknown t t
-| GEquateUR : forall t, gequate t GUnknown t
-| GEquateAbs : forall t11 t12 t21 t22 tx1 tx2, 
-  gequate t11 t21 tx1 -> gequate t12 t22 tx2 -> gequate (GFunc t11 t12) (GFunc t21 t22)  (GFunc tx1 tx2).
 
+(**Other Relations**)
+(*Consistency on types (tilde)*)
 Inductive class_gtype_cons : gtype -> gtype -> Prop :=
 | GTypeConsRefl : forall t, class_gtype_cons t t
 | GTypeConsUL : forall t, class_gtype_cons GUnknown t
@@ -102,7 +124,6 @@ Inductive class_gtype_cons : gtype -> gtype -> Prop :=
   class_gtype_cons t12 t22 ->
   class_gtype_cons (GFunc t11 t12) (GFunc t21 t22).
 
-(*checks*)
 Theorem class_gtype_cons1 :
 (class_gtype_cons
    (GFunc (GPrimitive Int) GUnknown)
@@ -124,104 +145,7 @@ Proof.
   inversion H5.
 Qed.
 
-
-(**TFL**)
-Definition tfl_Var := string.
-Inductive tfl_t (tfl_T : Set) : Set :=
-| TflTermNat : nat -> tfl_t tfl_T
-| TflTermBool : bool -> tfl_t tfl_T
-| TflTermVar : tfl_Var -> tfl_t tfl_T
-| TflTermAbs : tfl_Var -> tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
-| TflTermApp : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
-| TflTermPlus : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
-| TflTermIf : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
-| TflTermAssert : tfl_t tfl_T -> tfl_T -> tfl_t tfl_T.
-
-Definition tfl_T_context (tfl_T : Set) := tfl_Var -> tfl_T -> Prop.
-
-Definition tfl_T_context_empty (tfl_T : Set) : tfl_T_context tfl_T := fun x' t' => False.
-Definition tfl_T_context_set (tfl_T : Set) (x : tfl_Var) (t : tfl_T) (c : tfl_T_context tfl_T) : tfl_T_context tfl_T :=
-  fun x' t' => (x = x' /\ t = t') \/ c x' t'.
-
-(**STFL**)
-Definition stfl_T := type.
-Definition stfl_Tcons := fun (a b : stfl_T) => a = b.
-Definition stfl_t : Set := tfl_t stfl_T.
-Definition stfl_T_context := tfl_T_context stfl_T.
-
-Inductive stfl_term_type : stfl_T_context -> stfl_t -> stfl_T -> Prop :=
-| StflTx : forall (c : stfl_T_context) (x : tfl_Var) (t : stfl_T), 
-    c x t -> stfl_term_type c (TflTermVar stfl_T x) t
-| StflTn : forall c n, 
-    stfl_term_type c (TflTermNat stfl_T n) (TPrimitive Int)
-| StflTb : forall c b, 
-    stfl_term_type c (TflTermBool stfl_T b) (TPrimitive Bool)
-| StflTapp : forall c t1 tt1 t2 tt2 ttx,
-    stfl_term_type c t1 tt1 ->
-    stfl_term_type c t2 tt2 ->
-    tdom tt1 tt2 ->
-    tcod tt1 ttx ->
-    stfl_term_type c (TflTermApp stfl_T t1 t2) ttx
-| StflTplus : forall c t1 t2,
-    stfl_term_type c t1 (TPrimitive Int) ->
-    stfl_term_type c t2 (TPrimitive Int) ->
-    stfl_term_type c (TflTermPlus stfl_T t1 t2) (TPrimitive Int)
-| StflTif : forall c t1 t2 tt2 t3 tt3 ttx,
-    stfl_term_type c t1 (TPrimitive Bool) ->
-    stfl_term_type c t2 tt2 ->
-    stfl_term_type c t3 tt3 ->
-    tequate tt2 tt3 ttx ->
-    stfl_term_type c (TflTermIf stfl_T t1 t2 t3) ttx
-| StflTlambda : forall (c : stfl_T_context) t tt1 tt2 (x : tfl_Var),
-    stfl_term_type (tfl_T_context_set stfl_T x tt1 c) t tt2 ->
-    stfl_term_type c (TflTermAbs stfl_T x tt1 t) (TFunc tt1 tt2)
-| StflTassert : forall c t tt,
-    stfl_term_type c t tt ->
-    stfl_term_type c (TflTermAssert stfl_T t tt) tt
-.
-
-(**GTFL**)
-Definition gtfl_T := gtype.
-Definition gtfl_Tcons := class_gtype_cons.
-Definition gtfl_t : Set := tfl_t gtfl_T.
-Definition gtfl_T_context := tfl_T_context gtfl_T.
-
-Inductive gtfl_term_type : gtfl_T_context -> gtfl_t -> gtfl_T -> Prop :=
-| GtflTx : forall (c : gtfl_T_context) (x : tfl_Var) (t : gtfl_T), 
-    c x t -> gtfl_term_type c (TflTermVar gtfl_T x) t
-| GtflTn : forall c n, 
-    gtfl_term_type c (TflTermNat gtfl_T n) (GPrimitive Int)
-| GtflTb : forall c b, 
-    gtfl_term_type c (TflTermBool gtfl_T b) (GPrimitive Bool)
-| GtflTapp : forall c t1 tt1 t2 tt2 ttx,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    gdom tt1 tt2 ->
-    gcod tt1 ttx ->
-    gtfl_term_type c (TflTermApp gtfl_T t1 t2) ttx
-| GtflTplus : forall c t1 tt1 t2 tt2,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    gtfl_Tcons tt1 (GPrimitive Int) ->
-    gtfl_Tcons tt2 (GPrimitive Int) ->
-    gtfl_term_type c (TflTermPlus gtfl_T t1 t2) (GPrimitive Int)
-| GtflTif : forall c t1 tt1 t2 tt2 t3 tt3 ttx,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    gtfl_term_type c t3 tt3 ->
-    gtfl_Tcons tt1 (GPrimitive Bool) ->
-    gequate tt2 tt3 ttx ->
-    gtfl_term_type c (TflTermIf gtfl_T t1 t2 t3) ttx
-| GtflTlambda : forall (c : gtfl_T_context) t tt1 tt2 (x : tfl_Var),
-    gtfl_term_type (tfl_T_context_set gtfl_T x tt1 c) t tt2 ->
-    gtfl_term_type c (TflTermAbs gtfl_T x tt1 t) (GFunc tt1 tt2)
-| GtflTassert : forall c t tt tt1,
-    gtfl_term_type c t tt ->
-    gtfl_Tcons tt tt1 ->
-    gtfl_term_type c (TflTermAssert gtfl_T t tt1) tt1
-.
-
-(**naive subtyping relation (<:)**)
+(*naive subtyping relation (<:)*)
 Inductive class_gsubt : gtype -> gtype -> Prop :=
 | SubtUnknown : forall t, class_gsubt t GUnknown
 | SubtRefl : forall t, class_gsubt t t
@@ -229,57 +153,145 @@ Inductive class_gsubt : gtype -> gtype -> Prop :=
   class_gsubt t11 t21 -> class_gsubt t12 t22 -> class_gsubt (GFunc t11 t12) (GFunc t21 t22)
 .
 
-(**powerset lifting (pseudo but sufficient so far!)**)
-Inductive ptype : Set :=
-| PTypeSingletonPrim : primitive_type -> ptype
-| PTypeTotal : ptype
-| PTypeMFunc : ptype -> ptype -> ptype.
-
 (*subset*)
-Inductive ptSpt : ptype -> ptype -> Prop :=
-| PSPrefl : forall a, ptSpt a a
-| PSPtot : forall a, ptSpt a PTypeTotal
-| PSPlift : forall t11 t12 t21 t22,
-  ptSpt t11 t12 -> ptSpt t21 t22 -> ptSpt (PTypeMFunc t11 t21) (PTypeMFunc t12 t22)
-.
+Definition ptSpt (a b : ptype) : Prop := forall x, (a x) = true -> (b x) = true.
+
+Theorem PSPrefl : forall a, ptSpt a a.
+Proof.
+  compute.
+  intuition.
+Qed.
+Theorem PSPtot : forall a, ptSpt a PTotal.
+Proof.
+  compute.
+  intuition.
+Qed.
+Theorem PSPlift : forall t11 t12 t21 t22,
+  ptSpt t11 t12 -> ptSpt t21 t22 -> ptSpt (PLift t11 t21) (PLift t12 t22).
+Proof.
+  compute.
+  intuition.
+  induction x; intuition.
+  specialize (H x1).
+  specialize (H0 x2).
+  destruct (t11 x1); intuition.
+  rewrite H2, H0 in *. 
+  auto.
+Qed.
 
 (*Definition 1 - Concretization (gamma)*)
-Fixpoint g2pt (t : gtype) : ptype := match t with
-| GPrimitive pt => PTypeSingletonPrim pt
-| GFunc a b => PTypeMFunc (g2pt a) (g2pt b)
-| GUnknown => PTypeTotal
+Fixpoint gt2pt (t : gtype) : ptype := match t with
+| Leaf _ GUnk => PTotal
+| Leaf _ (GPrim pt) => PSingleton (TPrimitive pt)
+| Func _ a b => PLift (gt2pt a) (gt2pt b)
 end.
 
 (*lift type*)
 Fixpoint t2gt (t : type) : gtype := match t with
-| TPrimitive pt => GPrimitive pt
-| TFunc a b => GFunc (t2gt a) (t2gt b)
+| Leaf _ (TPrim pt) => GPrimitive pt
+| Func _ a b => GFunc (t2gt a) (t2gt b)
 end.
-Definition t2pt (t : type) : ptype := g2pt (t2gt t).
-Fixpoint pt2t (t : ptype) : type := match t with (**draws sample**)
-| PTypeSingletonPrim pt => TPrimitive pt
-| PTypeMFunc a b => TFunc (pt2t a) (pt2t b)
-| PTypeTotal => TPrimitive Bool
-end.
+Definition t2pt (t : type) : ptype := PSingleton t.
 
 (*Definition 2 - Type Precision (\sqsubseteq)*)
-Definition gtSgt (a : gtype) (b : gtype) : Prop := ptSpt (g2pt a) (g2pt b).
+Definition gtSgt (a : gtype) (b : gtype) : Prop := ptSpt (gt2pt a) (gt2pt b).
 
 (*Definition 3 - Predicate Lifting*)
 Definition plift (pred : type -> type -> Prop) (a b : ptype) : Prop :=
 exists a' b', pred a' b' /\ ptSpt (t2pt a') a /\ ptSpt (t2pt b') b.
 Definition glift (pred : type -> type -> Prop) (a b : gtype) : Prop :=
-plift pred (g2pt a) (g2pt b).
+plift pred (gt2pt a) (gt2pt b).
+
+(*Definition 4 - Collecting Function*)
+Definition pliftF (f : type -> option type) (a b : ptype) : Prop :=
+forall b', b b' = true <-> exists a', a a' = true /\ f a' = Some b'.
 
 (*Definition 5 - alpha*)
-Fixpoint pt2g (t : ptype) : gtype := match t with
-| PTypeSingletonPrim t => GPrimitive t
-| PTypeTotal => GUnknown
-| PTypeMFunc a b => GFunc (pt2g a) (pt2g b)
-end.
+Definition pt2gtSingleton (t : ptype) (t' : type) (p : PisSingleton t t') : gtype := t2gt t'.
+Definition pt2gtTotal (t : ptype) (p : PisTotal t) : gtype := GUnknown.
+Inductive pt2gt : ptype -> gtype -> Prop :=
+| PGSingleton : forall t t', PisSingleton t t' -> pt2gt t (t2gt t')
+| PGTotal : pt2gt PTotal GUnknown
+| PGLift : forall t a b a' b', PisLift t a b /\ pt2gt a a' /\ pt2gt b b' -> pt2gt t (GFunc a' b')
+.
+
+(*TACTIC*)
+Ltac unfConv :=
+  unfold TInt in *;
+  unfold TBool in *;
+  unfold TPrimitive in *;
+  unfold TFunc in *;
+  unfold TLeaf in *;
+  unfold GUnknown in *;
+  unfold GInt in *;
+  unfold GBool in *;
+  unfold GPrimitive in *;
+  unfold GFunc in *;
+  unfold GLeaf in *;
+  unfold PLift in *;
+  unfold PSingleton in *;
+  unfold PTotal in *;
+  unfold PEmpty in *.
+Ltac fConv :=
+  fold TInt in *;
+  fold TBool in *;
+  fold TPrimitive in *;
+  fold TFunc in *;
+  fold TLeaf in *;
+  fold GUnknown in *;
+  fold GInt in *;
+  fold GBool in *;
+  fold GPrimitive in *;
+  fold GFunc in *;
+  fold GLeaf in *;
+  fold PLift in *;
+  fold PSingleton in *;
+  fold PTotal in *;
+  fold PEmpty in *.
+
+Ltac unf :=
+  unfConv;
+  try (unfold t2pt in *);
+  try (unfold gtSgt in *);
+  try (unfold ptSpt in *);
+  try (unfold gt2pt in *);
+  unfConv;
+  unfeq;
+  try (unfold type_EqDec in *);
+  try (unfold gtype_EqDec in *)
+.
+Ltac unf2 :=
+  unfConv;
+  try (unfold t2pt in *);
+  try (unfold gtSgt in *);
+  try (unfold ptSpt in *);
+  unfConv;
+  unfeq;
+  try (unfold type_EqDec in *);
+  try (unfold gtype_EqDec in *)
+.
+
+Theorem PSPmembership : forall t pt,
+  ptSpt (t2pt t) pt <-> pt t = true.
+Proof.
+  intuition.
+  - unfold ptSpt in H.
+    specialize (H t).
+    assert (t2pt t t = true).
+    unf.
+    destruct (type_dec t t); auto.
+    auto.
+  - unfold ptSpt.
+    intros.
+    unfold t2pt in H0.
+    apply ptSingleton in H0.
+    rewrite H0 in *. auto.
+Qed.
+
+Ltac un_type_dec := destruct (type_dec _ _); auto; try congruence; try intuition.
 
 Ltac helpTac := 
-  unfold gtSgt, g2pt;
+  unfold gtSgt, gt2pt;
   split;
   intros;
   try inversion H;
@@ -288,61 +300,146 @@ Ltac helpTac :=
   try apply PSPrefl;
   try apply PSPtot.
 
+Lemma gt2ptPrimitive : forall p, gt2pt (GPrimitive p) (TPrimitive p) = true.
+Proof.
+  intros.
+  unf.
+  un_type_dec.
+Qed.
+Lemma gt2ptUnknown : forall x, gt2pt GUnknown x = true.
+Proof.
+  intros.
+  unf.
+  auto.
+Qed.
+Lemma gt2ptFail1 : forall x a b, gt2pt (GPrimitive x) (TFunc a b) = false.
+Proof.
+  intros.
+  unf.
+  auto.
+Qed.
+Lemma gt2ptFail2 : forall x a b, gt2pt (GFunc a b) (TPrimitive x) = false.
+Proof.
+  intros.
+  unf.
+  auto.
+Qed.
+
+Lemma gtHas : forall gt, exists t, gt2pt gt t = true.
+Proof.
+  intros.
+  induction gt.
+  - destruct t.
+    * exists (TPrimitive p). unf. un_type_dec.
+    * exists TInt. unf. auto.
+  - elim IHgt1. intros.
+    elim IHgt2. intros.
+    exists (TFunc x x0).
+    unf2.
+    unfold gt2pt.
+    fold gt2pt.
+    unfold PLift.
+    intuition.
+Qed.
+
+Lemma gtSgtUnknown : forall x, gtSgt x GUnknown.
+Proof.
+  intros.
+  unf2.
+  intros.
+  apply gt2ptUnknown.
+Qed.
+
+Lemma gtSgtRefl : forall x, gtSgt x x.
+Proof.
+  intros.
+  unf2.
+  intros.
+  auto.
+Qed.
+
+Lemma gtSgtLift : forall a1 b1 a2 b2, gtSgt (GFunc a1 b1) (GFunc a2 b2) -> gtSgt a1 a2 /\ gtSgt b1 b2.
+Proof.
+  induction a1, b1, a2, b2; 
+  intros; split; fConv.
+  - induction g0; try apply gtSgtUnknown.
+    assert (t = GPrim p).
+    unf2. fConv.
+    destruct t.
+    specialize (gtHas (GLeaf g)); intros. elim H0; intros.
+    specialize (H (TFunc (TPrimitive p0) x)); unf2. fConv.
+    assert (gt2pt (GFunc (GLeaf (GPrim p0)) (GLeaf g)) (TFunc (TLeaf (TPrim p0)) x) = true).
+    simpl gt2pt in *.
+    rewrite H1.
+    unf2. un_type_dec.
+    intuition.
+    simpl gt2pt in *.
+    assert (PSingleton (TPrimitive p) (TLeaf (TPrim p0)) = true).
+Admitted.
+
 (*Proposition 1 - Type Precision == naive subtyping relation*)
 Theorem typePrecision : forall t1 t2, gtSgt t1 t2 <-> class_gsubt t1 t2.
 Proof.
-  induction t1, t2;
-  try destruct p;
-  try destruct p0.
-
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  
-  (*hard case begin*)
-  specialize (IHt1_1 t2_1).
-  specialize (IHt1_2 t2_2).
-  split.
-
-  (*dir1*)
-  intros.
-  inversion H.
-
-  assert (gtSgt t1_1 t2_1). unfold gtSgt. rewrite H2. apply PSPrefl.
-  assert (gtSgt t1_2 t2_2). unfold gtSgt. rewrite H3. apply PSPrefl.
-  apply SubtLift.
-  apply IHt1_1. assumption.
-  apply IHt1_2. assumption.
-
-  apply SubtLift.
-  apply IHt1_1. assumption.
-  apply IHt1_2. assumption.
-
-  (*dir2*)
-  intros.
-  inversion H.
-  unfold gtSgt.
-  apply PSPrefl.
-
-  unfold gtSgt.
-  simpl.
-  apply PSPlift.
-  apply IHt1_1. assumption.
-  apply IHt1_2. assumption.
-  (*hard case end*)
-
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
-  helpTac.
+  induction t1, t2.
+  - destruct t, g; unf; split; intros; try constructor.
+    * specialize (H (TPrimitive p)).
+      un_type_dec.
+      un_type_dec.
+      inversion e0.
+      constructor.
+    * inversion H.
+      rewrite H3 in *. assumption.
+    * specialize (H (TFunc (TPrimitive p) (TPrimitive p))).
+      intuition.
+    * inversion H.
+  - split; intros; try inversion H.
+    unf2.
+    destruct t.
+    * specialize (H (TPrimitive p)).
+      specialize (gt2ptPrimitive p).
+      intros.
+      intuition.
+    * specialize (H TInt).
+      specialize (gt2ptUnknown TInt).
+      intros.
+      intuition.
+  - split; intros; try inversion H.
+    unf2.
+    destruct g; try constructor.
+    specialize (gtHas (Func gtype_leaf t1_1 t1_2)).
+    intros. elim H0. intros.
+    specialize (H x).
+    intuition.
+    destruct x.
+    * specialize (gt2ptFail2 p t1_1 t1_2); intros. intuition.
+    * specialize (gt2ptFail1 p x1 x2); intros. intuition.
+    * apply gtSgtUnknown.
+  - split; intros; try inversion H.
+    * specialize (IHt1_1 t2_1).
+      specialize (IHt1_2 t2_2).
+      apply gtSgtLift in H.
+      inversion H.
+      apply IHt1_1 in H0.
+      apply IHt1_2 in H1.
+      constructor; assumption.
+    * apply gtSgtRefl.
+    * specialize (IHt1_1 t2_1).
+      specialize (IHt1_2 t2_2).
+      apply IHt1_1 in H3.
+      apply IHt1_2 in H5.
+      clear H0 H1 H2 H4 t11 t12 t21 t22 IHt1_1 IHt1_2 H.
+      unf2.
+      intros.
+      simpl gt2pt in *.
+      destruct x; inversion H.
+      clear H.
+      specialize (H3 x1).
+      specialize (H5 x2).
+      unfold andb in *.
+      destruct (gt2pt t1_1 x1); try intuition.
+      rewrite H1.
+      clear H1 t1_1 t1_2.
+      simpl. intuition.
 Qed.
 
 (*
@@ -355,11 +452,36 @@ Inductive class_gtype_cons : gtype -> gtype -> Prop :=
   class_gtype_cons t12 t22 ->
   class_gtype_cons (GFunc t11 t12) (GFunc t21 t22).*)
 
+Lemma funcEta : forall {A B : Type} (a b : A -> B), a = b -> forall (c : A), a c = b c.
+Proof.
+  intros.
+  rewrite H.
+  congruence.
+Qed.
+
 Lemma funcLift1 : forall a a' b b',
-t2pt (TFunc a b) = PTypeMFunc (g2pt a') (g2pt b')
+t2pt (TFunc a b) = PLift (gt2pt a') (gt2pt b')
 ->
 (a' = t2gt a).
 Proof.
+  intros.
+  specialize (funcEta (t2pt (TFunc a b)) (PLift (gt2pt a') (gt2pt b'))). intros.
+  intuition. clear H.
+  unf2. fConv.
+  destruct (type_dec (TFunc a b) c).
+  specialize (H1 (TFunc a b)).
+  un_type_dec.
+  simpl in H1.
+  symmetry in H1.
+  apply andb_prop in H1.
+  inversion H1.
+  unfold gt2pt in H.
+  unfold andb in H1.
+  assert (gt2pt a' a = true).
+  intuition.
+
+  inversion H.
+  intuition.
   induction a, a', b, b'; 
   intros; 
   try (compute in *; congruence);
@@ -1046,4 +1168,101 @@ Proof.
 
 
 
+
+
+(**TFL**)
+Definition tfl_Var := string.
+Inductive tfl_t (tfl_T : Set) : Set :=
+| TflTermNat : nat -> tfl_t tfl_T
+| TflTermBool : bool -> tfl_t tfl_T
+| TflTermVar : tfl_Var -> tfl_t tfl_T
+| TflTermAbs : tfl_Var -> tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
+| TflTermApp : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
+| TflTermPlus : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
+| TflTermIf : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
+| TflTermAssert : tfl_t tfl_T -> tfl_T -> tfl_t tfl_T.
+
+Definition tfl_T_context (tfl_T : Set) := tfl_Var -> tfl_T -> Prop.
+
+Definition tfl_T_context_empty (tfl_T : Set) : tfl_T_context tfl_T := fun x' t' => False.
+Definition tfl_T_context_set (tfl_T : Set) (x : tfl_Var) (t : tfl_T) (c : tfl_T_context tfl_T) : tfl_T_context tfl_T :=
+  fun x' t' => (x = x' /\ t = t') \/ c x' t'.
+
+(**STFL**)
+Definition stfl_T := type.
+Definition stfl_Tcons := fun (a b : stfl_T) => a = b.
+Definition stfl_t : Set := tfl_t stfl_T.
+Definition stfl_T_context := tfl_T_context stfl_T.
+
+Inductive stfl_term_type : stfl_T_context -> stfl_t -> stfl_T -> Prop :=
+| StflTx : forall (c : stfl_T_context) (x : tfl_Var) (t : stfl_T), 
+    c x t -> stfl_term_type c (TflTermVar stfl_T x) t
+| StflTn : forall c n, 
+    stfl_term_type c (TflTermNat stfl_T n) (TPrimitive Int)
+| StflTb : forall c b, 
+    stfl_term_type c (TflTermBool stfl_T b) (TPrimitive Bool)
+| StflTapp : forall c t1 tt1 t2 tt2 ttx,
+    stfl_term_type c t1 tt1 ->
+    stfl_term_type c t2 tt2 ->
+    dom tt1 = Some tt2 ->
+    cod tt1 = Some ttx ->
+    stfl_term_type c (TflTermApp stfl_T t1 t2) ttx
+| StflTplus : forall c t1 t2,
+    stfl_term_type c t1 (TPrimitive Int) ->
+    stfl_term_type c t2 (TPrimitive Int) ->
+    stfl_term_type c (TflTermPlus stfl_T t1 t2) (TPrimitive Int)
+| StflTif : forall c t1 t2 tt2 t3 tt3 ttx,
+    stfl_term_type c t1 (TPrimitive Bool) ->
+    stfl_term_type c t2 tt2 ->
+    stfl_term_type c t3 tt3 ->
+    tequate tt2 tt3 = Some ttx ->
+    stfl_term_type c (TflTermIf stfl_T t1 t2 t3) ttx
+| StflTlambda : forall (c : stfl_T_context) t tt1 tt2 (x : tfl_Var),
+    stfl_term_type (tfl_T_context_set stfl_T x tt1 c) t tt2 ->
+    stfl_term_type c (TflTermAbs stfl_T x tt1 t) (TFunc tt1 tt2)
+| StflTassert : forall c t tt,
+    stfl_term_type c t tt ->
+    stfl_term_type c (TflTermAssert stfl_T t tt) tt
+.
+
+(**GTFL**)
+Definition gtfl_T := gtype.
+Definition gtfl_Tcons := class_gtype_cons.
+Definition gtfl_t : Set := tfl_t gtfl_T.
+Definition gtfl_T_context := tfl_T_context gtfl_T.
+
+Inductive gtfl_term_type : gtfl_T_context -> gtfl_t -> gtfl_T -> Prop :=
+| GtflTx : forall (c : gtfl_T_context) x t, 
+    c x t -> gtfl_term_type c (TflTermVar gtfl_T x) t
+| GtflTn : forall c n, 
+    gtfl_term_type c (TflTermNat gtfl_T n) (GPrimitive Int)
+| GtflTb : forall c b, 
+    gtfl_term_type c (TflTermBool gtfl_T b) (GPrimitive Bool)
+| GtflTapp : forall c t1 tt1 t2 tt2 ttx,
+    gtfl_term_type c t1 tt1 ->
+    gtfl_term_type c t2 tt2 ->
+    dom tt1 = Some tt2 ->
+    cod tt1 = Some ttx ->
+    gtfl_term_type c (TflTermApp gtfl_T t1 t2) ttx
+| GtflTplus : forall c t1 tt1 t2 tt2,
+    gtfl_term_type c t1 tt1 ->
+    gtfl_term_type c t2 tt2 ->
+    gtfl_Tcons tt1 (GPrimitive Int) ->
+    gtfl_Tcons tt2 (GPrimitive Int) ->
+    gtfl_term_type c (TflTermPlus gtfl_T t1 t2) (GPrimitive Int)
+| GtflTif : forall c t1 tt1 t2 tt2 t3 tt3 ttx,
+    gtfl_term_type c t1 tt1 ->
+    gtfl_term_type c t2 tt2 ->
+    gtfl_term_type c t3 tt3 ->
+    gtfl_Tcons tt1 (GPrimitive Bool) ->
+    gequate tt2 tt3 = Some ttx ->
+    gtfl_term_type c (TflTermIf gtfl_T t1 t2 t3) ttx
+| GtflTlambda : forall (c : gtfl_T_context) t tt1 tt2 (x : tfl_Var),
+    gtfl_term_type (tfl_T_context_set gtfl_T x tt1 c) t tt2 ->
+    gtfl_term_type c (TflTermAbs gtfl_T x tt1 t) (GFunc tt1 tt2)
+| GtflTassert : forall c t tt tt1,
+    gtfl_term_type c t tt ->
+    gtfl_Tcons tt tt1 ->
+    gtfl_term_type c (TflTermAssert gtfl_T t tt1) tt1
+.
 
