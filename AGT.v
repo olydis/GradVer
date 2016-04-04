@@ -16,7 +16,7 @@ match a with
 | Some x => b x
 end.
 
-Ltac unfeq := unfold equiv_decb, equiv_decb, equiv_dec in *.
+Ltac unfeq := unfold equiv_decb, equiv_dec in *.
 
 (**Types**)
 Inductive primitive_type : Set :=
@@ -312,6 +312,53 @@ Proof.
   unf.
   auto.
 Qed.
+Lemma gt2ptId : forall a, gt2pt (t2gt a) a = true.
+Proof.
+  induction a; simpl t2gt.
+  - destruct t.
+    apply gt2ptPrimitive.
+  - unf2. simpl gt2pt in *.
+    intuition.
+Qed.
+Lemma gt2ptIdNot : forall a b, gt2pt (t2gt a) b = false <-> a <> b.
+Proof.
+  induction a; simpl t2gt; split; intros.
+  - destruct t, b.
+    * destruct t.
+      destruct p, p0; intuition; inversion H0.
+    * intuition. inversion H0.
+  - destruct t, b; try intuition.
+    * destruct t.
+      destruct p, p0; intuition; inversion H0.
+  - destruct b; try intuition; try inversion H0.
+    rewrite H2 in *.
+    rewrite H3 in *.
+    clear H2 H3 a1 a2 H0.
+    simpl gt2pt in H.
+    assert (gt2pt (t2gt b1) b1 = true). apply gt2ptId.
+    assert (gt2pt (t2gt b2) b2 = true). apply gt2ptId.
+    rewrite H0 in H.
+    rewrite H1 in H.
+    intuition.
+  - destruct b; try intuition.
+    simpl gt2pt in *.
+    apply andb_false_iff.
+    specialize (IHa1 b1).
+    specialize (IHa2 b2).
+    rewrite IHa1.
+    rewrite IHa2.
+    clear IHa1 IHa2.
+    destruct (a1 == b1).
+    * rewrite e in *.
+      destruct (a2 == b2).
+      rewrite e0 in *; intuition.
+      assert (a2 = b2 → False).
+      intuition.
+      intuition.
+    * assert (a1 = b1 → False).
+      intuition.
+      intuition.
+Qed.
 Lemma gt2ptFail1 : forall x a b, gt2pt (GPrimitive x) (TFunc a b) = false.
 Proof.
   intros.
@@ -452,11 +499,15 @@ Inductive class_gtype_cons : gtype -> gtype -> Prop :=
   class_gtype_cons t12 t22 ->
   class_gtype_cons (GFunc t11 t12) (GFunc t21 t22).*)
 
-Lemma funcEta : forall {A B : Type} (a b : A -> B), a = b -> forall (c : A), a c = b c.
+Require Import Coq.Logic.FunctionalExtensionality.
+
+Lemma decb2eq : forall (a b : type) c, equiv_decb a b = c <-> (a = b <-> c = true).
 Proof.
   intros.
-  rewrite H.
-  congruence.
+  unf.
+  un_type_dec.
+  rewrite H0 in *; intuition.
+  destruct c; auto.
 Qed.
 
 Lemma funcLift1 : forall a a' b b',
@@ -465,68 +516,28 @@ t2pt (TFunc a b) = PLift (gt2pt a') (gt2pt b')
 (a' = t2gt a).
 Proof.
   intros.
-  specialize (funcEta (t2pt (TFunc a b)) (PLift (gt2pt a') (gt2pt b'))). intros.
-  intuition. clear H.
-  unf2. fConv.
-  destruct (type_dec (TFunc a b) c).
-  specialize (H1 (TFunc a b)).
+  pose proof (equal_f H).
+  clear H.
+  assert (∀ c1 c2 : type, c1 <> a /\ c2 <> b -> t2pt (TFunc a b) (TFunc c1 c2) = PLift (gt2pt a') (gt2pt b') (TFunc c1 c2)).
+  intuition.
+  specialize (H0 (TFunc a b)).
+  unfold t2pt in *.
+  unfold PSingleton in *.
+  unfold equiv_decb in H0.
+  unfold equiv_dec in H0.
+  unfold type_EqDec in H0.
   un_type_dec.
-  simpl in H1.
-  symmetry in H1.
-  apply andb_prop in H1.
-  inversion H1.
-  unfold gt2pt in H.
-  unfold andb in H1.
-  assert (gt2pt a' a = true).
-  intuition.
-
-  inversion H.
-  intuition.
-  induction a, a', b, b'; 
-  intros; 
-  try (compute in *; congruence);
-  specialize (IHa1 a'1 a2 a'2);
-  specialize (IHa2 a'2 a1 a'1);
-  unfold t2pt in H; simpl g2pt in H; inversion H; symmetry in H1, H2;
-  try (destruct p, p0);
-  try (compute in *; congruence);
-  simpl;
-  apply f_equal2;
-  try (
-    unfold t2gt;
-    try (apply IHa1);
-    try (apply IHa2);
-    unfold t2pt;
-    rewrite H1, H2;
-    simpl g2pt;
-    congruence).
-Qed.
+  clear e.
+Admitted.
 Lemma funcLift2 : forall a a' b b',
-t2pt (TFunc a b) = PTypeMFunc (g2pt a') (g2pt b')
+t2pt (TFunc a b) =  PLift (gt2pt a') (gt2pt b')
 ->
 (b' = t2gt b).
 Proof.
-  induction b, b', a, a'; 
-  intros; 
-  try (compute in *; congruence);
-  specialize (IHb1 b'1);
-  specialize (IHb2 b'2);
-  unfold t2pt in H; simpl g2pt in H; inversion H; symmetry in H3, H2;
-  try (destruct p, p0);
-  try (compute in *; congruence);
-  simpl;
-  apply f_equal2;
-  try (
-    try (apply IHb1);
-    try (apply IHb2);
-    unfold t2pt;
-    simpl g2pt;
-    apply f_equal2;
-    congruence).
-Qed.
+Admitted.
 
 Lemma funcLift : forall a a' b b',
-t2pt (TFunc a b) = PTypeMFunc (g2pt a') (g2pt b')
+t2pt (TFunc a b) =  PLift (gt2pt a') (gt2pt b')
 <->
 (a' = t2gt a /\ b' = t2gt b).
 Proof.
@@ -537,48 +548,32 @@ Proof.
   intros.
   inversion H.
   unfold t2pt.
-  simpl t2gt.
-  simpl g2pt.
-  apply f_equal2; congruence.
-Qed.
-
-Lemma drawSample : forall p, ptSpt (t2pt (pt2t p)) p.
-Proof.
+  rewrite H0, H1.
+  apply functional_extensionality.
   intros.
-  induction p.
-    compute. constructor.
-    compute. constructor.
-
-    simpl pt2t.
-    unfold t2pt in *.
-    simpl t2gt.
-    simpl g2pt.
-    apply PSPlift;
-    congruence.
-Qed.
-
-Lemma eqCycle : forall x, x = pt2t (g2pt (t2gt x)).
-Proof.
-  intros.
-  induction x.
-    compute; congruence.
-    simpl t2gt.
-    simpl g2pt.
-    simpl pt2t.
-    symmetry in IHx1.
-    symmetry in IHx2.
-    rewrite IHx1.
-    rewrite IHx2.
-    congruence.
-Qed.
-
-Lemma eqGfunc : forall x t1 t2, t2pt x = PTypeMFunc t1 t2 -> x = TFunc (pt2t t1) (pt2t t2).
-Proof.
-  intros.
-  induction x.
-    compute in H. congruence.
-
-    apply f_equal2; inversion H; apply eqCycle.
+  unf2.
+  destruct (type_dec (Func type_leaf a b) x); intuition.
+  - symmetry in e.
+    rewrite e.
+    symmetry.
+    apply andb_true_intro.
+    split; apply gt2ptId.
+  - destruct x; try congruence.
+    symmetry.
+    apply andb_false_iff.
+    destruct (a == x1).
+    rewrite e in *.
+    destruct (b == x2).
+    rewrite e0 in *.
+    * intuition.
+    * assert (b <> x2).
+      intuition.
+      apply gt2ptIdNot in H.
+      intuition.
+    * assert (a <> x1).
+      intuition.
+      apply gt2ptIdNot in H.
+      intuition.
 Qed.
 
 Lemma ptSptLift : forall a b, ptSpt a b -> exists x, ptSpt (t2pt x) a /\ ptSpt (t2pt x) b.
