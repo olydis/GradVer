@@ -170,11 +170,56 @@ Inductive tfl_t (tfl_T : Set) : Set :=
 | TflTermIf : tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T -> tfl_t tfl_T
 | TflTermAssert : tfl_t tfl_T -> tfl_T -> tfl_t tfl_T.
 
-Definition tfl_T_context (tfl_T : Set) := tfl_Var -> tfl_T -> Prop.
+Definition tfl_T_context (tfl_T : Set) := tfl_Var -> option tfl_T.
 
-Definition tfl_T_context_empty (tfl_T : Set) : tfl_T_context tfl_T := fun x' t' => False.
+Definition tfl_Var_decb (a : tfl_Var) (b : tfl_Var) : bool := 
+  if string_dec a b then true else false.
+
+Definition tfl_T_context_empty (tfl_T : Set) : tfl_T_context tfl_T := fun x' => None.
 Definition tfl_T_context_set (tfl_T : Set) (x : tfl_Var) (t : tfl_T) (c : tfl_T_context tfl_T) : tfl_T_context tfl_T :=
-  fun x' t' => (x = x' /\ t = t') \/ c x' t'.
+  fun x' => if string_dec x x' then Some t else c x'.
+
+Check (fun (a b : tfl_t type) => a = b).
+
+Inductive tfl_term_type 
+  (t_leaf : Set) 
+  (mk_prim : primitive_type -> unk_leaf_type t_leaf)
+  (cons : unk_leaf_type t_leaf → unk_leaf_type t_leaf → Prop)
+  (equate : unk_leaf_type t_leaf → unk_leaf_type t_leaf → option (unk_leaf_type t_leaf))
+   : tfl_T_context (unk_leaf_type t_leaf) -> tfl_t (unk_leaf_type t_leaf) -> (unk_leaf_type t_leaf) -> Prop :=
+| TflTx : forall (c : tfl_T_context (unk_leaf_type t_leaf)) x t, 
+    c x t -> tfl_term_type t_leaf mk_prim cons equate c (TflTermVar (unk_leaf_type t_leaf) x) t
+| TflTn : forall c n, 
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermNat (unk_leaf_type t_leaf) n) (mk_prim Int)
+| TflTb : forall c b, 
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermBool (unk_leaf_type t_leaf) b) (mk_prim Bool)
+| TflTapp : forall c t1 tt1 t2 tt2 ttx,
+    tfl_term_type t_leaf mk_prim cons equate c t1 tt1 ->
+    tfl_term_type t_leaf mk_prim cons equate c t2 tt2 ->
+    dom tt1 = Some tt2 ->
+    cod tt1 = Some ttx ->
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermApp (unk_leaf_type t_leaf) t1 t2) ttx
+| TflTplus : forall c t1 tt1 t2 tt2,
+    tfl_term_type t_leaf mk_prim cons equate c t1 tt1 ->
+    tfl_term_type t_leaf mk_prim cons equate c t2 tt2 ->
+    cons tt1 (mk_prim Int) ->
+    cons tt2 (mk_prim Int) ->
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermPlus (unk_leaf_type t_leaf) t1 t2) (mk_prim Int)
+| TflTif : forall c t1 tt1 t2 tt2 t3 tt3 ttx,
+    tfl_term_type t_leaf mk_prim cons equate c t1 tt1 ->
+    tfl_term_type t_leaf mk_prim cons equate c t2 tt2 ->
+    tfl_term_type t_leaf mk_prim cons equate c t3 tt3 ->
+    cons tt1 (mk_prim Bool) ->
+    equate tt2 tt3 = Some ttx ->
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermIf (unk_leaf_type t_leaf) t1 t2 t3) ttx
+| TflTlambda : forall (c : tfl_T_context (unk_leaf_type t_leaf)) t tt1 tt2 (x : tfl_Var),
+    tfl_term_type t_leaf mk_prim cons equate (tfl_T_context_set (unk_leaf_type t_leaf) x tt1 c) t tt2 ->
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermAbs (unk_leaf_type t_leaf) x tt1 t) (Func t_leaf tt1 tt2)
+| TflTassert : forall c t tt tt1,
+    tfl_term_type t_leaf mk_prim cons equate c t tt ->
+    cons tt tt1 ->
+    tfl_term_type t_leaf mk_prim cons equate c (TflTermAssert (unk_leaf_type t_leaf) t tt1) tt1
+.
 
 (*STFL*)
 Definition stfl_T := type.
@@ -182,36 +227,7 @@ Definition stfl_Tcons := fun (a b : stfl_T) => a = b.
 Definition stfl_t : Set := tfl_t stfl_T.
 Definition stfl_T_context := tfl_T_context stfl_T.
 
-Inductive stfl_term_type : stfl_T_context -> stfl_t -> stfl_T -> Prop :=
-| StflTx : forall (c : stfl_T_context) (x : tfl_Var) (t : stfl_T), 
-    c x t -> stfl_term_type c (TflTermVar stfl_T x) t
-| StflTn : forall c n, 
-    stfl_term_type c (TflTermNat stfl_T n) (TPrimitive Int)
-| StflTb : forall c b, 
-    stfl_term_type c (TflTermBool stfl_T b) (TPrimitive Bool)
-| StflTapp : forall c t1 tt1 t2 tt2 ttx,
-    stfl_term_type c t1 tt1 ->
-    stfl_term_type c t2 tt2 ->
-    dom tt1 = Some tt2 ->
-    cod tt1 = Some ttx ->
-    stfl_term_type c (TflTermApp stfl_T t1 t2) ttx
-| StflTplus : forall c t1 t2,
-    stfl_term_type c t1 (TPrimitive Int) ->
-    stfl_term_type c t2 (TPrimitive Int) ->
-    stfl_term_type c (TflTermPlus stfl_T t1 t2) (TPrimitive Int)
-| StflTif : forall c t1 t2 tt2 t3 tt3 ttx,
-    stfl_term_type c t1 (TPrimitive Bool) ->
-    stfl_term_type c t2 tt2 ->
-    stfl_term_type c t3 tt3 ->
-    tequate tt2 tt3 = Some ttx ->
-    stfl_term_type c (TflTermIf stfl_T t1 t2 t3) ttx
-| StflTlambda : forall (c : stfl_T_context) t tt1 tt2 (x : tfl_Var),
-    stfl_term_type (tfl_T_context_set stfl_T x tt1 c) t tt2 ->
-    stfl_term_type c (TflTermAbs stfl_T x tt1 t) (TFunc tt1 tt2)
-| StflTassert : forall c t tt,
-    stfl_term_type c t tt ->
-    stfl_term_type c (TflTermAssert stfl_T t tt) tt
-.
+Definition stfl_term_type := tfl_term_type type_leaf TPrimitive stfl_Tcons tequate.
 
 (*GTFL*)
 Definition gtfl_T := gtype.
@@ -219,40 +235,7 @@ Definition gtfl_Tcons := class_gtype_cons.
 Definition gtfl_t : Set := tfl_t gtfl_T.
 Definition gtfl_T_context := tfl_T_context gtfl_T.
 
-Inductive gtfl_term_type : gtfl_T_context -> gtfl_t -> gtfl_T -> Prop :=
-| GtflTx : forall (c : gtfl_T_context) x t, 
-    c x t -> gtfl_term_type c (TflTermVar gtfl_T x) t
-| GtflTn : forall c n, 
-    gtfl_term_type c (TflTermNat gtfl_T n) (GPrimitive Int)
-| GtflTb : forall c b, 
-    gtfl_term_type c (TflTermBool gtfl_T b) (GPrimitive Bool)
-| GtflTapp : forall c t1 tt1 t2 tt2 ttx,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    dom tt1 = Some tt2 ->
-    cod tt1 = Some ttx ->
-    gtfl_term_type c (TflTermApp gtfl_T t1 t2) ttx
-| GtflTplus : forall c t1 tt1 t2 tt2,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    gtfl_Tcons tt1 (GPrimitive Int) ->
-    gtfl_Tcons tt2 (GPrimitive Int) ->
-    gtfl_term_type c (TflTermPlus gtfl_T t1 t2) (GPrimitive Int)
-| GtflTif : forall c t1 tt1 t2 tt2 t3 tt3 ttx,
-    gtfl_term_type c t1 tt1 ->
-    gtfl_term_type c t2 tt2 ->
-    gtfl_term_type c t3 tt3 ->
-    gtfl_Tcons tt1 (GPrimitive Bool) ->
-    gequate tt2 tt3 = Some ttx ->
-    gtfl_term_type c (TflTermIf gtfl_T t1 t2 t3) ttx
-| GtflTlambda : forall (c : gtfl_T_context) t tt1 tt2 (x : tfl_Var),
-    gtfl_term_type (tfl_T_context_set gtfl_T x tt1 c) t tt2 ->
-    gtfl_term_type c (TflTermAbs gtfl_T x tt1 t) (GFunc tt1 tt2)
-| GtflTassert : forall c t tt tt1,
-    gtfl_term_type c t tt ->
-    gtfl_Tcons tt tt1 ->
-    gtfl_term_type c (TflTermAssert gtfl_T t tt1) tt1
-.
+Definition gtfl_term_type := tfl_term_type gtype_leaf GPrimitive gtfl_Tcons gequate.
 
 
 
@@ -1258,63 +1241,36 @@ Proof.
         unfold PDouble.
         unfold PLift.
         destruct t; auto.
-        repeat un_type_dec.
-        rewrite e, e0 in *. clear e e0.
-        assert (b1 <> c1).
-        destruct (b1 == c1).
-        rewrite e in *. intuition. intuition.
-
-      destruct (c2 == b2).
-      rewrite e1 in *.
-      intuition.
-      repeat un_type_dec.
-      rewrite e.
-      repeat un_type_dec.
-      
-      
-      assert (PisSingleton (PDouble (Func type_leaf c1 c2) (Func type_leaf c1 c2)) (Func type_leaf b1 b2)).
-
-
-rewrite equivEq2 in c.
-        exists GUnknown.
-      constructor.
-        unfold not.
-        unfold PisEmpty.
-        intros.
-        specialize (H (TLeaf t)).
-        unfold PDouble in H.
-        unf2.
-        repeat un_type_dec.
-
-        unfold not.
-        unfold PisSingleton.
-        intros.
-        pose proof (H (TLeaf t)).
-        pose proof (H (TLeaf t0)).
-        unfold PDouble in *.
-        unf2.
-        repeat un_type_dec.
-
-        unfold not.
-        unfold PisLift.
-        intros.
-        specialize (H (TLeaf t)).
-        unfold PDouble in H.
-        unf2.
-        repeat un_type_dec.
-
-      compute in H.
-      unfold PisSingleton.
-      unfold PDouble.
-      intros.
-      unf2.
-      repeat un_type_dec.
-  
-  intros.
-  unfold PDouble.
-  constructor.
-  exists
-
+        un_type_dec.
+          inversion e.
+          un_type_dec.
+          assert (PSingleton c1 c1 = true). apply ptSingleton. auto. rewrite H1. auto.
+        un_type_dec. inversion e. rewrite H4, H5 in *.
+          un_type_dec.
+          un_type_dec.
+          assert (PSingleton c1 c1 = true). apply ptSingleton. auto. rewrite H1. auto.
+        destruct (c1 == t1).
+          destruct (c2 == t2).
+          rewrite e, e0 in *. assert (Func type_leaf t1 t2 = Func type_leaf t1 t2). tauto. intuition.
+          destruct (b2 == t2).
+            repeat un_type_dec.
+            repeat un_type_dec. symmetry. apply andb_false_r. 
+          assert (PSingleton c1 t1 = false).
+            unf. un_type_dec. rewrite H1. symmetry. apply andb_false_l.
+        
+        intuition.
+        specialize (H4 (t2gt c1)).
+        assert (pt2gt (PSingleton c1) (t2gt c1)).
+        constructor. unfold PisSingleton. tauto.
+        intuition.
+        specialize (H5 GUnknown).
+        assert (pt2gt (PDouble b2 c2) GUnknown).
+        constructor. 
+          unfold PisEmpty. unfold not. intros. specialize (H4 b2). unfold PDouble in H4. unf2. un_type_dec.
+          intros. unfold not. unfold PisSingleton. intros.
+            pose proof (H4 b2).
+            pose proof (H4 c2). unfold PDouble in *. unf2. repeat un_type_dec.
+Admitted.
 
 
 Theorem gt2ptPDouble : forall a b, a <> b -> pt2gt (PDouble a b) GUnknown \/ (exists a' b', pt2gt (PDouble a b) (GFunc a' b')).
@@ -1357,10 +1313,10 @@ Proof.
       unfold PDouble in *.
       repeat un_type_dec.
     * assert (∃ a' b' : unk_leaf_type gtype_leaf, pt2gt (PDouble (Func type_leaf a1 a2) (Func type_leaf b1 b2)) (GFunc a' b')).
-      assert (∃ a, pt2gt (PDouble a1 b1) a).
-      exists ()
-      
-    
+      assert (∃ a, pt2gt (PDouble a1 b1) a). apply helpPDoubleHas.
+      assert (∃ b, pt2gt (PDouble a2 b2) b). apply helpPDoubleHas.
+      elim H0. intros. elim H1. intros.
+      exists x. exists x0.
       
 Admitted.
 
@@ -1499,436 +1455,47 @@ Proof.
         specialize (IHgt2 GUnknown (PDouble t2 x2)).
         
         assert (pt2gt (PDouble t1 x1) gt1).
-        constructor.
-        un_type_dec.
-        .
-        intuition.
-        pose proof (IHgt2 gt1 (PSingleton t2)).
-        assert (pt2gt (PSingleton t2) (t2gt t2)). constructor; unfold PisSingleton; tauto.
-        intuition.
-        pose proof (IHgt1 (t2gt x1) (gt2pt gt1)).
-        assert (pt2gt (gt2pt gt1) (t2gt x1)).
-        constructor.
-        assert (pt2gt (PSingleton x1) (t2gt x1)). constructor; unfold PisSingleton; tauto.
-        intuition.
-        pose proof (IHgt2 (t2gt x2) (PSingleton x2)).
-        assert (pt2gt (PSingleton x2) (t2gt x2)). constructor; unfold PisSingleton; tauto.
-        intuition.
-        clear IHgt1 IHgt2.
-
-        assert (ptSpt (PSingleton t1) (gt2pt gt1)).
-        unfold ptSpt in *; intros; rewrite ptSingleton in H; rewrite H in *; assumption. intuition. clear H.
-        assert (ptSpt (PSingleton x1) (gt2pt gt1)).
-        unfold ptSpt in *; intros; rewrite ptSingleton in H; rewrite H in *; assumption. intuition. clear H.
-        assert (ptSpt (PSingleton t2) (gt2pt gt2)).
-        unfold ptSpt in *; intros; rewrite ptSingleton in H; rewrite H in *; assumption. intuition. clear H.
-        assert (ptSpt (PSingleton x2) (gt2pt gt2)).
-        unfold ptSpt in *; intros; rewrite ptSingleton in H; rewrite H in *; assumption. intuition. clear H.
-
-        unfold gtSgt in *.
-        unfold ptSpt in *.
-        unfold PSingleton in *.
-
-
-        destruct (gt2pt gt1 t1 == true); destruct (gt2pt gt2 t2 == true).
-          rewrite equivEq1 in e.
-          rewrite equivEq1 in e0.
-        admit.
-        rewrite equivEq2 in c.
-        
-        rewrite e.
-        admit.
-        intuition.
-        
-        SearchAbout ( _ && _ = false).
-
-        assert (∀ x : type, PSingleton t1 x = true → gt2pt gt1 x = true).
-
-        intuition.
-        unf2.
-
- unf2.
-        SearchAbout ((_ -> _ = true) <-> (_ <-> _ = false)).
-        
-        
-        destruct (pt (Func type_leaf t1 t2)); intuition.
-        intuition.
-        destruct (pt (TLeaf t)).
-        specialize (H2 (TLeaf t)).
-      unf2.
-
-      intros.
-      destruct (pt t); intuition.
-      clear Hx.
-      destruct t; try auto.
-
-
-      apply not_all_ex_not in H1.
-      elim H1. intro x. intro.
-
-
-      intros.
-      destruct (pt t).
-      compute in H1.
-      apply not_all_ex_not in H1.
-      elim H1. intros.
-      specialize (H0 x).
-      specialize (H2 x).
-      destruct (pt x); try intuition.
-      clear H H1.
-      destruct x; try intuition.
-      unfold PisSingleton in H2.
-      apply not_all_ex_not in H2.
-      elim H2. intros.
-
-      assert (pt x = true).
-      intuition.
-      Check not_all_ex_not.
-      SearchPattern (~ forall _, _).
-      assert (exists t : type, pt t = true).
-      
-      intuition.
-        
-    assert (gt' = GFunc gt1 gt2).
-    * 
-    constructor.
-    
-    inversion H.
-    assert (forall x, gt2pt gt' x = PSingleton (TPrimitive p) x).
-    intros.
-    intuition.
-    simpl gt2pt.
-    intuition; rewrite H1 in H.
-    * inversion H.
-    simpl pt2gt in *.
-    unf.
-    unfold ptSpt in *.
-    intros.
-    simpl.
-    unfold PSingleton.
-    unfeq.
-    unf2.
-    specialize (H0 x).
-    un_type_dec.
-    clear n p.
-    destruct gt'; try destruct g; simpl gt2pt in H1.
-    * unf2.
-      un_type_dec. fConv.
-      symmetry in e.
-      rewrite e in *. clear e H1.
-      inversion H. clear H H2 t.
-      destruct t'; 
-      try destruct t;
-      simpl t2gt in *;
-      try inversion H1.
-      rewrite H2 in *.
-      clear H1 H2.
-      unfold PisSingleton in *.
-      specialize (H3 (TLeaf (TPrim p))).
-      rewrite H3 in H0.
-      rewrite ptSingleton in H0.
-      intuition.
-    * inversion H.
-      
-    compute in *.
-    assert (Leaf type_leaf (TPrim p) = x).
-    
-
-    inversion H0.
-
-  admit.
-  induction gt'.
-  admit.
-  admit.
-  admit.
-  intros.
-  generalize gt, gt'.
-  unfold gtSgt.
-  assert (ptSpt (gt2pt gt') pt).
-  - clear H0.
-    unfold ptSpt.
-    intros.
-    inversion H; clear H; try intuition.
-    * clear H2 t.
-      symmetry in H3.
-      rewrite H3 in *.
-      clear H3.
-      unfold PisSingleton in H1.
-      specialize (H1 x).
-      rewrite H1. clear H1.
-      destruct t'; 
-      try destruct t; 
-      simpl t2gt in H0;
-      simpl gt2pt in H0;
-      intuition.
-      unfold PLift in H0.
-      destruct x; try intuition.
-      apply andb_prop in H0.
-      intuition.
-      apply ptSingleton.
-      specialize (gt2ptIdNot t'1 x1).
-      specialize (gt2ptIdNot t'2 x2).
-      intros.
-      destruct (t'1 == x1).
-      destruct (t'2 == x2). rewrite e, e0. intuition.
-      intuition. rewrite H2 in *. intuition.
-      intuition. rewrite H2 in *. intuition.
-    * clear H5 t.
-      symmetry in H3.
-      rewrite H3 in *.
-      clear H3.
-      
-    * unfold PisLift in H.
-      specialize (H x).
-      rewrite H. clear H.
-      symmetry in H3. rewrite H3 in *. clear H3 gt' H2 t.
-      simpl gt2pt in H0.
-      unfold PLift in *.
-      destruct x; try intuition.
-      apply andb_prop in H0.
-      intuition.
-      Print pt2gt.
-      inversion H1.
-  - specialize (ptSptTrans (gt2pt gt') pt).
-    intuition.
-Qed.
-  rewrite ptSptTrans in H1.
-  assert ()
-  apply soundnessAlpha.
-  induction pt; firstorder.
-  compute. fold g2pt. fold pt2g.
-  induction gt; simpl pt2g; inversion H; firstorder.
-    compute. fold g2pt. fold pt2g.
-    specialize (IHpt1 gt1).
-    specialize (IHpt2 gt2).
-    symmetry in H2. rewrite H2 in *.
-    symmetry in H3. rewrite H3 in *.
-    clear H2 H3 H H0 a IHgt1 IHgt2.
-    constructor; try (apply IHpt1); try (apply IHpt2); constructor.
-
-    compute. fold g2pt. fold pt2g.
-    specialize (IHpt1 gt1).
-    specialize (IHpt2 gt2).
-    symmetry in H2. rewrite H2 in *.
-    symmetry in H4. rewrite H4 in *.
-    clear H2 H4 H IHgt1 IHgt2 H0 H1 t11 t21.
-    constructor; firstorder.
-
-    constructor.
-Qed.
-
-
-(*strict predicate lifting (to simulate partial function lifting)*)
-Definition pliftF (pred : type -> type -> Prop) (a b : ptype) : Prop :=
-forall b', ptSpt (t2pt b') b <-> exists a', pred a' b' /\ ptSpt (t2pt a') a.
-Definition gliftF (pred : type -> type -> Prop) (a b : gtype) : Prop :=
-exists x, pliftF pred (g2pt a) x /\ b = pt2g x.
+Admitted.
 
 (*collecting lifting defs*)
-Definition pdom : ptype -> ptype -> Prop := pliftF tdom.
-Definition pcod : ptype -> ptype -> Prop := pliftF tcod.
-Definition gdom2 : gtype -> gtype -> Prop := gliftF tdom.
-Definition gcod2 : gtype -> gtype -> Prop := gliftF tcod.
+Definition pdom : ptype -> ptype -> Prop := pliftF dom.
+Definition pcod : ptype -> ptype -> Prop := pliftF cod.
 
-Theorem liftCod1 : forall a, pcod (g2pt GUnknown) a -> gcod GUnknown (pt2g a).
-Proof.
-  firstorder.
-  assert ((pt2g a) = GUnknown).
-  destruct a; compute.
-  compute in H; fold g2pt in H; fold t2gt in H.
-  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
-  inversion H.
-  contradict H1.
-  clear.
-  unfold not.
-  firstorder.
-  specialize (H (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool)))).
-  assert (tcod
-      (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool))
-         (TFunc (TPrimitive Bool) (TPrimitive Bool)))
-      (TFunc (TPrimitive Bool) (TPrimitive Bool))
-    ∧ ptSpt
-        (g2pt
-           (t2gt
-              (TFunc
-                 (TFunc (TPrimitive Bool) (TPrimitive Bool))
-                 (TFunc (TPrimitive Bool) (TPrimitive Bool)))))
-        PTypeTotal).
-  split.
-  apply (TCod (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))) (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))). auto.
-  constructor.
-  intuition.
-  inversion H0.
-
-  constructor.
-  contradict H.
-  unfold not.
-  firstorder.
-  compute in H; fold g2pt in H; fold t2gt in H.
-  specialize (H (TPrimitive Bool)).
-  inversion H.
-  contradict H1.
-  clear.
-  unfold not.
-  firstorder.
-  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
-  assert (tcod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool)
-    ∧ ptSpt (g2pt (t2gt (TFunc (TPrimitive Bool) (TPrimitive Bool)))) PTypeTotal).
-  split.
-  apply (TCod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool) (TPrimitive Bool)). auto.
-  constructor.
-  intuition.
-  compute in H0. inversion H0.
-
-  rewrite H0.
-  constructor.
-Qed.
-
-Theorem liftCod2 : forall a, pcod (g2pt GUnknown) a -> pt2g a = pt2g PTypeTotal.
-Proof.
-  firstorder.
-  compute in H; fold g2pt in H; fold t2gt in H.
-  destruct a; try congruence.
-
-  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
-  inversion H.
-  contradict H1.
-  clear.
-  unfold not.
-  firstorder.
-  specialize (H (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool)))).
-  assert (tcod
-      (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool))
-         (TFunc (TPrimitive Bool) (TPrimitive Bool)))
-      (TFunc (TPrimitive Bool) (TPrimitive Bool))
-    ∧ ptSpt
-        (g2pt
-           (t2gt
-              (TFunc
-                 (TFunc (TPrimitive Bool) (TPrimitive Bool))
-                 (TFunc (TPrimitive Bool) (TPrimitive Bool)))))
-        PTypeTotal).
-  split.
-  apply (TCod (TFunc (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))) (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TFunc (TPrimitive Bool) (TPrimitive Bool))). auto.
-  constructor.
-  intuition.
-  inversion H0.
-
-  specialize (H (TPrimitive Bool)).
-  inversion H.
-  contradict H1.
-  clear.
-  unfold not.
-  firstorder.
-  specialize (H (TFunc (TPrimitive Bool) (TPrimitive Bool))).
-  assert (tcod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool)
-    ∧ ptSpt (g2pt (t2gt (TFunc (TPrimitive Bool) (TPrimitive Bool)))) PTypeTotal).
-  split.
-  apply (TCod (TFunc (TPrimitive Bool) (TPrimitive Bool)) (TPrimitive Bool) (TPrimitive Bool)). auto.
-  constructor.
-  intuition.
-  compute in H0. inversion H0.
-Qed.
-
-Theorem liftCod' : forall a, ~ pcod (g2pt (GPrimitive Int)) a.
-Proof.
-  unfold not.
-  firstorder.
-  compute in H; fold g2pt in H; fold t2gt in H.
-  
-  specialize (H (pt2t a)).
-  inversion H.
-  contradict H0.
-  clear.
-  unfold not.
-  firstorder.
-  assert (ptSpt (g2pt (t2gt (pt2t a))) a).
-  apply drawSample.
-  intuition.
-  elim H1. intros.
-  inversion H.
-
-  inversion H3.
-  destruct x.
-    inversion H6.
-    rewrite H7 in *.
-    inversion H2.
-    inversion H5.
-
-    inversion H6.
-Qed.
-
-Lemma tdomhelp1 : forall a b, ~ tdom (TPrimitive a) b.
-Proof.
-  unfold not.
-  intros.
-  destruct b; 
-  inversion H;
-  inversion H0.
-Qed.
-
-(*Lemma gdom2help1 : forall a b, ~ gdom2 (GPrimitive a) b.
-Proof.
-  unfold not.
-  intros.
-  inversion H.
-  inversion H0.
-  clear H H0 H2 b.
-  compute in H1. fold g2pt in H1. fold t2gt in H1.
-  elim H1.
-  intros.
-
-  specialize (H (pt2t x)).
-  assert (ptSpt (g2pt (t2gt (pt2t x))) x). apply drawSample.
-  intuition.
-  clear H0 H1.
-  destruct x0.
-
-  compute in H3.
-  inversion H.
-  inversion H0.
-
-  compute in H3.
-  inversion H3.
-Qed.*)
-
-Lemma tdomhelp : forall a b c, tdom (TFunc a b) c -> a = c.
+(*Proposition 5 - codom*)
+Theorem Fdom : forall (a b : gtype), dom a = Some b <-> exists c, a = GFunc b c.
 Proof.
   intros.
-  inversion H.
-  inversion H0.
-  auto.
-Qed.
-
-Lemma g2ptEq : forall a b, g2pt a = g2pt b -> a = b.
-Proof.
-  induction a, b;
-  intros;
-  compute in H;
-  inversion H;
-  try congruence.
-  fold g2pt in *.
-  specialize (IHa1 b1).
-  specialize (IHa2 b2).
-  intuition.
-  apply f_equal2; auto.
-Qed.
-
-(*Proposition 5 codom*)
-Theorem Fdom : forall a b, gdom a b <-> exists c, a = GFunc b c.
-Proof.
-  intros.
+  unfold dom.
   split; intros.
-  inversion H.
-  exists b0.
-  assumption.
-  exists b.
-  .
-
-  rewrite H0.
-  split.
-  assumption.
+  - destruct a; inversion H. exists a2. tauto.
+  - destruct a; elim H; intros; inversion H0. tauto.
+Qed.
 
 
+(*STFL -> GTFL*)
+Fixpoint term2gterm (t : stfl_t) : gtfl_t := match t with
+  | TflTermNat _ n
+ => TflTermNat _ n
+  | TflTermBool _ b
+ => TflTermBool _ b
+  | TflTermVar _ v
+ => TflTermVar _ v
+  | TflTermAbs _ v t x
+ => TflTermAbs _ v (t2gt t) (term2gterm x)
+  | TflTermApp _ a b
+ => TflTermApp _ (term2gterm a) (term2gterm b)
+  | TflTermPlus _ a b
+ => TflTermPlus _ (term2gterm a) (term2gterm b)
+  | TflTermIf _ a b c
+ => TflTermIf _ (term2gterm a) (term2gterm b) (term2gterm c)
+  | TflTermAssert _ x t
+ => TflTermAssert _ (term2gterm x) (t2gt t)
+end.
+
+Definition t2gtContext (c : stfl_T_context) : gtfl_T_context :=
+fun s => 
+
+(*Proposition 9 - Equivalence for fully-annotated terms*)
+Theorem EqFAT : forall c t T, stfl_term_type c t T <-> gtfl_term_type c (t2gt t) (term2gterm T).
 
 
