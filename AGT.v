@@ -96,6 +96,55 @@ Proof.
     destruct (type_EqDec x x); intuition.
 Qed.
 
+Ltac un_type_dec := 
+  try (destruct (type_EqDec _ _)); 
+  try (destruct (gtype_EqDec _ _)); 
+  try (destruct (type_dec _ _)); 
+  try (destruct (gtype_dec _ _)); 
+  auto; try congruence; try intuition.
+
+(**Defitions**)
+(*subset*)
+Definition ptSpt (a b : ptype) : Prop := forall x, (a x) = true -> (b x) = true.
+
+(*Definition 1 - Concretization (gamma)*)
+Fixpoint gt2pt (t : gtype) : ptype := match t with
+| Leaf _ GUnk => PTotal
+| Leaf _ (GPrim pt) => PSingleton (TPrimitive pt)
+| Func _ a b => PLift (gt2pt a) (gt2pt b)
+end.
+
+(*lift type*)
+Fixpoint t2gt (t : type) : gtype := match t with
+| Leaf _ (TPrim pt) => GPrimitive pt
+| Func _ a b => GFunc (t2gt a) (t2gt b)
+end.
+Definition t2pt (t : type) : ptype := PSingleton t.
+
+(*Definition 2 - Type Precision (\sqsubseteq)*)
+Definition gtSgt (a : gtype) (b : gtype) : Prop := ptSpt (gt2pt a) (gt2pt b).
+
+(*Definition 3 - Predicate Lifting*)
+Definition plift (pred : type -> type -> Prop) (a b : ptype) : Prop :=
+exists a' b', pred a' b' /\ a a' = true /\ b b' = true.
+Definition glift (pred : type -> type -> Prop) (a b : gtype) : Prop :=
+plift pred (gt2pt a) (gt2pt b).
+
+(*Definition 4 - Collecting Function*)
+Definition pliftF (f : type -> option type) (a b : ptype) : Prop :=
+forall b', b b' = true <-> exists a', a a' = true /\ f a' = Some b'.
+
+(*Definition 5 - alpha*)
+Definition pt2gtSingleton (t : ptype) (t' : type) (p : PisSingleton t t') : gtype := t2gt t'.
+Inductive pt2gt : ptype -> gtype -> Prop :=
+| PGSingleton : forall t t', PisSingleton t t' -> pt2gt t (t2gt t')
+| PGLift : forall t, ~ PisEmpty t -> forall a b, PisLift t a b -> forall a', pt2gt a a' -> forall b', pt2gt b b' -> pt2gt t (GFunc a' b')
+| PGTotal : forall t, ~ PisEmpty t -> 
+(forall t', ~ PisSingleton t t') -> 
+(forall a b, ~ PisLift t a b) -> 
+pt2gt t GUnknown
+.
+
 (**Operations**)
 Definition dom {a : Set} (t : unk_leaf_type a) : option (unk_leaf_type a) := match t with
 | Leaf _ _ => None
@@ -109,13 +158,37 @@ end.
 Definition tequate (a b : type) : option type := if a == b then Some a else None.
 
 Fixpoint gequate (a b : gtype) : option gtype := match (a, b) with
-| (Leaf _ GUnk, _) => Some a
-| (_, Leaf _ GUnk) => Some b
+| (Leaf _ GUnk, _) => Some b
+| (_, Leaf _ GUnk) => Some a
 | (Func _ a1 b1, Func _ a2 b2) => obind (gequate a1 a2) (fun a => 
                                   obind (gequate b1 b2) (fun b => Some (Func gtype_leaf a b)))
 | (x, y) => if x == y then Some x else None
 end.
 
+Theorem t2gtId : forall a b, t2gt a = t2gt b <-> a = b.
+Proof.
+  induction a; intros.
+  - destruct t. split; intros.
+    * simpl in H. destruct b; try destruct t; simpl in H; inversion H.
+      tauto.
+    * rewrite H. tauto.
+  - split; intros.
+    * simpl in H. destruct b; try destruct t; simpl in H; inversion H.
+      specialize (IHa1 b1).
+      specialize (IHa2 b2).
+      intuition. rewrite H6, H0.
+      tauto.
+    * rewrite H. tauto.
+Qed.
+  
+Theorem gequateId : forall a, gequate a a = Some a.
+Proof.
+  intros.
+  induction a; try destruct t; simpl.
+  - unfeq. un_type_dec.
+  - tauto.
+  - rewrite IHa1, IHa2. simpl. tauto.
+Qed.
 
 (**Other Relations**)
 (*Consistency on types (tilde)*)
@@ -179,8 +252,6 @@ Definition tfl_T_context_empty (tfl_T : Set) : tfl_T_context tfl_T := fun x' => 
 Definition tfl_T_context_set (tfl_T : Set) (x : tfl_Var) (t : tfl_T) (c : tfl_T_context tfl_T) : tfl_T_context tfl_T :=
   fun x' => if string_dec x x' then Some t else c x'.
 
-Check (fun (a b : tfl_t type) => a = b).
-
 Inductive tfl_term_type 
   (t_leaf : Set) 
   (mk_prim : primitive_type -> unk_leaf_type t_leaf)
@@ -188,7 +259,7 @@ Inductive tfl_term_type
   (equate : unk_leaf_type t_leaf → unk_leaf_type t_leaf → option (unk_leaf_type t_leaf))
    : tfl_T_context (unk_leaf_type t_leaf) -> tfl_t (unk_leaf_type t_leaf) -> (unk_leaf_type t_leaf) -> Prop :=
 | TflTx : forall (c : tfl_T_context (unk_leaf_type t_leaf)) x t, 
-    c x t -> tfl_term_type t_leaf mk_prim cons equate c (TflTermVar (unk_leaf_type t_leaf) x) t
+    c x = Some t -> tfl_term_type t_leaf mk_prim cons equate c (TflTermVar (unk_leaf_type t_leaf) x) t
 | TflTn : forall c n, 
     tfl_term_type t_leaf mk_prim cons equate c (TflTermNat (unk_leaf_type t_leaf) n) (mk_prim Int)
 | TflTb : forall c b, 
@@ -229,6 +300,15 @@ Definition stfl_T_context := tfl_T_context stfl_T.
 
 Definition stfl_term_type := tfl_term_type type_leaf TPrimitive stfl_Tcons tequate.
 
+Theorem sConsByEquate : forall a b, stfl_Tcons a b <-> exists c, tequate a b = Some c.
+Proof.
+  unfold stfl_Tcons. unfold tequate. unfeq. unfold type_EqDec.
+  intros.
+  un_type_dec.
+  - exists a. tauto.
+  - elim H. intros. inversion H0.
+Qed.
+
 (*GTFL*)
 Definition gtfl_T := gtype.
 Definition gtfl_Tcons := class_gtype_cons.
@@ -237,10 +317,35 @@ Definition gtfl_T_context := tfl_T_context gtfl_T.
 
 Definition gtfl_term_type := tfl_term_type gtype_leaf GPrimitive gtfl_Tcons gequate.
 
-
-
-(*subset*)
-Definition ptSpt (a b : ptype) : Prop := forall x, (a x) = true -> (b x) = true.
+Theorem gConsByEquate : forall a b, gtfl_Tcons a b <-> exists c, gequate a b = Some c.
+Proof.
+  unfold gtfl_Tcons.
+  induction a.
+  - intros. destruct t; split; intros.
+    * exists (Leaf gtype_leaf (GPrim p)). simpl. unfeq. inversion H.
+        un_type_dec. simpl. tauto.
+    * elim H. intros. simpl in H0. unfeq. destruct b; try destruct g; try un_type_dec.
+        rewrite e. constructor.
+        constructor.
+    * exists b. constructor.
+    * constructor.
+  - intros. split; intros; try inversion H.
+    * exists (Func gtype_leaf a1 a2).
+      apply gequateId.
+    * exists (Func gtype_leaf a1 a2). constructor.
+    * specialize (IHa1 t21). specialize (IHa2 t22). intuition.
+      elim H9. intros. elim H5. intros.
+      exists (GFunc x x0).
+      simpl. rewrite H8, H10. 
+      simpl. tauto.
+    * destruct b; try destruct g; try inversion H0. constructor.
+      specialize (IHa1 b1). specialize (IHa2 b2). intuition.
+      destruct (gequate a1 b1); simpl in H2; inversion H2.
+      destruct (gequate a2 b2); simpl in H2; inversion H2.
+      constructor; try apply H3; try apply H5.
+        exists g. tauto.
+        exists g0. tauto.
+Qed.
 
 Theorem ptSptRefl : forall a, ptSpt a a.
 Proof.
@@ -269,44 +374,6 @@ Proof.
   rewrite H2, H0 in *. 
   auto.
 Qed.
-
-(*Definition 1 - Concretization (gamma)*)
-Fixpoint gt2pt (t : gtype) : ptype := match t with
-| Leaf _ GUnk => PTotal
-| Leaf _ (GPrim pt) => PSingleton (TPrimitive pt)
-| Func _ a b => PLift (gt2pt a) (gt2pt b)
-end.
-
-(*lift type*)
-Fixpoint t2gt (t : type) : gtype := match t with
-| Leaf _ (TPrim pt) => GPrimitive pt
-| Func _ a b => GFunc (t2gt a) (t2gt b)
-end.
-Definition t2pt (t : type) : ptype := PSingleton t.
-
-(*Definition 2 - Type Precision (\sqsubseteq)*)
-Definition gtSgt (a : gtype) (b : gtype) : Prop := ptSpt (gt2pt a) (gt2pt b).
-
-(*Definition 3 - Predicate Lifting*)
-Definition plift (pred : type -> type -> Prop) (a b : ptype) : Prop :=
-exists a' b', pred a' b' /\ a a' = true /\ b b' = true.
-Definition glift (pred : type -> type -> Prop) (a b : gtype) : Prop :=
-plift pred (gt2pt a) (gt2pt b).
-
-(*Definition 4 - Collecting Function*)
-Definition pliftF (f : type -> option type) (a b : ptype) : Prop :=
-forall b', b b' = true <-> exists a', a a' = true /\ f a' = Some b'.
-
-(*Definition 5 - alpha*)
-Definition pt2gtSingleton (t : ptype) (t' : type) (p : PisSingleton t t') : gtype := t2gt t'.
-Inductive pt2gt : ptype -> gtype -> Prop :=
-| PGSingleton : forall t t', PisSingleton t t' -> pt2gt t (t2gt t')
-| PGLift : forall t, ~ PisEmpty t -> forall a b, PisLift t a b -> forall a', pt2gt a a' -> forall b', pt2gt b b' -> pt2gt t (GFunc a' b')
-| PGTotal : forall t, ~ PisEmpty t -> 
-(forall t', ~ PisSingleton t t') -> 
-(forall a b, ~ PisLift t a b) -> 
-pt2gt t GUnknown
-.
 
 (*TACTIC*)
 Ltac unfConv :=
@@ -380,8 +447,6 @@ Proof.
     apply ptSingleton in H0.
     rewrite H0 in *. auto.
 Qed.
-
-Ltac un_type_dec := destruct (type_dec _ _); auto; try congruence; try intuition.
 
 Ltac helpTac := 
   unfold gtSgt, gt2pt;
@@ -1493,9 +1558,145 @@ Fixpoint term2gterm (t : stfl_t) : gtfl_t := match t with
 end.
 
 Definition t2gtContext (c : stfl_T_context) : gtfl_T_context :=
-fun s => 
+fun s => option_map t2gt (c s).
+
+Lemma contextSetLift : forall t t0 c, t2gtContext (tfl_T_context_set (unk_leaf_type type_leaf) t t0 c) = tfl_T_context_set (unk_leaf_type gtype_leaf) t (t2gt t0) (t2gtContext c).
+Proof.
+  intros.
+  apply functional_extensionality. intros.
+  unfold tfl_T_context_set. unfold t2gtContext. unfold option_map.
+  destruct (string_dec t x); try tauto.
+Qed.
+
+Lemma existsTerm : forall T, exists c t, gtfl_term_type c t (t2gt T).
+Proof.
+  induction T; intros.
+  - destruct t.
+    exists (fun s => Some (GPrimitive p)).
+    destruct p.
+    * exists (TflTermNat gtype 3). constructor.
+    * exists (TflTermBool gtype false). constructor.
+  - inversion IHT1. inversion IHT2. inversion H. inversion H0.
+    exists (fun s => Some (GFunc (t2gt T1) (t2gt T2))).
+    Check (TflTermAbs gtype).
+Admitted.
+
+Lemma simplifyType : forall T t c, gtfl_term_type (t2gtContext c) (term2gterm t) T -> exists T', T = t2gt T'.
+Proof.
+  induction T.
+  admit.
+  intros.
+Admitted.
 
 (*Proposition 9 - Equivalence for fully-annotated terms*)
-Theorem EqFAT : forall c t T, stfl_term_type c t T <-> gtfl_term_type c (t2gt t) (term2gterm T).
+Theorem EqFAT : forall c t T, stfl_term_type c t T <-> gtfl_term_type (t2gtContext c) (term2gterm t) (t2gt T).
+Proof.
+  intros.
+  generalize c. clear c.
+  generalize T. clear T.
+  generalize t. clear t.
+  induction t; simpl.
+  - split; intros; inversion H; try constructor.
+    destruct T; simpl in H3; inversion H3. destruct t. inversion H3.
+    constructor.
+  - split; intros; inversion H; try constructor.
+    destruct T; simpl in H3; inversion H3. destruct t. inversion H3.
+    constructor.
+  - split; intros; inversion H; try constructor.
+    * unfold t2gtContext. rewrite H2. simpl. tauto.
+    * unfold t2gtContext in H2. destruct (c t); unfold option_map in H2; inversion H2.
+      apply t2gtId in H5. rewrite H5. tauto.
+  - split; intros; inversion H; try constructor. fold t2gt.
+    * rewrite IHt in H5.
+      rewrite contextSetLift in H5.
+      assumption.
+    * specialize (contextSetLift t t0 c). intros. symmetry in H6. rewrite H6 in H2.
+      destruct T; try destruct t3; simpl t2gt in H5; inversion H5. rewrite H9 in H2.
+      apply IHt in H2.
+      apply t2gtId in H8. rewrite H8 in *.
+      constructor. assumption.
+  - split; intros; inversion H; try constructor.
+    * clear H0 H4 H1 H6 c0 t0 t3 ttx.
+      destruct tt1; try destruct t; simpl dom in *; simpl cod in *; inversion H5; inversion H7.
+      rewrite H1, H4 in *.
+      clear H5 H7 H1 H4 tt1_1 tt1_2.
+      apply IHt1 in H2.
+      apply IHt2 in H3.
+      apply (TflTapp gtype_leaf GPrimitive gtfl_Tcons gequate (t2gtContext c) (term2gterm t1) (GFunc (t2gt tt2) (t2gt T)) (term2gterm t2) (t2gt tt2) (t2gt T));
+      try assumption;
+      simpl; tauto.
+    * clear H0 H4 H1 H6 c0 t0 t3 ttx.
+      destruct tt1; try destruct t; simpl dom in *; simpl cod in *; inversion H5; inversion H7.
+      rewrite H1, H4 in *.
+      clear H5 H7 H1 H4 tt1_1 tt1_2 H.
+      assert (H2' := H2).
+      assert (H3' := H3).
+      apply simplifyType in H2'.
+      apply simplifyType in H3'.
+      inversion H2'.
+      inversion H3'.
 
+      specialize (IHt1 x).
+      specialize (IHt2 x0).
+      symmetry in H, H0.
+      rewrite H, H0 in *.
+      apply IHt1 in H2.
+      apply IHt2 in H3.
+      clear H2' H3' IHt1 IHt2.
 
+      destruct x; try destruct t; simpl t2gt in H; inversion H.
+      symmetry in H0.
+      rewrite H0 in H4.
+      apply t2gtId in H4.
+      apply t2gtId in H5.
+      rewrite H4, H5 in *.
+
+      apply (TflTapp type_leaf TPrimitive stfl_Tcons tequate c t1 (TFunc x0 T) t2 x0 T);
+      try assumption;
+      simpl; tauto.
+  - split; intros; inversion H; try constructor.
+    * apply IHt1 in H2.
+      apply IHt2 in H3.
+      inversion H5.
+      inversion H7.
+      rewrite H8, H9 in *.
+      apply (TflTplus gtype_leaf GPrimitive gtfl_Tcons gequate (t2gtContext c) (term2gterm t1) GInt (term2gterm t2) GInt);
+      try assumption;
+      simpl; constructor.
+    * assert (H5' := H5).
+      assert (H3' := H3).
+      apply simplifyType in H5'.
+      apply simplifyType in H3'.
+      inversion H5'.
+      inversion H3'.
+
+      specialize (IHt1 x0).
+      specialize (IHt2 x).
+      symmetry in H8, H9.
+      rewrite H8, H9 in *.
+      apply IHt1 in H3.
+      apply IHt2 in H5.
+
+      assert (GPrimitive Int = t2gt TInt). simpl. tauto.
+      rewrite H10 in H2.
+      apply t2gtId in H2.
+      symmetry in H2. rewrite H2 in *.
+      destruct tt1; inversion H6. rewrite H13 in *.
+      destruct tt2; inversion H7. rewrite H15 in *.
+      unfold GPrimitive, GLeaf in H10.
+      rewrite H10 in H8.
+      rewrite H10 in H9.
+      apply t2gtId in H8.
+      apply t2gtId in H9.
+      rewrite H8, H9 in *.
+
+      apply (TflTplus type_leaf TPrimitive stfl_Tcons tequate c t1 TInt t2 TInt);
+      try assumption;
+      simpl; constructor.
+
+      symmetry in H14. rewrite H14 in *. destruct x; try destruct t5; inversion H8. 
+      symmetry in H12. rewrite H12 in *. destruct x0; try destruct t4; inversion H9. 
+
+  - admit.
+  - admit.
+Admitted.
