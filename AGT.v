@@ -1568,17 +1568,21 @@ Proof.
   destruct (string_dec t x); try tauto.
 Qed.
 
-Lemma existsTerm : forall T, exists c t, gtfl_term_type c t (t2gt T).
+Open Scope string_scope.
+
+Lemma existsTerm : forall T, exists c t, gtfl_term_type c (term2gterm t) (t2gt T).
 Proof.
   induction T; intros.
   - destruct t.
-    exists (fun s => Some (GPrimitive p)).
+    exists (fun s => None).
     destruct p.
-    * exists (TflTermNat gtype 3). constructor.
-    * exists (TflTermBool gtype false). constructor.
+    * exists (TflTermNat type 3). constructor.
+    * exists (TflTermBool type false). constructor.
   - inversion IHT1. inversion IHT2. inversion H. inversion H0.
-    exists (fun s => Some (GFunc (t2gt T1) (t2gt T2))).
-    Check (TflTermAbs gtype).
+    exists (fun s => Some (t2gt T1)).
+    exists (TflTermAbs type "x" T1 x2).
+  
+    Print tfl_Var.
 Admitted.
 
 Lemma simplifyType : forall T t c, gtfl_term_type (t2gtContext c) (term2gterm t) T -> exists T', T = t2gt T'.
@@ -1587,6 +1591,31 @@ Proof.
   admit.
   intros.
 Admitted.
+
+Lemma gequateT2GT : forall a x y, gequate (t2gt x) (t2gt y) = Some a -> x = y /\ a = t2gt x.
+Proof.
+  induction a; intros.
+  - destruct t.
+    * destruct x, y; try destruct t; try destruct t0; simpl gequate in H; unfeq; un_type_dec.
+      + inversion e. inversion H. symmetry in H2. tauto.
+      + inversion H. tauto.
+      + destruct (gequate (t2gt x1) (t2gt y1)); simpl in H; inversion H.
+        destruct (gequate (t2gt x2) (t2gt y2)); simpl in H; inversion H.
+      + destruct (gequate (t2gt x1) (t2gt y1)); simpl in H; inversion H.
+        destruct (gequate (t2gt x2) (t2gt y2)); simpl in H; inversion H.
+    * destruct x, y; try destruct t; try destruct t0; simpl gequate in H; unfeq; un_type_dec.
+      + destruct (gequate (t2gt x1) (t2gt y1)); simpl in H; inversion H.
+        destruct (gequate (t2gt x2) (t2gt y2)); simpl in H; inversion H.
+      + destruct (gequate (t2gt x1) (t2gt y1)); simpl in H; inversion H.
+        destruct (gequate (t2gt x2) (t2gt y2)); simpl in H; inversion H.
+  - destruct x, y; try destruct t; try destruct t0; simpl gequate in H; unfeq; un_type_dec; try inversion H
+    ; specialize (IHa1 x1 y1); specialize (IHa2 x2 y2)
+    ; destruct (gequate (t2gt x1) (t2gt y1)); simpl in H1; inversion H1
+    ; destruct (gequate (t2gt x2) (t2gt y2)); simpl in H1; inversion H1
+    ; rewrite H3, H4 in *; intuition.
+    * try rewrite H5, H7. try tauto.
+    * try rewrite H6, H8. try tauto.
+Qed.
 
 (*Proposition 9 - Equivalence for fully-annotated terms*)
 Theorem EqFAT : forall c t T, stfl_term_type c t T <-> gtfl_term_type (t2gtContext c) (term2gterm t) (t2gt T).
@@ -1696,7 +1725,78 @@ Proof.
 
       symmetry in H14. rewrite H14 in *. destruct x; try destruct t5; inversion H8. 
       symmetry in H12. rewrite H12 in *. destruct x0; try destruct t4; inversion H9. 
+  - split; intros; inversion H; try constructor.
+    * apply IHt1 in H3.
+      apply IHt2 in H4.
+      apply IHt3 in H6.
+      clear H0 H1 H2 H5 H7 c0 t0 t4 t5 ttx IHt1 IHt2 IHt3 H.
+      unfold tequate in H9.
+      unfeq. unfold type_EqDec in H9.
+      un_type_dec.
+      inversion H9. symmetry in H0. rewrite e, H0 in *. clear H0 H9 e T tt2.
+      inversion H8. rewrite H in *. clear H H8 tt1.
+      apply (TflTif gtype_leaf GPrimitive gtfl_Tcons gequate (t2gtContext c) (term2gterm t1) GBool (term2gterm t2) (t2gt tt3) (term2gterm t3) (t2gt tt3) (t2gt tt3));
+      try assumption;
+      simpl; try constructor.
+      apply gequateId.
+    * assert (H3' := H3).
+      assert (H4' := H4).
+      assert (H6' := H6).
+      apply simplifyType in H3'.
+      apply simplifyType in H4'.
+      apply simplifyType in H6'.
+      inversion H3'.
+      inversion H4'.
+      inversion H6'.
 
-  - admit.
-  - admit.
-Admitted.
+      specialize (IHt1 x).
+      specialize (IHt2 x0).
+      specialize (IHt3 x1).
+      symmetry in H10, H11, H12.
+      rewrite H10, H11, H12 in *.
+      apply IHt1 in H3.
+      apply IHt2 in H4.
+      apply IHt3 in H6.
+
+      clear H3' H4' H6' IHt1 IHt2 IHt3 H.
+      symmetry in H10, H11, H12.
+      rewrite H10, H11, H12 in *.
+      clear H10 H11 H12 H7 tt1 tt2 tt3 ttx H0 H1 H2 t0 t4 t5 H5 c0.
+
+      destruct x; try destruct t; simpl t2gt in H8; inversion H8. clear H8 H t.
+      apply gequateT2GT in H9.
+      inversion H9.
+      apply t2gtId in H0.
+      rewrite H, H0, H1 in *.
+      apply (TflTif type_leaf TPrimitive stfl_Tcons tequate c t1 TBool t2 x1 t3 x1 x1);
+      try assumption;
+      simpl; try constructor.
+      unfold tequate. unf. un_type_dec.
+  - split; intros; inversion H; try constructor.
+    * apply IHt in H3.
+      rewrite H4 in *.
+      clear H0 H1 H2 H4 c0 t1 t0 tt1.
+
+      apply (TflTassert gtype_leaf GPrimitive gtfl_Tcons gequate (t2gtContext c) (term2gterm t) (t2gt T) (t2gt T));
+      simpl; try constructor.
+      inversion H5.
+      rewrite H5 in *.
+      assumption.
+    * assert (H4' := H4).
+      apply simplifyType in H4'.
+      inversion H4'.
+
+      specialize (IHt x).
+      rewrite H6 in *. clear H6 tt H4'.
+      apply IHt in H4.
+
+      clear IHt t1 H0 c0 H2 tt1 H1 H.
+      apply t2gtId in H3.
+      rewrite H3 in *.
+      apply gConsByEquate in H5. inversion H5.
+      apply gequateT2GT in H. inversion H.
+      rewrite H0, H1 in *.
+      apply (TflTassert type_leaf TPrimitive stfl_Tcons tequate c t T T);
+      try assumption;
+      simpl; try constructor.
+Qed.
