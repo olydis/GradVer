@@ -1570,27 +1570,220 @@ Qed.
 
 Open Scope string_scope.
 
-Lemma existsTerm : forall T, exists c t, gtfl_term_type c (term2gterm t) (t2gt T).
+Lemma existsTerm : forall T, exists t, forall c, gtfl_term_type c (term2gterm t) (t2gt T).
 Proof.
   induction T; intros.
   - destruct t.
-    exists (fun s => None).
     destruct p.
     * exists (TflTermNat type 3). constructor.
     * exists (TflTermBool type false). constructor.
-  - inversion IHT1. inversion IHT2. inversion H. inversion H0.
-    exists (fun s => Some (t2gt T1)).
-    exists (TflTermAbs type "x" T1 x2).
-  
-    Print tfl_Var.
-Admitted.
+  - inversion IHT1. inversion IHT2.
+    exists (TflTermAbs type "x" T1 x0).
+    intros.
+    apply TflTlambda.
+    fold term2gterm. fold t2gt.
+    apply H0.
+Qed.
 
-Lemma simplifyType : forall T t c, gtfl_term_type (t2gtContext c) (term2gterm t) T -> exists T', T = t2gt T'.
+Lemma t2gtUnknown : forall t, t2gt t <> GUnknown.
 Proof.
-  induction T.
-  admit.
+  unfold not.
   intros.
-Admitted.
+  destruct t; try destruct t; simpl t2gt in H; inversion H.
+Qed.
+
+Lemma contextStaysClean : forall t t0 c, exists d, t2gtContext d = tfl_T_context_set gtype t (t2gt t0) (t2gtContext c).
+Proof.
+  intros.
+  exists (tfl_T_context_set type t t0 c).
+  apply functional_extensionality.
+  intros.
+  unfold t2gtContext.
+  unfold tfl_T_context_set.
+  destruct (string_dec t x); try tauto.
+Qed.
+
+Inductive canReceiveGUnknownFrom : gtype -> Prop :=
+| CRUBase : canReceiveGUnknownFrom GUnknown
+| CRUReturn : forall u t, canReceiveGUnknownFrom t -> canReceiveGUnknownFrom (GFunc u t)
+.
+
+Lemma cannotReceiveGUnknownFromConv : forall g t, t2gt t = g -> ~ canReceiveGUnknownFrom g.
+Proof.
+  induction g; unfold not; intros.
+  - destruct t.
+    * inversion H0.
+    * apply t2gtUnknown in H. inversion H.
+  - destruct t; try destruct t; simpl in H; inversion H.
+    inversion H0.
+    apply IHg2 in H3.
+    intuition.
+Qed.
+
+Lemma cannotReceiveGUnknownFromContext : forall g t c, t2gtContext c t = Some g -> exists tt, g = t2gt tt.
+Proof.
+  induction g; unfold not; intros.
+  - compute in H. destruct (c t0); try inversion H.
+    destruct s; try destruct t1.
+    * exists (TPrimitive p). tauto.
+    * exists (TFunc s1 s2). compute. tauto.
+  - compute in H. destruct (c t); try inversion H.
+    clear H.
+    destruct s; try destruct t0; inversion H1. clear H1.
+    exists (TFunc s1 s2). compute. tauto.
+Qed.
+
+Lemma cannotReceiveGUnknownFromT2GT : forall t g, g = t2gt t -> ~ canReceiveGUnknownFrom g.
+Proof.
+  induction t; unfold not; intros.
+  - destruct t. compute in H. rewrite H in H0. inversion H0.
+  - simpl in H. rewrite H in H0. inversion H0.
+    specialize (IHt2 t). intuition. rewrite H3 in H4. intuition.
+Qed.
+
+Definition isMoreSpecific a b := gequate a b = Some a.
+
+Lemma gequateUnkL : forall x, gequate GUnknown x = Some x.
+Proof.
+  simpl. tauto.
+Qed.
+Lemma gequateUnkR : forall x, gequate x GUnknown = Some x.
+Proof.
+  induction x.
+  - destruct t; simpl; tauto.
+  - simpl. tauto.
+Qed.
+
+Lemma IMSunk : forall x, isMoreSpecific x GUnknown.
+Proof.
+  intros.
+  unfold isMoreSpecific.
+  apply gequateUnkR.
+Qed.
+
+Lemma IMSid : forall x, isMoreSpecific x x.
+Proof.
+  intros.
+  unfold isMoreSpecific.
+  apply gequateId.
+Qed.
+
+Lemma IMSlift : forall a1 b1 a2 b2, isMoreSpecific a1 a2 -> isMoreSpecific b1 b2 -> isMoreSpecific (GFunc a1 b1) (GFunc a2 b2).
+Proof.
+  intros.
+  unfold isMoreSpecific in *.
+  simpl gequate.
+  rewrite H, H0.
+  simpl. tauto.
+Qed.
+
+Lemma gequateMakesSpecific : forall a b c, gequate a b = Some c -> isMoreSpecific c a /\ isMoreSpecific c b.
+Proof.
+  induction a; try destruct t.
+  - intros. 
+    destruct b; try destruct g; simpl in H; 
+    unfeq; un_type_dec; inversion H; try apply IMSid.
+    * inversion e. apply IMSid.
+    * apply IMSunk.
+  - intros. split.
+    * apply IMSunk.
+    * rewrite gequateUnkL in H. inversion H. apply IMSid.
+  - intros.
+    destruct b; try destruct g; simpl in H; inversion H.
+    * split.
+      + apply IMSid.
+      + apply IMSunk.
+    * specialize (IHa1 b1).
+      specialize (IHa2 b2).
+      destruct (gequate a1 b1); simpl in H; inversion H.
+      destruct (gequate a2 b2); simpl in H; inversion H.
+      specialize (IHa1 g).
+      specialize (IHa2 g0).
+      intuition; apply IMSlift; assumption.
+Qed.
+
+Lemma cruf : forall a b, isMoreSpecific a b -> canReceiveGUnknownFrom a -> canReceiveGUnknownFrom b.
+Proof.
+  unfold isMoreSpecific.
+  induction a; intros.
+  - inversion H0. symmetry in H2. rewrite H2 in *. simpl in H. inversion H. constructor.
+  - inversion H0. inversion H.
+    destruct b; try destruct g; try constructor.
+    * unfeq. un_type_dec.
+    * specialize (IHa2 b2).
+      destruct (gequate a1 b1); simpl in H5; inversion H5.
+      destruct (gequate a2 b2); simpl in H5; inversion H5.
+      rewrite H8 in *.
+      intuition.
+Qed.
+
+Lemma gtfl_term_type_Unknown : forall t g c, gtfl_term_type (t2gtContext c) (term2gterm t) g -> ~ canReceiveGUnknownFrom g.
+Proof.
+  unfold not.
+  induction t, g; intros; inversion H; inversion H0; clear H H0.
+  - symmetry in H4. rewrite H4 in *. inversion H5.
+  - symmetry in H4. rewrite H4 in *. inversion H5.
+  - symmetry in H6. rewrite H6 in *.
+    compute in H3. destruct (c t); try inversion H3.
+    destruct s; try destruct t1; inversion H0.
+  - clear c0 H2 x H1 u H5 t0 H4 t1 H7.
+    apply cannotReceiveGUnknownFromContext in H3. inversion H3.
+    apply cannotReceiveGUnknownFromT2GT in H.
+    contradict H.
+    constructor. assumption.
+  - clear u H8 t3 H10 tt2 H7 t2 H5 x H1 c0 H2 tt1 H4 g1 H6.
+    specialize (contextStaysClean t t0 c). intros. inversion H. symmetry in H0. unfold gtype in H0. rewrite H0 in *.
+    apply IHt in H3; intuition.
+  - destruct tt1; try inversion H6. inversion H8.
+    rewrite H0, H9 in *. clear H0 H9 tt1_1 tt1_2. symmetry in H10. rewrite H10 in *.
+    clear H10 g H7 ttx c0 t0 t3 H5 H1 H2 H6 H8.
+    apply IHt1 in H3; intuition. repeat constructor.
+  - destruct tt1; try inversion H6. inversion H8.
+    rewrite H0, H12 in *. clear H0 H12 tt1_1 tt1_2 u t H9 H11.
+    clear H7 ttx c0 t0 t3 H5 H1 H2 H6 H8.
+    apply IHt1 in H3; intuition. repeat constructor. assumption.
+  - symmetry in H3. rewrite H3 in *. inversion H10.
+  - symmetry in H12. rewrite H12 in *.
+    clear H12 g H8 ttx H1 H2 H3 H6 c0 t0 t4 t5.
+    unfold gequate in H10.
+    destruct tt2; try destruct g.
+    * destruct tt3; try destruct g.
+      + unfeq. un_type_dec.
+      + inversion H10.
+      + unfeq. un_type_dec.
+    * apply IHt2 in H5; try constructor; inversion H5.
+    * destruct tt3; try destruct g.
+      + unfeq. un_type_dec.
+      + apply IHt3 in H7; try constructor; inversion H7.
+      + fold gequate in *.
+        destruct (gequate tt2_1 tt3_1); try inversion H10.
+        destruct (gequate tt2_2 tt3_2); try inversion H0.
+  - clear u t H11 H13 c0 t0 t4 t5 H1 H2 H3 H6 H8 ttx.
+    unfold gequate in H10.
+    destruct tt2; try destruct g.
+    * destruct tt3; try destruct g.
+      + unfeq. un_type_dec.
+      + inversion H10.
+      + unfeq. un_type_dec.
+    * apply IHt2 in H5; try constructor; inversion H5.
+    * destruct tt3; try destruct g.
+      + unfeq. un_type_dec.
+      + apply IHt3 in H7; try constructor; inversion H7.
+      + fold gequate in *.
+        apply IHt3 in H7. inversion H7.
+        clear IHt1 IHt2 IHt3 H4 H5 H7 H9 tt1 c t1 t2 t3.
+        destruct (gequate tt2_1 tt3_1); try inversion H10.
+        clear H10.
+        unfold obind in H0.
+        constructor.
+        apply (cruf g2 tt3_2); try assumption.
+        apply (gequateMakesSpecific tt2_2 tt3_2 g2).
+        destruct (gequate tt2_2 tt3_2); inversion H0.
+        tauto.
+  - symmetry in H8. rewrite H8 in *. apply t2gtUnknown in H4. inversion H4.
+  - destruct t0; try destruct t0; simpl in H4; inversion H4.
+    apply cannotReceiveGUnknownFromConv in H10. intuition.
+Qed.
 
 Lemma gequateT2GT : forall a x y, gequate (t2gt x) (t2gt y) = Some a -> x = y /\ a = t2gt x.
 Proof.
@@ -1615,6 +1808,118 @@ Proof.
     ; rewrite H3, H4 in *; intuition.
     * try rewrite H5, H7. try tauto.
     * try rewrite H6, H8. try tauto.
+Qed.
+
+Lemma tequateVSgequate : forall a b c, tequate a b = Some c <-> gequate (t2gt a) (t2gt b) = Some (t2gt c).
+Proof.
+  induction a; split; intros; unfold tequate in *; unfeq; un_type_dec.
+  - rewrite e in *. inversion H. apply gequateId.
+  - rewrite e in *. destruct b; try destruct t0; simpl in H; unfeq; un_type_dec. inversion H.
+    destruct c; try destruct t0; simpl in H1; inversion H1; tauto.
+  - destruct t. simpl in H.
+    destruct b; try destruct t; simpl in H; unfeq; un_type_dec.
+    inversion e.
+    rewrite H1 in *.
+    intuition.
+  - symmetry in e. rewrite e in *.
+    simpl in *. repeat rewrite gequateId.
+    inversion H.
+    simpl.
+    tauto.
+  - symmetry in e. rewrite e in *.
+    rewrite gequateId in H.
+    inversion H.
+    destruct c; try destruct t; simpl in H1; inversion H1.
+    apply t2gtId in H2.
+    apply t2gtId in H3.
+    rewrite H2, H3.
+    tauto.
+  - destruct b; try destruct t; simpl in H; inversion H.
+    clear H.
+    specialize (IHa1 b1).
+    specialize (IHa2 b2).
+    destruct (gequate (t2gt a1) (t2gt b1)); simpl in H1; inversion H1.
+    destruct (gequate (t2gt a2) (t2gt b2)); simpl in H1; inversion H1.
+    destruct c; try destruct t; simpl in H2; inversion H2.
+    specialize (IHa1 c1).
+    specialize (IHa2 c2).
+    intuition.
+    assert (Some g = Some (t2gt c1)). rewrite H3. tauto.
+    assert (Some g0 = Some (t2gt c2)). rewrite H4. tauto.
+    intuition.
+    repeat un_type_dec.
+Qed.
+
+Lemma gequateT2GT' : forall a b c, gequate (t2gt a) (t2gt b) = Some c -> exists d, c = t2gt d.
+Proof.
+  induction a; intros.
+  - destruct t. destruct b; try destruct t; simpl in H; unfeq; un_type_dec.
+    exists (TPrimitive p).
+    inversion H.
+    simpl. tauto.
+  - destruct b; try destruct t; simpl in H; inversion H.
+    case_eq (gequate (t2gt a1) (t2gt b1)); intros; rewrite H0 in *; simpl in H; inversion H.
+    case_eq (gequate (t2gt a2) (t2gt b2)); intros; rewrite H2 in *; simpl in H3; inversion H3.
+    apply IHa1 in H0.
+    apply IHa2 in H2.
+    inversion H0. inversion H2.
+    exists (TFunc x x0).
+    rewrite H4, H6.
+    simpl.
+    tauto.
+Qed.
+
+Lemma simplifyType : forall t T c, gtfl_term_type (t2gtContext c) (term2gterm t) T -> exists T', T = t2gt T'.
+Proof.
+  induction t; intros; simpl in H; inversion H; clear H.
+  - exists TInt.
+    tauto.
+  - exists TBool.
+    tauto.
+  - unfold t2gtContext in H2.
+    destruct (c t); simpl in H2; inversion H2.
+    exists s. tauto.
+  - specialize (contextStaysClean t t0 c).
+    intros. inversion H. symmetry in H6. unfold gtype in H6. rewrite H6 in *.
+    apply IHt in H5.
+    inversion H5.
+    exists (TFunc t0 x1).
+    rewrite H7. tauto.
+  - apply IHt1 in H2.
+    apply IHt2 in H3.
+    inversion H2. inversion H3.
+    destruct tt1; try destruct g; simpl in H5, H7; inversion H5; inversion H7.
+    destruct x; try destruct t; inversion H.
+    exists x2.
+    rewrite H11 in *. auto.
+  - exists TInt.
+    tauto.
+  - apply IHt1 in H3.
+    apply IHt2 in H4.
+    apply IHt3 in H6.
+    inversion H3.
+    inversion H4.
+    inversion H6.
+    clear IHt1 IHt2 IHt3 H3 H4 H6 c0 t0 t4 t5 H5 H0 H1 H2 ttx H7.
+    rewrite H, H10, H11 in *.
+    destruct x0; try destruct t; destruct x1; try destruct t; 
+    simpl in H9;
+    unfeq;
+    un_type_dec.
+    * inversion H9. exists (TPrimitive p). tauto.
+    * clear tt1 tt2 tt3 H H10 H11.
+      case_eq (gequate (t2gt x0_1) (t2gt x1_1)); intros; rewrite H in *; simpl in H9; inversion H9.
+      case_eq (gequate (t2gt x0_2) (t2gt x1_2)); intros; rewrite H0 in *; simpl in H1; inversion H1.
+      clear H1 H9 H3.
+      apply gequateT2GT' in H.
+      apply gequateT2GT' in H0.
+      inversion H.
+      inversion H0.
+      exists (TFunc x0 x1).
+      rewrite H1, H2.
+      simpl.
+      tauto.
+  - exists t0. tauto.
 Qed.
 
 (*Proposition 9 - Equivalence for fully-annotated terms*)
