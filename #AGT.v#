@@ -1229,6 +1229,48 @@ match a with
   end
 end.
 
+Lemma PDouble2gtId : forall x, PDouble2gt x x = t2gt x.
+Proof.
+  induction x; intros; try destruct t; simpl.
+  - unfeq. destruct (primitive_type_EqDec p p); try tauto.
+    intuition.
+  - rewrite IHx1, IHx2. tauto.
+Qed.
+
+Lemma PDouble2gtWorksHelp : forall t1 x1 t2 x2, pt2gt (PDouble t1 x1) (PDouble2gt t1 x1) -> pt2gt (PDouble t2 x2) (PDouble2gt t2 x2) -> pt2gt (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2)) (GFunc (PDouble2gt t1 x1) (PDouble2gt t2 x2)).
+Proof. (*
+  destruct ((Func type_leaf t1 t2) == (Func type_leaf x1 x2)).
+  Print pt2gt.
+  - inversion e. rewrite H0, H1 in *.
+    specialize (PGSingleton (PDouble (Func type_leaf x1 x2) (Func type_leaf x1 x2)) (TFunc x1 x2)).
+    simpl. repeat rewrite PDouble2gtId. intros.
+    apply H.
+    unfold PisSingleton.
+    intros.
+    unfold PDouble.
+    unfold PSingleton. unfeq.
+    un_type_dec.
+  - destruct (t1 == t2).
+    specialize (PGLift (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2))).
+    unfold not. unfold PisEmpty.
+    intros.
+    assert (~ ∀ t : type, PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) t = PEmpty t).
+      unfold not. intros. specialize (H0 (Func type_leaf t1 t2)).
+      unfold PDouble in H0. un_type_dec.
+      intuition. clear H0.
+      specialize (H1 (PDouble t1 x1) (PDouble t2 x2)).
+      specialize (IHt1 x1).
+      specialize (IHt2 x2).
+      assert (PisLift (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2)) (PDouble t1 x1) (PDouble t2 x2)).
+        unfold PisLift. unfold PLift. intros. unfold PDouble.
+        destruct t; try destruct t. un_type_dec.
+        case_eq (t3 == t1); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
+          rewrite e in *.
+          case_eq (t4 == t2); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
+            rewrite e0 in *. un_type_dec.
+            un_type_dec.*)
+Admitted.
+
 Lemma PDouble2gtWorks : forall t x, pt2gt (PDouble t x) (PDouble2gt t x).
 Proof.
   induction t; try destruct t; intros; simpl.
@@ -1295,8 +1337,10 @@ Proof.
         specialize (H (TPrimitive p)).
         unfold PDouble in *.
         unfold PLift in *. repeat un_type_dec.
-
-  intros.
+    * apply PDouble2gtWorksHelp.
+      + apply IHt1.
+      + apply IHt2.
+Qed.
 
 (*Proposition 4 - alpha optimal*)
 Theorem optimalAlpha : forall gt gt' pt, pt2gt pt gt' -> ptSpt pt (gt2pt gt) -> gtSgt gt' gt.
@@ -1430,6 +1474,12 @@ Proof.
         (*contradict using IH*)
         specialize (IHgt1 (PDouble2gt t1 x1) (PDouble t1 x1)).
         specialize (IHgt2 (PDouble2gt t2 x2) (PDouble t2 x2)).
+
+        assert (pt2gt (PDouble t1 x1) (PDouble2gt t1 x1)). apply PDouble2gtWorks.
+        assert (pt2gt (PDouble t2 x2) (PDouble2gt t2 x2)). apply PDouble2gtWorks.
+        apply IHgt1 in H0.
+        apply IHgt2 in H0.
+        intuition.
         
         assert (pt2gt (PDouble t1 x1) gt1).
 Admitted.
