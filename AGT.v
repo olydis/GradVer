@@ -1005,6 +1005,144 @@ Qed.
 
 Definition PDouble (a b : type) : ptype := fun t => if type_dec t a then true else (if type_dec t b then true else false).
 
+
+Fixpoint PDouble2gt (a : type) (b : type) : gtype :=
+match a with
+| Leaf _ (TPrim pa) =>
+  match b with
+  | Leaf _ (TPrim pb) => if pa == pb then GPrimitive pa else GUnknown
+  | Func _ _ _ => GUnknown
+  end
+| Func _ a1 a2 =>
+  match b with
+  | Leaf _ _ => GUnknown
+  | Func _ b1 b2 => GFunc (PDouble2gt a1 b1) (PDouble2gt a2 b2)
+  end
+end.
+
+Lemma PDouble2gtId : forall x, PDouble2gt x x = t2gt x.
+Proof.
+  induction x; intros; try destruct t; simpl.
+  - unfeq. destruct (primitive_type_EqDec p p); try tauto.
+    intuition.
+  - rewrite IHx1, IHx2. tauto.
+Qed.
+
+Lemma PDouble2gtWorksHelp : forall t1 x1 t2 x2, pt2gt (PDouble t1 x1) (PDouble2gt t1 x1) -> pt2gt (PDouble t2 x2) (PDouble2gt t2 x2) -> pt2gt (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2)) (GFunc (PDouble2gt t1 x1) (PDouble2gt t2 x2)).
+Proof.
+  intros.
+  destruct ((Func type_leaf t1 t2) == (Func type_leaf x1 x2)).
+  - inversion e. rewrite H2, H3 in *.
+    specialize (PGSingleton (PDouble (Func type_leaf x1 x2) (Func type_leaf x1 x2)) (TFunc x1 x2)).
+    simpl. repeat rewrite PDouble2gtId. intros.
+    apply H1.
+    unfold PisSingleton.
+    intros.
+    unfold PDouble.
+    unfold PSingleton. unfeq.
+    un_type_dec.
+  - specialize (PGLift (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2))).
+    unfold not. unfold PisEmpty.
+    intros.
+    assert (~ ∀ t : type, PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) t = PEmpty t).
+      unfold not. intros. specialize (H2 (Func type_leaf t1 t2)).
+      unfold PDouble in H2. un_type_dec.
+    intuition. clear H2.
+    specialize (H3 (PDouble t1 x1) (PDouble t2 x2)).
+    unfold PisLift in *. unfold PLift in *.
+    assert (∀ t : type,
+      PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) t =
+      match t with
+      | Leaf _ _ => false
+      | Func _ a' b' => PDouble t1 x1 a' && PDouble t2 x2 b'
+      end).
+        unfold PDouble.
+        intros; destruct t; try destruct t; repeat un_type_dec.
+
+      
+
+      specialize (IHt1 x1).
+      specialize (IHt2 x2).
+        
+        destruct t; try destruct t. 
+        case_eq (t3 == t1); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
+          rewrite e in *.
+          case_eq (t4 == t2); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
+            rewrite e0 in *. un_type_dec.
+            un_type_dec.*)
+Admitted.
+
+Lemma PDouble2gtWorks : forall t x, pt2gt (PDouble t x) (PDouble2gt t x).
+Proof.
+  induction t; try destruct t; intros; simpl.
+  - destruct x; try destruct t.
+    * destruct (p == p0).
+      + rewrite e.
+        specialize (PGSingleton (PDouble (Leaf type_leaf (TPrim p0)) (Leaf type_leaf (TPrim p0))) (TPrimitive p0)).
+        simpl. intros.
+        apply H.
+        unfold PisSingleton.
+        intros.
+        unfold PDouble.
+        unfold PSingleton. unfeq.
+        un_type_dec.
+      + constructor; unfold not; intros.
+          unfold PisEmpty in H.
+          specialize (H (TPrimitive p)).
+          unfold PDouble in H.
+          unfold PEmpty in H. un_type_dec.
+
+          unfold PisSingleton in H.
+          pose proof (H (TPrimitive p)).
+          pose proof (H (TPrimitive p0)).
+          unfold PDouble in *.
+          unfold PSingleton in *. unfeq. repeat un_type_dec.
+          rewrite e in *. inversion e1.
+          intuition.
+
+          unfold PisLift in H.
+          specialize (H (TPrimitive p)).
+          unfold PDouble in *.
+          unfold PLift in *. repeat un_type_dec.
+    * constructor; unfold not; intros.
+      + unfold PisEmpty in H.
+        specialize (H (TPrimitive p)).
+        unfold PDouble in H.
+        unfold PEmpty in H. un_type_dec.
+
+      + unfold PisSingleton in H.
+        pose proof (H (TPrimitive p)).
+        pose proof (H (Func type_leaf x1 x2)).
+        unfold PDouble in *.
+        unfold PSingleton in *. unfeq. repeat un_type_dec.
+
+      + unfold PisLift in H.
+        specialize (H (TPrimitive p)).
+        unfold PDouble in *.
+        unfold PLift in *. repeat un_type_dec.
+  - destruct x; try destruct t.
+    * constructor; unfold not; intros.
+      + unfold PisEmpty in H.
+        specialize (H (TPrimitive p)).
+        unfold PDouble in H.
+        unfold PEmpty in H. repeat un_type_dec.
+
+      + unfold PisSingleton in H.
+        pose proof (H (TPrimitive p)).
+        pose proof (H (Func type_leaf t1 t2)).
+        unfold PDouble in *.
+        unfold PSingleton in *. unfeq. repeat un_type_dec.
+        rewrite e in *. inversion e1.
+
+      + unfold PisLift in H.
+        specialize (H (TPrimitive p)).
+        unfold PDouble in *.
+        unfold PLift in *. repeat un_type_dec.
+    * apply PDouble2gtWorksHelp.
+      + apply IHt1.
+      + apply IHt2.
+Qed.
+
 Theorem helpPDoubleHas : forall b c, ∃ a, pt2gt (PDouble b c) a.
 Proof.
   induction b, c.
@@ -1215,89 +1353,6 @@ Proof.
       
 Admitted.
 
-Fixpoint PDouble2gt (a : type) (b : type) : gtype :=
-match a with
-| Leaf _ (TPrim pa) =>
-  match b with
-  | Leaf _ (TPrim pb) => if pa == pb then GPrimitive pa else GUnknown
-  | Func _ _ _ => GUnknown
-  end
-| Func _ a1 a2 =>
-  match b with
-  | Leaf _ _ => GUnknown
-  | Func _ b1 b2 => GFunc (PDouble2gt a1 b1) (PDouble2gt a2 b2)
-  end
-end.
-
-Lemma PDouble2gtWorks : forall t x, pt2gt (PDouble t x) (PDouble2gt t x).
-Proof.
-  induction t; try destruct t; intros; simpl.
-  - destruct x; try destruct t.
-    * destruct (p == p0).
-      + rewrite e.
-        specialize (PGSingleton (PDouble (Leaf type_leaf (TPrim p0)) (Leaf type_leaf (TPrim p0))) (TPrimitive p0)).
-        simpl. intros.
-        apply H.
-        unfold PisSingleton.
-        intros.
-        unfold PDouble.
-        unfold PSingleton. unfeq.
-        un_type_dec.
-      + constructor; unfold not; intros.
-          unfold PisEmpty in H.
-          specialize (H (TPrimitive p)).
-          unfold PDouble in H.
-          unfold PEmpty in H. un_type_dec.
-
-          unfold PisSingleton in H.
-          pose proof (H (TPrimitive p)).
-          pose proof (H (TPrimitive p0)).
-          unfold PDouble in *.
-          unfold PSingleton in *. unfeq. repeat un_type_dec.
-          rewrite e in *. inversion e1.
-          intuition.
-
-          unfold PisLift in H.
-          specialize (H (TPrimitive p)).
-          unfold PDouble in *.
-          unfold PLift in *. repeat un_type_dec.
-    * constructor; unfold not; intros.
-      + unfold PisEmpty in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in H.
-        unfold PEmpty in H. un_type_dec.
-
-      + unfold PisSingleton in H.
-        pose proof (H (TPrimitive p)).
-        pose proof (H (Func type_leaf x1 x2)).
-        unfold PDouble in *.
-        unfold PSingleton in *. unfeq. repeat un_type_dec.
-
-      + unfold PisLift in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in *.
-        unfold PLift in *. repeat un_type_dec.
-  - destruct x; try destruct t.
-    * constructor; unfold not; intros.
-      + unfold PisEmpty in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in H.
-        unfold PEmpty in H. repeat un_type_dec.
-
-      + unfold PisSingleton in H.
-        pose proof (H (TPrimitive p)).
-        pose proof (H (Func type_leaf t1 t2)).
-        unfold PDouble in *.
-        unfold PSingleton in *. unfeq. repeat un_type_dec.
-        rewrite e in *. inversion e1.
-
-      + unfold PisLift in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in *.
-        unfold PLift in *. repeat un_type_dec.
-
-  intros.
-
 (*Proposition 4 - alpha optimal*)
 Theorem optimalAlpha : forall gt gt' pt, pt2gt pt gt' -> ptSpt pt (gt2pt gt) -> gtSgt gt' gt.
 Proof.
@@ -1430,6 +1485,12 @@ Proof.
         (*contradict using IH*)
         specialize (IHgt1 (PDouble2gt t1 x1) (PDouble t1 x1)).
         specialize (IHgt2 (PDouble2gt t2 x2) (PDouble t2 x2)).
+
+        assert (pt2gt (PDouble t1 x1) (PDouble2gt t1 x1)). apply PDouble2gtWorks.
+        assert (pt2gt (PDouble t2 x2) (PDouble2gt t2 x2)). apply PDouble2gtWorks.
+        apply IHgt1 in H0.
+        apply IHgt2 in H8.
+        intuition.
         
         assert (pt2gt (PDouble t1 x1) gt1).
 Admitted.
