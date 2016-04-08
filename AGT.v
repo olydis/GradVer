@@ -81,6 +81,10 @@ Definition PisEmpty (pt : ptype) := forall t, pt t = PEmpty t.
 Definition PisTotal (pt : ptype) := forall t, pt t = PTotal t.
 Definition PisSingleton (pt : ptype) (t' : type) := forall t, pt t = PSingleton t' t.
 Definition PisLift (pt : ptype) (a b : ptype) := forall t, pt t = PLift a b t.
+Definition PisFuncs (pt : ptype) (a b : ptype) := 
+(forall p, pt (TLeaf p) = false) /\ 
+(forall a', a a' = true <-> exists b', pt (TFunc a' b') = true) /\ 
+(forall b', b b' = true <-> exists a', pt (TFunc a' b') = true).
 
 Lemma ptSingleton : forall x t, PSingleton t x = true <-> t = x.
 Proof.
@@ -137,11 +141,15 @@ forall b', b b' = true <-> exists a', a a' = true /\ f a' = Some b'.
 (*Definition 5 - alpha*)
 Definition pt2gtSingleton (t : ptype) (t' : type) (p : PisSingleton t t') : gtype := t2gt t'.
 Inductive pt2gt : ptype -> gtype -> Prop :=
-| PGSingleton : forall t t', PisSingleton t t' -> pt2gt t (t2gt t')
-| PGLift : forall t, ~ PisEmpty t -> forall a b, PisLift t a b -> forall a', pt2gt a a' -> forall b', pt2gt b b' -> pt2gt t (GFunc a' b')
-| PGTotal : forall t, ~ PisEmpty t -> 
+| PGSingleton : 
+forall t t', PisSingleton t t' -> pt2gt t (t2gt t')
+| PGLift : 
+forall t, ~ PisEmpty t -> 
+forall a b, PisFuncs t a b -> forall a', pt2gt a a' -> forall b', pt2gt b b' -> pt2gt t (GFunc a' b')
+| PGTotal : 
+forall t, ~ PisEmpty t -> 
 (forall t', ~ PisSingleton t t') -> 
-(forall a b, ~ PisLift t a b) -> 
+(forall a b, ~ PisFuncs t a b) -> 
 pt2gt t GUnknown
 .
 
@@ -919,17 +927,22 @@ Proof.
       simpl gt2pt.
       unfold ptSpt.
       intros.
-      unfold PisLift in H3.
-      specialize (H3 x).
-      rewrite H in H3. clear H.
+      unfold PisFuncs in H3.
+      inversion H3. inversion H1. clear H3 H1.
+      destruct x. specialize (H0 t). unfold TLeaf in H0. rewrite H0 in H. intuition.
+      
       unfold PLift.
-      destruct x; try (unf2; intuition).
+      try (unf2; intuition). fConv.
       specialize (H5 x1).
       specialize (H6 x2).
-      symmetry in H3.
-      apply andb_prop in H3.
-      inversion H3.
-      intuition.
+      specialize (H4 x1).
+      specialize (H7 x2).
+      apply andb_true_intro.
+      rewrite H5.
+      rewrite H6.
+      + tauto.
+      + apply H7. exists x1. assumption.
+      + apply H4. exists x2. assumption.
 Qed.
 
 Lemma ptSingletonOrEmpty : forall pt t, ptSpt pt (PSingleton t) <-> pt = PSingleton t \/ pt = PEmpty.
@@ -1028,6 +1041,37 @@ Proof.
   - rewrite IHx1, IHx2. tauto.
 Qed.
 
+Ltac unfP' := 
+  try unfold PisLift;
+  try unfold PisSingleton;
+  try unfold PisEmpty;
+  try unfold PisTotal;
+  try unfold PLift;
+  try unfold PSingleton;
+  try unfold PEmpty;
+  try unfold PTotal;
+  try unfold PDouble.
+
+Ltac unfP := 
+  try unfold PisLift in *;
+  try unfold PisSingleton in *;
+  try unfold PisEmpty in *;
+  try unfold PisTotal in *;
+  try unfold PLift in *;
+  try unfold PSingleton in *;
+  try unfold PEmpty in *;
+  try unfold PTotal in *;
+  try unfold PDouble in *.
+
+Lemma PisEmptyPDouble : forall a b, ~ PisEmpty (PDouble a b).
+Proof.
+  unfold not. unfold PisEmpty.
+  intros.
+  specialize (H a).
+  unfP.
+  un_type_dec.
+Qed.
+
 Lemma PDouble2gtWorksHelp : forall t1 x1 t2 x2, pt2gt (PDouble t1 x1) (PDouble2gt t1 x1) -> pt2gt (PDouble t2 x2) (PDouble2gt t2 x2) -> pt2gt (PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2)) (GFunc (PDouble2gt t1 x1) (PDouble2gt t2 x2)).
 Proof.
   intros.
@@ -1049,28 +1093,27 @@ Proof.
       unfold PDouble in H2. un_type_dec.
     intuition. clear H2.
     specialize (H3 (PDouble t1 x1) (PDouble t2 x2)).
-    unfold PisLift in *. unfold PLift in *.
-    assert (∀ t : type,
-      PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) t =
-      match t with
-      | Leaf _ _ => false
-      | Func _ a' b' => PDouble t1 x1 a' && PDouble t2 x2 b'
-      end).
-        unfold PDouble.
-        intros; destruct t; try destruct t; repeat un_type_dec.
-
-      
-
-      specialize (IHt1 x1).
-      specialize (IHt2 x2).
-        
-        destruct t; try destruct t. 
-        case_eq (t3 == t1); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
-          rewrite e in *.
-          case_eq (t4 == t2); intros; unfeq; unfold type_EqDec in H; rewrite H in *; clear H.
-            rewrite e0 in *. un_type_dec.
-            un_type_dec.*)
-Admitted.
+    unfold PisFuncs in *.
+    assert ((∀ p : type_leaf, PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) (TLeaf p) = false)
+     ∧ (∀ a' : type,
+        PDouble t1 x1 a' = true
+        ↔ (∃ b' : unk_leaf_type type_leaf, PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) (TFunc a' b') = true))
+       ∧ (∀ b' : type,
+          PDouble t2 x2 b' = true
+          ↔ (∃ a' : unk_leaf_type type_leaf, PDouble (Func type_leaf t1 t2) (Func type_leaf x1 x2) (TFunc a' b') = true))).
+    * repeat split; intros.
+      + unfP. un_type_dec.
+          exists t2. rewrite e. repeat un_type_dec.
+          exists x2. un_type_dec. rewrite e. repeat un_type_dec.
+      + inversion H1. unfP. repeat un_type_dec;
+        inversion e; intuition.
+      + unfP. un_type_dec.
+          exists t1. rewrite e. repeat un_type_dec.
+          exists x1. un_type_dec. rewrite e. repeat un_type_dec.
+      + inversion H1. unfP. repeat un_type_dec;
+        inversion e; intuition.
+    * intuition.
+Qed.
 
 Lemma PDouble2gtWorks : forall t x, pt2gt (PDouble t x) (PDouble2gt t x).
 Proof.
@@ -1100,10 +1143,9 @@ Proof.
           rewrite e in *. inversion e1.
           intuition.
 
-          unfold PisLift in H.
-          specialize (H (TPrimitive p)).
-          unfold PDouble in *.
-          unfold PLift in *. repeat un_type_dec.
+          unfold PisFuncs in H. intuition.
+          specialize (H0 (TPrim p)).
+          unfold PDouble in *. repeat un_type_dec.
     * constructor; unfold not; intros.
       + unfold PisEmpty in H.
         specialize (H (TPrimitive p)).
@@ -1116,10 +1158,9 @@ Proof.
         unfold PDouble in *.
         unfold PSingleton in *. unfeq. repeat un_type_dec.
 
-      + unfold PisLift in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in *.
-        unfold PLift in *. repeat un_type_dec.
+      + unfold PisFuncs in H. intuition.
+        specialize (H0 (TPrim p)).
+        unfold PDouble in *. repeat un_type_dec.
   - destruct x; try destruct t.
     * constructor; unfold not; intros.
       + unfold PisEmpty in H.
@@ -1134,10 +1175,9 @@ Proof.
         unfold PSingleton in *. unfeq. repeat un_type_dec.
         rewrite e in *. inversion e1.
 
-      + unfold PisLift in H.
-        specialize (H (TPrimitive p)).
-        unfold PDouble in *.
-        unfold PLift in *. repeat un_type_dec.
+      + unfold PisFuncs in H. intuition.
+        specialize (H0 (TPrim p)).
+        unfold PDouble in *. repeat un_type_dec.
     * apply PDouble2gtWorksHelp.
       + apply IHt1.
       + apply IHt2.
@@ -1145,213 +1185,25 @@ Qed.
 
 Theorem helpPDoubleHas : forall b c, ∃ a, pt2gt (PDouble b c) a.
 Proof.
-  induction b, c.
-  - destruct (t == t0).
-    * rewrite e.
-      exists (t2gt (TLeaf t0)).
-      constructor.
-      unfold PisSingleton.
-      unfold PDouble.
-      intros.
-      unf2.
-      repeat un_type_dec.
-    * exists GUnknown.
-      constructor.
-        unfold not.
-        unfold PisEmpty.
-        intros.
-        specialize (H (TLeaf t)).
-        unfold PDouble in H.
-        unf2.
-        repeat un_type_dec.
-
-        unfold not.
-        unfold PisSingleton.
-        intros.
-        pose proof (H (TLeaf t)).
-        pose proof (H (TLeaf t0)).
-        unfold PDouble in *.
-        unf2.
-        repeat un_type_dec.
-
-        unfold not.
-        unfold PisLift.
-        intros.
-        specialize (H (TLeaf t)).
-        unfold PDouble in H.
-        unf2.
-        repeat un_type_dec.
-  - exists GUnknown.
-    constructor.
-    * unfold not.
-      unfold PisEmpty.
-      intros.
-      specialize (H (TLeaf t)).
-      unfold PDouble in H.
-      unf2.
-      repeat un_type_dec.
-
-    * unfold not.
-      unfold PisSingleton.
-      intros.
-      pose proof (H (TLeaf t)).
-      pose proof (H (Func type_leaf c1 c2)).
-      unfold PDouble in *.
-      unf2.
-      repeat un_type_dec.
-
-    * unfold not.
-      unfold PisLift.
-      intros.
-      specialize (H (TLeaf t)).
-      unfold PDouble in H.
-      unf2.
-      repeat un_type_dec.
-  - exists GUnknown.
-    constructor.
-    * unfold not.
-      unfold PisEmpty.
-      intros.
-      specialize (H (TLeaf t)).
-      unfold PDouble in H.
-      unf2.
-      repeat un_type_dec.
-
-    * unfold not.
-      unfold PisSingleton.
-      intros.
-      pose proof (H (TLeaf t)).
-      pose proof (H (Func type_leaf b1 b2)).
-      unfold PDouble in *.
-      unf2.
-      repeat un_type_dec.
-
-    * unfold not.
-      unfold PisLift.
-      intros.
-      specialize (H (TLeaf t)).
-      unfold PDouble in H.
-      unf2.
-      repeat un_type_dec.
-  - specialize (IHb1 c1). specialize (IHb2 c2).
-    destruct ((Func type_leaf b1 b2) == (Func type_leaf c1 c2)).
-    * rewrite e.
-      exists (GFunc (t2gt b1) (t2gt b2)).
-      specialize (PGSingleton (PDouble (Func type_leaf c1 c2) (Func type_leaf c1 c2)) (Func type_leaf b1 b2)).
-      intros.
-      assert (PisSingleton (PDouble (Func type_leaf c1 c2) (Func type_leaf c1 c2)) (Func type_leaf b1 b2)).
-      unfold PDouble.
-      unfold PisSingleton.
-      intros.
-      unf2.
-      repeat un_type_dec.
-      intuition.
-    * rewrite equivEq2 in c.
-      destruct (b1 == c1).
-        rewrite e in *. clear e b1.
-        destruct (b2 == c2). rewrite e in *. intuition.
-        rewrite equivEq2 in c0.
-        
-        elim IHb1. intros. clear IHb1.
-        elim IHb2. intros. clear IHb2.
-        exists (GFunc x x0). 
-
-        specialize (PGLift (PDouble (Func type_leaf c1 b2) (Func type_leaf c1 c2))).
-        intros.
-        assert (¬ PisEmpty (PDouble (Func type_leaf c1 b2) (Func type_leaf c1 c2))).
-        unfold not.
-        unfold PisEmpty.
-        intros.
-        specialize (H2 (Func type_leaf c1 b2)).
-        unfold PDouble in H2.
-        unf2.
-        repeat un_type_dec.
-        intuition.
-        specialize (H3 (PSingleton c1) (PDouble b2 c2)).
-        assert (PisLift (PDouble (Func type_leaf c1 b2) (Func type_leaf c1 c2)) (PSingleton c1) (PDouble b2 c2)).
-        unfold PisLift.
-        intros.
-        unfold PDouble.
-        unfold PLift.
-        destruct t; auto.
-        un_type_dec.
-          inversion e.
-          un_type_dec.
-          assert (PSingleton c1 c1 = true). apply ptSingleton. auto. rewrite H1. auto.
-        un_type_dec. inversion e. rewrite H4, H5 in *.
-          un_type_dec.
-          un_type_dec.
-          assert (PSingleton c1 c1 = true). apply ptSingleton. auto. rewrite H1. auto.
-        destruct (c1 == t1).
-          destruct (c2 == t2).
-          rewrite e, e0 in *. assert (Func type_leaf t1 t2 = Func type_leaf t1 t2). tauto. intuition.
-          destruct (b2 == t2).
-            repeat un_type_dec.
-            repeat un_type_dec. symmetry. apply andb_false_r. 
-          assert (PSingleton c1 t1 = false).
-            unf. un_type_dec. rewrite H1. symmetry. apply andb_false_l.
-        
-        intuition.
-        specialize (H4 (t2gt c1)).
-        assert (pt2gt (PSingleton c1) (t2gt c1)).
-        constructor. unfold PisSingleton. tauto.
-        intuition.
-        specialize (H5 GUnknown).
-        assert (pt2gt (PDouble b2 c2) GUnknown).
-        constructor. 
-          unfold PisEmpty. unfold not. intros. specialize (H4 b2). unfold PDouble in H4. unf2. un_type_dec.
-          intros. unfold not. unfold PisSingleton. intros.
-            pose proof (H4 b2).
-            pose proof (H4 c2). unfold PDouble in *. unf2. repeat un_type_dec.
-Admitted.
-
+  intros. exists (PDouble2gt b c). apply PDouble2gtWorks.
+Qed.
 
 Theorem gt2ptPDouble : forall a b, a <> b -> pt2gt (PDouble a b) GUnknown \/ (exists a' b', pt2gt (PDouble a b) (GFunc a' b')).
 Proof.
   intros.
-  destruct a.
-  - constructor.
-    constructor; unfold not; intros.
-    * unfold PisEmpty in H0.
-      specialize (H0 b).
-      unf2.
-      unfold PDouble in *.
-      repeat un_type_dec.
-    * unfold PisSingleton in H0.
-      pose proof (H0 (TLeaf t)).
-      pose proof (H0 b).
-      unfold PDouble in *.
-      unf2.
-      repeat un_type_dec.
-    * unfold PisLift in H0.
-      pose proof (H0 (TLeaf t)).
-      unfold PDouble in *.
-      repeat un_type_dec.
-  - destruct b.
-    constructor.
-    constructor; unfold not; intros.
-    * unfold PisEmpty in H0.
-      pose proof (H0 (TLeaf t)).
-      unf2.
-      unfold PDouble in *.
-      repeat un_type_dec.
-    * unfold PisSingleton in H0.
-      pose proof (H0 (TLeaf t)).
-      pose proof (H0 (Func type_leaf a1 a2)).
-      unfold PDouble in *.
-      unf2.
-      repeat un_type_dec.
-    * unfold PisLift in H0.
-      pose proof (H0 (TLeaf t)).
-      unfold PDouble in *.
-      repeat un_type_dec.
-    * assert (∃ a' b' : unk_leaf_type gtype_leaf, pt2gt (PDouble (Func type_leaf a1 a2) (Func type_leaf b1 b2)) (GFunc a' b')).
-      assert (∃ a, pt2gt (PDouble a1 b1) a). apply helpPDoubleHas.
-      assert (∃ b, pt2gt (PDouble a2 b2) b). apply helpPDoubleHas.
-      elim H0. intros. elim H1. intros.
-      exists x. exists x0.
-      
-Admitted.
+  specialize (PDouble2gtWorks a b). intros.
+  destruct (PDouble2gt a b); try destruct g.
+  - inversion H0.
+    destruct t'; try destruct t0; simpl in H1; inversion H1.
+    rewrite H5 in *.
+    unfP.
+    pose proof (H3 a).
+    pose proof (H3 b).
+    unfeq.
+    repeat un_type_dec.
+  - intuition.
+  - apply or_intror. exists g1. exists g2. intuition.
+Qed.
 
 (*Proposition 4 - alpha optimal*)
 Theorem optimalAlpha : forall gt gt' pt, pt2gt pt gt' -> ptSpt pt (gt2pt gt) -> gtSgt gt' gt.
@@ -1378,7 +1230,7 @@ Proof.
         auto.
 
         clear H7 gt' H1.
-        unfold PisLift in H3.
+        unfold PisFuncs in H3. intuition.
         specialize (H3 (TPrimitive p)).
         inversion H3.
         unf2.
