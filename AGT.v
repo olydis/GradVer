@@ -1205,9 +1205,37 @@ Proof.
   - apply or_intror. exists g1. exists g2. intuition.
 Qed.
 
-Theorem notPisFuncsGivesPrimitive : ∀ pt, (∀ a b : ptype, ¬ PisFuncs pt a b) -> exists t, pt (TPrimitive t) = true.
+Theorem notPisFuncsGivesPrimitive : ∀ pt, ¬ PisEmpty pt -> (∀ a b : ptype, ¬ PisFuncs pt a b) -> exists t, pt (TPrimitive t) = true.
 Proof.
-
+  intros.
+  apply not_all_not_ex.
+  unfold not in *.
+  intros.
+  unfold PisFuncs in H0.
+  unfP.
+  (*unfold not.
+  SearchPattern
+  
+  unfP.
+  apply not_all_ex_not in H. inversion H. clear H.
+  apply not_false_is_true in H1.
+  destruct x; try destruct t. exists p. unf. assumption.
+  unfold PisFuncs in H0.
+    assert (exists p1, (∀ a' : type, p1 a' = true ↔ (∃ b' : unk_leaf_type type_leaf, pt (TFunc a' b') = true))).
+    eexists _.
+    split; intros.
+    exists x2.
+  specialize (H0 (PSingleton x1) (PSingleton x2)).
+  apply Classical_Prop.not_and_or in H0.
+  intuition.
+  - apply not_all_ex_not in H. inversion H. destruct x. exists p. apply not_false_is_true in H0. assumption.
+  - assert (∀ a' : type, PSingleton x1 a' = true ↔ (∃ b' : unk_leaf_type type_leaf, pt (TFunc a' b') = true)).
+    * split; intros.
+      + unfP. unfeq. un_type_dec.
+        rewrite e in *. exists x2. assumption.
+      + inversion H. clear H.
+    * 
+    intros.*)
 Admitted.
 
 (*Proposition 4 - alpha optimal*)
@@ -1259,7 +1287,7 @@ Proof.
       intuition.
     * inversion H.
       + destruct t'; try destruct t0; simpl in H2; inversion H2.
-      + apply notPisFuncsGivesPrimitive in H4. inversion H4.
+      + apply notPisFuncsGivesPrimitive in H4; try assumption. inversion H4.
         specialize (H0 (TPrimitive x0)).
         intuition.
     * destruct x; intuition.
