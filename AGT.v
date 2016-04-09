@@ -1229,12 +1229,11 @@ Proof.
         simpl.
         auto.
 
-        clear H7 gt' H1.
+        clear H7 gt' H1 t H6.
         unfold PisFuncs in H3. intuition.
-        specialize (H3 (TPrimitive p)).
-        inversion H3.
-        unf2.
-        un_type_dec.
+        specialize (H (TPrim p)).
+        unfP. unfeq. un_type_dec.
+        compute in c. tauto.
 
         clear H6 gt' H1.
         specialize (H3 (TPrimitive p)).
