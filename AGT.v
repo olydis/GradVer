@@ -1205,6 +1205,11 @@ Proof.
   - apply or_intror. exists g1. exists g2. intuition.
 Qed.
 
+Theorem notPisFuncsGivesPrimitive : ∀ pt, (∀ a b : ptype, ¬ PisFuncs pt a b) -> exists t, pt (TPrimitive t) = true.
+Proof.
+
+Admitted.
+
 (*Proposition 4 - alpha optimal*)
 Theorem optimalAlpha : forall gt gt' pt, pt2gt pt gt' -> ptSpt pt (gt2pt gt) -> gtSgt gt' gt.
 Proof.
@@ -1240,111 +1245,70 @@ Proof.
         contradict H3.
         unfold PisSingleton.
         tauto.
-    * try (rewrite H2 in H0; compute in H0; intuition).
-  - intros.
-    unfold gtSgt.
-    simpl gt2pt in *.
-    Print ptSpt.
-    unfold ptSpt in H0.
-    unfold PLift in H0.
-    destruct gt'; try destruct g.
+    * rewrite H2 in H0. unfP. intuition.
+  - unfold gtSgt, ptSpt in *.
+    induction gt'; try destruct t; intros;
+    simpl gt2pt in *;
+    unfP; unfeq.
     * inversion H.
-      destruct t'; try destruct t0; simpl t2gt in H1; inversion H1.
-      rewrite H5 in *. clear H2 H5 p0 t H1 H.
+      destruct t'; try destruct t0; simpl in H2; inversion H2.
+      clear H2. rewrite H6 in *. clear H6.
+      unfP. specialize (H4 (TPrimitive p)).
+      unfeq. unf2. repeat un_type_dec. fConv.
       specialize (H0 (TPrimitive p)).
-      unfold PisSingleton in H3.
-      specialize (H3 (TPrimitive p)).
-      rewrite H3 in *.
-      rewrite ptSingleton in H0.
       intuition.
-    * inversion H; try (destruct t'; try destruct t0; simpl t2gt in H1; inversion H1).
-      clear H4 t H. fConv.
-
-      specialize (H3 (gt2pt gt1) (gt2pt gt2)).
-      contradict H3.
-      unfold PisLift.
-      unfold PLift.
-      intros.
-      destruct t.
-        pose proof (H0 (TLeaf t)) as Hx.
-        simpl in Hx.
-        fConv.
-        destruct (pt (TLeaf t)); intuition.
-
-        pose proof (H0 (Func type_leaf t1 t2)) as Hx.
-        destruct (pt (Func type_leaf t1 t2) == true); try (rewrite equivEq1 in e; rewrite e in *); intuition.
-        rewrite equivEq2' in c.
-        rewrite c in *.
-        simpl in *.
-        clear Hx.
-
-        symmetry.
-        apply andb_false_iff.
-
-        destruct (gt2pt gt1 t1 == true); destruct (gt2pt gt2 t2 == true); try rewrite equivEq1 in *; try rewrite equivEq2' in *; intuition.
-
-        (*gen new x*)
-        apply not_all_ex_not in H1.
-        elim H1. intros.
-        clear H1.
-        compute in H.
-        assert (pt x = true). destruct (pt x); tauto. clear H.
-
-        (*spec new x*)
-        pose proof (H0 x) as Hx. intuition.
-        destruct x; try inversion H. clear H4.
-        apply andb_prop in H.
-        inversion H. clear H.
-
-
-        (*gen new x*)
-        specialize (H2 (Func type_leaf x1 x2)).
-        apply not_all_ex_not in H2.
-        elim H2. intros.
-        clear H2.
-        assert (x <> (Func type_leaf x1 x2)).
-        unfold not.
-        intros.
-        rewrite H2 in *.
-        assert (PSingleton (Func type_leaf x1 x2) (Func type_leaf x1 x2) = true).
-        apply ptSingleton. tauto.
-        rewrite H1, H5 in H.
-        auto. 
-        assert (PSingleton (Func type_leaf x1 x2) x = false).
-        unfold PSingleton. unfeq. unfold type_EqDec. un_type_dec.
-        rewrite H5 in H. clear H5.
-        assert (pt x = true). destruct (pt x); intuition. clear H.
-
-        (*spec new x*)
-        pose proof (H0 x) as Hx. intuition.
-        destruct x; try inversion H. clear H7.
-        apply andb_prop in H.
-        inversion H. clear H.
-
-        clear H0.
-
-        (*inequality*)
-        assert (t1 <> x1 \/ t2 <> x2).
-        destruct (t1 == x1).
-        rewrite e1 in *.
-        destruct (t2 == x2).
-        rewrite e2 in *.
-        rewrite H1 in c. intuition.
-        rewrite equivEq2 in c0. intuition.
-        rewrite equivEq2 in c0. intuition.
-
-        (*contradict using IH*)
-        specialize (IHgt1 (PDouble2gt t1 x1) (PDouble t1 x1)).
-        specialize (IHgt2 (PDouble2gt t2 x2) (PDouble t2 x2)).
-
-        assert (pt2gt (PDouble t1 x1) (PDouble2gt t1 x1)). apply PDouble2gtWorks.
-        assert (pt2gt (PDouble t2 x2) (PDouble2gt t2 x2)). apply PDouble2gtWorks.
-        apply IHgt1 in H0.
-        apply IHgt2 in H8.
+    * inversion H.
+      + destruct t'; try destruct t0; simpl in H2; inversion H2.
+      + apply notPisFuncsGivesPrimitive in H4. inversion H4.
+        specialize (H0 (TPrimitive x0)).
         intuition.
-        
-        assert (pt2gt (PDouble t1 x1) gt1).
-Admitted.
+    * destruct x; intuition.
+      specialize (IHgt1 gt'1).
+      specialize (IHgt2 gt'2).
+      inversion H; clear H.
+      + clear t H3.
+        destruct t'; try destruct t; simpl in H2; inversion H2.
+        clear H2. unfP. unfeq.
+        pose proof (H4 (Func type_leaf t'1 t'2)).
+        un_type_dec. clear e.
+        specialize (IHgt1 (PSingleton t'1)).
+        specialize (IHgt2 (PSingleton t'2)).
+        symmetry in H3, H5.
+        rewrite H3, H5 in *. clear H3 H5.
+          assert (pt2gt (PSingleton t'1) (t2gt t'1)).
+          constructor. unfP'. tauto.
+          assert (pt2gt (PSingleton t'2) (t2gt t'2)).
+          constructor. unfP'. tauto.
+        intuition.
+        pose proof (H0 (Func type_leaf t'1 t'2)). intuition. apply andb_prop in H8. inversion H8.
+          assert (∀ x : type, PSingleton t'1 x = true → gt2pt gt1 x = true).
+          intros. unfP. unfeq. un_type_dec.
+          assert (∀ x : type, PSingleton t'2 x = true → gt2pt gt2 x = true).
+          intros. unfP. unfeq. un_type_dec.
+        intuition.
+        specialize (H8 x1).
+        specialize (H5 x2).
+        apply andb_prop in H1. inversion H1.
+        intuition.
+      + clear H2 H3 a' b' t H6.
+        specialize (IHgt'1 a).
+        specialize (IHgt'2 b).
+        intuition.
+        apply andb_prop in H1. inversion H1. clear H1.
+        specialize (IHgt1 a).
+        specialize (IHgt2 b).
+        intuition.
+        unfold PisFuncs in H5. intuition.
+          assert (∀ x : type, a x = true → gt2pt gt1 x = true).
+          intros.
+          specialize (H5 x). apply H5 in H11. inversion H11.
+          specialize (H0 (TFunc x x0)). intuition. simpl in H15. apply andb_prop in H15. intuition.
+          assert (∀ x : type, b x = true → gt2pt gt2 x = true).
+          intros.
+          specialize (H12 x). apply H12 in H13. inversion H13.
+          specialize (H0 (TFunc x0 x)). intuition. simpl in H16. apply andb_prop in H16. intuition.
+        intuition.
+Qed.
 
 (*collecting lifting defs*)
 Definition pdom : ptype -> ptype -> Prop := pliftF dom.
