@@ -758,8 +758,7 @@ Proof.
     rewrite ptSingleton in H1;
     inversion H1;
     inversion H3;
-    symmetry in H4, H5;
-    rewrite H4, H5 in H2;
+    subst;
     inversion H2.
   - inversion H; 
     specialize (gtHas t0); 
@@ -1213,6 +1212,18 @@ Proof.
   intros.
   unfold PisFuncs in H0.
   unfP.
+
+  assert (exists a, ∀ a' : type, a a' = true ↔ (∃ b' : unk_leaf_type type_leaf, pt (TFunc a' b') = true)).
+  eexists _.
+  split; intros.
+  eexists _.
+
+
+
+
+  apply all_not_not_ex in H0. inversion H0. clear H0.
+
+
   (*unfold not.
   SearchPattern
   
