@@ -9,6 +9,7 @@ Require Import Coq.Structures.Equalities.
 Require Import Coq.Logic.Eqdep_dec.
 Require Import Coq.Logic.ClassicalFacts.
 Require Import Coq.Logic.FunctionalExtensionality.
+Require Import Coq.Logic.ProofIrrelevance.
 
 Open Scope string_scope.
 
@@ -82,6 +83,15 @@ with abrJ {n : nat} : D (S n) -> D n :=
       end
   end
 .
+
+Theorem abrINone : forall {n}, abrI (@DBottom n) = DBottom.
+Proof.
+  destruct n; simpl; tauto.
+Qed.
+Theorem abrJNone : forall {n}, abrJ (@DBottom (S n)) = DBottom.
+Proof.
+  destruct n; simpl; tauto.
+Qed.
 
 (*
 Fixpoint abrJstar {n m : nat} (d : D n) (p : n >= m) : D m.
@@ -158,29 +168,48 @@ Proof.
   - induction m; intros.
     * contradict p.
       auto with arith.
-    * specialize (le_S_n n m).
-      intuition.
-      simpl.
-      specialize (IHn m H0).
+    * simpl.
       destruct (le_lt_eq_dec (S n) (S m) p).
       + rewrite IHm.
         destruct m; simpl; tauto.
       + inversion e.
         subst.
-        destruct e.
-        
+        assert (e = eq_refl).
+        apply proof_irrelevance.
+        subst.
         unfold eq_rec_r.
-        unfold eq_rec.
-        unfold eq_rect.
-        unfold eq_sym.
         simpl.
-        destruct (eq_sym e).
+        compute.
+        tauto.
+Qed.
+
+Theorem abrJstarNone : forall {n m : nat} p, abrJstar (@DBottom n) p = (@DBottom m).
+Proof.
+  unfold DBottom.
+  induction n.
+  - induction m; intros.
+    * compute.
+      tauto.
+    * unfold ge in p.
+      contradict p.
+      auto with arith.
+  - induction m; intros.
+    * simpl.
+      rewrite (@abrJNone 0).
+      specialize (IHn 0). simpl in IHn.
+      destruct (gt_le_S 0 (S n) (gt_Sn_O n)).
+      + rewrite IHm.
+        destruct m; simpl; tauto.
+      + inversion e.
+        subst.
+        assert (e = eq_refl).
+        apply proof_irrelevance.
+        subst.
+        unfold eq_rec_r.
         simpl.
-        Check eq_rec_r.
-
-
-      destruct n, m; apply IHn.
-      + rewrite IHn.
+        compute.
+        tauto.
+Qed.
 
 
 Definition Dprod := forall n, D n.
@@ -297,7 +326,6 @@ Proof.
       tauto.
 Qed.
 
-Require Import Coq.Logic.ProofIrrelevance.
 
 Definition abrIinf {n : nat} (d : D n) : DD.
 Proof.
