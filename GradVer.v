@@ -13,12 +13,14 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Definition string_decb (a b : string) := if string_dec a b then true else false.
+
 (* Figure 1: Syntax of a Java-like language for core language *)
-Definition C := string.
-Definition x := string.
-Definition f := string.
-Definition m := string.
-Definition o := nat.
+Definition C := string. Definition C_decb (a b : C) : bool := string_decb a b.
+Definition x := string. Definition x_decb (a b : x) : bool := string_decb a b.
+Definition f := string. Definition f_decb (a b : f) : bool := string_decb a b.
+Definition m := string. Definition m_decb (a b : m) : bool := string_decb a b.
+Definition o := nat.    Definition o_decb (a b : o) : bool := a ==b b.
 Inductive T :=
 | TPrimitiveInt : T
 | TClass : C -> T.
@@ -70,14 +72,11 @@ Definition S := list (rho * A * list s).
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
 
-(** helper methods **)
-Definition string_decb (a b : string) := if string_dec a b then true else false.
-
 (* accessors *)
 Definition class (p : program) (C' : C) : option cls :=
 match p with
 | Program clss _ =>
-  find (fun class => match class with Cls C'' _ _ => string_decb C'' C' end) clss
+  find (fun class => match class with Cls C'' _ _ => C_decb C'' C' end) clss
 end.
 Definition fields (p : program) (C' : C) : option (list (C * f)) :=
 match class p C' with
@@ -93,7 +92,7 @@ match class p C' with
 | Some class => 
   match class with
   | Cls C'' _ ms =>
-    match find (fun me => match me with Method _ m'' _ _ _ => string_decb m'' m' end) ms with
+    match find (fun me => match me with Method _ m'' _ _ _ => m_decb m'' m' end) ms with
     | None => None
     | Some me =>
       match me with
@@ -114,7 +113,7 @@ option_map
 (* substitution *)
 Fixpoint eSubst (x' : x) (e' : e) (ee : e) : e :=
 match ee with
-| ex x'' => if string_decb x'' x' then e' else ee
+| ex x'' => if x_decb x'' x' then e' else ee
 | edot e'' f' => edot (eSubst x' e' e'') f'
 | _ => ee
 end.
@@ -131,6 +130,22 @@ end.
 
 Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
   fold_left (fun a b => phiSubst (fst b) (snd b) a) r p.
+
+Fixpoint HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
+  fun o'' =>
+    if o_decb o'' o'
+      then 
+      (
+        match h o'' with
+        | Some (C', ff') => Some (C', fun f'' => if f_decb f'' f' then Some v' else ff' f'')
+        | None => None
+        end
+      )
+      else h o''
+.
+
+Fixpoint rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
+  fun x'' => if x_decb x'' x' then Some v' else r x''.
 
 (* Figure 2: Static typing rules for expressions of the core language *)
 Inductive sfrme : A -> e -> Prop :=
@@ -283,6 +298,37 @@ Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
   | phiConj p1 p2 => footprint h r p1 ++ footprint h r p2
   | _ => []
   end.
+
+Check fields.
+
+(* Figure 9: Dynamic semantics for core language *)
+Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
+| ESFieldAssign : forall h (S' : S) (s' : list s) (a : A) r h' (x' y' : x) (yv' : v) (o' : o) (f' : f),
+    evale h r (ex x') = Some (vo o') ->
+    evale h r (ex y') = Some yv' ->
+    In (nameo o', f') a ->
+    h' = HSubst o' f' yv' h ->
+    dynSem (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
+| ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (C' : C),
+    r' = rhoSubst x' vnull ->
+    dynSem (h, (r, a, sDeclare (TClass C') x' :: s') :: S') (h, (r, a, s') :: S')
+| ESVarAssign : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
+    evale h r e' = Some v' ->
+    r' = rhoSubst x' v' ->
+    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r, a, s') :: S')
+| ESNewObj : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
+    h o' = None ->
+    fiel
+    r' = rhoSubst x' v' ->
+    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r, a, s') :: S')
+
+
+.
+
+
+
+
+
 
 
 
