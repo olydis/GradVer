@@ -209,7 +209,25 @@ Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
 .
 
 (* Figure 6: Evaluation of expressions for core language *)
-Inductive evale : H -> rho -> e -> v -> Prop :=
+Fixpoint evale (h : H) (r : rho) (e' : e) : option v :=
+  match e' with
+  | ex x' => r x'
+  | edot e'' f' =>
+    match evale h r e'' with
+    | Some (vo o') =>
+      match h o' with
+      | Some (_, ho') => ho' f'
+      | _ => None
+      end
+    | _ => None
+    end
+  | ev (vnull) => Some vnull
+  | ev (vn n') => Some (vn n')
+  | ev (vo o') => option_map (fun _ => vo o') (h o')
+  | ethis => None
+  | eresult => None
+  end.
+(*Inductive evale : H -> rho -> e -> v -> Prop :=
 | EEVar : forall h r rx x',
     r x' = Some rx ->
     evale h r (ex x') rx
@@ -225,24 +243,24 @@ Inductive evale : H -> rho -> e -> v -> Prop :=
 | EEObj : forall h r o' o'',
     h o' = Some o'' ->
     evale h r (ev (vo o')) (vo o')
-.
+.*)
 
 (* Figure 7: Evaluation of formulas for core language *)
 Inductive evalphi : H -> rho -> A -> phi -> Prop :=
 | EATrue : forall h r a,
     evalphi h r a phiTrue
 | EAEqual : forall h r a e1 e2 v1 v2,
-    evale h r e1 v1 ->
-    evale h r e2 v2 ->
+    evale h r e1 = Some v1 ->
+    evale h r e2 = Some v2 ->
     v1 = v2 ->
     evalphi h r a (phiEq e1 e2)
 | EANEqual : forall h r a e1 e2 v1 v2,
-    evale h r e1 v1 ->
-    evale h r e2 v2 ->
+    evale h r e1 = Some v1 ->
+    evale h r e2 = Some v2 ->
     v1 <> v2 ->
     evalphi h r a (phiNeq e1 e2)
 | EAAcc : forall h r a x' o' f',
-    evale h r (ex x') (vo o') ->
+    evale h r (ex x') = Some (vo o') ->
     In (nameo o', f') a ->
     evalphi h r a (phiAcc x' f')
 | EAType : forall h r a x' t,
@@ -253,6 +271,19 @@ Inductive evalphi : H -> rho -> A -> phi -> Prop :=
     evalphi h r a2 p2 ->
     evalphi h r a (phiConj p1 p2)
 .
+
+(* Figure 8: Definition of footprint meta-function *)
+Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
+  match p with
+  | phiAcc x' f' => 
+      match evale h r (ex x') (* == r x' *) with
+      | Some (vo o') => [(nameo o', f')]
+      | _ => [] (*???*)
+      end
+  | phiConj p1 p2 => footprint h r p1 ++ footprint h r p2
+  | _ => []
+  end.
+
 
 
 
