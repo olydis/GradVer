@@ -44,6 +44,11 @@ match n with
 | O => option False
 | S m => option (D m -> D m)
 end.
+Definition DBottom {n : nat} : D n :=
+match n with
+| O => None
+| S m => None
+end.
 
 Ltac unD0 := 
   match goal with
@@ -78,8 +83,22 @@ with abrJ {n : nat} : D (S n) -> D n :=
   end
 .
 
-SearchAbout le.
-
+(*
+Fixpoint abrJstar {n m : nat} (d : D n) (p : n >= m) : D m.
+Proof.
+  unfold ge in *.
+  apply le_lt_eq_dec in p.
+  destruct p.
+  - destruct n.
+    * contradict l.
+      auto with arith.
+    * apply abrJ in d.
+      apply (abrJstar n m d).
+      auto with arith.
+  - subst.
+    assumption.
+Defined.
+*)
 Fixpoint abrJstar {n m : nat} (d : D n) (p : n >= m) : D m :=
   match le_lt_eq_dec m n p with
   | left l =>
@@ -95,6 +114,21 @@ Fixpoint abrJstar {n m : nat} (d : D n) (p : n >= m) : D m :=
   end
 .
 
+(*
+Fixpoint abrIstar {n m : nat} (d : D n) (p : n <= m) : D m.
+Proof.
+  apply le_lt_eq_dec in p.
+  destruct p.
+  - destruct m.
+    * contradict l.
+      auto with arith.
+    * apply abrI.
+      apply (abrIstar n m d).
+      auto with arith.
+  - subst.
+    assumption.
+Defined.
+*)
 Fixpoint abrIstar {n m : nat} (d : D n) (p : n <= m) : D m :=
   match le_lt_eq_dec n m p with
   | left l =>
@@ -111,36 +145,43 @@ Fixpoint abrIstar {n m : nat} (d : D n) (p : n <= m) : D m :=
   end
 .
 
-(*
-Fixpoint abrJstar {n m : nat} (d : D n) (p : n >= m) : D m.
+Theorem abrIstarNone : forall {n m : nat} p, abrIstar (@DBottom n) p = (@DBottom m).
 Proof.
-  unfold ge in *.
-  apply le_lt_eq_dec in p.
-  destruct p.
-  - destruct n.
-    * contradict l.
+  unfold DBottom.
+  induction n.
+  - induction m; intros.
+    * compute.
+      tauto.
+    * simpl.
+      rewrite IHm.
+      destruct m; simpl; tauto.
+  - induction m; intros.
+    * contradict p.
       auto with arith.
-    * apply abrJ in d.
-      apply (abrJstar n m d).
-      auto with arith.
-  - subst.
-    assumption.
-Defined.
+    * specialize (le_S_n n m).
+      intuition.
+      simpl.
+      specialize (IHn m H0).
+      destruct (le_lt_eq_dec (S n) (S m) p).
+      + rewrite IHm.
+        destruct m; simpl; tauto.
+      + inversion e.
+        subst.
+        destruct e.
+        
+        unfold eq_rec_r.
+        unfold eq_rec.
+        unfold eq_rect.
+        unfold eq_sym.
+        simpl.
+        destruct (eq_sym e).
+        simpl.
+        Check eq_rec_r.
 
-Fixpoint abrIstar {n m : nat} (d : D n) (p : n <= m) : D m.
-Proof.
-  apply le_lt_eq_dec in p.
-  destruct p.
-  - destruct m.
-    * contradict l.
-      auto with arith.
-    * apply abrI.
-      apply (abrIstar n m d).
-      auto with arith.
-  - subst.
-    assumption.
-Defined.
-*)
+
+      destruct n, m; apply IHn.
+      + rewrite IHn.
+
 
 Definition Dprod := forall n, D n.
 Definition DD := { d : Dprod | forall n, abrJ (d (S n)) = d n }.
@@ -151,6 +192,17 @@ match n with
 | S _ => None
 end.
 
+(*
+Definition DDBottom : DD.
+Proof.
+  unfold DD.
+  econstructor.
+  intros.
+  instantiate (d := DDBottom').
+  unfold DDBottom'.
+  destruct n; simpl; tauto.
+Qed.
+*)
 Definition DDBottom : DD :=
 exist 
   (λ d : Dprod, ∀ n, abrJ (d (S n)) = d n)
@@ -169,13 +221,22 @@ exist
    | S n0 => eq_refl
    end).
 
-Print DDBottom.
-
 Definition DDisBottom (d : DD) : bool :=
 match proj1_sig d 1 with
 | None => true
 | Some _ => false
 end.
+
+Theorem sigEq : forall
+  {A : Set}
+  {p : A -> Prop}
+  (x y : sig p),
+  proj1_sig x = proj1_sig y -> x = y.
+Proof.
+  intros.
+  apply Subset.subset_eq.
+  assumption.
+Qed.
 
 Theorem DDisBottomCorrect : forall d,
   d = DDBottom <-> DDisBottom d = true.
@@ -184,46 +245,107 @@ Proof.
   - subst.
     compute.
     tauto.
-  - unfold DDisBottom in H.
+  - apply sigEq.
+    unfold DDisBottom in H.
     destruct d.
-    unfold DDBottom.
-    unfold DDBottom'.
-    apply f_equal3.
+    simpl in *.
     apply functional_extensionality_dep.
-    unfold DDBottom.
-    
-    destruct (d 1).
-    * inversion H.
-    * 
-
-Definition DDBottom : DD.
-Proof.
-  unfold DD.
-  econstructor.
-  intros.
-  instantiate (d := DDBottom').
-  unfold DDBottom'.
-  destruct n; simpl; tauto.
+    induction x0.
+    * simpl.
+      destruct (x 0); intuition.
+    *specialize (e x0).
+     destruct x0.
+      + destruct (x 1); intuition.
+      + simpl in *.
+        rewrite IHx0 in e.
+        destruct (x (S (S x0))); try tauto.
+        inversion e.
 Qed.
 
-Print DDBottom.
-
-Definition abrIinf {n : nat} (d : D n) : DD.
+(*
+Definition abrIinf' {n : nat} (d : D n) : Dprod.
 Proof.
-  unfold DD.
-  Check sig.
+  unfold Dprod.
   intros.
   destruct (le_ge_dec n n0).
   - apply (@abrIstar n n0); assumption.
   - apply (@abrJstar n n0); assumption.
 Qed.
-
-Definition abrIinf {n : nat} (d : D n) : DD :=
+*)
+Definition abrIinf' {n : nat} (d : D n) : Dprod :=
 fun m =>
 match le_ge_dec n m with
 | left l => abrIstar d l
 | right g => abrJstar d g
 end.
+
+Theorem abrJI : forall {n : nat} (d : D n), abrJ (abrI d) = d.
+Proof.
+  induction n; intros.
+  - unD0.
+    simpl.
+    tauto.
+  - destruct d.
+    * simpl.
+      apply f_equal.
+      apply functional_extensionality.
+      intros.
+      rewrite IHn.
+      rewrite IHn.
+      tauto.
+    * simpl.
+      tauto.
+Qed.
+
+Require Import Coq.Logic.ProofIrrelevance.
+
+Definition abrIinf {n : nat} (d : D n) : DD.
+Proof.
+  unfold DD.
+  econstructor.
+  intros.
+  instantiate (d := abrIinf' d).
+  unfold abrIinf'.
+  destruct (le_ge_dec n n0);
+  destruct (le_ge_dec n (S n0)).
+  - simpl.
+    destruct (le_lt_eq_dec n (S n0) l0).
+    * rewrite abrJI.
+      apply f_equal2; try tauto.
+      apply proof_irrelevance.
+    * subst.
+      contradict l.
+      auto with arith.
+  - contradict l.
+    auto with arith.
+  - simpl.
+    destruct (le_lt_eq_dec n (S n0) l).
+    * rewrite abrJI.
+      simpl.
+      destruct n.
+      + unD0.
+        simpl.
+      .
+      apply f_equal2; try tauto.
+      apply proof_irrelevance.
+    * subst.
+      contradict l.
+      auto with arith.
+
+
+      inversion l.
+      + .
+      Check Streicher_K.
+      destruct (gt_S_le n n0 l1).
+      Check le_n.
+      specialize prop_extensionality.
+      eapply prop_extensionality.
+      apply proof_irrelevance. le_n.
+      auto with arith.
+  - Check ?d.
+    apply (@abrIstar n n0); assumption.
+  - apply (@abrJstar n n0); assumption.
+Qed.
 
 (*
 Definition abrIinf {n : nat} (d : D n) : DD.
