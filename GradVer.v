@@ -59,8 +59,8 @@ Inductive cls :=
 Inductive program :=
 | Program : (list cls) -> (list s) -> program.
 
-Definition H := o -> C * (list (f * v)).
-Definition rho := list (x * v).
+Definition H := o -> option (C * (f -> option v)).
+Definition rho := x -> option v. (* list (x * v). *)
 Inductive name :=
 | namex : x -> name
 | nameo : o -> name.
@@ -134,9 +134,13 @@ Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
 
 (* Figure 2: Static typing rules for expressions of the core language *)
 Inductive sfrme : A -> e -> Prop :=
-| WFVar : forall a (x' : x), sfrme a (ex x')
-| WFValue : forall a (v' : v), sfrme a (ev v')
-| WFField : forall a (x' : x) (f' : f), sfrme a (edot (ex x') f')
+| WFVar : forall a (x' : x),
+    sfrme a (ex x')
+| WFValue : forall a (v' : v),
+    sfrme a (ev v')
+| WFField : forall a (x' : x) (f' : f),
+    In (namex x', f') a ->
+    sfrme a (edot (ex x') f')
 .
 
 
@@ -203,6 +207,54 @@ Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
     sfrmphi [] pr ->
     hoare p1 [sRelease p2] pr
 .
+
+(* Figure 6: Evaluation of expressions for core language *)
+Inductive evale : H -> rho -> e -> v -> Prop :=
+| EEVar : forall h r rx x',
+    r x' = Some rx ->
+    evale h r (ex x') rx
+| EEAcc : forall h ho lookupResult r x' (o' : o) (f' : f),
+    evale h r (ex x') (vo o') ->
+    h o' = Some ho ->
+    snd ho f' = Some lookupResult ->
+    evale h r (edot (ex x') f') lookupResult
+| EENull : forall h r,
+    evale h r (ev vnull) vnull
+| EENum : forall h r n',
+    evale h r (ev (vn n')) (vn n')
+| EEObj : forall h r o' o'',
+    h o' = Some o'' ->
+    evale h r (ev (vo o')) (vo o')
+.
+
+(* Figure 7: Evaluation of formulas for core language *)
+Inductive evalphi : H -> rho -> A -> phi -> Prop :=
+| EATrue : forall h r a,
+    evalphi h r a phiTrue
+| EAEqual : forall h r a e1 e2 v1 v2,
+    evale h r e1 v1 ->
+    evale h r e2 v2 ->
+    v1 = v2 ->
+    evalphi h r a (phiEq e1 e2)
+| EANEqual : forall h r a e1 e2 v1 v2,
+    evale h r e1 v1 ->
+    evale h r e2 v2 ->
+    v1 <> v2 ->
+    evalphi h r a (phiNeq e1 e2)
+| EAAcc : forall h r a x' o' f',
+    evale h r (ex x') (vo o') ->
+    In (nameo o', f') a ->
+    evalphi h r a (phiAcc x' f')
+| EAType : forall h r a x' t,
+    evalphi h r a (phiAssert x' t)
+| EASepOp : forall h r a a1 a2 p1 p2,
+    a = a1 ++ a2 /\ NoDup a ->
+    evalphi h r a1 p1 ->
+    evalphi h r a2 p2 ->
+    evalphi h r a (phiConj p1 p2)
+.
+
+
 
 
 
