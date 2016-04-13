@@ -8,6 +8,7 @@ Require Import Coq.Logic.Decidable.
 Require Import Coq.Structures.Equalities.
 Require Import Coq.Logic.Eqdep_dec.
 Require Import Coq.Logic.ClassicalFacts.
+Require Import Coq.Logic.FunctionalExtensionality.
 
 Open Scope string_scope.
 
@@ -43,7 +44,6 @@ match n with
 | O => option False
 | S m => option (D m -> D m)
 end.
-Definition DD := forall n, D n.
 
 Ltac unD0 := 
   match goal with
@@ -142,6 +142,90 @@ Proof.
 Defined.
 *)
 
+Definition Dprod := forall n, D n.
+Definition DD := { d : Dprod | forall n, abrJ (d (S n)) = d n }.
+
+Definition DDBottom' : Dprod := fun n =>
+match n with
+| O => None
+| S _ => None
+end.
+
+Definition DDBottom : DD :=
+exist 
+  (λ d : Dprod, ∀ n, abrJ (d (S n)) = d n)
+  DDBottom'
+  (λ n,
+   match
+     n
+     return
+       (abrJ None =
+        match n return (D n) with
+        | 0 => None
+        | S n => None
+        end)
+   with
+   | 0 => eq_refl
+   | S n0 => eq_refl
+   end).
+
+Print DDBottom.
+
+Definition DDisBottom (d : DD) : bool :=
+match proj1_sig d 1 with
+| None => true
+| Some _ => false
+end.
+
+Theorem DDisBottomCorrect : forall d,
+  d = DDBottom <-> DDisBottom d = true.
+Proof.
+  split; intros.
+  - subst.
+    compute.
+    tauto.
+  - unfold DDisBottom in H.
+    destruct d.
+    unfold DDBottom.
+    unfold DDBottom'.
+    apply f_equal3.
+    apply functional_extensionality_dep.
+    unfold DDBottom.
+    
+    destruct (d 1).
+    * inversion H.
+    * 
+
+Definition DDBottom : DD.
+Proof.
+  unfold DD.
+  econstructor.
+  intros.
+  instantiate (d := DDBottom').
+  unfold DDBottom'.
+  destruct n; simpl; tauto.
+Qed.
+
+Print DDBottom.
+
+Definition abrIinf {n : nat} (d : D n) : DD.
+Proof.
+  unfold DD.
+  Check sig.
+  intros.
+  destruct (le_ge_dec n n0).
+  - apply (@abrIstar n n0); assumption.
+  - apply (@abrJstar n n0); assumption.
+Qed.
+
+Definition abrIinf {n : nat} (d : D n) : DD :=
+fun m =>
+match le_ge_dec n m with
+| left l => abrIstar d l
+| right g => abrJstar d g
+end.
+
+(*
 Definition abrIinf {n : nat} (d : D n) : DD.
 Proof.
   unfold DD.
@@ -150,25 +234,29 @@ Proof.
   - apply (@abrIstar n n0); assumption.
   - apply (@abrJstar n n0); assumption.
 Qed.
-
-Print abrIinf.
-
-Definition DBottom : DD := fun n =>
-match n with
-| O => None
-| S _ => None
-end.
+*)
 
 
+Definition abrII (d : DD) : option (DD -> DD).
+Proof.
+  unfold DD in *.
+  intros.
+  specialize (d n).
+  assumption.
+Defined.
+(* destruct n.
+  - auto.
+  - constructor.
+    
+  apply Just.*)
 
 
-Check D.
-Check DD.
-
-
-
-
-
+Definition abrJJ (d : DD) : DD.
+Proof.
+  unfold DD in *.
+  intros.
+  
+  
 
 
 
