@@ -10,6 +10,8 @@ Require Import Coq.Logic.Eqdep_dec.
 Require Import Coq.Logic.ClassicalFacts.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.ProofIrrelevance.
+Require Import Coq.Lists.List.
+Import ListNotations.
 
 (* Figure 1: Syntax of a Java-like language for core language *)
 Definition C := string.
@@ -76,5 +78,21 @@ Inductive sfrme : A -> e -> Prop :=
 | WFField : forall a (x' : x) (f' : f), sfrme a (edot (ex x') f')
 .
 
+
+(* Figure 4: Deﬁnition of a static version of footprint *)
+Fixpoint staticFootprint (p : phi) : A :=
+  match p with
+  | phiAcc x' f' => [(namex x', f')]
+  | phiConj p1 p2 => staticFootprint p1 ++ staticFootprint p2
+  | _ => []
+  end.
+
 (* Figure 3: Static rules for syntactically self-framed formulas *)
-Inductive sfrmphi : 
+Inductive sfrmphi : A -> phi -> Prop :=
+| WFTrue : forall a, sfrmphi a phiTrue
+| WFEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi a (phiEq e1 e2)
+| WFNEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi a (phiNeq e1 e2)
+| WFAcc : forall a x f, sfrmphi a (phiAcc x f)
+| WFSepOp : forall a phi1 phi2, sfrmphi a phi1 -> sfrmphi (a ++ staticFootprint phi1) phi2 -> sfrmphi a (phiConj phi1 phi2)
+| WFType : forall a x T, sfrmphi a (phiAssert x T)
+.
