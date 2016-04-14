@@ -13,14 +13,38 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Definition string_decb (a b : string) := if string_dec a b then true else false.
+Definition string_decb (a b : string) := 
+  if string_dec a b then true else false.
+Definition except {A : Type} (A_decb : A -> A -> bool) (a b : list A) : list A :=
+  filter (fun x => negb (existsb (A_decb x) b)) a.
 
 (* Figure 1: Syntax of a Java-like language for core language *)
 Definition C := string. Definition C_decb (a b : C) : bool := string_decb a b.
-Definition x := string. Definition x_decb (a b : x) : bool := string_decb a b.
 Definition f := string. Definition f_decb (a b : f) : bool := string_decb a b.
 Definition m := string. Definition m_decb (a b : m) : bool := string_decb a b.
 Definition o := nat.    Definition o_decb (a b : o) : bool := a ==b b.
+Inductive x :=
+| xUserDef : string -> x
+| xthis : x
+| xresult : x.
+Definition x_decb (a b : x) : bool :=
+  match a with 
+  | xUserDef x' => 
+    match b with
+    | xUserDef x'' => string_decb x' x''
+    | _ => false
+    end
+  | xthis => 
+    match b with
+    | xthis => true
+    | _ => false
+    end
+  | xresult => 
+    match b with
+    | xresult => true
+    | _ => false
+    end
+  end.
 Inductive T :=
 | TPrimitiveInt : T
 | TClass : C -> T.
@@ -31,8 +55,6 @@ Inductive v :=
 Inductive e :=
 | ev : v -> e
 | ex : x -> e
-| ethis : e
-| eresult : e
 | edot : e -> f -> e.
 Inductive phi :=
 | phiTrue : phi
@@ -47,6 +69,7 @@ Inductive s :=
 | sAssign : x -> e -> s
 | sAlloc : x -> C -> s
 | sCall : x -> x -> m -> list x -> s
+| sCallPOST : x -> o -> m -> list v -> s
 | sReturn : x -> s
 | sAssert : phi -> s
 | sRelease : phi -> s.
@@ -66,7 +89,22 @@ Definition rho := x -> option v. (* list (x * v). *)
 Inductive name :=
 | namex : x -> name
 | nameo : o -> name.
+Definition name_decb (a b : name) : bool := 
+  match a with 
+  | namex x' => 
+    match b with
+    | namex x'' => x_decb x' x''
+    | _ => false
+    end
+  | nameo o' => 
+    match b with
+    | nameo o'' => o_decb o' o''
+    | _ => false
+    end
+  end.
 Definition A := list (name * f).
+Definition A'_decb (a b : name * f) : bool := name_decb (fst a) (fst b) && f_decb (snd a) (snd b).
+Definition Aexcept := except A'_decb.
 Definition S := list (rho * A * list s).
 
 Notation "'φ'" := phi.
@@ -74,41 +112,47 @@ Notation "'ρ'" := rho.
 
 (* accessors *)
 Definition class (p : program) (C' : C) : option cls :=
-match p with
-| Program clss _ =>
-  find (fun class => match class with Cls C'' _ _ => C_decb C'' C' end) clss
-end.
+  match p with
+  | Program clss _ =>
+    find (fun class => match class with Cls C'' _ _ => C_decb C'' C' end) clss
+  end.
 Definition fields (p : program) (C' : C) : option (list (C * f)) :=
-match class p C' with
-| None => None
-| Some class => 
-  match class with
-  | Cls C'' fs _ => Some (map (fun f => (C'', match f with Field _ f' => f' end)) fs)
-  end
-end.
-Definition mcontract (p : program) (C' : C) (m' : m) : option contract :=
-match class p C' with
-| None => None
-| Some class => 
-  match class with
-  | Cls C'' _ ms =>
-    match find (fun me => match me with Method _ m'' _ _ _ => m_decb m'' m' end) ms with
-    | None => None
-    | Some me =>
-      match me with
-      | Method _ _ _ contr _ => Some contr
-      end
+  match class p C' with
+  | None => None
+  | Some class => 
+    match class with
+    | Cls C'' fs _ => Some (map (fun f => (C'', match f with Field _ f' => f' end)) fs)
     end
-  end
-end.
+  end.
+Definition mmethod (p : program) (C' : C) (m' : m) : option method :=
+  match class p C' with
+  | None => None
+  | Some class => 
+    match class with
+    | Cls C'' _ ms =>
+      find (fun me => match me with Method _ m'' _ _ _ => m_decb m'' m' end) ms
+    end
+  end.
+Definition mcontract (p : program) (C' : C) (m' : m) : option contract :=
+  option_map
+    (fun me => match me with Method _ _ _ contr _ => contr end)
+    (mmethod p C' m').
 Definition mpre (p : program) (C' : C) (m' : m) : option phi :=
-option_map 
-  (fun contr => match contr with Contract res _ => res end)
-  (mcontract p C' m').
+  option_map
+    (fun contr => match contr with Contract res _ => res end)
+    (mcontract p C' m').
 Definition mpost (p : program) (C' : C) (m' : m) : option phi :=
-option_map 
-  (fun contr => match contr with Contract _ res => res end)
-  (mcontract p C' m').
+  option_map
+    (fun contr => match contr with Contract _ res => res end)
+    (mcontract p C' m').
+Definition mbody (p : program) (C' : C) (m' : m) : option (list s) :=
+  option_map
+    (fun me => match me with Method _ _ _ _ instrs => instrs end)
+    (mmethod p C' m').
+Definition mparams (p : program) (C' : C) (m' : m) : option (list x) :=
+  option_map
+    (fun me => match me with Method _ _ params _ _ => snd (split params) end)
+    (mmethod p C' m').
 
 (* substitution *)
 Fixpoint eSubst (x' : x) (e' : e) (ee : e) : e :=
@@ -143,6 +187,9 @@ Fixpoint HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
       )
       else h o''
 .
+
+Fixpoint HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
+  fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
 Fixpoint rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
   fun x'' => if x_decb x'' x' then Some v' else r x''.
@@ -208,11 +255,11 @@ Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
     sfrme (staticFootprint p') e' ->
     hoare p [sAssign x' e'] p
 | HReturn : forall p (x' : x),
-    hoare p [sReturn x'] (phiConj p (phiEq eresult (ex x')))
+    hoare p [sReturn x'] (phiConj p (phiEq (ex xresult) (ex x')))
 | HApp : forall p pp pr pq (x' y' : x) (C' : C) (m' : m) (zX' : list (x * e)),
     phiImplies p (phiConj (phiConj (phiAssert y' (TClass C')) pp) pr) ->
-    Some pp = option_map (phiSubsts ((y', ethis) :: zX')) (mpre prog C' m') ->
-    Some pq = option_map (phiSubsts (((y', ethis) :: zX') ++ [(x', eresult)])) (mpost prog C' m') ->
+    Some pp = option_map (phiSubsts ((y', ex xthis) :: zX')) (mpre prog C' m') ->
+    Some pq = option_map (phiSubsts (((y', ex xthis) :: zX') ++ [(x', ex xresult)])) (mpost prog C' m') ->
     hoare p [sCall x' y' m' (map fst zX')] (phiConj (phiConj pq (phiAssert y' (TClass C'))) pr)
 | HAssert : forall p1 p2,
     phiImplies p1 p2 ->
@@ -239,8 +286,6 @@ Fixpoint evale (h : H) (r : rho) (e' : e) : option v :=
   | ev (vnull) => Some vnull
   | ev (vn n') => Some (vn n')
   | ev (vo o') => option_map (fun _ => vo o') (h o')
-  | ethis => None
-  | eresult => None
   end.
 (*Inductive evale : H -> rho -> e -> v -> Prop :=
 | EEVar : forall h r rx x',
@@ -281,7 +326,7 @@ Inductive evalphi : H -> rho -> A -> phi -> Prop :=
 | EAType : forall h r a x' t,
     evalphi h r a (phiAssert x' t)
 | EASepOp : forall h r a a1 a2 p1 p2,
-    a = a1 ++ a2 /\ NoDup a ->
+    a1 = Aexcept a a2 ->
     evalphi h r a1 p1 ->
     evalphi h r a2 p2 ->
     evalphi h r a (phiConj p1 p2)
@@ -303,28 +348,56 @@ Check fields.
 
 (* Figure 9: Dynamic semantics for core language *)
 Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
-| ESFieldAssign : forall h (S' : S) (s' : list s) (a : A) r h' (x' y' : x) (yv' : v) (o' : o) (f' : f),
+| ESFieldAssign : forall h h' (S' : S) (s' : list s) (a : A) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
     evale h r (ex x') = Some (vo o') ->
     evale h r (ex y') = Some yv' ->
     In (nameo o', f') a ->
     h' = HSubst o' f' yv' h ->
     dynSem (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
 | ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (C' : C),
-    r' = rhoSubst x' vnull ->
-    dynSem (h, (r, a, sDeclare (TClass C') x' :: s') :: S') (h, (r, a, s') :: S')
+    r' = rhoSubst x' vnull r ->
+    dynSem (h, (r, a, sDeclare (TClass C') x' :: s') :: S') (h, (r', a, s') :: S')
 | ESVarAssign : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
     evale h r e' = Some v' ->
-    r' = rhoSubst x' v' ->
-    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r, a, s') :: S')
-| ESNewObj : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
+    r' = rhoSubst x' v' r ->
+    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r', a, s') :: S')
+| ESNewObj : forall h h' (S' : S) (s' : list s) (a a' : A) r r' (x' : x) (e' : e) (o' : o) (C' : C) Cf',
     h o' = None ->
-    fiel
-    r' = rhoSubst x' v' ->
-    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r, a, s') :: S')
-
-
+    fields prog C' = Some Cf' ->
+    r' = rhoSubst x' (vo o') r ->
+    a' = a ++ map (fun cf' => (nameo o', snd cf')) Cf' ->
+    h' = HSubsts o' (map (fun cf' => (snd cf', vnull)) Cf') h ->
+    dynSem (h, (r, a, sAlloc x' C' :: s') :: S') (h', (r', a', s') :: S')
+| ESReturn : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vresult : v),
+    evale h r (ex xresult) = Some vresult ->
+    r' = rhoSubst x' vresult r ->
+    dynSem (h, (r, a, sReturn x' :: s') :: S') (h, (r', a, s') :: S')
+| ESApp : forall pre h (S' : S) (s' rs : list s) (a a' : A) r r' (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := fst (split wvs')) (vs' := snd (split wvs')) (m' : m) (o' : o) (C' : C) fvf,
+    evale h r (ex y') = Some (vo o') ->
+    map (fun z' => evale h r (ex z')) zs' = map (fun v' => Some v') vs' ->
+    h o' = Some (C', fvf) ->
+    mbody prog C' m' = Some rs ->
+    mparams prog C' m' = Some ws' ->
+    mpre prog C' m' = Some pre ->
+    r' = (fun rx => if x_decb rx xthis then Some (vo o') else
+          (option_map (fun wv => snd wv) (find (fun wv => x_decb rx (fst wv)) wvs'))) ->
+    evalphi h r' a pre ->
+    a' = footprint h r' pre ->
+    dynSem (h, (r, a, sCall x' y' m' zs' :: s') :: S') (h, (r', a', rs) :: (r, Aexcept a a', sCallPOST x' o' m' vs' :: s') :: S')
+| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) (vs' : list v) (m' : m) (o' : o) (C' : C) fvf,
+    h o' = Some (C', fvf) ->
+    mpost prog C' m' = Some post ->
+    evalphi h r' a' post ->
+    a'' = footprint h r' post ->
+    dynSem (h, (r', a', []) :: (r, a, sCallPOST x' o' m' vs' :: s') :: S') (h, (r, a ++ a'', s') :: S')
+| ESAssert : forall h r a p s' S',
+    evalphi h r a p ->
+    dynSem (h, (r, a, sAssert p :: s') :: S') (h, (r, a, s') :: S')
+| ESRelease : forall h r a a' p s' S',
+    evalphi h r a p ->
+    a' = Aexcept a (footprint h r p) ->
+    dynSem (h, (r, a, sRelease p :: s') :: S') (h, (r, a', s') :: S')
 .
-
 
 
 
