@@ -253,11 +253,11 @@ Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
     hoare p [sAssign x' e'] p
 | HReturn : forall p (x' : x),
     hoare p [sReturn x'] (phiConj p (phiEq (ex xresult) (ex x')))
-| HApp : forall p pp pr pq (x' y' : x) (C' : C) (m' : m) (zX' : list (x * e)),
+| HApp : forall p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
     phiImplies p (phiConj (phiConj (phiAssert y' (TClass C')) pp) pr) ->
-    Some pp = option_map (phiSubsts ((y', ex xthis) :: zX')) (mpre prog C' m') ->
-    Some pq = option_map (phiSubsts (((y', ex xthis) :: zX') ++ [(x', ex xresult)])) (mpost prog C' m') ->
-    hoare p [sCall x' y' m' (map fst zX')] (phiConj (phiConj pq (phiAssert y' (TClass C'))) pr)
+    Some pp = option_map (phiSubsts ((xthis, ex y') :: Xze')) (mpre prog C' m') ->
+    Some pq = option_map (phiSubsts (((xthis, ex y') :: Xze') ++ [(xresult, ex x')])) (mpost prog C' m') ->
+    hoare p [sCall x' y' m' zs'] (phiConj (phiConj pq (phiAssert y' (TClass C'))) pr)
 | HAssert : forall p1 p2,
     phiImplies p1 p2 ->
     hoare p1 [sAssert p2] p1
@@ -417,7 +417,6 @@ Print sfrme.
 Print dynSem.
 
 Notation "classes 'main:' main" := (Program classes main) (at level 100).
-Notation "T' f';" := (Field T' f') (at level 90).
 Notation "'class' c { fs ms }" := (Cls c fs ms).
 
 Check (Cls "a" [] []).
