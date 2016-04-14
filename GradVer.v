@@ -13,38 +13,30 @@ Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Definition string_decb (a b : string) := 
-  if string_dec a b then true else false.
+(* helpers *)
+Definition dec2decb {A : Type} (dec : ∀ a1 a2 : A, {a1 = a2} + {a1 ≠ a2}) : (A -> A -> bool) :=
+  fun a b => if dec a b then true else false.
 Definition except {A : Type} (A_decb : A -> A -> bool) (a b : list A) : list A :=
   filter (fun x => negb (existsb (A_decb x) b)) a.
 
+Definition nat_decb := dec2decb eq_nat_dec.
+Hint Resolve eq_nat_dec.
+Hint Resolve list_eq_dec eq_nat_dec.
+
+Program Instance string_EqDec : EqDec string eq := string_dec.
+Definition string_decb := dec2decb string_dec.
+Hint Resolve string_dec.
+Hint Resolve list_eq_dec string_dec.
+
 (* Figure 1: Syntax of a Java-like language for core language *)
-Definition C := string. Definition C_decb (a b : C) : bool := string_decb a b.
-Definition f := string. Definition f_decb (a b : f) : bool := string_decb a b.
-Definition m := string. Definition m_decb (a b : m) : bool := string_decb a b.
-Definition o := nat.    Definition o_decb (a b : o) : bool := a ==b b.
+Definition C := string.
+Definition f := string.
+Definition m := string.
+Definition o := nat.
 Inductive x :=
 | xUserDef : string -> x
 | xthis : x
 | xresult : x.
-Definition x_decb (a b : x) : bool :=
-  match a with 
-  | xUserDef x' => 
-    match b with
-    | xUserDef x'' => string_decb x' x''
-    | _ => false
-    end
-  | xthis => 
-    match b with
-    | xthis => true
-    | _ => false
-    end
-  | xresult => 
-    match b with
-    | xresult => true
-    | _ => false
-    end
-  end.
 Inductive T :=
 | TPrimitiveInt : T
 | TClass : C -> T.
@@ -89,23 +81,96 @@ Definition rho := x -> option v. (* list (x * v). *)
 Inductive name :=
 | namex : x -> name
 | nameo : o -> name.
-Definition name_decb (a b : name) : bool := 
-  match a with 
-  | namex x' => 
-    match b with
-    | namex x'' => x_decb x' x''
-    | _ => false
-    end
-  | nameo o' => 
-    match b with
-    | nameo o'' => o_decb o' o''
-    | _ => false
-    end
-  end.
 Definition A := list (name * f).
-Definition A'_decb (a b : name * f) : bool := name_decb (fst a) (fst b) && f_decb (snd a) (snd b).
-Definition Aexcept := except A'_decb.
 Definition S := list (rho * A * list s).
+
+(* equality *)
+
+Definition C_decb := string_decb.
+Definition f_decb := string_decb.
+Definition m_decb := string_decb.
+Definition o_decb := nat_decb.
+
+Definition x_dec : ∀ n m : x, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance x_EqDec : EqDec x eq := x_dec.
+Definition x_decb := dec2decb x_dec.
+Hint Resolve x_dec.
+Hint Resolve list_eq_dec x_dec.
+
+Definition T_dec : ∀ n m : T, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance T_EqDec : EqDec T eq := T_dec.
+Definition T_decb := dec2decb T_dec.
+Hint Resolve T_dec.
+Hint Resolve list_eq_dec T_dec.
+
+Definition v_dec : ∀ n m : v, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance v_EqDec : EqDec v eq := v_dec.
+Definition v_decb := dec2decb v_dec.
+Hint Resolve v_dec.
+Hint Resolve list_eq_dec v_dec.
+
+Definition e_dec : ∀ n m : e, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance e_EqDec : EqDec e eq := e_dec.
+Definition e_decb := dec2decb e_dec.
+Hint Resolve e_dec.
+Hint Resolve list_eq_dec e_dec.
+
+Definition phi_dec : ∀ n m : phi, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance phi_EqDec : EqDec phi eq := phi_dec.
+Definition phi_decb := dec2decb phi_dec.
+Hint Resolve phi_dec.
+Hint Resolve list_eq_dec phi_dec.
+
+Definition s_dec : ∀ n m : s, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance s_EqDec : EqDec s eq := s_dec.
+Definition s_decb := dec2decb s_dec.
+Hint Resolve s_dec.
+Hint Resolve list_eq_dec s_dec.
+
+Definition contract_dec : ∀ n m : contract, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance contract_EqDec : EqDec contract eq := contract_dec.
+Definition contract_decb := dec2decb contract_dec.
+Hint Resolve contract_dec.
+Hint Resolve list_eq_dec contract_dec.
+
+Definition method_dec : ∀ n m : method, {n = m} + {n ≠ m}. decide equality. apply (list_eq_dec (prod_eqdec T_dec x_dec)). Defined.
+Program Instance method_EqDec : EqDec method eq := method_dec.
+Definition method_decb := dec2decb method_dec.
+Hint Resolve method_dec.
+Hint Resolve list_eq_dec method_dec.
+
+Definition field_dec : ∀ n m : field, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance field_EqDec : EqDec field eq := field_dec.
+Definition field_decb := dec2decb field_dec.
+Hint Resolve field_dec.
+Hint Resolve list_eq_dec field_dec.
+
+Definition cls_dec : ∀ n m : cls, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance cls_EqDec : EqDec cls eq := cls_dec.
+Definition cls_decb := dec2decb cls_dec.
+Hint Resolve cls_dec.
+Hint Resolve list_eq_dec cls_dec.
+
+Definition program_dec : ∀ n m : program, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance program_EqDec : EqDec program eq := program_dec.
+Definition program_decb := dec2decb program_dec.
+Hint Resolve program_dec.
+Hint Resolve list_eq_dec program_dec.
+
+Definition name_dec : ∀ n m : name, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance name_EqDec : EqDec name eq := name_dec.
+Definition name_decb := dec2decb name_dec.
+Hint Resolve name_dec.
+Hint Resolve list_eq_dec name_dec.
+
+Definition A_dec : ∀ n m : A, {n = m} + {n ≠ m}. decide equality. apply (prod_eqdec name_dec string_dec). Defined.
+Program Instance A_EqDec : EqDec A eq := A_dec.
+Definition A_decb := dec2decb A_dec.
+Hint Resolve A_dec.
+Hint Resolve list_eq_dec A_dec.
+
+Definition A'_decb (a b : name * f) : bool := name_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition Aexcept := except A'_decb.
 
 (* accessors *)
 Definition class (p : program) (C' : C) : option cls :=
@@ -150,6 +215,8 @@ Definition mparams (p : program) (C' : C) (m' : m) : option (list x) :=
   option_map
     (fun me => match me with Method _ _ params _ _ => snd (split params) end)
     (mmethod p C' m').
+
+Definition getMain (p : program) : list s := match p with Program _ main => main end.
 
 (* substitution *)
 Fixpoint eSubst (x' : x) (e' : e) (ee : e) : e :=
@@ -222,49 +289,65 @@ Inductive sfrmphi : A -> phi -> Prop :=
 .
 
 (* implication on phi *)
-Inductive phiImplies : phi -> phi -> Prop := (* TODO *).
+Fixpoint phi2list (p : phi) : list phi :=
+match p with
+| phiTrue => []
+| phiConj p1 p2 => phi2list p1 ++ phi2list p2
+| _ => [p]
+end.
+Fixpoint list2phi (ps : list phi) : phi := fold_left phiConj ps phiTrue.
+Inductive phiImplies' : list phi -> list phi -> Prop :=
+| PIempty : phiImplies' [] []
+| PIskip : forall h l1 l2, phiImplies' l1 l2 -> phiImplies' (h :: l1) l2
+| PItake : forall h l1 l2, phiImplies' l1 l2 -> phiImplies' (h :: l1) (h :: l2)
+.
+Definition phiImplies (p1 p2 : phi) : Prop := phiImplies' (phi2list p1) (phi2list p2).
 
 (* Figure 5: Hoare-based proof rules for core language *)
-Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
-| HSec : forall (p q1 q2 r : phi) (s1 s2 : list s),
-    hoare p s1 q1 ->
-    phiImplies q1 q2 ->
-    hoare q2 s2 r ->
-    hoare p (s1 ++ s2) r
+Inductive hoareSingle {prog : program} : phi -> s -> phi -> Prop :=
 | HInsVar : forall p (T' : T) (x' : x),
-    hoare p [sDeclare T' x'] (phiConj p (phiAssert x' T'))
+    hoareSingle p (sDeclare T' x') (phiConj p (phiAssert x' T'))
 | HNewObj : forall p x' (C' : C) fs,
     phiImplies p (phiAssert x' (TClass C')) ->
     fields prog C' = Some fs ->
-    hoare
+    hoareSingle
       p
-      [sAlloc x' C']
+      (sAlloc x' C')
       (fold_left 
         (fun a b => phiConj (phiAcc x' (snd b)) a) 
         fs 
         (phiConj (phiNeq (ex x') (ev vnull)) p))
 | HFieldAssign : forall p (x' y' : x) (f' : f),
     phiImplies p (phiConj (phiAcc x' f') (phiNeq (ex x') (ev vnull))) ->
-    hoare p [sMemberSet x' f' y'] (phiConj p (phiEq (edot (ex x') f') (ex y')))
+    hoareSingle p (sMemberSet x' f' y') (phiConj p (phiEq (edot (ex x') f') (ex y')))
 | HVarAssign : forall p' p (x' : x) (e' : e),
     p' = phiSubst x' e' p ->
     sfrmphi [] p' ->
     sfrme (staticFootprint p') e' ->
-    hoare p [sAssign x' e'] p
+    hoareSingle p (sAssign x' e') p
 | HReturn : forall p (x' : x),
-    hoare p [sReturn x'] (phiConj p (phiEq (ex xresult) (ex x')))
+    hoareSingle p (sReturn x') (phiConj p (phiEq (ex xresult) (ex x')))
 | HApp : forall p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
     phiImplies p (phiConj (phiConj (phiAssert y' (TClass C')) pp) pr) ->
     Some pp = option_map (phiSubsts ((xthis, ex y') :: Xze')) (mpre prog C' m') ->
     Some pq = option_map (phiSubsts (((xthis, ex y') :: Xze') ++ [(xresult, ex x')])) (mpost prog C' m') ->
-    hoare p [sCall x' y' m' zs'] (phiConj (phiConj pq (phiAssert y' (TClass C'))) pr)
+    hoareSingle p (sCall x' y' m' zs') (phiConj (phiConj pq (phiAssert y' (TClass C'))) pr)
 | HAssert : forall p1 p2,
     phiImplies p1 p2 ->
-    hoare p1 [sAssert p2] p1
+    hoareSingle p1 (sAssert p2) p1
 | HRelease : forall p1 p2 pr,
     phiImplies p1 (phiConj p2 pr) ->
     sfrmphi [] pr ->
-    hoare p1 [sRelease p2] pr
+    hoareSingle p1 (sRelease p2) pr
+.
+
+Inductive hoare {prog : program} : phi -> list s -> phi -> Prop :=
+| HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
+    @hoareSingle prog p s1 q1 ->
+    phiImplies q1 q2 ->
+    hoare q2 s2 r ->
+    hoare p (s1 :: s2) r
+| HEMPTY : forall p, hoare p [] p
 .
 
 (* Figure 6: Evaluation of expressions for core language *)
@@ -284,6 +367,8 @@ Fixpoint evale (h : H) (r : rho) (e' : e) : option v :=
   | ev (vn n') => Some (vn n')
   | ev (vo o') => option_map (fun _ => vo o') (h o')
   end.
+(* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
+
 (*Inductive evale : H -> rho -> e -> v -> Prop :=
 | EEVar : forall h r rx x',
     r x' = Some rx ->
@@ -333,7 +418,7 @@ Inductive evalphi : H -> rho -> A -> phi -> Prop :=
 Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
   match p with
   | phiAcc x' f' => 
-      match evale h r (ex x') (* == r x' *) with
+      match evale h r (ex x') with
       | Some (vo o') => [(nameo o', f')]
       | _ => [] (*???*)
       end
@@ -341,10 +426,9 @@ Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
   | _ => []
   end.
 
-Check fields.
-
 (* Figure 9: Dynamic semantics for core language *)
-Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
+Definition execState : Set := H * S.
+Inductive dynSem {prog : program} : execState -> execState -> Prop :=
 | ESFieldAssign : forall h h' (S' : S) (s' : list s) (a : A) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
     evale h r (ex x') = Some (vo o') ->
     evale h r (ex y') = Some yv' ->
@@ -397,17 +481,78 @@ Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
     dynSem (h, (r, a, sRelease p :: s') :: S') (h, (r, a', s') :: S')
 .
 
+(* helper definitions *)
+Definition isStuck (prog : program) (s : execState) : Prop :=
+  ~ exists s', @dynSem prog s s'.
+Definition isFinished (s : execState) : Prop :=
+  exists r a, snd s = [(r,a,[])].
+Definition isFail (prog : program) (s : execState) : Prop :=
+  isStuck prog s /\ ~ isFinished s.
 
+Inductive dynSemStar {prog : program} : execState -> execState -> Prop :=
+| ESSNone : forall a, dynSemStar a a
+| ESSStep : forall a b c, @dynSem prog a b -> dynSemStar b c -> dynSemStar a c
+.
+Definition dynSemFull {prog : program} (initial final : execState) : Prop := @dynSemStar prog initial final /\ isFinished final.
 
-
-
+Definition newHeap : H := fun _ => None.
+Definition newRho : rho := fun _ => None.
+Definition newAccess : A := [].
 
 (* PROOF SECTION *)
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
 
+(* determinism? *)
+
+Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess,
+  @hoare prog pre body post ->
+  evalphi initialHeap initialRho initialAccess pre ->
+  exists finalHeap finalRho finalAccess, (
+    @dynSemStar prog (initialHeap, [(initialRho, initialAccess, body)]) (finalHeap, [(finalRho, finalAccess, [])]) /\
+    evalphi finalHeap finalRho finalAccess post
+  ).
+Proof.
+  intro prog.
+  induction body; intros.
+  - repeat eexists.
+    * constructor.
+    * inversion H0.
+      subst.
+      assumption.
+  - inversion H0. clear H0.
+    subst.
+    specialize (IHbody q1 post).
+    inversion H4; clear H4; subst;
+    repeat eexists.
+    * eapply ESSStep.
+      + instantiate (b := (_, )).
+        admit.
+      + 
+    rewrite ESSStep.
+    
+    apply IHbody.
+  generalize body. clear body
 
 
+Theorem staSemSoundCorollary : forall prog : program,
+  @hoare prog phiTrue (getMain prog) phiTrue -> exists endState : execState, @dynSemFull prog (newHeap, [(newRho, newAccess, getMain prog)]) endState.
+Proof.
+  destruct prog as [classes main]; simpl.
+  generalize main. clear main.
+  induction main; intros.
+  - unfold runsThrough.
+    eexists.
+    split.
+    * constructor.
+    * unfold isFinished.
+      repeat eexists.
+  - destruct main.
+    * 
+  
+  simpl in *.
+  
+  
 
 (* playground *)
 Open Scope string_scope.
