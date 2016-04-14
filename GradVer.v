@@ -365,9 +365,9 @@ Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
     a' = a ++ map (fun cf' => (nameo o', snd cf')) Cf' ->
     h' = HSubsts o' (map (fun cf' => (snd cf', vnull)) Cf') h ->
     dynSem (h, (r, a, sAlloc x' C' :: s') :: S') (h', (r', a', s') :: S')
-| ESReturn : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vresult : v),
-    evale h r (ex xresult) = Some vresult ->
-    r' = rhoSubst x' vresult r ->
+| ESReturn : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vx : v),
+    evale h r (ex x') = Some vx ->
+    r' = rhoSubst xresult vx r ->
     dynSem (h, (r, a, sReturn x' :: s') :: S') (h, (r', a, s') :: S')
 | ESApp : forall pre h (S' : S) (s' rs : list s) (a a' : A) r r' (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := fst (split wvs')) (vs' := snd (split wvs')) (m' : m) (o' : o) (C' : C) fvf,
     evale h r (ex y') = Some (vo o') ->
