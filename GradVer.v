@@ -107,9 +107,6 @@ Definition A'_decb (a b : name * f) : bool := name_decb (fst a) (fst b) && f_dec
 Definition Aexcept := except A'_decb.
 Definition S := list (rho * A * list s).
 
-Notation "'φ'" := phi.
-Notation "'ρ'" := rho.
-
 (* accessors *)
 Definition class (p : program) (C' : C) : option cls :=
   match p with
@@ -404,7 +401,26 @@ Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
 
 
 
+(* PROOF SECTION *)
+Notation "'φ'" := phi.
+Notation "'ρ'" := rho.
 
+
+
+
+(* playground *)
+Open Scope string_scope.
+
+Notation "AA '⊢sfrme' ee" := (sfrme AA ee) (at level 90).
+
+Print sfrme.
+Print dynSem.
+
+Notation "classes 'main:' main" := (Program classes main) (at level 100).
+Notation "T' f';" := (Field T' f') (at level 90).
+Notation "'class' c { fs ms }" := (Cls c fs ms).
+
+Check (Cls "a" [] []).
 
 
 
