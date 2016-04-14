@@ -381,12 +381,13 @@ Inductive dynSem {prog : program} : (H * S) -> (H * S) -> Prop :=
     evalphi h r' a pre ->
     a' = footprint h r' pre ->
     dynSem (h, (r, a, sCall x' y' m' zs' :: s') :: S') (h, (r', a', rs) :: (r, Aexcept a a', sCallPOST x' o' m' vs' :: s') :: S')
-| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) (vs' : list v) (m' : m) (o' : o) (C' : C) fvf,
+| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) (vs' : list v) (m' : m) (o' : o) (C' : C) fvf vresult,
     h o' = Some (C', fvf) ->
     mpost prog C' m' = Some post ->
     evalphi h r' a' post ->
     a'' = footprint h r' post ->
-    dynSem (h, (r', a', []) :: (r, a, sCallPOST x' o' m' vs' :: s') :: S') (h, (r, a ++ a'', s') :: S')
+    evale h r' (ex xresult) = Some vresult ->
+    dynSem (h, (r', a', []) :: (r, a, sCallPOST x' o' m' vs' :: s') :: S') (h, (rhoSubst x' vresult r, a ++ a'', s') :: S')
 | ESAssert : forall h r a p s' S',
     evalphi h r a p ->
     dynSem (h, (r, a, sAssert p :: s') :: S') (h, (r, a, s') :: S')
