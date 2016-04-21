@@ -435,9 +435,9 @@ Inductive dynSem {prog : program} : execState -> execState -> Prop :=
     In (nameo o', f') a ->
     h' = HSubst o' f' yv' h ->
     dynSem (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
-| ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (C' : C),
+| ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (T' : T),
     r' = rhoSubst x' vnull r ->
-    dynSem (h, (r, a, sDeclare (TClass C') x' :: s') :: S') (h, (r', a, s') :: S')
+    dynSem (h, (r, a, sDeclare T' x' :: s') :: S') (h, (r', a, s') :: S')
 | ESVarAssign : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
     evale h r e' = Some v' ->
     r' = rhoSubst x' v' r ->
@@ -505,11 +505,11 @@ Notation "'ρ'" := rho.
 
 (* determinism? *)
 
-Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess,
+Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   @hoare prog pre body post ->
   evalphi initialHeap initialRho initialAccess pre ->
   exists finalHeap finalRho finalAccess, (
-    @dynSemStar prog (initialHeap, [(initialRho, initialAccess, body)]) (finalHeap, [(finalRho, finalAccess, [])]) /\
+    @dynSemStar prog (initialHeap, (initialRho, initialAccess, body) :: S') (finalHeap, (finalRho, finalAccess, []) :: S') /\
     evalphi finalHeap finalRho finalAccess post
   ).
 Proof.
@@ -526,7 +526,8 @@ Proof.
     inversion H4; clear H4; subst;
     repeat eexists.
     * eapply ESSStep.
-      + instantiate (b := (_, )).
+      + Check (@ESDefVar prog).
+        instantiate (b := (_, _)).
         admit.
       + 
     rewrite ESSStep.
