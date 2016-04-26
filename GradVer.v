@@ -225,6 +225,9 @@ match ee with
 | _ => ee
 end.
 
+Fixpoint eSubsts (r : list (x * e)) (ee : e) : e :=
+  fold_left (fun a b => eSubst (fst b) (snd b) a) r ee.
+
 Fixpoint phiSubst (x' : x) (e' : e) (p : phi) : phi :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubst x' e' e1) (eSubst x' e' e2)
@@ -590,6 +593,38 @@ Proof.
     apply phiTrueSubst in H0.
     assumption.
 Qed.
+Lemma phiEqSubsts : forall a p e1 e2, phiEq e1 e2 = phiSubsts a p -> exists e1' e2', p = phiEq e1' e2' /\ e1 = eSubsts a e1' /\ e2 = eSubsts a e2'.
+Proof.
+  induction a; intros.
+  - repeat eexists.
+    simpl in H0.
+    subst.
+    auto.
+  - simpl in H0.
+    apply IHa in H0.
+    inversion H0; clear H0.
+    inversion H1; clear H1.
+    intuition.
+    subst.
+    destruct p; simpl in H1; inversion H1.
+    repeat eexists.
+    * admit.
+    * admit.
+Admitted.
+
+Lemma eSubstsVal : forall x v, eSubsts x (ev v) = (ev v).
+Proof.
+  induction x0; intros.
+  - simpl; tauto.
+  - specialize (IHx0 v0).
+    assert (eSubsts (a :: x0) (ev v0) = eSubsts x0 (ev v0)).
+    * admit.
+    * rewrite IHx0 in H0.
+      assumption.
+Admitted.
+
+Lemma phiImpliesConj : forall a b c, phiImplies a (phiConj b c) -> phiImplies a b.
+Admitted.
 
 Theorem staSemProgress : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   @hoareSingle prog pre s'' post ->
@@ -642,10 +677,16 @@ Proof.
     rewrite H0 in H9; simpl in H9.
     destruct m1.
 
-    eexists.
     inversion H4; intuition.
+    eexists (initialHeap, [(_, _, _) ; (initialRho, Aexcept initialAccess _, sCall x0 x1 m0 (map snd Xz') :: s')]).
+    instantiate (l := ?y0).
     econstructor; eauto.
     * simpl.
+      instantiate (wvs' := combine (map snd l) (map (λ z' : x, initialRho z') (map snd Xz'))).
+      repeat rewrite mapSplitSnd.
+      rewrite combine_split.
+      simpl.
+      repeat tauto.
       admit.
     * unfold mbody.
       rewrite H0.
@@ -654,7 +695,10 @@ Proof.
     * unfold mparams.
       rewrite H0.
       simpl.
-      auto.
+      repeat rewrite mapSplitFst.
+      rewrite combine_split.
+      simpl.
+      tauto.
       admit.
     * unfold mpre.
       unfold mcontract.
@@ -665,61 +709,31 @@ Proof.
     * destruct c.
       inversion H9; clear H9.
       subst.
-      inversion H11; clear H11; subst.
-      apply phiTrueSubsts in H12.
-      symmetry in H12.
-      apply phiTrueSubst in H12.
+      unfold option_map in H10.
+      destruct (mpost prog C' m0); inversion H10; clear H10.
       subst.
-      constructor.
-      econstructor.
-  -
+      clear H4 H5.
 
-      + admit.
-      + 
       admit.
-      instantiate (wvs' := (_,_)).
-      intuition.
-      auto.
-      admit. (**)
-  
-
-    inversion H8; clear H8; subst.
-    * 
-    inversion H6; clear H6; subst.
-    inversion H1; clear H1; subst.
-    repeat eexists.
+  - eexists.
+    econstructor; tauto.
+  - eexists.
     econstructor.
-    eauto.
-    inversion H8; clear H8; subst.
-    inversion H0; subst.
-    inversion H6; clear H6; subst.
-    
-  try econstructor.
-  - 
-  - repeat eexists.
-    * constructor.
-    * inversion H0.
-      subst.
-      assumption.
-  - inversion H0. clear H0.
-    subst.
-    specialize (IHbody q1 post).
-    destruct a; inversion H4; clear H4; subst.
-    * edestruct IHbody; clear IHbody.
-      + eapply hoareImplies; repeat eauto.
-      + econstructor.
-      ++  eauto.
-      ++  specialize (AexceptReverse initialAccess); intros.
-          rewrite H0.
-          eauto.
-      ++  econstructor.
-          ** simpl.
-          inversion H0; clear H0.
-          inversion H2; clear H2.
-          inversion H0; clear H0.
-          instantiate (initialAccess := x2).
-          symmetry in H2. rewrite H2 in *.
-          apply H1.
+    eapply evalPhiImplies; eassumption.
+  - eexists.
+    econstructor.
+    * eapply evalPhiImplies.
+      + instantiate (q1 := pre).
+        apply phiImpliesConj in H3.
+        assumption.
+      + assumption.
+    * auto.
+  - intros. intuition.
+    inversion H3. clear H3.
+    destruct x0.
+    inversion H2; clear H2; subst;
+    eexists; econstructor; try eassumption; try auto.
+Admitted.
 
 Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   @hoare prog pre body post ->
