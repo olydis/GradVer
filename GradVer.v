@@ -626,7 +626,7 @@ Admitted.
 Lemma phiImpliesConj : forall a b c, phiImplies a (phiConj b c) -> phiImplies a b.
 Admitted.
 
-Theorem staSemProgress : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
+Theorem staSemProgress' : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   @hoareSingle prog pre s'' post ->
   evalphi initialHeap initialRho initialAccess pre ->
   exists finalState,
@@ -734,6 +734,126 @@ Proof.
     inversion H2; clear H2; subst;
     eexists; econstructor; try eassumption; try auto.
 Admitted.
+
+Theorem staSemProgressStar : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
+  @hoareSingle prog pre s'' post ->
+  evalphi initialHeap initialRho initialAccess pre ->
+  exists finalHeap finalRho finalAccess,
+    @dynSemStar prog (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S')
+.
+Proof.
+  intro prog.
+  induction S'.
+  destruct s''; intros;
+  inversion H0; clear H0; subst.
+  - assert (evalphi initialHeap initialRho initialAccess (phiConj (phiAcc x0 f0) (phiNeq (ex x0) (ev vnull)))).
+    eapply evalPhiImplies; eassumption.
+    clear H1 H7.
+    inversion H0; clear H0; subst.
+    inversion H7; clear H7; subst.
+    inversion H8; clear H8; subst.
+    repeat eexists.
+    econstructor.
+    * econstructor; try eassumption; try auto.
+      eapply InAexcept.
+      eauto.
+    * econstructor.
+  - eexists.
+    econstructor.
+    eauto.
+  - eexists.
+    econstructor;
+    eauto.
+  - specialize (HnotTotal initialHeap); intros.
+    inversion H0.
+    eexists.
+    econstructor; eauto.
+  - subst.
+    specialize (evalPhiImplies initialHeap initialRho initialAccess pre (phiConj (phiConj (phiConj (phiAssert x1 (TClass C')) (phiNeq (ex x1) (ev vnull))) pp) pr)).
+    intros.
+    intuition.
+    clear H1 H8.
+    inversion H0; clear H0; subst.
+    inversion H7; clear H7; subst.
+    inversion H6; clear H6; subst.
+    inversion H7; clear H7; subst.
+    inversion H12; clear H12; subst.
+    simpl in *.
+    
+    unfold mpre in *.
+    unfold mcontract in *.
+    case_eq (mmethod prog C' m0); intros.
+    Focus 2.
+      rewrite H0 in H9; simpl in H9; inversion H9.
+    rewrite H0 in H9; simpl in H9.
+    destruct m1.
+
+    inversion H4; intuition.
+    eexists (initialHeap, [(_, _, _) ; (initialRho, Aexcept initialAccess _, sCall x0 x1 m0 (map snd Xz') :: s')]).
+    instantiate (l := ?y0).
+    econstructor; eauto.
+    * simpl.
+      instantiate (wvs' := combine (map snd l) (map (λ z' : x, initialRho z') (map snd Xz'))).
+      repeat rewrite mapSplitSnd.
+      rewrite combine_split.
+      simpl.
+      repeat tauto.
+      admit.
+    * unfold mbody.
+      rewrite H0.
+      simpl.
+      auto.
+    * unfold mparams.
+      rewrite H0.
+      simpl.
+      repeat rewrite mapSplitFst.
+      rewrite combine_split.
+      simpl.
+      tauto.
+      admit.
+    * unfold mpre.
+      unfold mcontract.
+      rewrite H0.
+      simpl.
+      auto.
+    * tauto.
+    * destruct c.
+      inversion H9; clear H9.
+      subst.
+      unfold option_map in H10.
+      destruct (mpost prog C' m0); inversion H10; clear H10.
+      subst.
+      clear H4 H5.
+
+      admit.
+  - eexists.
+    econstructor; tauto.
+  - eexists.
+    econstructor.
+    eapply evalPhiImplies; eassumption.
+  - eexists.
+    econstructor.
+    * eapply evalPhiImplies.
+      + instantiate (q1 := pre).
+        apply phiImpliesConj in H3.
+        assumption.
+      + assumption.
+    * auto.
+  - intros. intuition.
+    inversion H3. clear H3.
+    destruct x0.
+    inversion H2; clear H2; subst;
+    eexists; econstructor; try eassumption; try auto.
+Admitted.
+
+Theorem staSemPreservation : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S' finalHeap finalRho finalAccess sRem,
+  @hoareSingle prog pre s'' post ->
+  evalphi initialHeap initialRho initialAccess pre ->
+  @dynSem prog (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, sRem) :: S') ->
+  evalphi finalHeap finalRho finalAccess post.
+Proof.
+  intros.
+
 
 Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   @hoare prog pre body post ->
