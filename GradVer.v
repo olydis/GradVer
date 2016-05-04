@@ -81,7 +81,7 @@ Inductive program :=
 
 Definition Gamma := x -> option T.
 Definition H := o -> option (C * (f -> option v)).
-Definition rho := T -> x -> v.
+Definition rho := x -> option v.
 Inductive name :=
 | namex : x -> name
 | nameo : o -> name.
@@ -255,25 +255,24 @@ match ee with
 | _ => ee
 end.
 
-Fixpoint eSubsts (r : list (x * e)) (ee : e) : e :=
+Definition eSubsts (r : list (x * e)) (ee : e) : e :=
   fold_left (fun a b => eSubst (fst b) (snd b) a) r ee.
 
-Fixpoint phi'Subst (x' : x) (e' : e) (p : phi') : phi' :=
+Definition phi'Subst (x' : x) (e' : e) (p : phi') : phi' :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubst x' e' e1) (eSubst x' e' e2)
 | phiNeq e1 e2 => phiNeq (eSubst x' e' e1) (eSubst x' e' e2)
-(* | phiAcc : x -> f -> phi ??? *)
-(* | phiAssert : x -> T -> phi ??? *)
+| phiAcc x'' e'' => if x_decb x'' x' then phiTrue else p
 | _ => p
 end.
 
-Fixpoint phiSubst (x' : x) (e' : e) (p : phi) : phi :=
+Definition phiSubst (x' : x) (e' : e) (p : phi) : phi :=
   map (phi'Subst x' e') p.
 
 Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
   fold_left (fun a b => phiSubst (fst b) (snd b) a) r p.
 
-Fixpoint HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
+Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
   fun o'' =>
     if o_decb o'' o'
       then 
@@ -286,13 +285,13 @@ Fixpoint HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
       else h o''
 .
 
-Fixpoint HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
+Definition HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
   fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
-Fixpoint rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
-  fun T'' x'' => if x_decb x'' x' then v' else r T'' x''.
+Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
+  fun x'' => if x_decb x'' x' then Some v' else r x''.
 
-Fixpoint GammaSubst (x' : x) (T' : T) (g : Gamma) : Gamma :=
+Definition GammaSubst (x' : x) (T' : T) (g : Gamma) : Gamma :=
   fun x'' => if x_decb x'' x' then Some T' else g x''.
 
 (* Figure 2: Static typing rules for expressions of the core language *)
@@ -346,11 +345,11 @@ Fixpoint getType (G : Gamma) (e' : e) : option T :=
   end.
 
 (* Figure 6: Evaluation of expressions for core language *)
-Fixpoint evale (G : Gamma) (h : H) (r : rho) (e' : e) : option v :=
+Fixpoint evale (h : H) (r : rho) (e' : e) : option v :=
   match e' with
-  | ex x' => option_map (fun T' => r T' x') (G x')
+  | ex x' => r x'
   | edot e'' f' =>
-    match evale G h r e'' with
+    match evale h r e'' with
     | Some (vo o') =>
       match h o' with
       | Some (_, ho') => ho' f'
@@ -363,30 +362,30 @@ Fixpoint evale (G : Gamma) (h : H) (r : rho) (e' : e) : option v :=
 (* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
 
 (* Figure 7: Evaluation of formulas for core language *)
-Inductive evalphi' : Gamma -> H -> rho -> A -> phi' -> Prop :=
-| EATrue : forall G h r a,
-    evalphi' G h r a phiTrue
-| EAEqual : forall G h r a e1 e2 v1 v2,
-    evale G h r e1 = v1 ->
-    evale G h r e2 = v2 ->
+Inductive evalphi' : H -> rho -> A -> phi' -> Prop :=
+| EATrue : forall h r a,
+    evalphi' h r a phiTrue
+| EAEqual : forall h r a e1 e2 v1 v2,
+    evale h r e1 = Some v1 ->
+    evale h r e2 = Some v2 ->
     v1 = v2 ->
-    evalphi' G h r a (phiEq e1 e2)
-| EANEqual : forall G h r a e1 e2 v1 v2,
-    evale G h r e1 = v1 ->
-    evale G h r e2 = v2 ->
+    evalphi' h r a (phiEq e1 e2)
+| EANEqual : forall h r a e1 e2 v1 v2,
+    evale h r e1 = Some v1 ->
+    evale h r e2 = Some v2 ->
     v1 <> v2 ->
-    evalphi' G h r a (phiNeq e1 e2)
-| EAAcc : forall G h r a x' o' f',
-    evale G h r (ex x') = Some (vo o') ->
+    evalphi' h r a (phiNeq e1 e2)
+| EAAcc : forall h r a x' o' f',
+    evale h r (ex x') = Some (vo o') ->
     In (nameo o', f') a ->
-    evalphi' G h r a (phiAcc x' f')
+    evalphi' h r a (phiAcc x' f')
 .
-Definition evalphi : Gamma -> H -> rho -> A -> phi -> Prop :=
-  fun G h r a p => forall p', In p' p -> evalphi' G h r a p'.
+Definition evalphi : H -> rho -> A -> phi -> Prop :=
+  fun h r a p => forall p', In p' p -> evalphi' h r a p'.
 
 (* implication on phi *)
-Definition phiImplies G (p1 p2 : phi) : Prop :=
-  forall h r a, evalphi G h r a p1 -> evalphi G h r a p2.
+Definition phiImplies (p1 p2 : phi) : Prop :=
+  forall h r a, evalphi h r a p1 -> evalphi h r a p2.
 
 (* well-typedness *)
 Definition wellTypedX (G : Gamma) (x' : x) : Prop :=
@@ -432,21 +431,24 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
         (fun a b => phiAcc x' (snd b) :: a) 
         fs 
         (phiNeq (ex x') (ev vnull) :: p))
-| HFieldAssign : forall G (p : phi) (x' y' : x) (f' : f),
+| HFieldAssign : forall G (p : phi) (x' y' : x) (f' : f) e',
     In (phiAcc x' f') p ->
     In (phiNeq (ex x') (ev vnull)) p ->
+    In (phiEq (ex y') e') p ->
     hoareSingle G p (sMemberSet x' f' y') (p ++ [phiEq (edot (ex x') f') (ex y')])
-| HVarAssign : forall G p' p (x' : x) (e' : e),
+| HVarAssign : forall G p' p (x' : x) (e' e2' : e),
     p' = phiSubst x' e' p ->
+    In (phiEq e' e2') p' ->
     sfrmphi [] p' ->
     sfrme (staticFootprint p') e' ->
-    hoareSingle G p (sAssign x' e') p'
-| HReturn : forall G p (x' : x),
+    hoareSingle G p' (sAssign x' e') p
+| HReturn : forall G p (x' : x) e',
+    In (phiEq (ex x') e') p ->
     hoareSingle G p (sReturn x') (p ++ [phiEq (ex xresult) (ex x')])
 | HApp : forall G p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
     G y' = Some (TClass C') ->
     In (phiNeq (ex y') (ev vnull)) p ->
-    phiImplies G p (pp ++ pr) ->
+    phiImplies p (pp ++ pr) ->
     Some pp = option_map (phiSubsts ((xthis, ex y') :: Xze')) (mpre C' m') ->
     Some pq = option_map (phiSubsts (((xthis, ex y') :: Xze') ++ [(xresult, ex x')])) (mpost C' m') ->
     hoareSingle G p (sCall x' y' m' zs') (pq ++ pr)
@@ -454,7 +456,7 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
     In p2 p1 ->
     hoareSingle G p1 (sAssert p2) p1
 | HRelease : forall G p1 p2 pr,
-    phiImplies G p1 (p2 :: pr) ->
+    phiImplies p1 (p2 :: pr) ->
     sfrmphi [] pr ->
     hoareSingle G p1 (sRelease p2) pr
 .
@@ -462,7 +464,7 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
 Inductive hoare : phi -> list s -> phi -> Prop :=
 | HSec : forall G (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
     hoareSingle G p s1 q1 ->
-    phiImplies G q1 q2 ->
+    phiImplies q1 q2 ->
     hoare q2 s2 r ->
     hoare p (s1 :: s2) r
 | HEMPTY : forall p, hoare p [] p
@@ -470,92 +472,92 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 
 
 (* Figure 8: Definition of footprint meta-function *)
-Fixpoint footprint' (G : Gamma) (h : H) (r : rho) (p : phi') : A :=
+Fixpoint footprint' (h : H) (r : rho) (p : phi') : A :=
   match p with
   | phiAcc x' f' => 
-      match evale G h r (ex x') with
+      match evale h r (ex x') with
       | Some (vo o') => [(nameo o', f')]
       | _ => [] (*???*)
       end
   | _ => []
   end.
-Fixpoint footprint (G : Gamma) (h : H) (r : rho) (p : phi) : A :=
-  flat_map (footprint' G h r) p.
+Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
+  flat_map (footprint' h r) p.
 
 (* Figure 9: Dynamic semantics for core language *)
 Definition execState : Set := H * S.
-Inductive dynSem : Gamma -> execState -> execState -> Prop :=
-| ESFieldAssign : forall G h h' (S' : S) (s' : list s) (a : A) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
-    evale G h r (ex x') = Some (vo o') ->
-    evale G h r (ex y') = Some yv' ->
+Inductive dynSem : execState -> execState -> Prop :=
+| ESFieldAssign : forall h h' (S' : S) (s' : list s) (a : A) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
+    evale h r (ex x') = Some (vo o') ->
+    evale h r (ex y') = Some yv' ->
     In (nameo o', f') a ->
     h' = HSubst o' f' yv' h ->
-    dynSem G (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
+    dynSem (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
 (*| ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (T' : T),
     r' = rhoSubst x' vnull r ->
     dynSem (h, (r, a, sDeclare T' x' :: s') :: S') (h, (r', a, s') :: S')*)
-| ESVarAssign : forall G h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
-    evale G h r e' = Some v' ->
+| ESVarAssign : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
+    evale h r e' = Some v' ->
     r' = rhoSubst x' v' r ->
-    dynSem G (h, (r, a, sAssign x' e' :: s') :: S') (h, (r', a, s') :: S')
-| ESNewObj : forall G h h' (S' : S) (s' : list s) (a a' : A) r r' (x' : x) (o' : o) (C' : C) Cf',
+    dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r', a, s') :: S')
+| ESNewObj : forall h h' (S' : S) (s' : list s) (a a' : A) r r' (x' : x) (o' : o) (C' : C) Cf',
     h o' = None ->
     fields C' = Some Cf' ->
     r' = rhoSubst x' (vo o') r ->
     a' = a ++ map (fun cf' => (nameo o', snd cf')) Cf' ->
     h' = HSubsts o' (map (fun cf' => (snd cf', vnull)) Cf') h ->
-    dynSem G (h, (r, a, sAlloc x' C' :: s') :: S') (h', (r', a', s') :: S')
-| ESReturn : forall G h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vx : v),
-    evale G h r (ex x') = Some vx ->
+    dynSem (h, (r, a, sAlloc x' C' :: s') :: S') (h', (r', a', s') :: S')
+| ESReturn : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vx : v),
+    evale h r (ex x') = Some vx ->
     r' = rhoSubst xresult vx r ->
-    dynSem G (h, (r, a, sReturn x' :: s') :: S') (h, (r', a, s') :: S')
-| ESApp : forall G pre h (S' : S) (s' rs : list s) (a a' : A) (r r' : rho) (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := map fst wvs') (vs' := map snd wvs') (m' : m) (o' : o) (C' : C) fvf,
-    evale G h r (ex y') = Some (vo o') ->
-    map (fun z' => evale G h r (ex z')) zs' = map Some vs' ->
+    dynSem (h, (r, a, sReturn x' :: s') :: S') (h, (r', a, s') :: S')
+| ESApp : forall pre h (S' : S) (s' rs : list s) (a a' : A) (r r' : rho) (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := map fst wvs') (vs' := map snd wvs') (m' : m) (o' : o) (C' : C) fvf,
+    evale h r (ex y') = Some (vo o') ->
+    map (fun z' => evale h r (ex z')) zs' = map Some vs' ->
     h o' = Some (C', fvf) ->
     mbody C' m' = Some rs ->
     mparams C' m' = Some ws' ->
     mpre C' m' = Some pre ->
-    r' = (fun T' rx => if x_decb rx xthis 
-      then vo o' 
+    r' = (fun rx => if x_decb rx xthis 
+      then Some (vo o')
       else (match find (fun wv => x_decb rx (fst wv)) wvs' with
-            | Some x => snd x
-            | None => vnull
+            | Some x => Some (snd x)
+            | None => None
             end)) ->
-    evalphi G h r' a pre ->
-    a' = footprint G h r' pre ->
-    dynSem G (h, (r, a, sCall x' y' m' zs' :: s') :: S') (h, (r', a', rs) :: (r, Aexcept a a', sCall x' y' m' zs' :: s') :: S')
-| ESAppFinish : forall G post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) zs' (m' : m) y' (C' : C) vresult,
+    evalphi h r' a pre ->
+    a' = footprint h r' pre ->
+    dynSem (h, (r, a, sCall x' y' m' zs' :: s') :: S') (h, (r', a', rs) :: (r, Aexcept a a', sCall x' y' m' zs' :: s') :: S')
+| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) zs' (m' : m) y' (C' : C) vresult,
     mpost C' m' = Some post ->
-    evalphi G h r' a' post ->
-    a'' = footprint G h r' post ->
-    evale G h r' (ex xresult) = Some vresult ->
-    dynSem G (h, (r', a', []) :: (r, a, sCall x' y' m' zs' :: s') :: S') (h, (rhoSubst x' vresult r, a ++ a'', s') :: S')
-| ESAssert : forall G h r a p s' S',
-    evalphi' G h r a p ->
-    dynSem G (h, (r, a, sAssert p :: s') :: S') (h, (r, a, s') :: S')
-| ESRelease : forall G h r a a' p s' S',
-    evalphi' G h r a p ->
-    a' = Aexcept a (footprint' G h r p) ->
-    dynSem G (h, (r, a, sRelease p :: s') :: S') (h, (r, a', s') :: S')
+    evalphi h r' a' post ->
+    a'' = footprint h r' post ->
+    evale h r' (ex xresult) = Some vresult ->
+    dynSem (h, (r', a', []) :: (r, a, sCall x' y' m' zs' :: s') :: S') (h, (rhoSubst x' vresult r, a ++ a'', s') :: S')
+| ESAssert : forall h r a p s' S',
+    evalphi' h r a p ->
+    dynSem (h, (r, a, sAssert p :: s') :: S') (h, (r, a, s') :: S')
+| ESRelease : forall h r a a' p s' S',
+    evalphi' h r a p ->
+    a' = Aexcept a (footprint' h r p) ->
+    dynSem (h, (r, a, sRelease p :: s') :: S') (h, (r, a', s') :: S')
 .
 
 (* helper definitions *)
-Definition isStuck (G : Gamma) (s : execState) : Prop :=
-  ~ exists s', dynSem G s s'.
-Definition isFinished (G : Gamma) (s : execState) : Prop :=
+Definition isStuck (s : execState) : Prop :=
+  ~ exists s', dynSem s s'.
+Definition isFinished (s : execState) : Prop :=
   exists r a, snd s = [(r,a,[])].
-Definition isFail (G : Gamma) (s : execState) : Prop :=
-  isStuck G s /\ ~ isFinished G s.
+Definition isFail (s : execState) : Prop :=
+  isStuck s /\ ~ isFinished s.
 
-Inductive dynSemStar : Gamma -> execState -> execState -> Prop :=
-| ESSNone : forall G a, dynSemStar G a a
-| ESSStep : forall G a b c, dynSem G a b -> dynSemStar G b c -> dynSemStar G a c
+Inductive dynSemStar : execState -> execState -> Prop :=
+| ESSNone : forall a, dynSemStar a a
+| ESSStep : forall a b c, dynSem a b -> dynSemStar b c -> dynSemStar a c
 .
 (*Definition dynSemFull (initial final : execState) : Prop := dynSemStar initial final /\ isFinished final.
 *)
 Definition newHeap : H := fun _ => None.
-Definition newRho : rho := fun T' _ => vnull.
+Definition newRho : rho := fun _ => None.
 Definition newAccess : A := [].
 
 (* ASSUMPTIONS *)
@@ -576,10 +578,10 @@ Notation "'Γ'" := Gamma.
 
 (* determinism? *)
 
-Lemma hoareImplies : forall G q1 q2 q3 q4 s', phiImplies G q1 q2 -> hoare q2 s' q3 -> phiImplies G q3 q4 -> hoare q1 s' q4.
+Lemma hoareImplies : forall q1 q2 q3 q4 s', phiImplies q1 q2 -> hoare q2 s' q3 -> phiImplies q3 q4 -> hoare q1 s' q4.
 Admitted.
 
-Lemma phiImpliesRefl : forall G x, phiImplies G x x.
+Lemma phiImpliesRefl : forall x, phiImplies x x.
 Proof.
   unfold phiImplies.
   auto.
@@ -589,8 +591,8 @@ Hint Resolve phiImpliesRefl.
 Lemma AexceptReverse : forall a1 a2, Aexcept (a1 ++ a2) a2 = a1.
 Admitted.
 
-Lemma evalPhiImplies : forall G H' r A' q1 q2,
-  phiImplies G q1 q2 -> evalphi G H' r A' q1 -> evalphi G H' r A' q2.
+Lemma evalPhiImplies : forall H' r A' q1 q2,
+  phiImplies q1 q2 -> evalphi H' r A' q1 -> evalphi H' r A' q2.
 Proof.
   intros.
   unfold phiImplies in H0.
@@ -681,62 +683,356 @@ Ltac unfWT :=
   unfold wellTypedE in *;
   simpl getType in *.
 
+Lemma evaleTClass : forall G e' C' h r, getType G e' = Some (TClass C') -> (let res := evale h r e' in res = Some vnull \/ exists o', res = Some (vo o')).
+Admitted. (* TODO: entangle *)
+
+Definition consistent (H' : H) (r : rho) := forall x' o' res, r x' = Some (vo o') -> H' o' = Some res.
+
+Lemma lengthId : forall {A : Type} (a b : list A), a = b -> Datatypes.length a = Datatypes.length b.
+Proof.
+  intros.
+  rewrite H0.
+  tauto.
+Qed.
+
 Theorem staSemProgress : forall G (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   wellTyped G s'' ->
   hoareSingle G pre s'' post ->
-  evalphi G initialHeap initialRho initialAccess pre ->
+  consistent initialHeap initialRho ->
+  evalphi initialHeap initialRho initialAccess pre ->
   exists finalHeap finalRho finalAccess,
-    dynSemStar G (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S')
+    dynSemStar (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S')
 .
 Proof.
   destruct s''; intros;
-  inversion H1; clear H1; subst;
-  unfold evalphi in H2.
-  unfWT; simpl in H0; intuition.
-  * destruct (G x0).
-    - destruct t.
-      + inversion H1. inversion H3.
-      + apply H2 in H10.
-        apply H2 in H9.
-        clear H2.
-        inversion H10; clear H10; subst.
-        inversion H9; clear H9; subst.
-        inversion H0; clear H0.
-        repeat econstructor; try eassumption.
-        simpl.
-        destruct (G x1); simpl; inversion H2.
-        eauto.
-    - inversion H1. inversion H3.
-  * repeat eexists.
+  inversion H1; clear H1; subst; unfold evalphi in H3.
+  (*unfWT; simpl in H0; intuition.*)
+  * apply H3 in H9.
+    apply H3 in H11.
+    apply H3 in H12.
+    clear H3.
+    inversion H9; clear H9; subst.
+    inversion H11; clear H11; subst.
+    inversion H12; clear H12; subst.
+    simpl in *.
+    inversion H10; clear H10. subst.
+    rewrite H4 in *.
+    inversion H7; clear H7. subst.
     tmp.
-    unfold wellTyped in H0.
-    admit.
+  * apply H3 in H7.
+    clear H3.
+    inversion H7; clear H7; subst.
+    tmp.
   * specialize (HnotTotal initialHeap). intros.
     inversion H1.
     tmp.
-  * subst. tmp.
-    - admit.
-    - admit.
-    - 
-  * tmp.
-  * tmp.
-  * tmp.
-    unfold phiImplies in *.
-    unfold evalphi in *.
+  * subst.
+    apply H3 in H11.
+    inversion H11; clear H11; subst.
+    simpl in *.
+    inversion H10; clear H10; subst.
+    specialize (evaleTClass G (ex x1) C' initialHeap initialRho).
     intros.
-    apply H3.
-    - assumption.
-    - apply in_or_app.
-      intuition.
-Qed.
+    intuition.
+    inversion H4; simpl in H1; rewrite H5 in H1; inversion H1; clear H1; try (contradict H12; assumption; fail).
+    inversion H6; clear H6; subst.
+    clear H12 H4.
+    inversion H0; clear H0.
+    inversion H1; clear H1.
+    inversion H0; clear H0.
+    inversion H1; clear H1.
+    inversion H0; clear H0.
+    inversion H1; clear H1.
+    inversion H4; clear H4.
+    inversion H6; clear H6.
+    rewrite H0 in *.
+    inversion H8; clear H8.
+    subst.
 
-Theorem staSemPreservation : forall (prog : program) (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S' finalHeap finalRho finalAccess sRem,
-  @hoareSingle prog pre s'' post ->
-  evalphi initialHeap initialRho initialAccess pre ->
-  @dynSem prog (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, sRem) :: S') ->
-  evalphi finalHeap finalRho finalAccess post.
+    destruct x6.
+
+    unfold mpre in H14.
+    unfold mcontract in H14.
+    rewrite H1 in H14.
+    simpl in H14.
+    inversion H14; clear H14.
+    subst.
+    unfold phiImplies in H13.
+    unfold evalphi in H13.
+    specialize (H13 initialHeap initialRho initialAccess).
+    intuition.
+    clear H3.
+
+    repeat eexists. econstructor; econstructor.
+    instantiate (pre := p0).
+    - eauto.
+    - simpl.
+      instantiate (wvs' := combine (map snd x5) (map (fun xx => match xx with 
+            | Some vv => vv
+            | None => vnull
+            end) (map initialRho (map snd Xz')))).
+      rewrite mapSplitSnd.
+      rewrite mapSplitSnd.
+      rewrite combine_split.
+      + simpl.
+        admit.
+        (*rewrite map_map.
+        admit.
+        erewrite map_ext_in.*)
+      + rewrite map_length.
+        rewrite map_length.
+        rewrite map_length.
+        rewrite split_length_r.
+        apply lengthId in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        assumption.
+    - eauto.
+    - instantiate (C' := C').
+      unfold mbody.
+      rewrite H1.
+      simpl.
+      eauto.
+    - unfold mparams.
+      rewrite H1.
+      simpl.
+      rewrite mapSplitFst.
+      rewrite combine_split.
+      + simpl.
+        tauto.
+      + rewrite map_length.
+        rewrite map_length.
+        rewrite map_length.
+        rewrite map_length.
+        apply lengthId in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        rewrite map_length in H7.
+        assumption.
+    - unfold mpre. unfold mcontract.
+      rewrite H1.
+      simpl.
+      eauto.
+    - intuition.
+    - admit.
+    - intuition.
+    - admit.
+    - admit.
+  * apply H3 in H7.
+    inversion H7; clear H7; subst.
+    tmp.
+  * tmp.
+  * tmp.
+    unfold phiImplies in H5.
+    unfold evalphi in H5.
+    specialize (H5 initialHeap initialRho initialAccess).
+    apply H5; try assumption.
+    apply in_eq.
+Admitted.
+
+Lemma exists_forall : forall {A : Type} (b : A -> Prop) (c : Prop), ((exists a, b a) -> c) -> (forall a, b a -> c).
 Proof.
   intros.
+  apply H0.
+  eauto.
+Qed.
+  
+
+Lemma rhoVSeSubst : forall e'' e''' h r e' x' v', 
+ evale h r e' = Some v' ->
+ eSubst x' e' e'' = e''' ->
+  evale h (rhoSubst x' v' r) e'' =
+  evale h r e'''.
+Proof.
+  induction e''; intros; subst.
+  - simpl. auto.
+  - simpl eSubst. simpl. unfold rhoSubst.
+    case_eq (x_decb x0 x'); intros; simpl; try tauto.
+    rewrite H0.
+    tauto.
+Qed.
+
+Lemma rhoVSphiSubst : forall e'' e''' h r e' x' v' a, 
+ evale h r e' = Some v' ->
+ phi'Subst x' e' e'' = e''' ->
+  (evalphi' h (rhoSubst x' v' r) a e'' <->
+  evalphi' h r a e''').
+Proof.
+  induction e''; intros; subst; split; intros; try constructor; simpl in *.
+  - econstructor.
+    simpl. cons inversion H1; clear H1; subst.
+    clear H8.
+    generalize H4.
+    generalize e0.
+    clear H4 e0.
+    induction e0; intros; simpl in *.
+    * eauto.
+  - simpl. auto.
+  - simpl eSubst. simpl. unfold rhoSubst.
+    case_eq (x_decb x0 x'); intros; simpl; try tauto.
+    rewrite H0.
+    tauto.
+Qed.
+
+Theorem staSemPreservation : forall G (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S' finalHeap finalRho finalAccess sRem,
+  wellTyped G s'' ->
+  hoareSingle G pre s'' post ->
+  consistent initialHeap initialRho ->
+  evalphi initialHeap initialRho initialAccess pre ->
+  dynSem (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, sRem) :: S') ->
+  evalphi finalHeap finalRho finalAccess post.
+Proof.
+  destruct s'';
+  intros;
+  inversion H4; clear H4;
+  inversion H1; clear H1;
+  simpl in H0;
+  try subst;
+  unfold evalphi; intros;
+  unfold consistent in H2.
+  - apply in_app_or in H1.
+    inversion H1; clear H1.
+    * admit.
+    * inversion H4; clear H4; try inversion H1; clear H1.
+      subst.
+      econstructor; simpl in *.
+      + rewrite H9.
+        instantiate (v1 := yv').
+        unfold HSubst.
+        assert (o_decb o' o' = true). unfold o_decb. unfold dec2decb. destruct (o_dec o' o'); auto.
+        rewrite H1.
+        eapply H2 in H9.
+        rewrite H9.
+        instantiate (res := (_, _)).
+        simpl.
+        unfold f_decb.
+        unfold string_decb.
+        unfold dec2decb.
+        destruct (string_dec f0 f0); auto.
+        contradict n; auto.
+      + eauto.
+      + auto.
+  - assert (H333 := H3).
+    specialize (H3 p').
+    unfold phiSubst in H3.
+    rewrite (in_map_iff (phi'Subst x0 e0) post p') in H3.
+    assert (forall x : phi', (phi'Subst x0 e0 x = p' ∧ In x post) → evalphi' finalHeap initialRho finalAccess p').
+      intros.
+      apply H3.
+      eexists. eassumption.
+    clear H3.
+    pose proof (H4 p').
+    destruct (phi'Subst x0 e0 p' == p').
+    * rewrite e1 in *. intuition.
+      inversion H5; clear H5; subst; econstructor.
+      + simpl in e1.
+        destruct e2; intros; simpl.
+          eauto.
+
+          unfold rhoSubst.
+          unfold x_decb.
+          unfold dec2decb.
+          destruct (x_dec x1 x0).
+            subst.
+            inversion e1; clear e1.
+            unfold x_decb in *.
+            unfold dec2decb in *.
+            case_eq (x_dec x0 x0); intros;
+            try (clear H5; contradict n; auto; fail).
+            rewrite H5 in *. rewrite H8 in *. clear e1 H5 H8.
+            simpl in *. rewrite H7 in *.
+            assumption.
+
+            simpl in H3. assumption.
+
+          inversion H3; clear H3.
+          assert (evale finalHeap (rhoSubst x0 v' initialRho) e2 = evale finalHeap initialRho e2).
+            inversion e1; clear e1.
+            eapply rhoVSeSubst; eauto. rewrite H5. assumption.
+          rewrite H3.
+          tauto.
+      + assert (evale finalHeap (rhoSubst x0 v' initialRho) e3 = evale finalHeap initialRho e3).
+          inversion e1; clear e1.
+          eapply rhoVSeSubst; eauto. rewrite H9. assumption.
+        rewrite H5.
+        eauto.
+      + tauto.
+      + simpl in e1.
+        destruct e2; simpl.
+          eauto.
+
+          unfold rhoSubst.
+          unfold x_decb.
+          unfold dec2decb.
+          destruct (x_dec x1 x0).
+            subst.
+            inversion e1; clear e1.
+            unfold x_decb in *.
+            unfold dec2decb in *.
+            case_eq (x_dec x0 x0); intros;
+            try (clear H5; contradict n; auto; fail).
+            rewrite H5 in *. rewrite H9 in *. clear e1 H5 H9.
+            simpl in *. rewrite H7 in *.
+            assumption.
+
+            simpl in H3. assumption.
+
+          inversion H3; clear H3.
+          assert (evale finalHeap (rhoSubst x0 v' initialRho) e2 = evale finalHeap initialRho e2).
+            inversion e1; clear e1.
+            eapply rhoVSeSubst; eauto. rewrite H5. assumption.
+          rewrite H3.
+          tauto.
+      + assert (evale finalHeap (rhoSubst x0 v' initialRho) e3 = evale finalHeap initialRho e3).
+          inversion e1; clear e1.
+          eapply rhoVSeSubst; eauto. rewrite H10. assumption.
+        rewrite H5.
+        eauto.
+      + tauto.
+      + simpl in *.
+        unfold rhoSubst.
+        destruct (x_decb x' x0); inversion e1.
+        eauto.
+      + assumption.
+    * specialize (H333 p').
+      clear H4.
+      destruct p'; simpl in *.
+      + intuition.
+      + econstructor.
+        admit. admit. admit.
+      + econstructor.
+        admit. admit. admit.
+      + econstructor.
+          simpl.
+          unfold rhoSubst.
+          destruct (x_decb x1 x0).
+        
+         clear e1.
+        simpl in *.
+
+inversion e1; clear e1.
+          
+          clear H3 H8.
+          inversion e1; clear e1.
+          rewrite H5.
+          rewrite H8.
+
+      + econstructor.
+    intuition.
+    SearchAbout (forall).
+    specialize (H3 p').
+    destruct p'; try constructor.
+    * econstructor.
+      
+
+    SearchPattern (((exists _, _) -> _) -> forall _, _ -> _).
+    SearchAbout In.
+    rewrite in_map in H3.
+     econstructor.
+    
 
 
 Theorem staSemSound : forall (prog : program) (body : list s) (pre post : phi) initialHeap initialRho initialAccess S',
