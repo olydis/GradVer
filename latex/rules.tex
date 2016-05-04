@@ -174,7 +174,7 @@
 \AxiomC{$\emptyset \sfrmphi \phi'$}
 \AxiomC{$\staticFP(\phi') \sfrme e$}
 \RightLabel{\quad H-VarAssign}
-\TrinaryInfC{$\hoareG {\phi'} {x := e} {\phi * x.f = y}$}
+\TrinaryInfC{$\hoareG {\phi'} {x := e} {\phi}$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
@@ -201,7 +201,7 @@
 \begin{prooftree}
 \AxiomC{$\phi \implies \phi' * \phi_r$}
 \AxiomC{$\emptyset \sfrmphi \phi_r$}
-\RightLabel{\quad H-Assert}
+\RightLabel{\quad H-Release}
 \BinaryInfC{$\hoareG {\phi} {\release \phi'} {\phi_r}$}
 \end{prooftree}\hfill
 
