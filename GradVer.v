@@ -58,7 +58,7 @@ Inductive phi' :=
 | phiTrue : phi'
 | phiEq : e -> e -> phi'
 | phiNeq : e -> e -> phi'
-| phiAcc : x -> f -> phi'.
+| phiAcc : e -> f -> phi'.
 Definition phi := list phi'.
 Inductive s :=
 | sMemberSet : x -> f -> x -> s
@@ -262,7 +262,7 @@ Definition phi'Subst (x' : x) (e' : e) (p : phi') : phi' :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubst x' e' e1) (eSubst x' e' e2)
 | phiNeq e1 e2 => phiNeq (eSubst x' e' e1) (eSubst x' e' e2)
-| phiAcc x'' e'' => if x_decb x'' x' then phiTrue else p
+| phiAcc e'' f'' => phiAcc (eSubst x' e' e'') f''
 | _ => p
 end.
 
@@ -309,7 +309,7 @@ Inductive sfrme : A -> e -> Prop :=
 (* Figure 4: Deﬁnition of a static version of footprint *)
 Fixpoint staticFootprint (p : phi) : A := flat_map (fun p =>
   match p with
-  | phiAcc x' f' => [(namex x', f')]
+  | phiAcc (ex x') f' => [(namex x', f')]
   | _ => []
   end) p.
 
@@ -318,7 +318,7 @@ Inductive sfrmphi' : A -> phi' -> Prop :=
 | WFTrue : forall a, sfrmphi' a phiTrue
 | WFEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi' a (phiEq e1 e2)
 | WFNEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi' a (phiNeq e1 e2)
-| WFAcc : forall a x f, sfrmphi' a (phiAcc x f)
+| WFAcc : forall a e' f, sfrme a e' -> sfrmphi' a (phiAcc e' f)
 .
 Definition sfrmphi (a : A) (p : phi) : Prop :=
   forall p', In p' p -> sfrmphi' a p'.
@@ -375,10 +375,10 @@ Inductive evalphi' : H -> rho -> A -> phi' -> Prop :=
     evale h r e2 = Some v2 ->
     v1 <> v2 ->
     evalphi' h r a (phiNeq e1 e2)
-| EAAcc : forall h r a x' o' f',
-    evale h r (ex x') = Some (vo o') ->
+| EAAcc : forall h r a e' o' f',
+    evale h r e' = Some (vo o') ->
     In (nameo o', f') a ->
-    evalphi' h r a (phiAcc x' f')
+    evalphi' h r a (phiAcc e' f')
 .
 Definition evalphi : H -> rho -> A -> phi -> Prop :=
   fun h r a p => forall p', In p' p -> evalphi' h r a p'.
@@ -397,7 +397,7 @@ Definition wellTypedPhi' (G : Gamma) (p : phi') : Prop :=
   | phiTrue => True
   | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
   | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
-  | phiAcc x f => wellTypedE G (edot (ex x) f)
+  | phiAcc e' f => wellTypedE G (edot e' f)
   end.
 Definition wellTypedPhi (G : Gamma) (p : phi) : Prop :=
   forall p', In p' p -> wellTypedPhi' G p'.
@@ -428,11 +428,11 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
       p
       (sAlloc x' C')
       (fold_left 
-        (fun a b => phiAcc x' (snd b) :: a) 
+        (fun a b => phiAcc (ex x') (snd b) :: a) 
         fs 
         (phiNeq (ex x') (ev vnull) :: p))
 | HFieldAssign : forall G (p : phi) (x' y' : x) (f' : f) e',
-    In (phiAcc x' f') p ->
+    In (phiAcc (ex x') f') p ->
     In (phiNeq (ex x') (ev vnull)) p ->
     In (phiEq (ex y') e') p ->
     hoareSingle G p (sMemberSet x' f' y') (p ++ [phiEq (edot (ex x') f') (ex y')])
@@ -442,9 +442,10 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
     sfrmphi [] p' ->
     sfrme (staticFootprint p') e' ->
     hoareSingle G p' (sAssign x' e') p
-| HReturn : forall G p (x' : x) e',
-    In (phiEq (ex x') e') p ->
-    hoareSingle G p (sReturn x') (p ++ [phiEq (ex xresult) (ex x')])
+| HReturn : forall G p (x' : x) e' p',
+    p' = phiSubst x' e' p ->
+    In (phiEq (ex x') e') p' ->
+    hoareSingle G p' (sReturn x') p
 | HApp : forall G p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
     G y' = Some (TClass C') ->
     In (phiNeq (ex y') (ev vnull)) p ->
@@ -474,8 +475,8 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 (* Figure 8: Definition of footprint meta-function *)
 Fixpoint footprint' (h : H) (r : rho) (p : phi') : A :=
   match p with
-  | phiAcc x' f' => 
-      match evale h r (ex x') with
+  | phiAcc e' f' => 
+      match evale h r e' with
       | Some (vo o') => [(nameo o', f')]
       | _ => [] (*???*)
       end
@@ -821,8 +822,8 @@ Proof.
     - intuition.
     - admit.
     - admit.
-  * apply H3 in H7.
-    inversion H7; clear H7; subst.
+  * apply H3 in H8.
+    inversion H8; clear H8; subst.
     tmp.
   * tmp.
   * tmp.
@@ -855,26 +856,57 @@ Proof.
     tauto.
 Qed.
 
-Lemma rhoVSphiSubst : forall e'' e''' h r e' x' v' a, 
+Lemma rhoVSphiSubst1 : forall e'' e''' h r e' x' v' a, 
  evale h r e' = Some v' ->
  phi'Subst x' e' e'' = e''' ->
-  (evalphi' h (rhoSubst x' v' r) a e'' <->
+  (evalphi' h (rhoSubst x' v' r) a e'' ->
   evalphi' h r a e''').
 Proof.
-  induction e''; intros; subst; split; intros; try constructor; simpl in *.
-  - econstructor.
-    simpl. cons inversion H1; clear H1; subst.
-    clear H8.
-    generalize H4.
-    generalize e0.
-    clear H4 e0.
-    induction e0; intros; simpl in *.
-    * eauto.
-  - simpl. auto.
-  - simpl eSubst. simpl. unfold rhoSubst.
-    case_eq (x_decb x0 x'); intros; simpl; try tauto.
-    rewrite H0.
-    tauto.
+  induction e''; intros; subst; intros; try constructor; simpl in *.
+  - inversion H2; clear H2; subst.
+    econstructor.
+    * erewrite rhoVSeSubst in H4; eauto.
+    * erewrite rhoVSeSubst in H8; eauto.
+    * tauto.
+  - inversion H2; clear H2; subst.
+    econstructor.
+    * erewrite rhoVSeSubst in H4; eauto.
+    * erewrite rhoVSeSubst in H8; eauto.
+    * tauto.
+  - inversion H2; clear H2; subst.
+    econstructor.
+    * erewrite rhoVSeSubst in H7; eauto.
+    * tauto.
+Qed.
+Lemma rhoVSphiSubst2 : forall e'' e''' h r e' x' v' a, 
+ evale h r e' = Some v' ->
+ phi'Subst x' e' e'' = e''' ->
+  (evalphi' h r a e''' ->
+  evalphi' h (rhoSubst x' v' r) a e'').
+Proof.
+  induction e''; intros; subst; intros; try constructor; simpl in *.
+  - inversion H2; clear H2; subst.
+    specialize (rhoVSeSubst e0 (eSubst x' e' e0) h r e' x' v').
+    intros.
+    specialize (rhoVSeSubst e1 (eSubst x' e' e1) h r e' x' v').
+    intros.
+    intuition.
+    rewrite H8, H4 in *.
+    econstructor; eauto.
+  - inversion H2; clear H2; subst.
+    specialize (rhoVSeSubst e0 (eSubst x' e' e0) h r e' x' v').
+    intros.
+    specialize (rhoVSeSubst e1 (eSubst x' e' e1) h r e' x' v').
+    intros.
+    intuition.
+    rewrite H8, H4 in *.
+    econstructor; eauto.
+  - inversion H2; clear H2; subst.
+    specialize (rhoVSeSubst e0 (eSubst x' e' e0) h r e' x' v').
+    intros.
+    intuition.
+    rewrite H7 in *.
+    econstructor; eauto.
 Qed.
 
 Theorem staSemPreservation : forall G (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S' finalHeap finalRho finalAccess sRem,
@@ -915,7 +947,117 @@ Proof.
         contradict n; auto.
       + eauto.
       + auto.
-  - assert (H333 := H3).
+  - unfold evalphi in H3.
+    specialize (H3 (phi'Subst x0 e0 p')).
+    eapply rhoVSphiSubst2; eauto.
+    apply H3.
+    unfold phiSubst.
+    apply in_map.
+    assumption.
+  - rewrite H26 in *.
+    inversion H17; clear H17; subst.
+    clear H24.
+    generalize H26.
+    generalize H1.
+    generalize Cf'.
+    clear H26 H1 Cf'.
+    induction Cf'; simpl; intros.
+    * rewrite app_nil_r.
+      inversion H1; clear H1.
+      + subst.
+        econstructor; simpl.
+          unfold rhoSubst.
+          unfold x_decb.
+          unfold dec2decb.
+          destruct (x_dec x0 x0); try (contradict n; tauto).
+          auto.
+
+          auto.
+
+          unfold not. intros. inversion H1.
+      + admit. (* unfold evalphi in H3.
+        apply H3 in H4. clear H3.
+        eapply (evaleTClass G (ex x0) c initialHeap (rhoSubst x0 (vo o') initialRho)) in H0; simpl in H0.
+        inversion H0.
+          unfold rhoSubst in H1.
+          unfold x_decb in H1.
+          unfold dec2decb in H1.
+          destruct (x_dec x0 x0); try (contradict n; tauto).
+          inversion H1.
+        
+        case_eq (initialRho x0); intros.
+          .
+        specialize H2
+        eapply rhoVSphiSubst2 in H4; eauto.
+          instantiate (e' := ex x0).
+          simpl; auto.
+          generalize evaleTClass.
+          instantiate (e' := ev (vo o')).
+          simpl; auto.
+          
+          simpl; auto.
+          
+          unfold phi'Subst.
+          destruct p'; auto.
+          
+          *)
+    * admit.
+  - apply lengthId in H19.
+    simpl in H19.
+    contradict H19.
+    auto with arith.
+  - eapply rhoVSphiSubst2; eauto.
+    unfold evalphi in H3.
+    admit.
+  - unfold evalphi in H3.
+    intuition.
+  - unfold phiImplies in H17.
+    apply H17 in H3.
+    unfold evalphi in H3.
+    specialize (H3 p').
+    assert (In p' (p0 :: post)).
+      apply in_cons; assumption.
+    intuition.
+    destruct p'; inversion H5; clear H5; subst; econstructor; try eauto.
+    unfold Aexcept.
+    unfold except.
+    apply filter_In.
+    intuition.
+    apply negb_true_iff.
+    apply not_true_is_false.
+    unfold not.
+    intros.
+    apply existsb_exists in H3.
+    inversion H3; clear H3.
+    intuition.
+    unfold A'_decb in *.
+    apply andb_prop in H6.
+    intuition.
+    unfold name_decb, string_decb in *.
+    unfold dec2decb in *.
+    destruct (name_dec (fst (nameo o', f0)) (fst x0)); inversion H5.
+    destruct (string_dec (snd (nameo o', f0)) (snd x0)); inversion H8.
+    simpl in *.
+    clear H8 H5 H4 H17.
+    destruct x0. simpl in *.
+    subst.
+    unfold sfrmphi in *.
+    apply H20 in H1.
+    inversion H1; clear H1; subst.
+    inversion H6; clear H6; subst; simpl in *.
+    destruct p0; simpl in H3; try inversion H3.
+    destruct e1; simpl in H3.
+    * destruct v0; try (inversion H3; clear H3).
+      inversion H20.
+      + inversion H4; clear H4. subst.
+        inversion H7; clear H7. subst.
+
+    apply in_app_or in H1.
+    inversion H1; clear H1.
+    * apply H3 in H4.
+      eapply rhoVSphiSubst2; eauto.
+      assert (p' = phi'Subst xresult (ex x0) p').
+    assert (H333 := H3).
     specialize (H3 p').
     unfold phiSubst in H3.
     rewrite (in_map_iff (phi'Subst x0 e0) post p') in H3.
@@ -923,6 +1065,9 @@ Proof.
       intros.
       apply H3.
       eexists. eassumption.
+    
+    eapply rhoVSphiSubst.
+    
     clear H3.
     pose proof (H4 p').
     destruct (phi'Subst x0 e0 p' == p').
