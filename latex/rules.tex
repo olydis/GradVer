@@ -284,4 +284,30 @@
 \section{Small-step semantics}
 TODO
 
+\section{Theorems}
+Hoare preserves self-framing
+\begin{align*}
+\forall~ \Gamma, \phi_1, \phi_2, s &: \hoareG {\phi_1} s {\phi_2} 
+\\ &\implies \staticFP(\phi_1) \sfrmphi \phi_1 
+\\ &\implies \staticFP(\phi_2) \sfrmphi \phi_2
+\end{align*}
+
+Hoare progress
+\begin{align*}
+\forall~ \Gamma, \phi_1, \phi_2, s, H_1, \rho_1, A_1 &: \hoareG {\phi_1} s {\phi_2} 
+\\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
+\\ &\implies \exists H_2, \rho_2, A_2 : (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
+							\rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
+\end{align*}
+
+Hoare preservation
+\begin{align*}
+\forall~ \Gamma, \phi_1, \phi_2, s, H_1, H_2, \rho_1, \rho_2, A_1, A_2 &: \hoareG {\phi_1} s {\phi_2} 
+\\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
+\\ &\implies (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
+  \rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
+\\ &\implies \evalphix {H_2} {\rho_2} {A_2} {\phi_2}
+\end{align*}
+
+
 \end{document}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (MiKTeX 2.9) (preloaded format=pdflatex 2015.10.6)  4 MAY 2016 16:13
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (MiKTeX 2.9) (preloaded format=pdflatex 2015.10.6)  4 MAY 2016 16:32
 entering extended mode
 **rules.tex
 (rules.tex
@@ -1112,21 +1112,21 @@ Overfull \hbox (216.96938pt too wide) in paragraph at lines 186--193
  [] 
  []
 
-[2] [3]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 287.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 287.
+[2] [3] [4]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 313.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 313.
  (rules.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 287.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 287.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 313.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 313.
 Package rerunfilecheck Info: File `rules.out' has not changed.
-(rerunfilecheck)             Checksum: D7B4F9BFA5BCA8A3204A24931C4E5436;514.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 287.
+(rerunfilecheck)             Checksum: C4F30BE6658E1C88E213F633B22E7EE9;562.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 313.
  ) 
 Here is how much of TeX's memory you used:
- 20651 strings out of 493673
- 371624 string characters out of 3143184
- 541787 words of memory out of 3000000
- 23574 multiletter control sequences out of 15000+200000
+ 20654 strings out of 493673
+ 371656 string characters out of 3143184
+ 543788 words of memory out of 3000000
+ 23575 multiletter control sequences out of 15000+200000
  44450 words of font info for 59 fonts, out of 3000000 for 9000
  1025 hyphenation exceptions out of 8191
  64i,10n,66p,422b,392s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -1139,9 +1139,9 @@ X/fonts/type1/public/lm/lmro10.pfb><D:/MikTeX/fonts/type1/public/lm/lmssbx10.pf
 b><D:/MikTeX/fonts/type1/public/lm/lmsy10.pfb><D:/MikTeX/fonts/type1/public/lm/
 lmsy8.pfb><D:/MikTeX/fonts/type1/public/lm/lmtt10.pfb><D:/MikTeX/fonts/type1/pu
 blic/lm/lmtt8.pfb><D:/MikTeX/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on rules.pdf (3 pages, 203319 bytes).
+Output written on rules.pdf (4 pages, 208132 bytes).
 PDF statistics:
- 116 PDF objects out of 1000 (max. 8388607)
- 13 named destinations out of 1000 (max. 500000)
- 14933 words of extra memory for PDF output out of 17280 (max. 10000000)
+ 124 PDF objects out of 1000 (max. 8388607)
+ 15 named destinations out of 1000 (max. 500000)
+ 14941 words of extra memory for PDF output out of 17280 (max. 10000000)
 
