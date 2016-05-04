@@ -1,0 +1,120 @@
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}Motivation}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}Goal}{2}{section.1.2}
+\contentsline {section}{\numberline {1.3}Related Work}{2}{section.1.3}
+\contentsline {chapter}{\numberline {2}Language and syntax}{3}{chapter.2}
+\contentsline {section}{\numberline {2.1}Syntax}{3}{section.2.1}
+\contentsline {section}{\numberline {2.2}Expressions}{3}{section.2.2}
+\contentsline {section}{\numberline {2.3}Notation}{5}{section.2.3}
+\contentsline {section}{\numberline {2.4}Subexpressions}{5}{section.2.4}
+\contentsline {section}{\numberline {2.5}Free variables}{5}{section.2.5}
+\contentsline {section}{\numberline {2.6}Substitutions}{6}{section.2.6}
+\contentsline {section}{\numberline {2.7}Evaluation and equality}{6}{section.2.7}
+\contentsline {chapter}{\numberline {3}Partial order of expressions $\sqsubseteq $}{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}Motivation}{7}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Conservative approximation of possibly divergent expressions}{7}{subsection.3.1.1}
+\contentsline {subsection}{\numberline {3.1.2}Functions with patterns}{7}{subsection.3.1.2}
+\contentsline {subsection}{\numberline {3.1.3}Case expressions}{8}{subsection.3.1.3}
+\contentsline {section}{\numberline {3.2}Idea}{8}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}Extended language}{8}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}$\bot $}{8}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}$\top $}{8}{subsection.3.2.3}
+\contentsline {subsection}{\numberline {3.2.4}Intuition}{9}{subsection.3.2.4}
+\contentsline {subsubsection}{\nonumberline Set theory}{9}{section*.2}
+\contentsline {subsubsection}{\nonumberline Type theory}{9}{section*.3}
+\contentsline {section}{\numberline {3.3}Definition}{9}{section.3.3}
+\contentsline {section}{\numberline {3.4}Monotonicity and composition rule}{10}{section.3.4}
+\contentsline {chapter}{\numberline {4}Semantics}{11}{chapter.4}
+\contentsline {section}{\numberline {4.1}Evaluation}{11}{section.4.1}
+\contentsline {subsection}{\numberline {4.1.1}Notation}{12}{subsection.4.1.1}
+\contentsline {subsubsection}{\nonumberline Example}{12}{section*.4}
+\contentsline {subsection}{\numberline {4.1.2}Infimum and supremum}{13}{subsection.4.1.2}
+\contentsline {section}{\numberline {4.2}Examples}{13}{section.4.2}
+\contentsline {subsection}{\numberline {4.2.1}Equality due to semantics}{13}{subsection.4.2.1}
+\contentsline {subsection}{\numberline {4.2.2}Pattern matching}{13}{subsection.4.2.2}
+\contentsline {subsection}{\numberline {4.2.3}Function evaluation}{14}{subsection.4.2.3}
+\contentsline {subsection}{\numberline {4.2.4}Case evaluation}{14}{subsection.4.2.4}
+\contentsline {section}{\numberline {4.3}Relationship to the $\lambda $-calculus}{15}{section.4.3}
+\contentsline {section}{\numberline {4.4}Normal form}{16}{section.4.4}
+\contentsline {section}{\numberline {4.5}Multi-argument functions and currying}{16}{section.4.5}
+\contentsline {subsection}{\numberline {4.5.1}Comparison with naive currying}{17}{subsection.4.5.1}
+\contentsline {section}{\numberline {4.6}Regular methods}{18}{section.4.6}
+\contentsline {subsection}{\numberline {4.6.1}Examples}{18}{subsection.4.6.1}
+\contentsline {subsection}{\numberline {4.6.2}Evaluation}{18}{subsection.4.6.2}
+\contentsline {section}{\numberline {4.7}Well-formed statements}{21}{section.4.7}
+\contentsline {subsection}{\numberline {4.7.1}Notation}{21}{subsection.4.7.1}
+\contentsline {subsubsection}{\nonumberline Syntax}{21}{section*.5}
+\contentsline {chapter}{\numberline {5}Proving statements}{23}{chapter.5}
+\contentsline {section}{\numberline {5.1}Statements as input and output}{23}{section.5.1}
+\contentsline {section}{\numberline {5.2}Deduction rules}{23}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}Notation}{23}{subsection.5.2.1}
+\contentsline {subsection}{\numberline {5.2.2}Relation}{24}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.3}Quantification}{25}{subsection.5.2.3}
+\contentsline {subsection}{\numberline {5.2.4}Admissible}{26}{subsection.5.2.4}
+\contentsline {section}{\numberline {5.3}Promises emitted by successful proofs}{27}{section.5.3}
+\contentsline {subsection}{\numberline {5.3.1}Motivation}{27}{subsection.5.3.1}
+\contentsline {subsection}{\numberline {5.3.2}Unification using $\top $ and $\bot $}{27}{subsection.5.3.2}
+\contentsline {subsection}{\numberline {5.3.3}Summary}{28}{subsection.5.3.3}
+\contentsline {subsection}{\numberline {5.3.4}Examples}{28}{subsection.5.3.4}
+\contentsline {subsection}{\numberline {5.3.5}General approach}{30}{subsection.5.3.5}
+\contentsline {section}{\numberline {5.4}Proving different types of statements}{30}{section.5.4}
+\contentsline {subsection}{\numberline {5.4.1}Approach}{30}{subsection.5.4.1}
+\contentsline {section}{\numberline {5.5}Examples of true/provable statements}{30}{section.5.5}
+\contentsline {chapter}{\numberline {6}Algorithm}{33}{chapter.6}
+\contentsline {section}{\numberline {6.1}Challenges}{33}{section.6.1}
+\contentsline {section}{\numberline {6.2}Most general output}{34}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}Examples}{34}{subsection.6.2.1}
+\contentsline {section}{\numberline {6.3}Dealing with undecidability}{34}{section.6.3}
+\contentsline {section}{\numberline {6.4}Formalization of input and output}{34}{section.6.4}
+\contentsline {subsection}{\numberline {6.4.1}Required features}{34}{subsection.6.4.1}
+\contentsline {subsection}{\numberline {6.4.2}Encoding}{34}{subsection.6.4.2}
+\contentsline {section}{\numberline {6.5}Not losing information}{35}{section.6.5}
+\contentsline {subsection}{\numberline {6.5.1}Safe deduction rules}{35}{subsection.6.5.1}
+\contentsline {subsection}{\numberline {6.5.2}Consequences}{36}{subsection.6.5.2}
+\contentsline {subsection}{\numberline {6.5.3}Delayed weakening and global restrictions}{37}{subsection.6.5.3}
+\contentsline {subsection}{\numberline {6.5.4}Example}{37}{subsection.6.5.4}
+\contentsline {subsection}{\numberline {6.5.5}Working with global restrictions}{38}{subsection.6.5.5}
+\contentsline {section}{\numberline {6.6}Internal structure}{38}{section.6.6}
+\contentsline {subsection}{\numberline {6.6.1}Data}{38}{subsection.6.6.1}
+\contentsline {subsection}{\numberline {6.6.2}Proving strategy}{39}{subsection.6.6.2}
+\contentsline {section}{\numberline {6.7}Conservative approximations}{41}{section.6.7}
+\contentsline {section}{\numberline {6.8}Example of proving}{42}{section.6.8}
+\contentsline {subsection}{\numberline {6.8.1}Evaluation}{43}{subsection.6.8.1}
+\contentsline {subsection}{\numberline {6.8.2}Check restrictions}{44}{subsection.6.8.2}
+\contentsline {section}{\numberline {6.9}Example of disproving}{44}{section.6.9}
+\contentsline {subsection}{\numberline {6.9.1}Check restrictions}{45}{subsection.6.9.1}
+\contentsline {section}{\numberline {6.10}Finding rewrite rules}{45}{section.6.10}
+\contentsline {subsection}{\numberline {6.10.1}Strategy}{45}{subsection.6.10.1}
+\contentsline {subsection}{\numberline {6.10.2}Interpretation of results}{46}{subsection.6.10.2}
+\contentsline {subsection}{\numberline {6.10.3}Relevant output}{46}{subsection.6.10.3}
+\contentsline {chapter}{\numberline {7}Conclusion}{47}{chapter.7}
+\contentsline {section}{\numberline {7.1}Evaluation}{47}{section.7.1}
+\contentsline {subsection}{\numberline {7.1.1}Functors}{47}{subsection.7.1.1}
+\contentsline {subsubsection}{\nonumberline Proof}{48}{section*.6}
+\contentsline {subsubsection}{\nonumberline Algorithm}{48}{section*.7}
+\contentsline {subsubsection}{\nonumberline Summary}{50}{section*.8}
+\contentsline {subsection}{\numberline {7.1.2}$\lambda $-calculus}{50}{subsection.7.1.2}
+\contentsline {subsection}{\numberline {7.1.3}Limitations}{51}{subsection.7.1.3}
+\contentsline {subsubsection}{\nonumberline Finding substitutions}{51}{section*.9}
+\contentsline {subsubsection}{\nonumberline Disproving statements}{51}{section*.10}
+\contentsline {subsubsection}{\nonumberline Termination}{52}{section*.11}
+\contentsline {subsubsection}{\nonumberline Universality}{52}{section*.12}
+\contentsline {section}{\numberline {7.2}Future Work}{52}{section.7.2}
+\contentsline {chapter}{\numberline {8}Appendix}{53}{chapter.8}
+\contentsline {section}{\numberline {8.1}Monotonicity}{53}{section.8.1}
+\contentsline {subsection}{\numberline {8.1.1}Data constructor}{53}{subsection.8.1.1}
+\contentsline {subsection}{\numberline {8.1.2}Top/Bottom}{53}{subsection.8.1.2}
+\contentsline {subsection}{\numberline {8.1.3}Fixed-point combinator}{53}{subsection.8.1.3}
+\contentsline {subsection}{\numberline {8.1.4}Substitution of a pattern alternative-bound variable}{54}{subsection.8.1.4}
+\contentsline {subsection}{\numberline {8.1.5}Function/Cases containing a single alternative}{55}{subsection.8.1.5}
+\contentsline {subsection}{\numberline {8.1.6}Function/Cases containing multiple alternatives}{55}{subsection.8.1.6}
+\contentsline {subsection}{\numberline {8.1.7}Consequences of allowing alternative's pattern-variables to be bound by other pattern alternatives}{56}{subsection.8.1.7}
+\contentsline {section}{\numberline {8.2}Proofs for admissible rules}{57}{section.8.2}
+\contentsline {subsection}{\numberline {8.2.1}Lift}{57}{subsection.8.2.1}
+\contentsline {subsection}{\numberline {8.2.2}Fix}{57}{subsection.8.2.2}
+\contentsline {subsection}{\numberline {8.2.3}$\text {Weaken}\@uscore .{\forall \exists }$}{58}{subsection.8.2.3}
+\contentsline {subsection}{\numberline {8.2.4}$\text {Combine}\@uscore .{1}$}{58}{subsection.8.2.4}
+\contentsline {subsection}{\numberline {8.2.5}$\text {Combine}\@uscore .{2}$}{58}{subsection.8.2.5}
+\contentsline {subsection}{\numberline {8.2.6}$\text {CaseCombine}\@uscore .{\exists }$}{59}{subsection.8.2.6}
+\contentsline {subsection}{\numberline {8.2.7}$\text {CaseCombine}\@uscore .{\forall }$}{59}{subsection.8.2.7}
+\contentsline {section}{\numberline {8.3}Proofs for example statements}{60}{section.8.3}
