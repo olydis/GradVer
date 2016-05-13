@@ -18,6 +18,7 @@ Definition dec2decb {A : Type} (dec : ∀ a1 a2 : A, {a1 = a2} + {a1 ≠ a2}) : 
   fun a b => if dec a b then true else false.
 Definition except {A : Type} (A_decb : A -> A -> bool) (a b : list A) : list A :=
   filter (fun x => negb (existsb (A_decb x) b)) a.
+Definition appEnd {A : Type} (l : list A) (x : A) := l ++ [x].
 
 Definition option_bind {A B : Type} (f : A -> option B) (x : option A) : option B :=
 match x with
@@ -58,7 +59,7 @@ Inductive phi' :=
 | phiTrue : phi'
 | phiEq : e -> e -> phi'
 | phiNeq : e -> e -> phi'
-| phiAcc : e -> f -> phi'.
+| phiAcc : x -> f -> phi'.
 Definition phi := list phi'.
 Inductive s :=
 | sMemberSet : x -> f -> x -> s
@@ -82,11 +83,9 @@ Inductive program :=
 Definition Gamma := x -> option T.
 Definition H := o -> option (C * (f -> option v)).
 Definition rho := x -> option v.
-Inductive name :=
-| namex : x -> name
-| nameo : o -> name.
-Definition A := list (name * f).
-Definition S := list (rho * A * list s).
+Definition A_s := list (x * f).
+Definition A_d := list (o * f).
+Definition S := list (rho * A_d * list s).
 
 (* equality *)
 
@@ -172,21 +171,17 @@ Definition program_decb := dec2decb program_dec.
 Hint Resolve program_dec.
 Hint Resolve list_eq_dec program_dec.
 
-Definition name_dec : ∀ n m : name, {n = m} + {n ≠ m}. decide equality. Defined.
-Program Instance name_EqDec : EqDec name eq := name_dec.
-Definition name_decb := dec2decb name_dec.
-Hint Resolve name_dec.
-Hint Resolve list_eq_dec name_dec.
-
+(*
 Definition A_dec : ∀ n m : A, {n = m} + {n ≠ m}. decide equality. apply (prod_eqdec name_dec string_dec). Defined.
 Program Instance A_EqDec : EqDec A eq := A_dec.
 Definition A_decb := dec2decb A_dec.
 Hint Resolve A_dec.
-Hint Resolve list_eq_dec A_dec.
+Hint Resolve list_eq_dec A_dec.*)
 
-Definition A'_decb (a b : name * f) : bool := name_decb (fst a) (fst b) && string_decb (snd a) (snd b).
-Definition Aexcept := except A'_decb.
-
+Definition A_s'_decb (a b : x * f) : bool := x_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition A_d'_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition A_sexcept := except A_s'_decb.
+Definition Aexcept := except A_d'_decb.
 
 Module Semantics.
 
@@ -204,6 +199,8 @@ Definition fields (C' : C) : option (list (T * f)) :=
     | Cls _ fs _ => Some (map (fun f => match f with Field T' f' => (T', f') end) fs)
     end
   end.
+Definition fieldsNames (C' : C) : option (list f) :=
+  option_map (fun l => map snd l) (fields C')
 Definition fieldType (C' : C) (f' : f) : option T :=
   match class C' with
   | None => None
@@ -262,7 +259,15 @@ Definition phi'Subst (x' : x) (e' : e) (p : phi') : phi' :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubst x' e' e1) (eSubst x' e' e2)
 | phiNeq e1 e2 => phiNeq (eSubst x' e' e1) (eSubst x' e' e2)
-| phiAcc e'' f'' => phiAcc (eSubst x' e' e'') f''
+| phiAcc x f'' => if x_decb x x' 
+  then
+    (
+      match e' with
+      | ex x' => phiAcc x f''
+      | _ => phiTrue
+      end
+    )
+  else p
 | _ => p
 end.
 
@@ -295,32 +300,32 @@ Definition GammaSubst (x' : x) (T' : T) (g : Gamma) : Gamma :=
   fun x'' => if x_decb x'' x' then Some T' else g x''.
 
 (* Figure 2: Static typing rules for expressions of the core language *)
-Inductive sfrme : A -> e -> Prop :=
-| WFVar : forall a (x' : x),
-    sfrme a (ex x')
-| WFValue : forall a (v' : v),
-    sfrme a (ev v')
-| WFField : forall a (x' : x) (f' : f),
-    In (namex x', f') a ->
-    sfrme a (edot (ex x') f')
+Inductive sfrme : A_s -> e -> Prop :=
+| WFVar : forall A x,
+    sfrme A (ex x)
+| WFValue : forall A v,
+    sfrme A (ev v)
+| WFField : forall A x f,
+    In (x, f) A ->
+    sfrme A (edot (ex x) f)
 .
 
 
 (* Figure 4: Deﬁnition of a static version of footprint *)
-Fixpoint staticFootprint (p : phi) : A := flat_map (fun p =>
+Fixpoint staticFootprint (p : phi) : A_s := flat_map (fun p =>
   match p with
-  | phiAcc (ex x') f' => [(namex x', f')]
+  | phiAcc x' f' => [(x', f')]
   | _ => []
   end) p.
 
 (* Figure 3: Static rules for syntactically self-framed formulas *)
-Inductive sfrmphi' : A -> phi' -> Prop :=
-| WFTrue : forall a, sfrmphi' a phiTrue
-| WFEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi' a (phiEq e1 e2)
-| WFNEqual : forall a (e1 e2 : e), sfrme a e1 -> sfrme a e2 -> sfrmphi' a (phiNeq e1 e2)
-| WFAcc : forall a e' f, sfrme a e' -> sfrmphi' a (phiAcc e' f)
+Inductive sfrmphi' : A_s -> phi' -> Prop :=
+| WFTrue : forall A, sfrmphi' A phiTrue
+| WFEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiEq e_1 e_2)
+| WFNEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiNeq e_1 e_2)
+| WFAcc : forall A x f, sfrmphi' A (phiAcc x f)
 .
-Definition sfrmphi (a : A) (p : phi) : Prop :=
+Definition sfrmphi (a : A_s) (p : phi) : Prop :=
   forall p', In p' p -> sfrmphi' a p'.
 
 (* static type derivation *)
@@ -362,7 +367,7 @@ Fixpoint evale (h : H) (r : rho) (e' : e) : option v :=
 (* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
 
 (* Figure 7: Evaluation of formulas for core language *)
-Inductive evalphi' : H -> rho -> A -> phi' -> Prop :=
+Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
 | EATrue : forall h r a,
     evalphi' h r a phiTrue
 | EAEqual : forall h r a e1 e2 v1 v2,
@@ -375,12 +380,12 @@ Inductive evalphi' : H -> rho -> A -> phi' -> Prop :=
     evale h r e2 = Some v2 ->
     v1 <> v2 ->
     evalphi' h r a (phiNeq e1 e2)
-| EAAcc : forall h r a e' o' f',
-    evale h r e' = Some (vo o') ->
-    In (nameo o', f') a ->
-    evalphi' h r a (phiAcc e' f')
+| EAAcc : forall h r a x o' f',
+    r x = Some (vo o') ->
+    In (o', f') a ->
+    evalphi' h r a (phiAcc x f')
 .
-Definition evalphi : H -> rho -> A -> phi -> Prop :=
+Definition evalphi : H -> rho -> A_d -> phi -> Prop :=
   fun h r a p => forall p', In p' p -> evalphi' h r a p'.
 
 (* implication on phi *)
@@ -397,7 +402,7 @@ Definition wellTypedPhi' (G : Gamma) (p : phi') : Prop :=
   | phiTrue => True
   | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
   | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
-  | phiAcc e' f => wellTypedE G (edot e' f)
+  | phiAcc x' f => wellTypedE G (edot (ex x') f)
   end.
 Definition wellTypedPhi (G : Gamma) (p : phi) : Prop :=
   forall p', In p' p -> wellTypedPhi' G p'.
@@ -420,46 +425,44 @@ Definition wellTyped (G : Gamma) (s' : s) : Prop :=
 
 (* Figure 5: Hoare-based proof rules for core language *)
 Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
-| HNewObj : forall (G : Gamma) p x' (C' : C) fs,
-    G x' = Some (TClass C') ->
-    fields C' = Some fs ->
+| HNewObj : forall (Gamma : Gamma) p x' (C' : C) fs,
+    Gamma x' = Some (TClass C') ->
+    fieldsNames C' = Some fs ->
     hoareSingle
-      G
+      Gamma
       p
       (sAlloc x' C')
       (fold_left 
-        (fun a b => phiAcc (ex x') (snd b) :: a) 
+        (fun arg1 arg2 => phiAcc x' arg2 :: arg1)
         fs 
         (phiNeq (ex x') (ev vnull) :: p))
-| HFieldAssign : forall G (p : phi) (x' y' : x) (f' : f) e',
-    In (phiAcc (ex x') f') p ->
+| HFieldAssign : forall Gamma (p : phi) (x' y' : x) (f' : f) e',
+    In (phiAcc x' f') p ->
     In (phiNeq (ex x') (ev vnull)) p ->
     In (phiEq (ex y') e') p ->
-    hoareSingle G p (sMemberSet x' f' y') (p ++ [phiEq (edot (ex x') f') (ex y')])
-| HVarAssign : forall G p' p (x' : x) (e' e2' : e),
+    hoareSingle Gamma p (sMemberSet x' f' y') (appEnd p (phiEq (edot (ex x') f') (ex y')))
+| HVarAssign : forall Gamma p' p (x' : x) (e' e2' : e),
     p' = phiSubst x' e' p ->
     In (phiEq e' e2') p' ->
     sfrmphi [] p' ->
     sfrme (staticFootprint p') e' ->
-    hoareSingle G p' (sAssign x' e') p
-| HReturn : forall G p (x' : x) e' p',
-    p' = phiSubst x' e' p ->
-    In (phiEq (ex x') e') p' ->
-    hoareSingle G p' (sReturn x') p
-| HApp : forall G p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
-    G y' = Some (TClass C') ->
+    hoareSingle Gamma p' (sAssign x' e') p
+| HReturn : forall Gamma p (x' : x),
+    hoareSingle Gamma p (sReturn x') (appEnd p (phiEq (ex xresult) (ex x')))
+| HApp : forall Gamma p pp pr pq (x' y' : x) (C' : C) (m' : m) (Xz' : list (x * x)) (zs' := map snd Xz') (Xze' := map (fun pr => (fst pr, ex (snd pr))) Xz'),
+    Gamma y' = Some (TClass C') ->
     In (phiNeq (ex y') (ev vnull)) p ->
     phiImplies p (pp ++ pr) ->
     Some pp = option_map (phiSubsts ((xthis, ex y') :: Xze')) (mpre C' m') ->
-    Some pq = option_map (phiSubsts (((xthis, ex y') :: Xze') ++ [(xresult, ex x')])) (mpost C' m') ->
-    hoareSingle G p (sCall x' y' m' zs') (pq ++ pr)
-| HAssert : forall G p1 p2,
+    Some pq = option_map (phiSubsts (appEnd ((xthis, ex y') :: Xze') (xresult, ex x'))) (mpost C' m') ->
+    hoareSingle Gamma p (sCall x' y' m' zs') (pq ++ pr)
+| HAssert : forall Gamma p1 p2,
     In p2 p1 ->
-    hoareSingle G p1 (sAssert p2) p1
-| HRelease : forall G p1 p2 pr,
+    hoareSingle Gamma p1 (sAssert p2) p1
+| HRelease : forall Gamma p1 p2 pr,
     phiImplies p1 (p2 :: pr) ->
     sfrmphi [] pr ->
-    hoareSingle G p1 (sRelease p2) pr
+    hoareSingle Gamma p1 (sRelease p2) pr
 .
 
 Inductive hoare : phi -> list s -> phi -> Prop :=
@@ -473,46 +476,46 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 
 
 (* Figure 8: Definition of footprint meta-function *)
-Fixpoint footprint' (h : H) (r : rho) (p : phi') : A :=
+Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
-  | phiAcc e' f' => 
-      match evale h r e' with
-      | Some (vo o') => [(nameo o', f')]
+  | phiAcc x' f' => 
+      match r x' with
+      | Some (vo o') => [(o', f')]
       | _ => [] (*???*)
       end
   | _ => []
   end.
-Fixpoint footprint (h : H) (r : rho) (p : phi) : A :=
+Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
   flat_map (footprint' h r) p.
 
 (* Figure 9: Dynamic semantics for core language *)
 Definition execState : Set := H * S.
 Inductive dynSem : execState -> execState -> Prop :=
-| ESFieldAssign : forall h h' (S' : S) (s' : list s) (a : A) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
+| ESFieldAssign : forall h h' (S' : S) (s' : list s) (a : A_d) r (x' y' : x) (yv' : v) (o' : o) (f' : f),
     evale h r (ex x') = Some (vo o') ->
     evale h r (ex y') = Some yv' ->
-    In (nameo o', f') a ->
+    In (o', f') a ->
     h' = HSubst o' f' yv' h ->
     dynSem (h, (r, a, sMemberSet x' f' y' :: s') :: S') (h', (r, a, s') :: S')
 (*| ESDefVar : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (T' : T),
     r' = rhoSubst x' vnull r ->
     dynSem (h, (r, a, sDeclare T' x' :: s') :: S') (h, (r', a, s') :: S')*)
-| ESVarAssign : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (e' : e) (v' : v),
+| ESVarAssign : forall h (S' : S) (s' : list s) (a : A_d) r r' (x' : x) (e' : e) (v' : v),
     evale h r e' = Some v' ->
     r' = rhoSubst x' v' r ->
     dynSem (h, (r, a, sAssign x' e' :: s') :: S') (h, (r', a, s') :: S')
-| ESNewObj : forall h h' (S' : S) (s' : list s) (a a' : A) r r' (x' : x) (o' : o) (C' : C) Cf',
+| ESNewObj : forall h h' (S' : S) (s' : list s) (a a' : A_d) r r' (x' : x) (o' : o) (C' : C) Cf',
     h o' = None ->
     fields C' = Some Cf' ->
     r' = rhoSubst x' (vo o') r ->
-    a' = a ++ map (fun cf' => (nameo o', snd cf')) Cf' ->
+    a' = a ++ map (fun cf' => (o', snd cf')) Cf' ->
     h' = HSubsts o' (map (fun cf' => (snd cf', vnull)) Cf') h ->
     dynSem (h, (r, a, sAlloc x' C' :: s') :: S') (h', (r', a', s') :: S')
-| ESReturn : forall h (S' : S) (s' : list s) (a : A) r r' (x' : x) (vx : v),
+| ESReturn : forall h (S' : S) (s' : list s) (a : A_d) r r' (x' : x) (vx : v),
     evale h r (ex x') = Some vx ->
     r' = rhoSubst xresult vx r ->
     dynSem (h, (r, a, sReturn x' :: s') :: S') (h, (r', a, s') :: S')
-| ESApp : forall pre h (S' : S) (s' rs : list s) (a a' : A) (r r' : rho) (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := map fst wvs') (vs' := map snd wvs') (m' : m) (o' : o) (C' : C) fvf,
+| ESApp : forall pre h (S' : S) (s' rs : list s) (a a' : A_d) (r r' : rho) (x' y' : x) (zs' : list x) (wvs' : list (x * v)) (ws' := map fst wvs') (vs' := map snd wvs') (m' : m) (o' : o) (C' : C) fvf,
     evale h r (ex y') = Some (vo o') ->
     map (fun z' => evale h r (ex z')) zs' = map Some vs' ->
     h o' = Some (C', fvf) ->
@@ -528,7 +531,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi h r' a pre ->
     a' = footprint h r' pre ->
     dynSem (h, (r, a, sCall x' y' m' zs' :: s') :: S') (h, (r', a', rs) :: (r, Aexcept a a', sCall x' y' m' zs' :: s') :: S')
-| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A) r r' (x' : x) zs' (m' : m) y' (C' : C) vresult,
+| ESAppFinish : forall post h (S' : S) (s' : list s) (a a' a'' : A_d) r r' (x' : x) zs' (m' : m) y' (C' : C) vresult,
     mpost C' m' = Some post ->
     evalphi h r' a' post ->
     a'' = footprint h r' post ->
@@ -559,7 +562,7 @@ Inductive dynSemStar : execState -> execState -> Prop :=
 *)
 Definition newHeap : H := fun _ => None.
 Definition newRho : rho := fun _ => None.
-Definition newAccess : A := [].
+Definition newAccess : A_d := [].
 
 (* ASSUMPTIONS *)
 Definition mWellDefined (m : method) := 
@@ -610,7 +613,7 @@ Proof.
     inversion H0.
   - simpl.
     simpl filter in H0.
-    destruct (existsb (A'_decb a) a'); simpl in H0.
+    destruct (existsb (A_d'_decb a) a'); simpl in H0.
     * apply IHa in H0.
       auto.
     * inversion H0; auto.
@@ -765,7 +768,6 @@ Proof.
     clear H3.
 
     repeat eexists. econstructor; econstructor.
-    instantiate (pre := p0).
     - eauto.
     - simpl.
       instantiate (wvs' := combine (map snd x5) (map (fun xx => match xx with 

@@ -1,0 +1,42 @@
+\begin{mathpar}
+\inferrule* [right=HNewObj]
+{ \Gamma(x') = C'  \\  \fields(C') = fs }
+{\hoare {Gamma} {p} {x'{\::=\:\new\:}C'} {(\overline{ \acc(x',fs) :: ( x'{\:\neq\:}\vnull :: p ) })}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HFieldAssign]
+{\acc(x',f') \in p \\ x'{\:\neq\:}\vnull \in p \\ y'{\:=\:}e' \in p}
+{\hoare {Gamma} {p} {x'{\::=\:}f'.y'} {p{\:*\:}x'.f'{\:=\:}y'}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HVarAssign]
+{ p' = p[x'/e']  \\ e'{\:=\:}e2' \in p' \\  sfrmphi [] p'  \\ (staticFootprint p') \sfrme e'}
+{\hoare {Gamma} {p'} {(sAssign x' e')} {p}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HReturn]
+{~}
+{\hoare {Gamma} {p} {{\return}x'} {p{\:*\:}\xresult{\:=\:}x'}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HApp]
+{ (snd pr) )) Xz' ), \Gamma(y') = C'  \\ y'{\:\neq\:}\vnull \in p \\ p{\:\implies\:}( pp ++ pr ) \\  pp = option_map (phiSubsts ( ( \xthis , y' ) :: Xze' )) (mpre C' m')  \\  pq = option_map (phiSubsts (( ( \xthis , y' ) :: Xze' ){\:*\:}( \xresult , x' ))) (mpost C' m') }
+{\hoare {Gamma} {p} {(sCall x' y' m' zs')} {( pq ++ pr )}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HAssert]
+{p2 \in p1}
+{\hoare {Gamma} {p1} {{\assert}p2} {p1}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=HRelease]
+{p1{\:\implies\:}( p2 :: pr ) \\  sfrmphi [] pr }
+{\hoare {Gamma} {p1} {{\release}p2} {pr}}
+\end{mathpar}\hfill
+

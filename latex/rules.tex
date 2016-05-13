@@ -17,6 +17,7 @@
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{stackengine}
+\usepackage{mathpartir}
 
 
 %\usepackage[pdftex]{graphicx}
@@ -110,52 +111,10 @@
 
 \section{Static semantics}
 \subsection{Expressions ($A_s \sfrme e$)}
-\begin{prooftree}
-\AxiomC{}
-\rlabel{WF-Var}
-\UnaryInfC{$A_s \sfrme x$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{}
-\rlabel{WF-Value}
-\UnaryInfC{$A_s \sfrme v$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{$(x, f) \in A_s$}
-\rlabel{WF-Field}
-\UnaryInfC{$A_s \sfrme x.f$}
-\end{prooftree}\hfill
-
-
+\input{staticExpression}
 
 \subsection{Formulas ($A_s \sfrme \phi$)}
-\begin{prooftree}
-\AxiomC{}
-\rlabel{WF-True}
-\UnaryInfC{$A_s \sfrmphi \true$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{$A_s \sfrme e_1$}
-\AxiomC{$A_s \sfrme e_2$}
-\rlabel{WF-Equal}
-\BinaryInfC{$A_s \sfrmphi e_1 = e_2$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{$A_s \sfrme e_1$}
-\AxiomC{$A_s \sfrme e_2$}
-\rlabel{WF-NEqual}
-\BinaryInfC{$A_s \sfrmphi e_1 \neq e_2$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{}
-\rlabel{WF-Acc}
-\UnaryInfC{$A_s \sfrmphi \acc(x.f)$}
-\end{prooftree}\hfill
+\input{staticFormula}
 
 \begin{prooftree}
 \AxiomC{$A_s \sfrmphi \phi_1$}
@@ -163,7 +122,6 @@
 \rlabel{WF-SepOp}
 \BinaryInfC{$A_s \sfrmphi \phi_1 * \phi_2$}
 \end{prooftree}\hfill
-
 
 
 \subsection{Footprint ($\staticFP(\phi) = A_s$)}
@@ -179,7 +137,6 @@
 \newcommand{\hoare}[4]{#1\vdash\{#2\}#3\{#4\}}
 \newcommand{\hoareG}{\hoare \Gamma}
 \subsection{Hoare ($\hoareG {\phi} {\overline s} {\phi}$)}
-
 \begin{prooftree}
 \AxiomC{$\hoareG {\phi_p} {s_1} {\phi_{q1}}$}
 \AxiomC{$\phi_{q1} \implies \phi_{q2}$}
@@ -187,6 +144,8 @@
 \rlabel{H-Sec}
 \TrinaryInfC{$\hoareG {\phi_p} {s_1;s_2} {\phi_r}$}
 \end{prooftree}\hfill
+
+\input{staticSemantics}
 
 \begin{prooftree}
 \AxiomC{$\Gamma(x) = C$}
