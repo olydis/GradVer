@@ -1,10 +1,12 @@
-\BOOKMARK [1][-]{section.0.1}{Syntax}{}% 1
-\BOOKMARK [1][-]{section.0.2}{Static rules for expressions}{}% 2
-\BOOKMARK [1][-]{section.0.3}{Static rules for formulas}{}% 3
-\BOOKMARK [1][-]{section.0.4}{Static footprint}{}% 4
-\BOOKMARK [1][-]{section.0.5}{Hoare}{}% 5
-\BOOKMARK [1][-]{section.0.6}{Dynamic rules for expressions}{}% 6
-\BOOKMARK [1][-]{section.0.7}{Dynamic rules for formulas}{}% 7
-\BOOKMARK [1][-]{section.0.8}{Dynamic footprint}{}% 8
-\BOOKMARK [1][-]{section.0.9}{Small-step semantics}{}% 9
-\BOOKMARK [1][-]{section.0.10}{Theorems}{}% 10
+\BOOKMARK [1][-]{section.1}{Syntax}{}% 1
+\BOOKMARK [1][-]{section.2}{Static semantics}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Static rules for expressions}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Static rules for formulas}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Static footprint}{section.2}% 5
+\BOOKMARK [2][-]{subsection.2.4}{Hoare}{section.2}% 6
+\BOOKMARK [1][-]{section.3}{Dynamic semantics}{}% 7
+\BOOKMARK [2][-]{subsection.3.1}{Dynamic rules for expressions}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.2}{Dynamic rules for formulas}{section.3}% 9
+\BOOKMARK [2][-]{subsection.3.3}{Dynamic footprint}{section.3}% 10
+\BOOKMARK [2][-]{subsection.3.4}{Small-step semantics}{section.3}% 11
+\BOOKMARK [1][-]{section.4}{Theorems}{}% 12
