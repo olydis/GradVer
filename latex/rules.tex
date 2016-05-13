@@ -16,6 +16,7 @@
 \usepackage{stmaryrd}
 \usepackage{microtype}
 \usepackage{graphicx}
+\usepackage{stackengine}
 
 
 %\usepackage[pdftex]{graphicx}
@@ -104,68 +105,68 @@
 \\ &\rho		&&::= (x \mapsto v)
 \\ &A_s			&&::= \overline{(x, f)}
 \\ &A_d			&&::= \overline{(o, f)}
-\\ &S			&&::= \overline{(\rho, A, \overline{s}) \cdot S} ~|~ nil
+\\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
 \end{align*}
 
 \section{Static semantics}
-\subsection{Static rules for expressions}
+\subsection{Expressions ($A_s \sfrme e$)}
 \begin{prooftree}
 \AxiomC{}
 \rlabel{WF-Var}
-\UnaryInfC{$A \sfrme x$}
+\UnaryInfC{$A_s \sfrme x$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
 \AxiomC{}
 \rlabel{WF-Value}
-\UnaryInfC{$A \sfrme v$}
+\UnaryInfC{$A_s \sfrme v$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$(x, f) \in A$}
+\AxiomC{$(x, f) \in A_s$}
 \rlabel{WF-Field}
-\UnaryInfC{$A \sfrme x.f$}
+\UnaryInfC{$A_s \sfrme x.f$}
 \end{prooftree}\hfill
 
 
 
-\subsection{Static rules for formulas}
+\subsection{Formulas ($A_s \sfrme \phi$)}
 \begin{prooftree}
 \AxiomC{}
 \rlabel{WF-True}
-\UnaryInfC{$A \sfrmphi \true$}
+\UnaryInfC{$A_s \sfrmphi \true$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$A \sfrme e_1$}
-\AxiomC{$A \sfrme e_2$}
+\AxiomC{$A_s \sfrme e_1$}
+\AxiomC{$A_s \sfrme e_2$}
 \rlabel{WF-Equal}
-\BinaryInfC{$A \sfrmphi e_1 = e_2$}
+\BinaryInfC{$A_s \sfrmphi e_1 = e_2$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$A \sfrme e_1$}
-\AxiomC{$A \sfrme e_2$}
+\AxiomC{$A_s \sfrme e_1$}
+\AxiomC{$A_s \sfrme e_2$}
 \rlabel{WF-NEqual}
-\BinaryInfC{$A \sfrmphi e_1 \neq e_2$}
+\BinaryInfC{$A_s \sfrmphi e_1 \neq e_2$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
 \AxiomC{}
 \rlabel{WF-Acc}
-\UnaryInfC{$A \sfrmphi \acc(x.f)$}
+\UnaryInfC{$A_s \sfrmphi \acc(x.f)$}
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$A \sfrmphi \phi_1$}
-\AxiomC{$A \cup \staticFP(\phi_1) \sfrmphi \phi_2$}
+\AxiomC{$A_s \sfrmphi \phi_1$}
+\AxiomC{$A_s \cup \staticFP(\phi_1) \sfrmphi \phi_2$}
 \rlabel{WF-SepOp}
-\BinaryInfC{$A \sfrmphi \phi_1 * \phi_2$}
+\BinaryInfC{$A_s \sfrmphi \phi_1 * \phi_2$}
 \end{prooftree}\hfill
 
 
 
-\subsection{Static footprint}
+\subsection{Footprint ($\staticFP(\phi) = A_s$)}
 \begin{align*}
 \\ &\staticFP(\true)    		&&= \emptyset
 \\ &\staticFP(e_1 = e_2)     	&&= \emptyset
@@ -175,9 +176,9 @@
 \end{align*}
 
 
-\subsection{Hoare}
 \newcommand{\hoare}[4]{#1\vdash\{#2\}#3\{#4\}}
 \newcommand{\hoareG}{\hoare \Gamma}
+\subsection{Hoare ($\hoareG {\phi} {\overline s} {\phi}$)}
 
 \begin{prooftree}
 \AxiomC{$\hoareG {\phi_p} {s_1} {\phi_{q1}}$}
@@ -188,7 +189,7 @@
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$\Gamma x = C$)}
+\AxiomC{$\Gamma(x) = C$}
 \AxiomC{$\fields(C) = \{ \overline{f_i} \}$}
 \rlabel{H-NewObj}
 \BinaryInfC{$\hoareG {\phi} {x := \new C} {\overline{\acc(x.f_i)} * x \neq \vnull * \phi}$}
@@ -215,10 +216,10 @@
 \end{prooftree}\hfill
 
 \begin{prooftree}
-\AxiomC{$\Gamma y = C$)}
-\AxiomC{$\phi \implies y \neq null * \phi_p * \phi_r$)}
-\AxiomC{$\phi_p = \mpre(C, m)[y,\overline{z} / \xthis, \overline{X}]$)}
-\AxiomC{$\phi_q = \mpost(C, m)[y,\overline{z}, x / \xthis, \overline{X}, \xresult]$)}
+\AxiomC{$\Gamma(y) = C$}
+\AxiomC{$\phi \implies y \neq null * \phi_p * \phi_r$}
+\AxiomC{$\phi_p = \mpre(C, m)[y,\overline{z} / \xthis, \overline{X}]$}
+\AxiomC{$\phi_q = \mpost(C, m)[y,\overline{z}, x / \xthis, \overline{X}, \xresult]$}
 \rlabel{H-App}
 \QuaternaryInfC{$\hoareG {\phi} {x := y.m(\overline z)} {\phi_q * \phi_r}$}
 \end{prooftree}\hfill
@@ -239,8 +240,8 @@
 
 
 \section{Dynamic semantics}
-\subsection{Dynamic rules for expressions}
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
+\subsection{Expressions ($\evale {e} {v}$)}
 
 \begin{prooftree}
 \AxiomC{}
@@ -257,13 +258,13 @@
 \begin{prooftree}
 \AxiomC{$\evale {x} {o}$}
 \rlabel{EE-Acc}
-\UnaryInfC{$\evale {x.f} {G(o)(f)}$}
+\UnaryInfC{$\evale {x.f} {H(o)(f)}$}
 \end{prooftree}\hfill
 
 
-\subsection{Dynamic rules for formulas}
 \newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
 \newcommand{\evalphi}{\evalphix H \rho A}
+\subsection{Formulas ($\evalphi \phi$)}
 
 \begin{prooftree}
 \AxiomC{}
@@ -304,7 +305,7 @@
 
 
 
-\subsection{Dynamic footprint}
+\subsection{Footprint ($\dynamicFP(\phi) = A_d$)}
 \begin{align*}
 \\ &\dynamicFP(\true)    		&&= \emptyset
 \\ &\dynamicFP(e_1 = e_2)     	&&= \emptyset
@@ -313,8 +314,37 @@
 \\ &\dynamicFP(\phi_1 * \phi_2) &&= \dynamicFP(\phi_1) \cup \dynamicFP(\phi_2)
 \end{align*}
 
-\subsection{Small-step semantics}
-TODO
+\newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
+\newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
+\newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}}
+\newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
+\newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
+\subsection{Small-step ($\sstep H S H S$)}
+
+\begin{prooftree}
+\AxiomC{$\evale x o$}
+\AxiomC{$(o,f) \in A$}
+\AxiomC{$H' = H[o \mapsto (C, [f \mapsto y])]$}
+\rlabel{ES-FieldAssign}
+\TrinaryInfC{$\sstepWSX {H} {\rho} {A} {x.f := y;~\overline s} {H'} {\rho} {A} {\overline s}$}
+\end{prooftree}\hfill
+
+\begin{prooftree}
+\AxiomC{$\evale e v$}
+\AxiomC{$\rho' = \rho[x \mapsto v]$}
+\rlabel{ES-VarAssign}
+\BinaryInfC{$\sstepWSX {H} {\rho} {A} {x := e;~\overline s} {H} {\rho} {A} {\overline s}$}
+\end{prooftree}\hfill
+
+\begin{prooftree}
+\AxiomC{$\evale e v$}
+\AxiomC{$\evale e v$}
+\AxiomC{$\evale e v$}
+\AxiomC{$\evale e v$}
+\AxiomC{$\evale e v$}
+\rlabel{ES-NewObj}
+\QuinaryInfC{$\sstepWSX {H} {\rho} {A} {x := \new C;~\overline s} {H} {\rho} {A} {\overline s}$}
+\end{prooftree}\hfill
 
 \section{Theorems}
 Hoare preserves self-framing

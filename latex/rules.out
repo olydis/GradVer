@@ -1,12 +1,12 @@
 \BOOKMARK [1][-]{section.1}{Syntax}{}% 1
 \BOOKMARK [1][-]{section.2}{Static semantics}{}% 2
-\BOOKMARK [2][-]{subsection.2.1}{Static rules for expressions}{section.2}% 3
-\BOOKMARK [2][-]{subsection.2.2}{Static rules for formulas}{section.2}% 4
-\BOOKMARK [2][-]{subsection.2.3}{Static footprint}{section.2}% 5
-\BOOKMARK [2][-]{subsection.2.4}{Hoare}{section.2}% 6
+\BOOKMARK [2][-]{subsection.2.1}{Expressions \(A\137s \137sfrme\)}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Formulas \(A\137s \137sfrm\)}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Footprint \(static-footprint\(\) = A\137s\)}{section.2}% 5
+\BOOKMARK [2][-]{subsection.2.4}{Hoare \(\173\175s\173\175\)}{section.2}% 6
 \BOOKMARK [1][-]{section.3}{Dynamic semantics}{}% 7
-\BOOKMARK [2][-]{subsection.3.1}{Dynamic rules for expressions}{section.3}% 8
-\BOOKMARK [2][-]{subsection.3.2}{Dynamic rules for formulas}{section.3}% 9
-\BOOKMARK [2][-]{subsection.3.3}{Dynamic footprint}{section.3}% 10
-\BOOKMARK [2][-]{subsection.3.4}{Small-step semantics}{section.3}% 11
+\BOOKMARK [2][-]{subsection.3.1}{Expressions \(H,e "322B37F v\)}{section.3}% 8
+\BOOKMARK [2][-]{subsection.3.2}{Formulas \(H,,A \)}{section.3}% 9
+\BOOKMARK [2][-]{subsection.3.3}{Footprint \(footprint\137H, \(\) = A\137d\)}{section.3}% 10
+\BOOKMARK [2][-]{subsection.3.4}{Small-step \(\(H, S\) \040\(H, S\)\)}{section.3}% 11
 \BOOKMARK [1][-]{section.4}{Theorems}{}% 12
