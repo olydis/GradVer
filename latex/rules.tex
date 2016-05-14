@@ -16,7 +16,6 @@
 \usepackage{stmaryrd}
 \usepackage{microtype}
 \usepackage{graphicx}
-\usepackage{stackengine}
 \usepackage{mathpartir}
 
 
@@ -145,7 +144,7 @@
 \TrinaryInfC{$\hoareG {\phi_p} {s_1;s_2} {\phi_r}$}
 \end{prooftree}\hfill
 
-\input{staticSemantics}
+%\input{staticSemantics}
 
 \begin{prooftree}
 \AxiomC{$\Gamma(x) = C$}
@@ -199,6 +198,7 @@
 
 
 \section{Dynamic semantics}
+\newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
 \subsection{Expressions ($\evale {e} {v}$)}
 
@@ -273,12 +273,15 @@
 \\ &\dynamicFP(\phi_1 * \phi_2) &&= \dynamicFP(\phi_1) \cup \dynamicFP(\phi_2)
 \end{align*}
 
+\newcommand{\Heap}{H}
 \newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
 \newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
 \newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}}
 \newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
 \newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
 \subsection{Small-step ($\sstep H S H S$)}
+
+\input{dynamicSemantics}
 
 \begin{prooftree}
 \AxiomC{$\evale x o$}

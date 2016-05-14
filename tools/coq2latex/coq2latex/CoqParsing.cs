@@ -17,28 +17,57 @@ namespace coq2latex
             @"\s*?";
 
         private string coqFile;
-        public Dictionary<string, Tuple<int, Func<string[], string>>> latexifyExpression;
+        private Dictionary<string, Func<string[], string>> latexifyExpression;
+
+        public void AddHandler(string name, int arity, Func<string[], string> handler)
+        {
+            latexifyExpression[name + "@" + arity] = handler;
+        }
 
         public CoqParsing(string coqFile)
         {
             this.coqFile = coqFile;
-            this.latexifyExpression = new Dictionary<string, Tuple<int, Func<string[], string>>>();
+            this.latexifyExpression = new Dictionary<string, Func<string[], string>>();
+        }
+
+        private string RemoveExpressions(string s)
+        {
+            var sparseMatches = Regex.Matches(s, regexCoqExpression).OfType<Match>().Reverse();
+            // erase expressions
+            foreach (var match in sparseMatches)
+                s = s.Remove(match.Index, match.Length).Insert(match.Index, new string(' ', match.Length));
+            return s;
+        }
+
+        private string PreFormat(string coq)
+        {
+            coq = coq.Replace("[]", @"\emptyset");
+            coq = coq.Replace(" :: ", @"*");
+            coq = coq.Replace(":: ", @"*");
+            coq = coq.Replace(" ::", @"*");
+            coq = coq.Replace("::", @"*");
+            coq = coq.Replace(" ++ ", @"*");
+            coq = coq.Replace("++ ", @"*");
+            coq = coq.Replace(" ++", @"*");
+            coq = coq.Replace("++", @"*");
+            return coq;
+        }
+        private string PostFormat(string coq)
+        {
+            coq = coq.Replace(@" * S", @" \cdot S");
+            coq = coq.Replace(@" * \overline{s", @"; \overline{s");
+            return coq;
         }
 
         public string LatexifyExpression(string coq)
         {
-            coq.Replace("[]", @"\emptyset");
-            coq.Replace("::", @"*");
+            coq = PreFormat(coq);
             coq = coq.Trim();
             if (coq == "")
                 return coq;
-            if (!Regex.IsMatch(coq, "^(" + regexCoqExpression + ")+$"))
+            var coqX = RemoveExpressions(coq);
+            if (coqX.Trim() != "")
             {
-                var sparseMatches = Regex.Matches(coq, regexCoqExpression).OfType<Match>().Reverse();
-                var coqX = coq;
-                // erase expressions
-                foreach (var match in sparseMatches)
-                    coqX = coqX.Remove(match.Index, match.Length).Insert(match.Index, new string(' ', match.Length));
                 // get delimiters
                 var delims = new List<Tuple<int, int>>();
                 while (coqX.Trim() != "")
@@ -61,30 +90,6 @@ namespace coq2latex
                 }
 
                 return coq;
-                // special handlers:
-                // - A = B
-                if (coqX.Count(c => c == '=') == 1)
-                {
-                    int index = coqX.IndexOf('=');
-                    return
-                        LatexifyExpression(coq.Substring(0, index)) +
-                        " = " +
-                        LatexifyExpression(coq.Substring(index + 1));
-                }
-                // - anything else
-                var indices = coqX.Select((x, i) => new { X = x, I = i }).Where(x => x.X == ',').Select(x => x.I).ToList();
-                indices.Reverse();
-                indices.Add(-1);
-                var lastIndex = coq.Length;
-                foreach (var index in indices)
-                {
-                    string part = coq.Substring(index + 1, lastIndex - index - 1);
-                    coq = coq.Remove(index + 1, lastIndex - index - 1).Insert(index + 1, " " + LatexifyExpression(part));
-                    lastIndex = index;
-                }
-                return coq.Trim();
-
-                return @"\verb€" + coq + "€";
             }
             var matches = Regex.Matches(coq, regexCoqExpression);
             if (matches.Count == 1)
@@ -98,21 +103,13 @@ namespace coq2latex
                 }
                 else
                 {
-                    if (latexifyExpression.ContainsKey(coq))
-                    {
-                        var handler = latexifyExpression[coq];
-                        if (handler.Item1 == 0)
-                            return handler.Item2(new string[0]);
-                    }
+                    if (latexifyExpression.ContainsKey(coq + "@0"))
+                        return latexifyExpression[coq + "@0"](new string[0]);
                     return coq;
                 }
-            var xs = matches.OfType<Match>().Select(x => x.Value).Select(LatexifyExpression);
-            if (latexifyExpression.ContainsKey(xs.First()))
-            {
-                var handler = latexifyExpression[xs.First()];
-                if (handler.Item1 == matches.Count - 1)
-                    return handler.Item2(xs.Skip(1).ToArray());
-            }
+            var xs = matches.OfType<Match>().Select(x => x.Value);
+            if (latexifyExpression.ContainsKey(xs.First() + "@" + (matches.Count - 1)))
+                return latexifyExpression[xs.First() + "@" + (matches.Count - 1)](xs.Skip(1).Select(LatexifyExpression).ToArray());
             return string.Join(" ", xs);
         }
 
@@ -125,7 +122,7 @@ namespace coq2latex
             var match = regex.Match(coqFile);
             var s = match.Groups["def"].Value;
 
-            Regex regexCtor = new Regex(@"\|(?<name>.*?):.*?,(?<pre>([^|]*?->)*)(?<con>.*?)(?=$|\|)",
+            Regex regexCtor = new Regex(@"\|(?<name>.*?):("+ regexCoqExpression + @")*?,(?<pre>([^|]*?->)*)(?<con>.*?)(?=$|\|)",
                 RegexOptions.ExplicitCapture |
                 RegexOptions.Singleline);
             foreach (Match ctor in regexCtor.Matches(s))
@@ -142,10 +139,10 @@ namespace coq2latex
                 if (cprems.Length == 0)
                     res.AppendLine("{~}");
                 else
-                    res.AppendLine("{" + string.Join(@" \\ ", cprems.Select(LatexifyExpression)) + "}");
+                    res.AppendLine("{" + string.Join(@"\\", cprems.Select(LatexifyExpression)) + "}");
                 res.AppendLine("{" + LatexifyExpression(ccon) + "}");
                 res.AppendLine(@"\end{mathpar}\hfill");
-                yield return res.ToString();
+                yield return PostFormat(res.ToString());
             }
         }
     }

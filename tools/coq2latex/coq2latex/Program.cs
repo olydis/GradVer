@@ -24,123 +24,187 @@ namespace coq2latex
                 throw new FileNotFoundException(coqFileName);
             coqFile = File.ReadAllText(dir.FullName + "\\" + coqFileName);
             var parsing = new CoqParsing(coqFile);
-            var le = parsing.latexifyExpression;
+            Action<string, int, Func<string[], string>> le = parsing.AddHandler;
 
             // coq aliases
             string staticExpression = "sfrme";
             string staticFormula = "sfrmphi'";
             string staticSemantics = "hoareSingle";
+            string dynamicExpression = "evale";
+            string dynamicFormula = "evalphi'";
+            string dynamicSemantics = "dynSem";
 
-            Action<string, string> commandify2 = (s, t) => le[s] = new Tuple<int, Func<string[], string>>(0, _ => @"\" + t);
+            Action<string, string> commandify2 = (s, t) => le(s, 0, _ => @"\" + t);
             Action<string> commandify = s => commandify2(s, s);
-            Action<string> swallowCtor = s => le[s] = new Tuple<int, Func<string[], string>>(1, x => x[0]);
-            Action<string, string> functionify2 = (s, t) => le[s] = new Tuple<int, Func<string[], string>>(1, x => @"\" + t + "(" + x[0] + ")");
+            Action<string> swallowCtor = s => le(s, 1, x => x[0]);
+            Action<string, string> functionify2 = (s, t) => le(s, 1, x => @"\" + t + "(" + x[0] + ")");
             Action<string> functionify = s => functionify2(s, s);
 
-            le[staticExpression] = new Tuple<int, Func<string[], string>>(
+            le(staticExpression,
                 2,
-                x => x[0] + @" \sfrme " + x[1]
-            );
-            le[staticFormula] = new Tuple<int, Func<string[], string>>(
-                2,
-                x => x[0] + @" \sfrmphi " + x[1]
-            );
-            le["sfrmphi"] = new Tuple<int, Func<string[], string>>(
+                x => x[0] + @" \sfrme " + x[1]);
+            le(staticFormula,
                 2,
                 x => x[0] + @" \sfrmphi " + x[1]
             );
-            le[staticSemantics] = new Tuple<int, Func<string[], string>>(
+            le("sfrmphi",
+                2,
+                x => x[0] + @" \sfrmphi " + x[1]
+            );
+            le(staticSemantics,
                 4,
                 x => @"\hoare {" + x[0] + "} {" + x[1] + "} {" + x[2] + "} {" + x[3] + "}"
             );
-            le["In"] = new Tuple<int, Func<string[], string>>(
+
+            le(dynamicExpression,
+                4,
+                x => @"\evalex {" + x[0] + "} {" + x[1] + "} {" + x[2] + "} {" + x[3] + "}");
+            le(dynamicFormula,
+                4,
+                x => @"\evalphix {" + x[0] + "} {" + x[1] + "} {" + x[2] + "} {" + x[3] + "}");
+            le("evalphi",
+                4,
+                x => @"\evalphix {" + x[0] + "} {" + x[1] + "} {" + x[2] + "} {" + x[3] + "}");
+            le(dynamicSemantics,
+                2,
+                x => @"{" + x[0] + @"} \rightarrow {" + x[1] + @"}"
+            );
+
+            le("In",
                 2,
                 x => x[0] + @" \in " + x[1]
             );
+            swallowCtor("vo");
             swallowCtor("ev");
             swallowCtor("ex");
-            le["edot"] = new Tuple<int, Func<string[], string>>(
+            le("edot",
                 2,
                 x => x[0] + "." + x[1]
             );
-            le["appEnd"] = new Tuple<int, Func<string[], string>>(
+            le("appEnd",
                 2,
                 x => x[0] + @"{\:*\:}" + x[1]
             );
             commandify2("phiTrue", "true");
-            le["phiEq"] = new Tuple<int, Func<string[], string>>(
+            le("phiEq",
                 2,
                 x => x[0] + @"{\:=\:}" + x[1]
             );
-            le["phiImplies"] = new Tuple<int, Func<string[], string>>(
+            le("phiImplies",
                 2,
                 x => x[0] + @"{\:\implies\:}" + x[1]
             );
-            le["phiNeq"] = new Tuple<int, Func<string[], string>>(
+            le("phiNeq",
                 2,
                 x => x[0] + @"{\:\neq\:}" + x[1]
             );
-            le["phiAcc"] = new Tuple<int, Func<string[], string>>(
+            le("phiAcc",
                 2,
                 x => @"\acc(" + x[0] + "," + x[1] + ")"
             );
-            le["phiSubst"] = new Tuple<int, Func<string[], string>>(
+            le("phiSubst",
                 3,
                 x => x[2] + "[" + x[0] + "/" + x[1] + "]"
             );
-            le["sAlloc"] = new Tuple<int, Func<string[], string>>(
+            le("rhoSubst",
+                3,
+                x => x[2] + "[" + x[0] + @"{\:\mapsto\:}" + x[1] + "]"
+            );
+            le("HSubst",
+                4,
+                x => x[3] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + @"{\:\mapsto\:}" + x[2] + "]]");
+            le("phiSubsts",
+                2,
+                x => x[1] + "[" + x[0] + "]"
+            );
+            le("sAlloc",
                 2,
                 x => x[0] + @"{\::=\:\new\:}" + x[1]
             );
-            le["sMemberSet"] = new Tuple<int, Func<string[], string>>(
+            le("sMemberSet",
                 3,
                 x => x[0] + @"{\::=\:}" + x[1] + "." + x[2]
             );
-            le["sAssign"] = new Tuple<int, Func<string[], string>>(
-                3,
+            le("sCall",
+                4,
+                x => x[0] + @"{\::=\:}" + x[1] + "." + x[2] + "(" + x[3] + ")"
+            );
+            le("sAssign",
+                2,
                 x => x[0] + @"{\::=\:}" + x[1]
             );
-            le["sReturn"] = new Tuple<int, Func<string[], string>>(
+            le("sReturn",
                 1,
                 x => @"{\return}" + x[0]
             );
-            le["sAssert"] = new Tuple<int, Func<string[], string>>(
+            le("sAssert",
                 1,
                 x => @"{\assert}" + x[0]
             );
-            le["sRelease"] = new Tuple<int, Func<string[], string>>(
+            le("sRelease",
                 1,
                 x => @"{\release}" + x[0]
             );
             functionify("Gamma");
             functionify("rho");
+            functionify("rho'");
+            functionify("Heap");
+            functionify("Heap'");
+            commandify("Gamma");
+            commandify("rho");
+            commandify("rho'");
+            commandify("Heap");
+            commandify("Heap'");
+            commandify2("s_bar", "overline{s}");
+
             functionify2("fieldsNames", "fields");
+            functionify2("fields", "fields");
+            functionify2("staticFootprint", "staticFP");
+            le("footprint", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
 
             swallowCtor("Some");
             swallowCtor("TClass");
+            le("option_map", 2, x => {
+                if (x[0].Contains("fun") || !x[0].StartsWith("(") || !x[0].EndsWith(")"))
+                    throw new Exception("asd");
+                return x[0].Substring(1, x[0].Length - 2) + " " + x[1];
+            });
             commandify2("TPrimitiveInt", "Tint");
+            commandify2("None", "bot");
             commandify("vnull");
             commandify("xresult");
             commandify("xthis");
+            commandify("phi");
+            commandify("phi_1");
+            commandify("phi_2");
+            commandify("phi_r");
+            le("mpre", 2, x => @"\mpre" + "(" + x[0] + "," + x[1] + ")");
+            le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
 
-            le["fold_left"] = new Tuple<int, Func<string[], string>>(
+            le("fold_left",
                 3,
                 x =>
                 {
                     var funMatch = Regex.Match(x[0], @"^\(\s*fun\s+(?<a1>.*?)\s+(?<a2>.*?)\s*=>(?<body>.*)\)$", RegexOptions.Singleline);
                     var funBody = funMatch.Groups["body"].Value;
-                    funBody = funBody.Replace(funMatch.Groups["a2"].Value, x[1]);
+                    funBody = funBody.Replace(funMatch.Groups["a2"].Value, @"\overline{" + x[1] + "_i}");
                     funBody = funBody.Replace(funMatch.Groups["a1"].Value, x[2]);
-                    return @"\overline{" + funBody + "}";
+                    return funBody;
                 }
             );
 
-            File.WriteAllLines(dir.FullName + "\\latex\\staticExpression.tex",
-                parsing.ParseInductive(staticExpression));
-            File.WriteAllLines(dir.FullName + "\\latex\\staticFormula.tex",
-                parsing.ParseInductive(staticFormula));
-            File.WriteAllLines(dir.FullName + "\\latex\\staticSemantics.tex",
-                parsing.ParseInductive(staticSemantics));
+            //File.WriteAllLines(dir.FullName + "\\latex\\staticExpression.tex",
+            //    parsing.ParseInductive(staticExpression));
+            //File.WriteAllLines(dir.FullName + "\\latex\\staticFormula.tex",
+            //    parsing.ParseInductive(staticFormula));
+            //File.WriteAllLines(dir.FullName + "\\latex\\staticSemantics.tex",
+            //    parsing.ParseInductive(staticSemantics));
+            ////File.WriteAllLines(dir.FullName + "\\latex\\dynamicExpression.tex",
+            ////    parsing.ParseInductive(dynamicExpression));
+            //File.WriteAllLines(dir.FullName + "\\latex\\dynamicFormula.tex",
+            //    parsing.ParseInductive(dynamicFormula));
+            File.WriteAllLines(dir.FullName + "\\latex\\dynamicSemantics.tex",
+                parsing.ParseInductive(dynamicSemantics));
 
             Console.WriteLine("DONE");
             //Console.ReadKey();

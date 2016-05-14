@@ -1,0 +1,24 @@
+\begin{mathpar}
+\inferrule* [right=EATrue]
+{~}
+{\evalphix {h} {r} {a} {\true}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=EAEqual]
+{ \evale {h} {r} {e1} = v1  \\  \evale {h} {r} {e2} = v2  \\  v1 = v2 }
+{\evalphix {h} {r} {a} {e1{\:=\:}e2}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=EANEqual]
+{ \evale {h} {r} {e1} = v1  \\  \evale {h} {r} {e2} = v2  \\  v1 <> v2 }
+{\evalphix {h} {r} {a} {e1{\:\neq\:}e2}}
+\end{mathpar}\hfill
+
+\begin{mathpar}
+\inferrule* [right=EAAcc]
+{ r  x = (vo  o')  \\ ( o' , f' ) \in a}
+{\evalphix {h} {r} {a} {\acc(x,f')}}
+\end{mathpar}\hfill
+
