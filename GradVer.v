@@ -498,12 +498,12 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale Heap rho e v ->
     rho' = rhoSubst x v rho ->
     dynSem (Heap, (rho, A, sAssign x e :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) Cf',
+| ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) f,
     Heap o = None ->
-    fields C = Some Cf' ->
+    fieldsNames C = Some f ->
     rho' = rhoSubst x (vo o) rho ->
-    A' = A ++ map (fun cf' => (o, snd cf')) Cf' ->
-    Heap' = HSubsts o (map (fun cf' => (snd cf', vnull)) Cf') Heap ->
+    A' = A ++ map (fun cf' => (o, cf')) f ->
+    Heap' = HSubsts o (map (fun cf' => (cf', vnull)) f) Heap ->
     dynSem (Heap, (rho, A, sAlloc x C :: s_bar) :: S) (Heap', (rho', A', s_bar) :: S)
 | ESReturn : forall Heap (S : S) (s_bar : list s) (a : A_d) rho rho' (x : x) (v_x : v),
     evale Heap rho (ex x) v_x ->

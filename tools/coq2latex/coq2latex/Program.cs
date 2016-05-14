@@ -113,6 +113,9 @@ namespace coq2latex
             le("HSubst",
                 4,
                 x => x[3] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + @"{\:\mapsto\:}" + x[2] + "]]");
+            le("HSubsts",
+                3,
+                x => x[2] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + "]]");
             le("phiSubsts",
                 2,
                 x => x[1] + "[" + x[0] + "]"
@@ -123,7 +126,7 @@ namespace coq2latex
             );
             le("sMemberSet",
                 3,
-                x => x[0] + @"{\::=\:}" + x[1] + "." + x[2]
+                x => x[0] + "." + x[1] + @"{\::=\:}" + x[2]
             );
             le("sCall",
                 4,
@@ -190,6 +193,16 @@ namespace coq2latex
                     funBody = funBody.Replace(funMatch.Groups["a2"].Value, @"\overline{" + x[1] + "_i}");
                     funBody = funBody.Replace(funMatch.Groups["a1"].Value, x[2]);
                     return funBody;
+                }
+            );
+            le("map",
+                2,
+                x =>
+                {
+                    var funMatch = Regex.Match(x[0], @"^\(\s*fun\s+(?<a1>.*?)\s*=>(?<body>.*)\)$", RegexOptions.Singleline);
+                    var funBody = funMatch.Groups["body"].Value;
+                    funBody = funBody.Replace(funMatch.Groups["a1"].Value, x[1] + "_i");
+                    return @"\overline{" + funBody + "}";
                 }
             );
 

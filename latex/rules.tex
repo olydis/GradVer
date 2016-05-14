@@ -280,33 +280,7 @@
 \newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
 \newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
 \subsection{Small-step ($\sstep H S H S$)}
-
 \input{dynamicSemantics}
-
-\begin{prooftree}
-\AxiomC{$\evale x o$}
-\AxiomC{$(o,f) \in A$}
-\AxiomC{$H' = H[o \mapsto (C, [f \mapsto y])]$}
-\rlabel{ES-FieldAssign}
-\TrinaryInfC{$\sstepWSX {H} {\rho} {A} {x.f := y;~\overline s} {H'} {\rho} {A} {\overline s}$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{$\evale e v$}
-\AxiomC{$\rho' = \rho[x \mapsto v]$}
-\rlabel{ES-VarAssign}
-\BinaryInfC{$\sstepWSX {H} {\rho} {A} {x := e;~\overline s} {H} {\rho} {A} {\overline s}$}
-\end{prooftree}\hfill
-
-\begin{prooftree}
-\AxiomC{$\evale e v$}
-\AxiomC{$\evale e v$}
-\AxiomC{$\evale e v$}
-\AxiomC{$\evale e v$}
-\AxiomC{$\evale e v$}
-\rlabel{ES-NewObj}
-\QuinaryInfC{$\sstepWSX {H} {\rho} {A} {x := \new C;~\overline s} {H} {\rho} {A} {\overline s}$}
-\end{prooftree}\hfill
 
 \section{Theorems}
 Hoare preserves self-framing

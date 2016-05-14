@@ -1,7 +1,7 @@
 \begin{mathpar}
 \inferrule* [right=ESFieldAssign]
 {\evalex {\Heap} {\rho} {x} {o}\\\evalex {\Heap} {\rho} {y} {v_y}\\( o , f ) \in A\\ \Heap' = \Heap[o{\:\mapsto\:}[f{\:\mapsto\:}v_y]] }
-{{( \Heap , ( \rho , A , x{\::=\:}f.y; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho , A , \overline{s} ) \cdot S )}}
+{{( \Heap , ( \rho , A , x.f{\::=\:}y; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho , A , \overline{s} ) \cdot S )}}
 \end{mathpar}\hfill
 
 \begin{mathpar}
@@ -12,7 +12,7 @@
 
 \begin{mathpar}
 \inferrule* [right=ESNewObj]
-{ \Heap(o) = \bot \\ \fields(C) = Cf' \\ \rho' = \rho[x{\:\mapsto\:}o] \\ A' = A * map  (fun cf' => (o, snd cf'))  Cf' \\ \Heap' = HSubsts  o  (map (fun cf' => (snd cf', vnull)) Cf')  Heap }
+{ \Heap(o) = \bot \\ \fields(C) = f \\ \rho' = \rho[x{\:\mapsto\:}o] \\ A' = A * \overline{ ( o , f_i ) } \\ \Heap' = \Heap[o{\:\mapsto\:}[(\overline{ ( f_i , \vnull ) })]] }
 {{( \Heap , ( \rho , A , x{\::=\:\new\:}C; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho' , A' , \overline{s} ) \cdot S )}}
 \end{mathpar}\hfill
 
