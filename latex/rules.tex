@@ -7,7 +7,6 @@
 \usepackage[margin=1.2in]{geometry}
 \usepackage{amsmath}
 \usepackage{hyperref}
-\usepackage{bussproofs}
 \usepackage{amssymb}
 \usepackage{latexsym}
 \usepackage{syntax}
@@ -116,12 +115,14 @@
 \subsection{Formulas ($A_s \sfrme \phi$)}
 \input{staticFormula}
 
-\begin{prooftree}
-\AxiomC{$A_s \sfrmphi \phi_1$}
-\AxiomC{$A_s \cup \staticFP(\phi_1) \sfrmphi \phi_2$}
-\rlabel{WF-SepOp}
-\BinaryInfC{$A_s \sfrmphi \phi_1 * \phi_2$}
-\end{prooftree}\hfill
+\begin{mathpar}
+\inferrule* [Right=WFSepOp]
+{
+A_s \sfrmphi \phi_1 \\ 
+A_s \cup \staticFP(\phi_1) \sfrmphi \phi_2
+}
+{A_s \sfrmphi \phi_1 * \phi_2}
+\end{mathpar}
 
 \subsubsection{Implication ($\phi_1 \dot{\implies} \phi_2$)}
 Conservative approx. of $\phi_1 \implies \phi_2$.
@@ -156,37 +157,38 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
 \subsection{Expressions ($\evale {e} {v}$)}
 
-\begin{prooftree}
-\AxiomC{}
-\rlabel{EE-Var}
-\UnaryInfC{$\evale {x} {\rho(x)}$}
-\end{prooftree}\hfill
+\begin{mathpar}
+\inferrule* [Right=EEVar]
+{~}
+{\evale {x} {\rho(x)}}
+\end{mathpar}
 
-\begin{prooftree}
-\AxiomC{}
-\rlabel{EE-Value}
-\UnaryInfC{$\evale {v} {v}$}
-\end{prooftree}\hfill
+\begin{mathpar}
+\inferrule* [Right=EEValue]
+{~}
+{\evale {v} {v}}
+\end{mathpar}
 
-\begin{prooftree}
-\AxiomC{$\evale {x} {o}$}
-\rlabel{EE-Acc}
-\UnaryInfC{$\evale {x.f} {H(o)(f)}$}
-\end{prooftree}\hfill
-
+\begin{mathpar}
+\inferrule* [Right=EEAcc]
+{\evale {x} {o}}
+{\evale {x.f} {H(o)(f)}}
+\end{mathpar}
 
 \newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
 \newcommand{\evalphi}{\evalphix H \rho A}
 \subsection{Formulas ($\evalphi \phi$)}
 \input{dynamicFormula}
 
-\begin{prooftree}
-\AxiomC{$A_1 = A \backslash A_2$}
-\AxiomC{$\evalphix H \rho {A_1} {\phi_1}$}
-\AxiomC{$\evalphix H \rho {A_2} {\phi_2}$}
-\rlabel{EASepOp}
-\TrinaryInfC{$\evalphi {\phi_1 * \phi_2}$}
-\end{prooftree}\hfill
+\begin{mathpar}
+\inferrule* [Right=EASepOp]
+{
+A_1 = A \backslash A_2 \\
+\evalphix H \rho {A_1} {\phi_1} \\
+\evalphix H \rho {A_2} {\phi_2}
+}
+{\evalphi {\phi_1 * \phi_2}}
+\end{mathpar}
 
 
 \subsubsection{Implication ($\phi_1 \implies \phi_2$)}

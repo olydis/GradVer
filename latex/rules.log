@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (MiKTeX 2.9 64-bit) (preloaded format=pdflatex 2016.5.13)  14 MAY 2016 22:39
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (MiKTeX 2.9 64-bit) (preloaded format=pdflatex 2016.5.13)  14 MAY 2016 22:46
 entering extended mode
 **./rules.tex
 (rules.tex
@@ -807,33 +807,7 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 )
 \Hy@SectionHShift=\skip46
 )
-("C:\Program Files\MiKTeX 2.9\tex\latex\bussproofs\bussproofs.sty"
-Proof Tree (bussproofs) style macros. Version 1.1.
-\theLevel=\count132
-\myMaxLevel=\count133
-\myBoxA=\box39
-\myBoxB=\box40
-\myBoxC=\box41
-\myBoxD=\box42
-\myBoxLL=\box43
-\myBoxRL=\box44
-\thisAboveSkip=\dimen172
-\thisBelowSkip=\dimen173
-\newScoreStart=\dimen174
-\newScoreEnd=\dimen175
-\newCenter=\dimen176
-\displace=\dimen177
-\leftLowerAmt=\dimen178
-\rightLowerAmt=\dimen179
-\scoreHeight=\dimen180
-\scoreDepth=\dimen181
-\htLbox=\dimen182
-\htRbox=\dimen183
-\htRRbox=\dimen184
-\htRRRbox=\dimen185
-\htAbox=\dimen186
-\htCbox=\dimen187
-) ("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\amssymb.sty"
+("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\amssymb.sty"
 Package: amssymb 2013/01/14 v3.01 AMS font symbols
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\amsfonts.sty"
@@ -852,15 +826,15 @@ LaTeX Font Info:    Overwriting symbol font `lasy' in version `bold'
 ("C:\Program Files\MiKTeX 2.9\tex\latex\mdwtools\syntax.sty"
 Package: syntax 1996/05/17 1.07 Syntax typesetting (MDW)
 \grammarparsep=\skip47
-\grammarindent=\dimen188
+\grammarindent=\dimen172
 \sdstartspace=\skip48
 \sdendspace=\skip49
 \sdmidskip=\skip50
 \sdtokskip=\skip51
 \sdfinalskip=\skip52
-\sdrulewidth=\dimen189
-\sdcirclediam=\dimen190
-\sdindent=\dimen191
+\sdrulewidth=\dimen173
+\sdcirclediam=\dimen174
+\sdindent=\dimen175
 )
 ("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\lscape.sty"
 Package: lscape 2000/10/22 v3.01 Landscape Pages (DPC)
@@ -874,11 +848,11 @@ LaTeX Font Info:    Overwriting symbol font `stmry' in version `bold'
 ("C:\Program Files\MiKTeX 2.9\tex\latex\microtype\microtype.sty"
 Package: microtype 2016/05/01 v2.6 Micro-typographical refinements (RS)
 \MT@toks=\toks35
-\MT@count=\count134
+\MT@count=\count132
 LaTeX Info: Redefining \textls on input line 774.
-\MT@outer@kern=\dimen192
+\MT@outer@kern=\dimen176
 LaTeX Info: Redefining \textmicrotypecontext on input line 1310.
-\MT@listname@count=\count135
+\MT@listname@count=\count133
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\microtype\microtype-pdftex.def"
 File: microtype-pdftex.def 2016/05/01 v2.6 Definitions specific to pdftex (RS)
@@ -897,42 +871,42 @@ erence Rules
 \mpr@andskip=\skip54
 \mpr@lista=\toks36
 \mpr@listb=\toks37
-\mpr@hlist=\box45
-\mpr@vlist=\box46
-\mpr@right=\box47
+\mpr@hlist=\box39
+\mpr@vlist=\box40
+\mpr@right=\box41
 ) (rules.aux)
 \openout1 = `rules.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 48.
-LaTeX Font Info:    ... okay on input line 48.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 48.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 47.
  ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\t1lmr.fd"
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) ABD: EveryShipout initializing macros
 ("C:\Program Files\MiKTeX 2.9\tex\context\base\supp-pdf.mkii"
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count136
-\scratchdimen=\dimen193
-\scratchbox=\box48
-\nofMPsegments=\count137
-\nofMParguments=\count138
+\scratchcounter=\count134
+\scratchdimen=\dimen177
+\scratchbox=\box42
+\nofMPsegments=\count135
+\nofMParguments=\count136
 \everyMPshowfont=\toks38
-\MPscratchCnt=\count139
-\MPscratchDim=\dimen194
-\MPnumerator=\count140
-\makeMPintoPDFobject=\count141
+\MPscratchCnt=\count137
+\MPscratchDim=\dimen178
+\MPnumerator=\count138
+\makeMPintoPDFobject=\count139
 \everyMPtoPDFconversion=\toks39
 )
 *geometry* driver: auto-detecting
@@ -969,25 +943,25 @@ File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-\AtBeginShipoutBox=\box49
-Package hyperref Info: Link coloring OFF on input line 48.
+\AtBeginShipoutBox=\box43
+Package hyperref Info: Link coloring OFF on input line 47.
 ("C:\Program Files\MiKTeX 2.9\tex\latex\hyperref\nameref.sty"
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 
 ("C:\Program Files\MiKTeX 2.9\tex\generic\oberdiek\gettitlestring.sty"
 Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
-\c@section@level=\count142
+\c@section@level=\count140
 )
-LaTeX Info: Redefining \ref on input line 48.
-LaTeX Info: Redefining \pageref on input line 48.
-LaTeX Info: Redefining \nameref on input line 48.
+LaTeX Info: Redefining \ref on input line 47.
+LaTeX Info: Redefining \pageref on input line 47.
+LaTeX Info: Redefining \nameref on input line 47.
 
 (rules.out) (rules.out)
 \@outlinefile=\write4
 \openout4 = `rules.out'.
 
-LaTeX Info: Redefining \microtypecontext on input line 48.
+LaTeX Info: Redefining \microtypecontext on input line 47.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
@@ -1002,35 +976,35 @@ Package microtype Info: No adjustment of character kerning.
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
 (RS)
 )
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 80.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\ot1lmr.fd"
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 80.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\omllmm.fd"
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 80.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 79.
 
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\omslmsy.fd"
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 80.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 79.
 
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\omxlmex.fd"
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 80.
+(Font)              <10.95> on input line 79.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 80.
+(Font)              <8> on input line 79.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 80.
-LaTeX Font Info:    Try loading font information for U+msa on input line 80.
+(Font)              <6> on input line 79.
+LaTeX Font Info:    Try loading font information for U+msa on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
@@ -1038,7 +1012,7 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ("C:\Program Files\MiKTeX 2.9\tex\latex\microtype\mt-msa.cfg"
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 80.
+LaTeX Font Info:    Try loading font information for U+msb on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
@@ -1046,15 +1020,15 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ("C:\Program Files\MiKTeX 2.9\tex\latex\microtype\mt-msb.cfg"
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+lasy on input line 80.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\base\ulasy.fd"
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-LaTeX Font Info:    Try loading font information for U+stmry on input line 80.
+LaTeX Font Info:    Try loading font information for U+stmry on input line 79.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\stmaryrd\ustmry.fd")
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 110.
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 109.
 
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\lm\t1lmtt.fd"
@@ -1065,33 +1039,33 @@ Package microtype Info: Loading generic settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 
-Overfull \hbox (60.77579pt too wide) in paragraph at lines 110--110
+Overfull \hbox (60.77579pt too wide) in paragraph at lines 109--109
 [] 
  []
 
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 113.
+(Font)              <12> on input line 112.
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 113.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 112.
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 113.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 113.
+(hyperref)                removing `math shift' on input line 112.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\vdash' on input line 113.
+(hyperref)                removing `\@ifnextchar' on input line 112.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 113.
+(hyperref)                removing `\vdash' on input line 112.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 113.
+(hyperref)                removing `\@ifnextchar' on input line 112.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 112.
 
 (staticExpression.tex
 Package microtype Info: Character `029' is missing
@@ -1100,128 +1074,119 @@ Package microtype Info: Character `029' is missing
 )
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 116.
+(hyperref)                removing `math shift' on input line 115.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 116.
+(hyperref)                removing `\@ifnextchar' on input line 115.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\vdash' on input line 116.
+(hyperref)                removing `\vdash' on input line 115.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 116.
+(hyperref)                removing `\@ifnextchar' on input line 115.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 116.
+(hyperref)                removing `\phi' on input line 115.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 116.
+(hyperref)                removing `math shift' on input line 115.
 
 (staticFormula.tex [1
 
 {C:/Users/Johannes/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}])
-\myBox1=\box50
-\myScoreStart1=\dimen195
-\myCenter1=\dimen196
-\myScoreEnd1=\dimen197
-\myBox2=\box51
-\myScoreStart2=\dimen198
-\myCenter2=\dimen199
-\myScoreEnd2=\dimen256
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 126.
+(hyperref)                removing `\phi' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 126.
+(hyperref)                removing `\@ifnextchar' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 126.
+(hyperref)                removing `\phi' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 126.
+(hyperref)                removing `\@ifnextchar' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 126.
+(hyperref)                removing `math shift' on input line 127.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 126.
+(hyperref)                removing `math shift' on input line 130.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 129.
+(hyperref)                removing `\phi' on input line 130.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 129.
+(hyperref)                removing `\@ifnextchar' on input line 130.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 129.
+(hyperref)                removing `math shift' on input line 130.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 129.
+(hyperref)                removing `math shift' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 141.
+(hyperref)                removing `\Gamma' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\Gamma' on input line 141.
+(hyperref)                removing `\vdash' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\vdash' on input line 141.
+(hyperref)                removing `\phi' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 141.
+(hyperref)                removing `\@@overline' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@@overline' on input line 141.
+(hyperref)                removing `\phi' on input line 142.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 141.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 141.
+(hyperref)                removing `math shift' on input line 142.
 
 (staticSemantics.tex [2])
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 157.
+(hyperref)                removing `math shift' on input line 158.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\rho' on input line 157.
+(hyperref)                removing `\rho' on input line 158.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\vdash' on input line 157.
+(hyperref)                removing `\vdash' on input line 158.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\delimiter' on input line 157.
+(hyperref)                removing `\delimiter' on input line 158.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 157.
+(hyperref)                removing `math shift' on input line 158.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
@@ -1243,121 +1208,117 @@ Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                removing `math shift' on input line 180.
 
-(dynamicFormula.tex [3])
-\myBox3=\box52
-\myScoreStart3=\dimen257
-\myCenter3=\dimen258
-\myScoreEnd3=\dimen259
+(dynamicFormula.tex)
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 192.
+(hyperref)                removing `\phi' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 192.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 192.
+(hyperref)                removing `\@ifnextchar' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                \kern 3.04074pt
-(hyperref)                removed on input line 192.
+(hyperref)                removed on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\mathrel' on input line 192.
+(hyperref)                removing `\mathrel' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\std@equal' on input line 192.
+(hyperref)                removing `\std@equal' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\mathrel' on input line 192.
+(hyperref)                removing `\mathrel' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\mkern' on input line 192.
+(hyperref)                removing `\mkern' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\Rightarrow' on input line 192.
+(hyperref)                removing `\Rightarrow' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                \kern 3.04074pt
-(hyperref)                removed on input line 192.
+(hyperref)                removed on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 192.
+(hyperref)                removing `\phi' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 192.
+(hyperref)                removing `\@ifnextchar' on input line 194.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 192.
+(hyperref)                removing `math shift' on input line 194.
+
+[3]
+
+Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
+(hyperref)                removing `math shift' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 201.
+(hyperref)                removing `\@ifnextchar' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 201.
+(hyperref)                removing `\rho' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\rho' on input line 201.
+(hyperref)                removing `\phi' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\phi' on input line 201.
+(hyperref)                removing `\@ifnextchar' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\@ifnextchar' on input line 201.
+(hyperref)                removing `math shift' on input line 203.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 201.
+(hyperref)                removing `math shift' on input line 217.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 215.
+(hyperref)                removing `\rightarrow' on input line 217.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `\rightarrow' on input line 215.
+(hyperref)                removing `superscript' on input line 217.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `superscript' on input line 215.
+(hyperref)                removing `math shift' on input line 217.
 
-
-Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
-(hyperref)                removing `math shift' on input line 215.
-
-(dynamicSemantics.tex [4]) [5]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 244.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 244.
+(dynamicSemantics.tex) [4] [5]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 246.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 246.
  (rules.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 244.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 244.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 246.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 246.
 Package rerunfilecheck Info: File `rules.out' has not changed.
 (rerunfilecheck)             Checksum: CD9420B26CBA044DD0446C9A324C792E;1035.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 244.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 246.
  ) 
 Here is how much of TeX's memory you used:
- 18981 strings out of 493634
- 344565 string characters out of 3143735
- 448966 words of memory out of 3000000
- 21933 multiletter control sequences out of 15000+200000
+ 18811 strings out of 493634
+ 342546 string characters out of 3143735
+ 446301 words of memory out of 3000000
+ 21767 multiletter control sequences out of 15000+200000
  61006 words of font info for 76 fonts, out of 3000000 for 9000
  1025 hyphenation exceptions out of 8191
  55i,17n,54p,424b,353s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -1377,7 +1338,7 @@ fonts/type1/public/lm/lmsy8.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public
 /lm/lmtk10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/lm/lmtt10.pfb><C
 :/Program Files/MiKTeX 2.9/fonts/type1/public/lm/lmtt8.pfb><C:/Program Files/Mi
 KTeX 2.9/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on rules.pdf (5 pages, 279840 bytes).
+Output written on rules.pdf (5 pages, 278823 bytes).
 PDF statistics:
  161 PDF objects out of 1000 (max. 8388607)
  20 named destinations out of 1000 (max. 500000)

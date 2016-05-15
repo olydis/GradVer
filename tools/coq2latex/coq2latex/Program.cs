@@ -230,14 +230,14 @@ namespace coq2latex
                 }
             );
 
-            //File.WriteAllLines(dir.FullName + "\\latex\\staticExpression.tex",
-            //    parsing.ParseInductive(staticExpression));
-            //File.WriteAllLines(dir.FullName + "\\latex\\staticFormula.tex",
-            //    parsing.ParseInductive(staticFormula));
+            File.WriteAllLines(dir.FullName + "\\latex\\staticExpression.tex",
+                parsing.ParseInductive(staticExpression));
+            File.WriteAllLines(dir.FullName + "\\latex\\staticFormula.tex",
+                parsing.ParseInductive(staticFormula));
             File.WriteAllLines(dir.FullName + "\\latex\\staticSemantics.tex",
                 parsing.ParseInductive(staticSemantics));
-            ////File.WriteAllLines(dir.FullName + "\\latex\\dynamicExpression.tex",
-            ////    parsing.ParseInductive(dynamicExpression));
+            //File.WriteAllLines(dir.FullName + "\\latex\\dynamicExpression.tex",
+            //    parsing.ParseInductive(dynamicExpression));
             File.WriteAllLines(dir.FullName + "\\latex\\dynamicFormula.tex",
                 parsing.ParseInductive(dynamicFormula));
             File.WriteAllLines(dir.FullName + "\\latex\\dynamicSemantics.tex",
