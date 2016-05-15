@@ -102,9 +102,9 @@ namespace coq2latex
                 2,
                 x => @"\acc(" + x[0] + "," + x[1] + ")"
             );
-            le("phiSubst",
-                3,
-                x => x[2] + "[" + x[0] + "/" + x[1] + "]"
+            le("rhoFrom2",
+                4,
+                x => "[" + x[0] + @"{\:\mapsto\:}" + x[1] + "," + x[2] + @"{\:\mapsto\:}" + x[3] + "]"
             );
             le("rhoSubst",
                 3,
@@ -116,6 +116,10 @@ namespace coq2latex
             le("HSubsts",
                 3,
                 x => x[2] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + "]]");
+            le("phiSubst",
+                3,
+                x => x[2] + "[" + x[0] + "/" + x[1] + "]"
+            );
             le("phiSubsts",
                 2,
                 x => x[1] + "[" + x[0] + "]"
@@ -148,6 +152,10 @@ namespace coq2latex
                 1,
                 x => @"{\release}" + x[0]
             );
+            le("Aexcept",
+                2,
+                x => x[0] + @"{\:\backslash\:}" + x[1]
+            );
             functionify("Gamma");
             functionify("rho");
             functionify("rho'");
@@ -159,11 +167,13 @@ namespace coq2latex
             commandify("Heap");
             commandify("Heap'");
             commandify2("s_bar", "overline{s}");
+            commandify2("r_bar", "overline{r}");
 
             functionify2("fieldsNames", "fields");
             functionify2("fields", "fields");
             functionify2("staticFootprint", "staticFP");
             le("footprint", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
+            le("footprint'", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
 
             swallowCtor("Some");
             swallowCtor("TClass");
@@ -183,6 +193,8 @@ namespace coq2latex
             commandify("phi_r");
             le("mpre", 2, x => @"\mpre" + "(" + x[0] + "," + x[1] + ")");
             le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
+            le("mbody", 2, x => @"\mbody" + "(" + x[0] + "," + x[1] + ")");
+            le("mparam", 2, x => @"\mparam" + "(" + x[0] + "," + x[1] + ")");
 
             le("fold_left",
                 3,
@@ -217,7 +229,7 @@ namespace coq2latex
             //File.WriteAllLines(dir.FullName + "\\latex\\dynamicFormula.tex",
             //    parsing.ParseInductive(dynamicFormula));
             File.WriteAllLines(dir.FullName + "\\latex\\dynamicSemantics.tex",
-                parsing.ParseInductive(dynamicSemantics));
+                parsing.ParseInductiveSpecial(dynamicSemantics));
 
             Console.WriteLine("DONE");
             //Console.ReadKey();

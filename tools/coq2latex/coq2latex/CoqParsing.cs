@@ -122,7 +122,7 @@ namespace coq2latex
             var match = regex.Match(coqFile);
             var s = match.Groups["def"].Value;
 
-            Regex regexCtor = new Regex(@"\|(?<name>.*?):("+ regexCoqExpression + @")*?,(?<pre>([^|]*?->)*)(?<con>.*?)(?=$|\|)",
+            Regex regexCtor = new Regex(@"\|(?<name>.*?):(" + regexCoqExpression + @")*?,(?<pre>([^|]*?->)*)(?<con>.*?)(?=$|\|)",
                 RegexOptions.ExplicitCapture |
                 RegexOptions.Singleline);
             foreach (Match ctor in regexCtor.Matches(s))
@@ -141,6 +141,51 @@ namespace coq2latex
                 else
                     res.AppendLine("{" + string.Join(@"\\", cprems.Select(LatexifyExpression)) + "}");
                 res.AppendLine("{" + LatexifyExpression(ccon) + "}");
+                res.AppendLine(@"\end{mathpar}\hfill");
+                yield return PostFormat(res.ToString());
+            }
+        }
+        private string LatexGray(string inner)
+        {
+            return @"\textcolor{gray}{" + inner + "}";
+        }
+        public IEnumerable<string> ParseInductiveSpecial(string name)
+        {
+            Debug.WriteLine("Inductive: " + name);
+            Regex regex = new Regex("Inductive " + name + ".*?:=(?<def>.*?)\\.",
+                RegexOptions.ExplicitCapture |
+                RegexOptions.Singleline);
+            var match = regex.Match(coqFile);
+            var s = match.Groups["def"].Value;
+
+            Regex regexCtor = new Regex(@"\|(?<name>.*?):(" + regexCoqExpression + @")*?,(?<pre>([^|]*?->)*)(?<con>.*?)(?=$|\|)",
+                RegexOptions.ExplicitCapture |
+                RegexOptions.Singleline);
+            foreach (Match ctor in regexCtor.Matches(s))
+            {
+                var cname = ctor.Groups["name"].Value.Trim();
+                var ccon = ctor.Groups["con"].Value.Trim();
+                var cprems = ctor.Groups["pre"].Value.Split(new string[] { "->" }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToArray();
+
+                Debug.WriteLine("\tCtor: " + cname);
+
+                StringBuilder res = new StringBuilder();
+                res.AppendLine(@"\begin{mathpar}");
+                res.AppendLine(@"\inferrule* [right=" + cname + "]");
+                if (cprems.Length == 0)
+                    res.AppendLine("{~}");
+                else
+                    res.AppendLine("{" + string.Join(@"\\", cprems.Select(LatexifyExpression)
+                        .Select(x => x.Contains("A") || x.Contains("phi") ? LatexGray(x) : x)) + "}");
+
+                var latexCon = LatexifyExpression(ccon);
+                var miniExpression = @"[^,]*?";
+                var regexPattern = @"\((?<a>" + miniExpression + @"),(?<b>" + miniExpression + @"),(?<c>" + miniExpression + @")\)";
+                latexCon = Regex.Replace(latexCon,
+                    regexPattern,
+                    m => "(" + m.Groups["a"].Value + "," + LatexGray(m.Groups["b"].Value) + "," + m.Groups["c"].Value + ")");
+
+                res.AppendLine("{" + latexCon + "}");
                 res.AppendLine(@"\end{mathpar}\hfill");
                 yield return PostFormat(res.ToString());
             }

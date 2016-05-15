@@ -486,6 +486,9 @@ Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
   flat_map (footprint' h r) p.
 
 (* Figure 9: Dynamic semantics for core language *)
+Definition rhoFrom2 (x1 : x) (v1 : v) (x2 : x) (v2 : v) : rho := 
+  fun rx => if x_decb rx x1 then Some v1 else
+           (if x_decb rx x2 then Some v2 else None).
 Definition execState : Set := H * S.
 Inductive dynSem : execState -> execState -> Prop :=
 | ESFieldAssign : forall Heap Heap' (S : S) (s_bar : list s) (A : A_d) rho (x y : x) (v_y : v) (o : o) (f : f),
@@ -505,32 +508,27 @@ Inductive dynSem : execState -> execState -> Prop :=
     A' = A ++ map (fun cf' => (o, cf')) f ->
     Heap' = HSubsts o (map (fun cf' => (cf', vnull)) f) Heap ->
     dynSem (Heap, (rho, A, sAlloc x C :: s_bar) :: S) (Heap', (rho', A', s_bar) :: S)
-| ESReturn : forall Heap (S : S) (s_bar : list s) (a : A_d) rho rho' (x : x) (v_x : v),
+| ESReturn : forall Heap (S : S) (s_bar : list s) (A : A_d) rho rho' (x : x) (v_x : v),
     evale Heap rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
-    dynSem (Heap, (rho, a, sReturn x :: s_bar) :: S) (Heap, (rho', a, s_bar) :: S)
-| ESApp : forall pre h (S' : S) (s' rs : list s) (A A' : A_d) T (r r' : rho) (x' y' : x) (z' : x) (w' : x) (v' : v) (m' : m) (o' : o) (C' : C) fvf,
-    evale h r (ex y') (vo o') ->
-    evale h r (ex z') v' ->
-    h o' = Some (C', fvf) ->
-    mbody C' m' = Some rs ->
-    mparam C' m' = Some (T, w') ->
-    mpre C' m' = Some pre ->
-    r' = (fun rx => if x_decb rx xthis 
-      then Some (vo o')
-      else (if x_decb rx w' 
-        then Some v'
-        else None
-      )) ->
-    evalphi h r' A pre ->
-    A' = footprint h r' pre ->
-    dynSem (h, (r, A, sCall x' y' m' z' :: s') :: S') (h, (r', A', rs) :: (r, Aexcept A A', sCall x' y' m' z' :: s') :: S')
-| ESAppFinish : forall phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) zs' (m : m) y (C : C) v_r,
+    dynSem (Heap, (rho, A, sReturn x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
+| ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T (rho rho' : rho) (w x y z : x) (v : v) (m : m) (o : o) (C : C) c,
+    evale Heap rho (ex y) (vo o) ->
+    evale Heap rho (ex z) v ->
+    Heap o = Some (C, c) ->
+    mbody C m = Some r_bar ->
+    mparam C m = Some (T, w) ->
+    mpre C m = Some phi ->
+    rho' = rhoFrom2 xthis (vo o) w v ->
+    evalphi Heap rho' A phi ->
+    A' = footprint Heap rho' phi ->
+    dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
+| ESAppFinish : forall phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
     mpost C m = Some phi ->
     evalphi Heap rho' A' phi ->
     A'' = footprint Heap rho' phi ->
     evale Heap rho' (ex xresult) v_r ->
-    dynSem (Heap, (rho', A', []) :: (rho, A, sCall x y m zs' :: s_bar) :: S) (Heap, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
+    dynSem (Heap, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
 | ESAssert : forall Heap rho A phi s_bar S,
     evalphi' Heap rho A phi ->
     dynSem (Heap, (rho, A, sAssert phi :: s_bar) :: S) (Heap, (rho, A, s_bar) :: S)
