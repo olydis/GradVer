@@ -6,7 +6,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{\acc(x,f) \in \phi\\x{\:\neq\:}\vnull \in \phi}
+{\acc(x,f) \in \phi\\x{\:\neq\:}\vnull \in \phi\\ \Gamma(x) = C \\ \fieldType(C,f) = T \\ \Gamma(y) = T }
 {\hoare {\Gamma} {\phi} {x.f{\::=\:}y} {\phi{\:*\:}x.f{\:=\:}y}}
 \end{mathpar}
 

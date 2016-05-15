@@ -164,6 +164,8 @@ namespace coq2latex
                 2,
                 x => x[0] + @"{\:\backslash\:}" + x[1]
             );
+            le("staticType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
+            functionify("dynamicType");
             functionify("Gamma");
             functionify("rho");
             functionify("rho'");
@@ -207,6 +209,7 @@ namespace coq2latex
             le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
             le("mbody", 2, x => @"\mbody" + "(" + x[0] + "," + x[1] + ")");
             le("mparam", 2, x => @"\mparam" + "(" + x[0] + "," + x[1] + ")");
+            le("fieldType", 2, x => @"\fieldType" + "(" + x[0] + "," + x[1] + ")");
 
             le("fold_left",
                 3,
@@ -228,6 +231,10 @@ namespace coq2latex
                     funBody = funBody.Replace(funMatch.Groups["a1"].Value, x[1] + "_i");
                     return @"\overline{" + funBody + "}";
                 }
+            );
+            le("optionVisO",
+                2,
+                x => x[0] + @"{\:=\:}" + x[1]
             );
 
             File.WriteAllLines(dir.FullName + "\\latex\\staticExpression.tex",
