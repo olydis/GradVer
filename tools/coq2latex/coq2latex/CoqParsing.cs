@@ -56,6 +56,7 @@ namespace coq2latex
         {
             coq = coq.Replace(@" * S", @" \cdot S");
             coq = coq.Replace(@" * \overline{s", @"; \overline{s");
+            coq = coq.Replace(@"<>", @" \neq ");
             return coq;
         }
 
@@ -135,13 +136,13 @@ namespace coq2latex
 
                 StringBuilder res = new StringBuilder();
                 res.AppendLine(@"\begin{mathpar}");
-                res.AppendLine(@"\inferrule* [right=" + cname + "]");
+                res.AppendLine(@"\inferrule* [Right=" + cname + "]");
                 if (cprems.Length == 0)
                     res.AppendLine("{~}");
                 else
                     res.AppendLine("{" + string.Join(@"\\", cprems.Select(LatexifyExpression)) + "}");
                 res.AppendLine("{" + LatexifyExpression(ccon) + "}");
-                res.AppendLine(@"\end{mathpar}\hfill");
+                res.AppendLine(@"\end{mathpar}");
                 yield return PostFormat(res.ToString());
             }
         }
@@ -171,7 +172,7 @@ namespace coq2latex
 
                 StringBuilder res = new StringBuilder();
                 res.AppendLine(@"\begin{mathpar}");
-                res.AppendLine(@"\inferrule* [right=" + cname + "]");
+                res.AppendLine(@"\inferrule* [Right=" + cname + "]");
                 if (cprems.Length == 0)
                     res.AppendLine("{~}");
                 else
@@ -186,7 +187,7 @@ namespace coq2latex
                     m => "(" + m.Groups["a"].Value + "," + LatexGray(m.Groups["b"].Value) + "," + m.Groups["c"].Value + ")");
 
                 res.AppendLine("{" + latexCon + "}");
-                res.AppendLine(@"\end{mathpar}\hfill");
+                res.AppendLine(@"\end{mathpar}");
                 yield return PostFormat(res.ToString());
             }
         }

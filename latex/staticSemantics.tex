@@ -1,0 +1,42 @@
+\begin{mathpar}
+\inferrule* [Right=HNewObj]
+{ \Gamma(x) = C \\ \fields(C) = fs }
+{\hoare {\Gamma} {p} {x{\::=\:\new\:}C} {( \acc(x,\overline{fs_i}) * ( x{\:\neq\:}\vnull * p ) )}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HFieldAssign]
+{\acc(x,f) \in \phi\\x{\:\neq\:}\vnull \in \phi}
+{\hoare {\Gamma} {\phi} {x.f{\::=\:}y} {\phi{\:*\:}x.f{\:=\:}y}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HVarAssign]
+{ \phi_1 = \phi_2[e/x] \\\emptyset \sfrmphi \phi_1\\\staticFP(\phi_1) \sfrme e}
+{\hoare {\Gamma} {\phi_1} {x{\::=\:}e} {\phi_2}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HReturn]
+{~}
+{\hoare {\Gamma} {\phi} {{\return}x} {\phi{\:*\:}\xresult{\:=\:}x}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HApp]
+{ \Gamma(y) = C \\y{\:\neq\:}\vnull \in \phi\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mpre(C,m) = \phi_{pre} \\ \mpost(C,m) = \phi_{post} \\ \phi_p = \phi_{pre}[y,zs'/\xthis,zs] \\ \phi_q = \phi_{post}[y,zs',x/\xthis,zs,\xresult] }
+{\hoare {\Gamma} {\phi} {x{\::=\:}y.m(zs')} {( \phi_q * \phi_r )}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HAssert]
+{\phi_2 \in \phi_1}
+{\hoare {\Gamma} {\phi_1} {{\assert}\phi_2} {\phi_1}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HRelease]
+{\phi_1{\:\implies\:}( \phi_2 * \phi_r )\\\emptyset \sfrmphi \phi_r}
+{\hoare {\Gamma} {\phi_1} {{\release}\phi_2} {\phi_r}}
+\end{mathpar}
+

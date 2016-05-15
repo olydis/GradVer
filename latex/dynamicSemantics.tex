@@ -1,48 +1,48 @@
 \begin{mathpar}
-\inferrule* [right=ESFieldAssign]
+\inferrule* [Right=ESFieldAssign]
 {\evalex {\Heap} {\rho} {x} {o}\\\evalex {\Heap} {\rho} {y} {v_y}\\\textcolor{gray}{( o , f ) \in A}\\ \Heap' = \Heap[o{\:\mapsto\:}[f{\:\mapsto\:}v_y]] }
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x.f{\::=\:}y; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESVarAssign]
+\inferrule* [Right=ESVarAssign]
 {\evalex {\Heap} {\rho} {e} {v}\\ \rho' = \rho[x{\:\mapsto\:}v] }
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:}e; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESNewObj]
+\inferrule* [Right=ESNewObj]
 { \Heap(o) = \bot \\ \fields(C) = f \\ \rho' = \rho[x{\:\mapsto\:}o] \\\textcolor{gray}{ A' = A * \overline{ ( o , f_i ) } }\\ \Heap' = \Heap[o{\:\mapsto\:}[(\overline{ ( f_i , \vnull ) })]] }
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:\new\:}C; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho' ,\textcolor{gray}{ A' }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESReturn]
+\inferrule* [Right=ESReturn]
 {\evalex {\Heap} {\rho} {x} {v_x}\\ \rho' = \rho[\xresult{\:\mapsto\:}v_x] }
-{{( \Heap , ( \rho ,\textcolor{gray}{ a }, {\return}x; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ a }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+{{( \Heap , ( \rho ,\textcolor{gray}{ A }, {\return}x; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESApp]
-{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}\\ \Heap(o) = ( C , fvf ) \\ \mbody(C,m) = \overline{r} \\ \mparam(C,m) = ( T , w ) \\\textcolor{gray}{ \mpre(C,m) = \phi }\\ \rho' = [\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}\\\textcolor{gray}{ A' = \texttt{footprint}_{\Heap,\rho'}(\phi) }}
+\inferrule* [Right=ESApp]
+{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}\\ \Heap(o) = ( C , c ) \\ \mbody(C,m) = \overline{r} \\ \mparam(C,m) = ( T , w ) \\\textcolor{gray}{ \mpre(C,m) = \phi }\\ \rho' = [\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}\\\textcolor{gray}{ A' = \texttt{footprint}_{\Heap,\rho'}(\phi) }}
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \overline{r} ) * ( \rho ,\textcolor{gray}{ A{\:\backslash\:}A' }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESAppFinish]
+\inferrule* [Right=ESAppFinish]
 {\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\textcolor{gray}{ A'' = \texttt{footprint}_{\Heap,\rho'}(\phi) }\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
 {{( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \emptyset ) * ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,\textcolor{gray}{ A * A'' }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESAssert]
+\inferrule* [Right=ESAssert]
 {\textcolor{gray}{\evalphix {\Heap} {\rho} {A} {\phi}}}
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, {\assert}\phi; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=ESRelease]
+\inferrule* [Right=ESRelease]
 {\textcolor{gray}{\evalphix {\Heap} {\rho} {A} {\phi}}\\\textcolor{gray}{ A' = A{\:\backslash\:}\texttt{footprint}_{\Heap,\rho}(\phi) }}
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, {\release}\phi; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho ,\textcolor{gray}{ A' }, \overline{s} ) \cdot S )}}
-\end{mathpar}\hfill
+\end{mathpar}
 

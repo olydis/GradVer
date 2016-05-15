@@ -1,24 +1,24 @@
 \begin{mathpar}
-\inferrule* [right=EATrue]
+\inferrule* [Right=EATrue]
 {~}
-{\evalphix {h} {r} {a} {\true}}
-\end{mathpar}\hfill
+{\evalphix {\Heap} {\rho} {A} {\true}}
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=EAEqual]
-{ \evale {h} {r} {e1} = v1  \\  \evale {h} {r} {e2} = v2  \\  v1 = v2 }
-{\evalphix {h} {r} {a} {e1{\:=\:}e2}}
-\end{mathpar}\hfill
+\inferrule* [Right=EAEqual]
+{\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1 = v_2 }
+{\evalphix {\Heap} {\rho} {A} {e_1{\:=\:}e_2}}
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=EANEqual]
-{ \evale {h} {r} {e1} = v1  \\  \evale {h} {r} {e2} = v2  \\  v1 <> v2 }
-{\evalphix {h} {r} {a} {e1{\:\neq\:}e2}}
-\end{mathpar}\hfill
+\inferrule* [Right=EANEqual]
+{\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1  \neq  v_2 }
+{\evalphix {\Heap} {\rho} {A} {e_1{\:\neq\:}e_2}}
+\end{mathpar}
 
 \begin{mathpar}
-\inferrule* [right=EAAcc]
-{ r  x = (vo  o')  \\ ( o' , f' ) \in a}
-{\evalphix {h} {r} {a} {\acc(x,f')}}
-\end{mathpar}\hfill
+\inferrule* [Right=EAAcc]
+{ \rho(x) = o \\( o , f ) \in A}
+{\evalphix {\Heap} {\rho} {A} {\acc(x,f)}}
+\end{mathpar}
 

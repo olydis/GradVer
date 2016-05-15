@@ -367,22 +367,22 @@ Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = 
 
 (* Figure 7: Evaluation of formulas for core language *)
 Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
-| EATrue : forall h r a,
-    evalphi' h r a phiTrue
-| EAEqual : forall h r a e1 e2 v1 v2,
-    evale h r e1 v1 ->
-    evale h r e2 v2 ->
-    v1 = v2 ->
-    evalphi' h r a (phiEq e1 e2)
-| EANEqual : forall h r a e1 e2 v1 v2,
-    evale h r e1 v1 ->
-    evale h r e2 v2 ->
-    v1 <> v2 ->
-    evalphi' h r a (phiNeq e1 e2)
-| EAAcc : forall h r a x o' f',
-    r x = Some (vo o') ->
-    In (o', f') a ->
-    evalphi' h r a (phiAcc x f')
+| EATrue : forall Heap rho A,
+    evalphi' Heap rho A phiTrue
+| EAEqual : forall Heap rho A e_1 e_2 v_1 v_2,
+    evale Heap rho e_1 v_1 ->
+    evale Heap rho e_2 v_2 ->
+    v_1 = v_2 ->
+    evalphi' Heap rho A (phiEq e_1 e_2)
+| EANEqual : forall Heap rho A e_1 e_2 v_1 v_2,
+    evale Heap rho e_1 v_1 ->
+    evale Heap rho e_2 v_2 ->
+    v_1 <> v_2 ->
+    evalphi' Heap rho A (phiNeq e_1 e_2)
+| EAAcc : forall Heap rho A x o f,
+    rho x = Some (vo o) ->
+    In (o, f) A ->
+    evalphi' Heap rho A (phiAcc x f)
 .
 Definition evalphi : H -> rho -> A_d -> phi -> Prop :=
   fun h r a p => forall p', In p' p -> evalphi' h r a p'.
@@ -423,6 +423,13 @@ Definition wellTyped (G : Gamma) (s' : s) : Prop :=
   end.
 
 (* Figure 5: Hoare-based proof rules for core language *)
+Definition phiSubsts2 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (p : phi) : phi :=
+  phiSubst x2 e2
+ (phiSubst x1 e1 p).
+Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p : phi) : phi :=
+  phiSubst x3 e3
+ (phiSubst x2 e2
+ (phiSubst x1 e1 p)).
 Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
 | HNewObj : forall (Gamma : Gamma) p x (C : C) fs,
     Gamma x = Some (TClass C) ->
@@ -446,13 +453,15 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
     hoareSingle Gamma phi_1 (sAssign x e) phi_2
 | HReturn : forall Gamma phi (x : x),
     hoareSingle Gamma phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
-| HApp : forall Gamma phi pp pr pq (C : C) (m : m) (zs zs' : x) (x y : x),
+| HApp : forall Gamma phi phi_p phi_r phi_q (C : C) (m : m) (zs zs' : x) (x y : x) phi_post phi_pre,
     Gamma y = Some (TClass C) ->
     In (phiNeq (ex y) (ev vnull)) phi ->
-    phiImplies phi (pp ++ pr) ->
-    Some pp = option_map (phiSubsts [(xthis, ex y) ; (zs, ex zs')]) (mpre C m) ->
-    Some pq = option_map (phiSubsts [(xthis, ex y) ; (zs, ex zs') ; (xresult, ex x)]) (mpost C m) ->
-    hoareSingle Gamma phi (sCall x y m zs') (pq ++ pr)
+    phiImplies phi (phi_p ++ phi_r) ->
+    mpre C m = Some phi_pre ->
+    mpost C m = Some phi_post ->
+    phi_p = phiSubsts2 xthis (ex y) zs (ex zs') phi_pre ->
+    phi_q = phiSubsts3 xthis (ex y) zs (ex zs') xresult (ex x) phi_post ->
+    hoareSingle Gamma phi (sCall x y m zs') (phi_q ++ phi_r)
 | HAssert : forall Gamma phi_1 phi_2,
     In phi_2 phi_1 ->
     hoareSingle Gamma phi_1 (sAssert phi_2) phi_1

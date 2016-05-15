@@ -118,7 +118,15 @@ namespace coq2latex
                 x => x[2] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + "]]");
             le("phiSubst",
                 3,
-                x => x[2] + "[" + x[0] + "/" + x[1] + "]"
+                x => x[2] + "[" + x[1] + "/" + x[0] + "]"
+            );
+            le("phiSubsts2",
+                5,
+                x => x[4] + "[" + x[1] + "," + x[3] + "/" + x[0] + "," + x[2] + "]"
+            );
+            le("phiSubsts3",
+                7,
+                x => x[6] + "[" + x[1] + "," + x[3] + "," + x[5] + "/" + x[0] + "," + x[2] + "," + x[4] + "]"
             );
             le("phiSubsts",
                 2,
@@ -191,6 +199,10 @@ namespace coq2latex
             commandify("phi_1");
             commandify("phi_2");
             commandify("phi_r");
+            commandify("phi_p");
+            commandify("phi_q");
+            commandify2("phi_pre", "phi_{pre}");
+            commandify2("phi_post", "phi_{post}");
             le("mpre", 2, x => @"\mpre" + "(" + x[0] + "," + x[1] + ")");
             le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
             le("mbody", 2, x => @"\mbody" + "(" + x[0] + "," + x[1] + ")");
@@ -222,12 +234,12 @@ namespace coq2latex
             //    parsing.ParseInductive(staticExpression));
             //File.WriteAllLines(dir.FullName + "\\latex\\staticFormula.tex",
             //    parsing.ParseInductive(staticFormula));
-            //File.WriteAllLines(dir.FullName + "\\latex\\staticSemantics.tex",
-            //    parsing.ParseInductive(staticSemantics));
+            File.WriteAllLines(dir.FullName + "\\latex\\staticSemantics.tex",
+                parsing.ParseInductive(staticSemantics));
             ////File.WriteAllLines(dir.FullName + "\\latex\\dynamicExpression.tex",
             ////    parsing.ParseInductive(dynamicExpression));
-            //File.WriteAllLines(dir.FullName + "\\latex\\dynamicFormula.tex",
-            //    parsing.ParseInductive(dynamicFormula));
+            File.WriteAllLines(dir.FullName + "\\latex\\dynamicFormula.tex",
+                parsing.ParseInductive(dynamicFormula));
             File.WriteAllLines(dir.FullName + "\\latex\\dynamicSemantics.tex",
                 parsing.ParseInductiveSpecial(dynamicSemantics));
 
