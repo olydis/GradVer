@@ -124,6 +124,8 @@
 \BinaryInfC{$A_s \sfrmphi \phi_1 * \phi_2$}
 \end{prooftree}\hfill
 
+\subsubsection{Implication ($\phi_1 \dot{\implies} \phi_2$)}
+Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \subsection{Footprint ($\staticFP(\phi) = A_s$)}
 \begin{align*}
@@ -265,6 +267,14 @@
 \end{prooftree}\hfill
 
 
+\subsubsection{Implication ($\phi_1 \implies \phi_2$)}
+\begin{equation*}
+\phi_1 \implies \phi_2
+\quad\quad \iff \quad\quad
+\forall H, \rho, A: \evalphi \phi_1 \implies \evalphi \phi_2
+\end{equation*}
+Drawn from def. of entailment in ``A Formal Semantics for Isorecursive
+and Equirecursive State Abstractions''.
 
 \subsection{Footprint ($\dynamicFP(\phi) = A_d$)}
 \begin{align*}
