@@ -82,13 +82,13 @@
 \\ &program    	&&::= \overline{cls}~\overline{s}
 \\ &cls    		&&::= \class C~\{\overline{field}~\overline{method}\}
 \\ &field    	&&::= T~f;
-\\ &method		&&::= T~m(\overline{T~x})~contract~\{\overline{s}\}
+\\ &method		&&::= T~m(T~x)~contract~\{\overline{s}\}
 \\ &contract	&&::= \requires \phi;~\ensures \phi;
 \\ &T			&&::= \Tint ~|~ C
 \\ &s			&&::= x.f := y;
 				  ~|~ x := e; 
-				  ~|~ x := new C; 
-				  ~|~ x := y.m(\overline{z});
+				  ~|~ x := \new C; 
+				  ~|~ x := y.m(z);
 				  ~|~ \return x; 
 				  ~|~ \assert \phi; 
 				  ~|~ \release \phi;
