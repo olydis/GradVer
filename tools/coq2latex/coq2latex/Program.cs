@@ -75,6 +75,7 @@ namespace coq2latex
                 x => x[0] + @" \in " + x[1]
             );
             swallowCtor("vo");
+            le("vo", 2, x => x[1]);
             swallowCtor("ev");
             swallowCtor("ex");
             le("edot",
@@ -116,6 +117,9 @@ namespace coq2latex
             le("HSubsts",
                 3,
                 x => x[2] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + "]]");
+            le("Halloc",
+                3,
+                x => x[2] + "[" + x[0] + @"{\:\mapsto\:\new\:}" + x[1] + "]");
             le("phiSubst",
                 3,
                 x => x[2] + "[" + x[1] + "/" + x[0] + "]"
@@ -194,7 +198,8 @@ namespace coq2latex
             });
             commandify2("TPrimitiveInt", "Tint");
             commandify2("None", "bot");
-            commandify("vnull");
+            le("vnull", 0, _ => @"\vnull");
+            le("vnull", 1, _ => @"\vnull");
             commandify("xresult");
             commandify("xthis");
             commandify("phi");

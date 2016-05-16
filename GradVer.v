@@ -67,6 +67,13 @@ Definition vnull (C : C) : v := existT v' (TClass C) (v'null C).
 Definition vo (C : C) (o : o) : v := existT v' (TClass C) (v'o C o).
 Definition vn (n : nat) : v := existT v' (TPrimitiveInt) n.
 
+Definition defaultValue (T : T) : v :=
+  match T with
+  | TPrimitiveInt => vn 0
+  | TClass C => vnull C
+  end.
+
+
 Inductive e :=
 | ev : v -> e
 | ex : x -> e
@@ -252,6 +259,12 @@ Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
 Definition HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
   fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
+Definition Halloc (o : o) (C : C) (h : H) : H :=
+  match fields C with
+  | Some fs => HSubsts o (map (fun x => (snd x, defaultValue (fst x))) fs) h
+  | None => h
+  end.
+
 Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
   fun x'' => if x_decb x'' x' then Some v' else r x''.
 
@@ -425,12 +438,12 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 Definition wellTypedX (G : Gamma) (x' : x) : Prop :=
   exists T', G x' = Some T'.
 Definition wellTypedE (G : Gamma) (e' : e) : Prop :=
-  exists T', getType G e' = Some T'.
+  exists T', staticType G e' = Some T'.
 Definition wellTypedPhi' (G : Gamma) (p : phi') : Prop :=
   match p with
   | phiTrue => True
-  | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
-  | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
+  | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
+  | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | phiAcc x' f => wellTypedE G (edot (ex x') f)
   end.
 Definition wellTypedPhi (G : Gamma) (p : phi) : Prop :=
@@ -439,7 +452,7 @@ Definition wellTyped (G : Gamma) (s' : s) : Prop :=
   match s' with
   | sMemberSet x' f' y' => let e1 := (edot (ex x') f') in
                            let e2 := ex y' in 
-                            wellTypedE G e1 /\ wellTypedE G e2 /\ getType G e1 = getType G e2
+                            wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | sAssign x' e' => True
   | sAlloc x' C' => G x' = Some (TClass C')
   | sCall x' y' f' z' => exists C' T' pT px contr s',
@@ -458,7 +471,7 @@ Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
   | phiAcc x' f' => 
       match r x' with
-      | Some (vo o') => [(o', f')]
+      | Some (existT _ (TClass _) (v'o _ o')) => [(o', f')]
       | _ => [] (*???*)
       end
   | _ => []
@@ -472,8 +485,8 @@ Definition rhoFrom2 (x1 : x) (v1 : v) (x2 : x) (v2 : v) : rho :=
            (if x_decb rx x2 then Some v2 else None).
 Definition execState : Set := H * S.
 Inductive dynSem : execState -> execState -> Prop :=
-| ESFieldAssign : forall Heap Heap' (S : S) (s_bar : list s) (A : A_d) rho (x y : x) (v_y : v) (o : o) (f : f),
-    evale Heap rho (ex x) (vo o) ->
+| ESFieldAssign : forall Heap Heap' C (S : S) (s_bar : list s) (A : A_d) rho (x y : x) (v_y : v) (o : o) (f : f),
+    evale Heap rho (ex x) (vo C o) ->
     evale Heap rho (ex y) v_y ->
     In (o, f) A ->
     Heap' = HSubst o f v_y Heap ->
@@ -485,22 +498,22 @@ Inductive dynSem : execState -> execState -> Prop :=
 | ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) f,
     Heap o = None ->
     fieldsNames C = Some f ->
-    rho' = rhoSubst x (vo o) rho ->
+    rho' = rhoSubst x (vo C o) rho ->
     A' = A ++ map (fun cf' => (o, cf')) f ->
-    Heap' = HSubsts o (map (fun cf' => (cf', vnull)) f) Heap ->
+    Heap' = Halloc o C Heap ->
     dynSem (Heap, (rho, A, sAlloc x C :: s_bar) :: S) (Heap', (rho', A', s_bar) :: S)
 | ESReturn : forall Heap (S : S) (s_bar : list s) (A : A_d) rho rho' (x : x) (v_x : v),
     evale Heap rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (Heap, (rho, A, sReturn x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
 | ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T (rho rho' : rho) (w x y z : x) (v : v) (m : m) (o : o) (C : C) c,
-    evale Heap rho (ex y) (vo o) ->
+    evale Heap rho (ex y) (vo C o) ->
     evale Heap rho (ex z) v ->
     Heap o = Some (C, c) ->
     mbody C m = Some r_bar ->
     mparam C m = Some (T, w) ->
     mpre C m = Some phi ->
-    rho' = rhoFrom2 xthis (vo o) w v ->
+    rho' = rhoFrom2 xthis (vo C o) w v ->
     evalphi Heap rho' A phi ->
     A' = footprint Heap rho' phi ->
     dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)

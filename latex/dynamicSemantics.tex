@@ -12,7 +12,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESNewObj]
-{ \Heap(o) = \bot \\ \fields(C) = f \\ \rho' = \rho[x{\:\mapsto\:}o] \\\textcolor{gray}{ A' = A * \overline{ ( o , f_i ) } }\\ \Heap' = \Heap[o{\:\mapsto\:}[(\overline{ ( f_i , \vnull ) })]] }
+{ \Heap(o) = \bot \\ \fields(C) = f \\ \rho' = \rho[x{\:\mapsto\:}o] \\\textcolor{gray}{ A' = A * \overline{ ( o , f_i ) } }\\ \Heap' = \Heap[o{\:\mapsto\:\new\:}C] }
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:\new\:}C; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho' ,\textcolor{gray}{ A' }, \overline{s} ) \cdot S )}}
 \end{mathpar}
 
