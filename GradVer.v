@@ -82,7 +82,8 @@ Inductive phi' :=
 | phiTrue : phi'
 | phiEq : e -> e -> phi'
 | phiNeq : e -> e -> phi'
-| phiAcc : x -> f -> phi'.
+| phiAcc : x -> f -> phi'
+| phiType : x -> T -> phi'.
 Definition phi := list phi'.
 Inductive s :=
 | sMemberSet : x -> f -> x -> s
@@ -91,7 +92,8 @@ Inductive s :=
 | sCall : x -> x -> m -> x -> s
 | sReturn : x -> s
 | sAssert : phi' -> s
-| sRelease : phi' -> s.
+| sRelease : phi' -> s
+| sDeclare : T -> x -> s.
 Inductive contract :=
 | Contract : phi -> phi -> contract.
 Inductive method :=
@@ -296,6 +298,7 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiEq e_1 e_2)
 | WFNEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiNeq e_1 e_2)
 | WFAcc : forall A x f, sfrmphi' A (phiAcc x f)
+| WFType : forall A x T, sfrmphi' A (phiType x T)
 .
 Definition sfrmphi (a : A_s) (p : phi) : Prop :=
   forall p', In p' p -> sfrmphi' a p'.
@@ -356,6 +359,9 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     optionVisO (rho x) o ->
     In (o, f) A ->
     evalphi' Heap rho A (phiAcc x f)
+| EAType : forall Heap rho (A : A_d) x (o : o) T,
+    rho x = Some T ->
+    evalphi' Heap rho A (phiType x (projT1 T))
 .
 Definition evalphi : H -> rho -> A_d -> phi -> Prop :=
   fun h r a p => forall p', In p' p -> evalphi' h r a p'.
@@ -422,6 +428,9 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
     phiImplies phi_1 (phi_2 :: phi_r) ->
     sfrmphi [] phi_r ->
     hoareSingle Gamma phi_1 (sRelease phi_2) phi_r
+| HDeclare : forall Gamma phi_1 phi_2 x T,
+    phi_2 = appEnd phi_1 (phiType x T) ->
+    hoareSingle Gamma phi_1 (sDeclare T x) phi_2
 .
 
 Inductive hoare : phi -> list s -> phi -> Prop :=
@@ -445,6 +454,7 @@ Definition wellTypedPhi' (G : Gamma) (p : phi') : Prop :=
   | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | phiAcc x' f => wellTypedE G (edot (ex x') f)
+  | phiType x T => G x = Some T
   end.
 Definition wellTypedPhi (G : Gamma) (p : phi) : Prop :=
   forall p', In p' p -> wellTypedPhi' G p'.
@@ -463,6 +473,7 @@ Definition wellTyped (G : Gamma) (s' : s) : Prop :=
   | sReturn x' => wellTypedX G x'
   | sAssert p => wellTypedPhi' G p
   | sRelease p => wellTypedPhi' G p
+  | sDeclare T x => G x = Some T
   end.
 
 
