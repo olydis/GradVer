@@ -335,7 +335,7 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
 Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = Some v.
 
 (* dynamic type derivation *)
-Fixpoint dynamicType (H : H) (rho : rho) (e' : e) : option T :=
+Definition dynamicType (H : H) (rho : rho) (e' : e) : option T :=
   option_map (fun v : v => projT1 v) (evale' H rho e').
 
 (* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
@@ -557,6 +557,16 @@ Inductive dynSemStar : execState -> execState -> Prop :=
 | ESSNone : forall a, dynSemStar a a
 | ESSStep : forall a b c, dynSem a b -> dynSemStar b c -> dynSemStar a c
 .
+
+Lemma dynSemStarBack : forall a b c,
+  dynSemStar a b -> dynSem b c -> dynSemStar a c.
+Proof.
+  intros.
+  eapply ESSStep.
+  inversion H0; clear H0; subst.
+  * eapply ESSStep; eauto; constructor.
+  * 
+
 (*Definition dynSemFull (initial final : execState) : Prop := dynSemStar initial final /\ isFinished final.
 *)
 Definition newHeap : H := fun _ => None.
@@ -579,6 +589,247 @@ Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
 
 (* determinism? *)
+
+Definition invHeapConsistent
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    forall x o C, rho x = Some (existT _ (TClass C) (v'o C o)) -> 
+      exists res fs,
+        fields C = Some fs /\
+        Heap o = Some (C, res) /\
+        (forall (T : T) (f : f) fs, In (T, f) fs -> exists v, res f = Some v)
+        .
+Definition invPhiHolds
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    evalphi Heap rho A phi.
+Definition invTypesHold
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    forall e T, staticType phi e = Some T -> dynamicType Heap rho e = Some T.
+
+Definition invAll
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    invHeapConsistent
+      Heap rho A phi /\
+    invPhiHolds
+      Heap rho A phi /\
+    invTypesHold
+      Heap rho A phi.
+
+Ltac uninv :=
+  unfold invAll in *;
+  unfold invHeapConsistent in *;
+  unfold invPhiHolds in *;
+  unfold invTypesHold in *.
+
+Lemma getTypeImpliesStaticType : forall phi x,
+  getType phi x = staticType phi (ex x).
+Proof. auto. Qed.
+
+Lemma HnotTotal : forall (H' : H), exists x, H' x = None.
+Admitted.
+
+Ltac applyINV1 INV1 H :=
+  try auto.
+
+Ltac applyINV2 INV2 H :=
+  apply INV2 in H;
+  inversion H;
+  clear H;
+  subst.
+
+Ltac applyINV3 INV3 H :=
+  apply INV3 in H;
+  unfold dynamicType in H;
+  simpl in H.
+
+Ltac inversionx H :=
+  inversion H; clear H; subst.
+
+Ltac emagicProgress :=
+  repeat eexists;
+  econstructor; econstructor;
+  unfold evale; simpl; eauto.
+
+Ltac common :=
+  repeat match goal with
+    | [ H : option_map _ ?T = _ |- _ ] =>
+                        destruct T eqn: ?;
+                        inversionx H
+    | [ H : evale _ _ _ _ |- _ ] => unfold evale in H; simpl in H
+  end.
+
+Lemma evalPhiPrefix : forall h r a p1 p2,
+   evalphi h r a (p1 ++ p2) -> evalphi h r a p1.
+Proof.
+  induction p1;
+  intros.
+  * unfold evalphi.
+    intros.
+    inversion H1.
+  * specialize (IHp1 p2).
+    unfold evalphi in *.
+    intros.
+    inversionx H1.
+    + apply H0.
+      constructor.
+      tauto.
+    + apply IHp1 in H2; auto.
+      intros.
+      apply H0.
+      apply in_app_or in H1.
+      apply in_or_app.
+      inversionx H1; auto.
+      constructor.
+      apply in_cons.
+      auto.
+Qed.
+
+Definition soundness : Prop :=
+  forall pre s post initialHeap initialRho initialAccess S',
+  hoare pre s post ->
+  invAll initialHeap initialRho initialAccess pre ->
+  exists finalHeap finalRho finalAccess,
+    dynSemStar (initialHeap, (initialRho, initialAccess, s) :: S') (finalHeap, (finalRho, finalAccess, []) :: S') /\
+    invAll finalHeap finalRho finalAccess post.
+
+Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
+  hoareSingle pre s'' post ->
+  invAll initialHeap initialRho initialAccess pre ->
+  exists finalHeap finalRho finalAccess,
+    dynSemStar (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S')
+.
+  destruct s'';
+  intro;
+  intro;
+  intro;
+  intro;
+  intro;
+  intro;
+  intro;
+  intro HO;
+  intro INV;
+
+  uninv;
+  inversion HO; clear HO; subst;
+
+  inversion INV as [INV1 INVx]; clear INV;
+  inversion INVx as [INV2 INV3]; clear INVx;
+  try rewrite getTypeImpliesStaticType in *.
+  - applyINV2 INV2 H8.
+    applyINV2 INV2 H9.
+    applyINV3 INV3 H3.
+    applyINV3 INV3 H6.
+
+    common.
+    rewrite H2 in *.
+    inversionx Heqo0.
+    inversionx H10.
+    inversionx H0.
+    simpl in *.
+    inversionx H1.
+    inversionx H12.
+
+    emagicProgress.
+
+  - applyINV3 INV3 H2.
+    applyINV3 INV3 H3.
+    common.
+
+    emagicProgress.
+
+  - specialize (HnotTotal initialHeap). intros.
+    inversionx H0.
+    emagicProgress.
+
+  - applyINV2 INV2 H7.
+    applyINV3 INV3 H4.
+    applyINV3 INV3 H5.
+    applyINV3 INV3 H6.
+    common.
+    rewrite H2 in *.
+    inversionx Heqo2.
+    inversionx H15.
+
+    destruct v2. simpl in *. subst.
+    destruct v2. contradict H16. auto.
+
+    assert (H1 := H2).
+    apply INV1 in H1.
+    inversionx H1.
+    inversionx H0.
+    inversionx H1.
+    inversionx H3.
+
+    (*get method*)
+    unfold mparam in H12.
+    destruct (mmethod C0 m0) eqn: mm; simpl in *; inversionx H12.
+    destruct m1.
+    inversionx H5.
+
+    (*well def*)
+    remember (Method t m1 (projT1 v0) z c l) as m2.
+    specialize (pWellDefined m2). intros.
+    assert (In m2 allMethods).
+      unfold allMethods.
+      apply in_flat_map.
+      unfold mmethod in mm.
+      destruct (class C0) eqn: cc; try (inversion mm; fail).
+      exists c0.
+      unfold class in cc.
+      apply find_some in cc.
+      inversionx cc.
+      constructor; auto.
+      destruct c0.
+      apply find_some in mm.
+      inversionx mm. auto.
+    apply H3 in H5. clear H3.
+    unfold mWellDefined in H5.
+    rewrite Heqm2 in H5.
+    destruct c.
+    intuition.
+
+    unfold mpre, mpost, mcontract in *.
+    rewrite mm in *. simpl in *.
+    rewrite Heqm2 in *.
+    inversionx H9.
+    inversionx H10.
+
+    repeat eexists;
+    econstructor.
+    + (*single step: make the call*)
+      econstructor; unfold evale; simpl; eauto.
+      * unfold mbody.
+        rewrite mm. simpl.
+        eauto.
+      * unfold mparam.
+        rewrite mm. simpl.
+        eauto.
+      * unfold mpre.
+        unfold mcontract.
+        rewrite mm. simpl.
+        eauto.
+      * clear INV1 INV3.
+        unfold phiImplies in H8.
+        apply H8 in INV2. clear H8.
+
+        apply evalPhiPrefix in INV2.
+        admit. (*TODO: make lemma*)
+    + (*many steps: assumes soundness, termination, ... for method body*)
+      assert soundness as sdn. admit.
+      unfold soundness in sdn.
+      remember ((initialRho, Aexcept initialAccess
+        (footprint initialHeap (rhoFrom2 xthis (vo C0 o0) z v0) phi_pre),
+        sCall x0 x1 m0 x2 :: s') :: S') as S''.
+      specialize (sdn 
+        phi_pre l phi_post initialHeap
+        (rhoFrom2 xthis (vo C0 o0) z v0)
+        (footprint initialHeap (rhoFrom2 xthis (vo C0 o0) z v0) phi_pre)
+        S'').
+      apply sdn in H3. clear sdn.
+      inversionx H3.
+      inversionx H6.
+      inversionx H3.
+Proof.
+
 
 Lemma phiImpliesRefl : forall x, phiImplies x x.
 Proof.
@@ -615,9 +866,6 @@ Proof.
       apply IHa in H1.
       auto.
 Qed.
-
-Lemma HnotTotal : forall (H' : H), exists x, H' x = None.
-Admitted.
 
 Lemma mapSplitFst : forall {A B : Type} (x : list (A * B)), map fst x = fst (split x).
 Admitted.
