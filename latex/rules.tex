@@ -88,22 +88,24 @@
 				  ~|~ x := e; 
 				  ~|~ x := \new C; 
 				  ~|~ x := y.m(z);
+\\ & &&
 				  ~|~ \return x; 
 				  ~|~ \assert \phi; 
 				  ~|~ \release \phi;
+				  ~|~ T~x;
 \\ &\phi		&&::= \true
 				  ~|~ e = e
 				  ~|~ e \neq e
 				  ~|~ \acc(x.f)
+				  ~|~ x : T
 				  ~|~ \phi * \phi
 \\ &e			&&::= v
 				  ~|~ x
 				  ~|~ e.f
 \\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other \rangle
 \\				  
-\\ &\Gamma		&&::= (x \mapsto T)
-\\ &H			&&::= (o \mapsto (C,\overline{(f \mapsto v)}))
-\\ &\rho		&&::= (x \mapsto v)
+\\ &H			&&::= (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
+\\ &\rho		&&::= (x \rightharpoonup v)
 \\ &A_s			&&::= \overline{(x, f)}
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
