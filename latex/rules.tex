@@ -138,17 +138,16 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \end{align*}
 
 
-\newcommand{\hoare}[4]{#1\vdash\{#2\}#3\{#4\}}
-\newcommand{\hoareG}{\hoare \Gamma}
-\subsection{Hoare ($\hoareG {\phi} {\overline s} {\phi}$)}
+\newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
+\subsection{Hoare ($\hoare {\phi} {\overline s} {\phi}$)}
 \begin{mathpar}
 \inferrule* [Right=HSec]
 {
-\hoareG {\phi_p} {s_1} {\phi_{q1}} \\ 
+\hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
 \phi_{q1} \implies \phi_{q2} \\
-\hoareG {\phi_{q2}} {s_2} {\phi_r}
+\hoare {\phi_{q2}} {s_2} {\phi_r}
 }
-{\hoareG {\phi_p} {s_1;s_2} {\phi_r}}
+{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
 \end{mathpar}
 
 \input{staticSemantics}
@@ -221,14 +220,14 @@ and Equirecursive State Abstractions''.
 \section{Theorems}
 Hoare preserves self-framing?
 \begin{align*}
-\forall~ \Gamma, \phi_1, \phi_2, s &: \hoareG {\phi_1} s {\phi_2} 
+\forall~ \Gamma, \phi_1, \phi_2, s &: \hoare {\phi_1} s {\phi_2} 
 \\ &\implies \emptyset \sfrmphi \phi_1 
 \\ &\implies \emptyset \sfrmphi \phi_2
 \end{align*}
 
 Hoare progress
 \begin{align*}
-\forall~ ... &: \hoareG {\phi_1} {s'} {\phi_2} 
+\forall~ ... &: \hoare {\phi_1} {s'} {\phi_2} 
 \\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
 \\ &\implies \exists H_2, \rho_2, A_2 : (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
 							\rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
@@ -236,7 +235,7 @@ Hoare progress
 
 Hoare preservation
 \begin{align*}
-\forall~ ... &: \hoareG {\phi_1} {s'} {\phi_2} 
+\forall~ ... &: \hoare {\phi_1} {s'} {\phi_2} 
 \\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
 \\ &\implies (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
   \rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)

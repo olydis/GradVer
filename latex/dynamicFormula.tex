@@ -22,3 +22,9 @@
 {\evalphix {\Heap} {\rho} {A} {\acc(x,f)}}
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule* [Right=EAType]
+{ \rho(x) = T }
+{\evalphix {\Heap} {\rho} {A} {x{\::\:}T}}
+\end{mathpar}
+

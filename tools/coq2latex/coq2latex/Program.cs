@@ -52,8 +52,8 @@ namespace coq2latex
                 x => x[0] + @" \sfrmphi " + x[1]
             );
             le(staticSemantics,
-                4,
-                x => @"\hoare {" + x[0] + "} {" + x[1] + "} {" + x[2] + "} {" + x[3] + "}"
+                3,
+                x => @"\hoare {" + x[0] + "} {" + x[1] + "} {" + x[2] + "}"
             );
 
             le(dynamicExpression,
@@ -102,6 +102,10 @@ namespace coq2latex
             le("phiAcc",
                 2,
                 x => @"\acc(" + x[0] + "," + x[1] + ")"
+            );
+            le("phiType",
+                2,
+                x => x[0] + @"{\::\:}" + x[1]
             );
             le("rhoFrom2",
                 4,
@@ -164,9 +168,17 @@ namespace coq2latex
                 1,
                 x => @"{\release}" + x[0]
             );
+            le("sDeclare",
+                2,
+                x => x[0] + @"{\:}" + x[1]
+            );
             le("Aexcept",
                 2,
                 x => x[0] + @"{\:\backslash\:}" + x[1]
+            );
+            le("getType",
+                2,
+                x => x[0] + "(" + x[1] + ")"
             );
             le("staticType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
             functionify("dynamicType");
@@ -183,12 +195,15 @@ namespace coq2latex
             commandify2("s_bar", "overline{s}");
             commandify2("r_bar", "overline{r}");
 
+            le("defaultValue", 1, x => @"\texttt{defaultValue}(" + x[0] + ")");
+
             functionify2("fieldsNames", "fields");
             functionify2("fields", "fields");
             functionify2("staticFootprint", "staticFP");
             le("footprint", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
             le("footprint'", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
 
+            swallowCtor("projT1");
             swallowCtor("Some");
             swallowCtor("TClass");
             le("option_map", 2, x => {

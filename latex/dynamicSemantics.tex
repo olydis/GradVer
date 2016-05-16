@@ -46,3 +46,9 @@
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, {\release}\phi; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho ,\textcolor{gray}{ A' }, \overline{s} ) \cdot S )}}
 \end{mathpar}
 
+\begin{mathpar}
+\inferrule* [Right=ESDeclare]
+{ \rho' = \rho[x{\:\mapsto\:}\texttt{defaultValue}(T)] }
+{{( \Heap , ( \rho ,\textcolor{gray}{ A }, T{\:}x; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
+\end{mathpar}
+

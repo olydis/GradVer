@@ -105,7 +105,6 @@ Inductive cls :=
 Inductive program :=
 | Program : (list cls) -> (list s) -> program.
 
-Definition Gamma := x -> option T.
 Definition H := o -> option (C * (f -> option v)).
 Definition rho := x -> option v.
 Definition A_s := list (x * f).
@@ -270,9 +269,6 @@ Definition Halloc (o : o) (C : C) (h : H) : H :=
 Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
   fun x'' => if x_decb x'' x' then Some v' else r x''.
 
-Definition GammaSubst (x' : x) (T' : T) (g : Gamma) : Gamma :=
-  fun x'' => if x_decb x'' x' then Some T' else g x''.
-
 (* Figure 2: Static typing rules for expressions of the core language *)
 Inductive sfrme : A_s -> e -> Prop :=
 | WFVar : forall A x,
@@ -303,12 +299,17 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 Definition sfrmphi (a : A_s) (p : phi) : Prop :=
   forall p', In p' p -> sfrmphi' a p'.
 
-
 (* static type derivation *)
-Fixpoint staticType (G : Gamma) (e' : e) : option T :=
+Definition getType (phi : phi) (x : x) : option T :=
+  hd_error (flat_map (fun p => 
+    match p with
+    | phiType x' t => if x_decb x' x then [t] else []
+    | _ => []
+    end) phi).
+Fixpoint staticType (phi : phi) (e' : e) : option T :=
   match e' with
   | ev v => Some (projT1 v)
-  | ex x => G x
+  | ex x => getType phi x
   | edot e' f' => 
     option_bind
       (fun t => 
@@ -316,7 +317,7 @@ Fixpoint staticType (G : Gamma) (e' : e) : option T :=
         | TPrimitiveInt => None
         | TClass C' => fieldType C' f'
         end)
-      (staticType G e')
+      (staticType phi e')
   end.
 
 (* Figure 6: Evaluation of expressions for core language *)
@@ -378,40 +379,39 @@ Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p :
   phiSubst x3 e3
  (phiSubst x2 e2
  (phiSubst x1 e1 p)).
-Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
-| HNewObj : forall (Gamma : Gamma) p x (C : C) fs,
-    Gamma x = Some (TClass C) ->
+Inductive hoareSingle : phi -> s -> phi -> Prop :=
+| HNewObj : forall phi x (C : C) fs,
+    getType phi x = Some (TClass C) ->
     fieldsNames C = Some fs ->
     hoareSingle
-      Gamma
-      p
+      phi
       (sAlloc x C)
       (fold_left 
         (fun arg1 arg2 => phiAcc x arg2 :: arg1)
         fs 
-        (phiNeq (ex x) (ev (vnull C)) :: p))
-| HFieldAssign : forall Gamma (phi : phi) (x y : x) (f : f) C T,
-    Gamma x = Some (TClass C) ->
+        (phiNeq (ex x) (ev (vnull C)) :: phi))
+| HFieldAssign : forall (phi : phi) (x y : x) (f : f) C T,
+    getType phi x = Some (TClass C) ->
     fieldType C f = Some T ->
-    Gamma y = Some T ->
+    getType phi y = Some T ->
     In (phiAcc x f) phi ->
     In (phiNeq (ex x) (ev (vnull C))) phi ->
-    hoareSingle Gamma phi (sMemberSet x f y) (appEnd phi (phiEq (edot (ex x) f) (ex y)))
-| HVarAssign : forall Gamma T phi_1 phi_2 (x : x) (e : e),
-    Gamma x = Some T ->
-    staticType Gamma e = Some T ->
+    hoareSingle phi (sMemberSet x f y) (appEnd phi (phiEq (edot (ex x) f) (ex y)))
+| HVarAssign : forall T phi_1 phi_2 (x : x) (e : e),
+    getType phi_1 x = Some T ->
+    staticType phi_1 e = Some T ->
     phi_1 = phiSubst x e phi_2 ->
     sfrmphi [] phi_1 ->
     sfrme (staticFootprint phi_1) e ->
-    hoareSingle Gamma phi_1 (sAssign x e) phi_2
-| HReturn : forall Gamma phi (x : x) T,
-    Gamma x = Some T ->
-    Gamma xresult = Some T ->
-    hoareSingle Gamma phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
-| HApp : forall Gamma phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) (z z' : x) (x y : x) phi_post phi_pre,
-    Gamma y = Some (TClass C) ->
-    Gamma x = Some T_r ->
-    Gamma z' = Some T_p ->
+    hoareSingle phi_1 (sAssign x e) phi_2
+| HReturn : forall phi (x : x) T,
+    getType phi x = Some T ->
+    getType phi xresult = Some T ->
+    hoareSingle phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
+| HApp : forall phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) (z z' : x) (x y : x) phi_post phi_pre,
+    getType phi y = Some (TClass C) ->
+    getType phi x = Some T_r ->
+    getType phi z' = Some T_p ->
     In (phiNeq (ex y) (ev (vnull C))) phi ->
     phiImplies phi (phi_p ++ phi_r) ->
     mpre C m = Some phi_pre ->
@@ -420,22 +420,23 @@ Inductive hoareSingle : Gamma -> phi -> s -> phi -> Prop :=
     mrettype C m = Some T_r ->
     phi_p = phiSubsts2 xthis (ex y) z (ex z') phi_pre ->
     phi_q = phiSubsts3 xthis (ex y) z (ex z') xresult (ex x) phi_post ->
-    hoareSingle Gamma phi (sCall x y m z') (phi_q ++ phi_r)
-| HAssert : forall Gamma phi_1 phi_2,
+    hoareSingle phi (sCall x y m z') (phi_q ++ phi_r)
+| HAssert : forall phi_1 phi_2,
     In phi_2 phi_1 ->
-    hoareSingle Gamma phi_1 (sAssert phi_2) phi_1
-| HRelease : forall Gamma phi_1 phi_2 phi_r,
+    hoareSingle phi_1 (sAssert phi_2) phi_1
+| HRelease : forall phi_1 phi_2 phi_r,
     phiImplies phi_1 (phi_2 :: phi_r) ->
     sfrmphi [] phi_r ->
-    hoareSingle Gamma phi_1 (sRelease phi_2) phi_r
-| HDeclare : forall Gamma phi_1 phi_2 x T,
+    hoareSingle phi_1 (sRelease phi_2) phi_r
+| HDeclare : forall phi_1 phi_2 x T,
+    getType phi_1 x = None ->
     phi_2 = appEnd phi_1 (phiType x T) ->
-    hoareSingle Gamma phi_1 (sDeclare T x) phi_2
+    hoareSingle phi_1 (sDeclare T x) phi_2
 .
 
 Inductive hoare : phi -> list s -> phi -> Prop :=
-| HSec : forall G (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
-    hoareSingle G p s1 q1 ->
+| HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
+    hoareSingle p s1 q1 ->
     phiImplies q1 q2 ->
     hoare q2 s2 r ->
     hoare p (s1 :: s2) r
@@ -444,36 +445,34 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 
 
 (* well-typedness *)
-Definition wellTypedX (G : Gamma) (x' : x) : Prop :=
-  exists T', G x' = Some T'.
-Definition wellTypedE (G : Gamma) (e' : e) : Prop :=
-  exists T', staticType G e' = Some T'.
-Definition wellTypedPhi' (G : Gamma) (p : phi') : Prop :=
+Definition wellTypedE (phi : phi) (e' : e) : Prop :=
+  exists T', staticType phi e' = Some T'.
+Definition wellTypedPhi' (G : phi) (p : phi') : Prop :=
   match p with
   | phiTrue => True
   | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | phiAcc x' f => wellTypedE G (edot (ex x') f)
-  | phiType x T => G x = Some T
+  | phiType x T => getType G x = Some T
   end.
-Definition wellTypedPhi (G : Gamma) (p : phi) : Prop :=
+Definition wellTypedPhi (G : phi) (p : phi) : Prop :=
   forall p', In p' p -> wellTypedPhi' G p'.
-Definition wellTyped (G : Gamma) (s' : s) : Prop :=
+Definition wellTyped (G : phi) (s' : s) : Prop :=
   match s' with
   | sMemberSet x' f' y' => let e1 := (edot (ex x') f') in
                            let e2 := ex y' in 
                             wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
   | sAssign x' e' => True
-  | sAlloc x' C' => G x' = Some (TClass C')
+  | sAlloc x' C' => getType G x' = Some (TClass C')
   | sCall x' y' f' z' => exists C' T' pT px contr s',
-                G y' = Some (TClass C') /\
+                getType G y' = Some (TClass C') /\
                 mmethod C' f' = Some (Method T' f' pT px contr s') /\
-                G x' = Some T' /\
-                Some pT = G z' (* /\ anything with contr and s' ???*)
-  | sReturn x' => wellTypedX G x'
+                getType G x' = Some T' /\
+                Some pT = getType G z' (* /\ anything with contr and s' ???*)
+  | sReturn x' => wellTypedE G (ex x')
   | sAssert p => wellTypedPhi' G p
   | sRelease p => wellTypedPhi' G p
-  | sDeclare T x => G x = Some T
+  | sDeclare T x => getType G x = Some T
   end.
 
 
@@ -541,6 +540,9 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi' Heap rho A phi ->
     A' = Aexcept A (footprint' Heap rho phi) ->
     dynSem (Heap, (rho, A, sRelease phi :: s_bar) :: S) (Heap, (rho, A', s_bar) :: S)
+| ESDeclare : forall Heap rho rho' A s_bar S T x,
+    rho' = rhoSubst x (defaultValue T) rho ->
+    dynSem (Heap, (rho, A, sDeclare T x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
 .
 
 (* helper definitions *)
@@ -575,12 +577,8 @@ Axiom pWellDefined : forall m, In m allMethods -> mWellDefined m.
 (* PROOF SECTION *)
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
-Notation "'Γ'" := Gamma.
 
 (* determinism? *)
-
-Lemma hoareImplies : forall q1 q2 q3 q4 s', phiImplies q1 q2 -> hoare q2 s' q3 -> phiImplies q3 q4 -> hoare q1 s' q4.
-Admitted.
 
 Lemma phiImpliesRefl : forall x, phiImplies x x.
 Proof.
