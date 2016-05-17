@@ -527,7 +527,9 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi Heap rho' A phi ->
     A' = footprint Heap rho' phi ->
     dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESAppFinish : forall phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
+| ESAppFinish : forall c o phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
+    evale Heap rho (ex y) (vo C o) ->
+    Heap o = Some (C, c) ->
     mpost C m = Some phi ->
     evalphi Heap rho' A' phi ->
     A'' = footprint Heap rho' phi ->
@@ -561,11 +563,7 @@ Inductive dynSemStar : execState -> execState -> Prop :=
 Lemma dynSemStarBack : forall a b c,
   dynSemStar a b -> dynSem b c -> dynSemStar a c.
 Proof.
-  intros.
-  eapply ESSStep.
-  inversion H0; clear H0; subst.
-  * eapply ESSStep; eauto; constructor.
-  * 
+Admitted.
 
 (*Definition dynSemFull (initial final : execState) : Prop := dynSemStar initial final /\ isFinished final.
 *)
@@ -828,6 +826,48 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
       inversionx H3.
       inversionx H6.
       inversionx H3.
+      Focus 2.
+      * uninv.
+        clear sdn.
+        repeat constructor.
+          intros.
+          unfold rhoFrom2 in H6.
+          destruct (x_decb x5 xthis).
+          unfold vo in H6.
+          remember (existT v' (TClass C0) (v'o C0 o0)).
+          inversionx H6.
+          inversion H10. subst.
+          apply inj_pair2_eq_dec in H10.
+          inversionx H10.
+          eapply INV1.
+          eauto.
+
+          apply T_dec.
+
+          destruct (x_decb x5 z); inversionx H6.
+          eapply INV1. eauto.
+          
+          subst.
+          admit. (*TODO: lemma*)
+
+          admit.
+      * eapply dynSemStarBack. eapply H6.
+        (*final step, method call finished*)
+        clear H6.
+        admit.
+        (*eapply ESAppFinish.*)
+  - applyINV3 INV3 H1.
+    common.
+    emagicProgress.
+  - emagicProgress.
+  - emagicProgress.
+    unfold phiImplies in H1.
+    apply H1 in INV2.
+    unfold evalphi in INV2.
+    apply INV2.
+    constructor.
+    tauto.
+  - emagicProgress.
 Proof.
 
 
