@@ -748,9 +748,9 @@ Qed.
 Lemma HeapGetsMoreSpecific : forall s1 s2 (H1 H2 : H) (C : C) m1 (o : o),
   dynSemStar (H1, s1) (H2, s2) ->
              H1 o = Some (C, m1) ->
-  exists m2, H2 o = Some (C, .
+  exists m2, H2 o = Some (C, m2).
 Proof.
-  
+  specialize (PropLift).
 
 Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
