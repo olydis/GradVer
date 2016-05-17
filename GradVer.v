@@ -40,8 +40,9 @@ Definition C := string.
 Definition f := string.
 Definition m := string.
 Definition o := nat.
+Definition x' := string.
 Inductive x :=
-| xUserDef : string -> x
+| xUserDef : x' -> x
 | xthis : x
 | xresult : x.
 Inductive T :=
@@ -97,7 +98,7 @@ Inductive s :=
 Inductive contract :=
 | Contract : phi -> phi -> contract.
 Inductive method :=
-| Method : T -> m -> T -> x -> contract -> list s -> method.
+| Method : T -> m -> T -> x' -> contract -> list s -> method.
 Inductive field :=
 | Field : T -> f -> field.
 Inductive cls :=
@@ -199,7 +200,7 @@ Definition mbody (C' : C) (m' : m) : option (list s) :=
   option_map
     (fun me => match me with Method _ _ _ _ _ instrs => instrs end)
     (mmethod C' m').
-Definition mparam (C' : C) (m' : m) : option (T * x) :=
+Definition mparam (C' : C) (m' : m) : option (T * x') :=
   option_map
     (fun me => match me with Method _ _ paramT paramx _ _ => (paramT, paramx) end)
     (mmethod C' m').
@@ -212,37 +213,41 @@ Definition mrettype (C' : C) (m' : m) : option T :=
 Definition getMain : list s := match p with Program _ main => main end.
 
 (* substitution *)
-Fixpoint eSubst (x' : x) (e' : e) (ee : e) : e :=
-match ee with
-| ex x'' => if x_decb x'' x' then e' else ee
-| edot e'' f' => edot (eSubst x' e' e'') f'
-| _ => ee
-end.
 
-Definition eSubsts (r : list (x * e)) (ee : e) : e :=
-  fold_left (fun a b => eSubst (fst b) (snd b) a) r ee.
+Fixpoint eSubsts (r : list (x * e)) (ee : e) : e :=
+  match ee with
+  | ex x'' => 
+    match find (fun r => x_decb x'' (fst r)) r with
+    | Some (_, e') => e'
+    | None => ee
+    end
+  | edot e'' f' => edot (eSubsts r e'') f'
+  | _ => ee
+  end.
+Definition eSubst (x' : x) (e' : e) (ee : e) : e :=
+  eSubsts [(x', e')] ee.
 
-Definition phi'Subst (x' : x) (e' : e) (p : phi') : phi' :=
+Definition phi'Substs (r : list (x * e)) (p : phi') : phi' :=
 match p with
-| phiEq  e1 e2 => phiEq  (eSubst x' e' e1) (eSubst x' e' e2)
-| phiNeq e1 e2 => phiNeq (eSubst x' e' e1) (eSubst x' e' e2)
-| phiAcc x f'' => if x_decb x x' 
-  then
-    (
-      match e' with
-      | ex x' => phiAcc x f''
-      | _ => phiTrue
-      end
-    )
-  else p
+| phiEq  e1 e2 => phiEq  (eSubsts r e1) (eSubsts r e2)
+| phiNeq e1 e2 => phiNeq (eSubsts r e1) (eSubsts r e2)
+| phiAcc x f'' => 
+  match eSubsts r (ex x) with
+  | ex x' => phiAcc x' f''
+  | _ => phiTrue
+  end
 | _ => p
 end.
 
-Definition phiSubst (x' : x) (e' : e) (p : phi) : phi :=
-  map (phi'Subst x' e') p.
-
 Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
-  fold_left (fun a b => phiSubst (fst b) (snd b) a) r p.
+  map (phi'Substs r) p.
+
+Definition phiSubst (x' : x) (e' : e) (p : phi) : phi :=
+  phiSubsts [(x', e')] p.
+Definition phiSubsts2 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (p : phi) : phi :=
+  phiSubsts [(x1, e1) ; (x2, e2)] p.
+Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p : phi) : phi :=
+  phiSubsts [(x1, e1) ; (x2, e2) ; (x3, e3)] p.
 
 Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
   fun o'' =>
@@ -372,13 +377,6 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
 
 (* Figure 5: Hoare-based proof rules for core language *)
-Definition phiSubsts2 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (p : phi) : phi :=
-  phiSubst x2 e2
- (phiSubst x1 e1 p).
-Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p : phi) : phi :=
-  phiSubst x3 e3
- (phiSubst x2 e2
- (phiSubst x1 e1 p)).
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi x (C : C) fs,
     getType phi x = Some (TClass C) ->
@@ -408,7 +406,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     getType phi x = Some T ->
     getType phi xresult = Some T ->
     hoareSingle phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
-| HApp : forall phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) (z z' : x) (x y : x) phi_post phi_pre,
+| HApp : forall phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) z (z' : x) (x y : x) phi_post phi_pre,
     getType phi y = Some (TClass C) ->
     getType phi x = Some T_r ->
     getType phi z' = Some T_p ->
@@ -418,8 +416,8 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     mpost C m = Some phi_post ->
     mparam C m = Some (T_p, z) ->
     mrettype C m = Some T_r ->
-    phi_p = phiSubsts2 xthis (ex y) z (ex z') phi_pre ->
-    phi_q = phiSubsts3 xthis (ex y) z (ex z') xresult (ex x) phi_post ->
+    phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
+    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
     hoareSingle phi (sCall x y m z') (phi_q ++ phi_r)
 | HAssert : forall phi_1 phi_2,
     In phi_2 phi_1 ->
@@ -581,13 +579,32 @@ Definition newHeap : H := fun _ => None.
 Definition newRho : rho := fun _ => None.
 Definition newAccess : A_d := [].
 
+Fixpoint getVarsE (e : e) : list x :=
+  match e with
+  | ev _ => []
+  | ex x => [x]
+  | edot e _ => getVarsE e
+  end.
+Definition getVarsPhi' (phi : phi') : list x :=
+  match phi with
+  | phiTrue => []
+  | phiEq e1 e2 => getVarsE e1 ++ getVarsE e2
+  | phiNeq e1 e2 => getVarsE e1 ++ getVarsE e2
+  | phiAcc x _ => [x]
+  | phiType x _ => [x]
+  end.
+Definition getVarsPhi (phi : phi) : list x :=
+  flat_map getVarsPhi' phi.
+
 (* ASSUMPTIONS *)
 Definition mWellDefined (m : method) := 
   match m with Method T' m' pT px c s =>
     match c with Contract pre post =>
       hoare pre s post /\
       sfrmphi [] pre /\
-      sfrmphi [] post
+      sfrmphi [] post /\
+      (forall x, In x (getVarsPhi pre) -> In x [px ; xthis]) /\
+      (forall x, In x (getVarsPhi pre) -> In x [px ; xthis ; xresult])
     end
   end.
 Axiom pWellDefined : forall m, In m allMethods -> mWellDefined m.
@@ -820,6 +837,75 @@ Proof.
 Admitted.
 
 
+Lemma rhoPhiHelper : forall phi x1 x2 v0 o0 a z C0 rt r H,
+  x1 <> z ->
+  (∀ x : x, In x (getVarsPhi phi) → z = x ∨ xthis = x ∨ xresult = x) ->
+  r x1 = Some (vo C0 o0) ->
+  r x2 = Some v0 ->
+  evalphi H r a (phiSubsts2 xthis (ex x1) z (ex x2) phi) ->
+  evalphi H (rhoFrom3 xresult (defaultValue rt) xthis (vo C0 o0) z v0) a phi.
+Proof.
+  induction phi0; unfold evalphi; intros; inversionx H6.
+  - clear IHphi0.
+    assert (∀ x0 : x, In x0 (getVarsPhi' p') → z = x0 ∨ xthis = x0 ∨ xresult = x0).
+      intros.
+      apply H2.
+      unfold getVarsPhi.
+      apply in_flat_map.
+      exists p'.
+      intuition.
+    clear H2.
+    assert (evalphi' H0 r a0 (phi'Subst z (ex x2) (phi'Subst xthis (ex x1) p'))).
+      apply H5.
+      unfold phiSubsts2, phiSubst.
+      apply in_map_iff. eexists. intuition.
+      apply in_map_iff. eexists. intuition.
+    clear H5.
+
+    destruct p'; try constructor; simpl in *.
+    * inversionx H2.
+      unfold evale in *.
+      generalize H6 H12 H8.
+      generalize e0 e1.
+      clear H6 H12 H8 e0 e1.
+      induction e0, e1; simpl; intros.
+      + econstructor; unfold evale; simpl; eauto.
+      + inversionx H8.
+        econstructor; unfold evale; simpl; eauto.
+        unfold rhoFrom3, x_decb, dec2decb in *.
+        destruct (x_dec x0 xthis); subst; simpl in *.
+          unfold x_decb, dec2decb in *.
+          destruct (x_dec x1 z).
+            contradict H1. auto.
+            simpl in *. rewrite H3 in *. auto.
+          unfold x_decb, dec2decb in *.
+          destruct (x_dec x0 z); simpl in *.
+            destruct (x_dec z xresult).
+          
+
+  - unfold evalphi in IHphi0.
+    eapply IHphi0; eauto; intros.
+    * apply (H1 x0).
+      unfold getVarsPhi in *.
+      apply in_flat_map.
+      apply in_flat_map in H5.
+      inversionx H5.
+      exists x3.
+      intuition.
+    * apply H4.
+      unfold phiSubsts2, phiSubst in *.
+      apply in_map_iff.
+      apply in_map_iff in H5.
+      inversionx H5.
+      exists x0.
+      intuition.
+      apply in_map_iff.
+      apply in_map_iff in H8.
+      inversionx H8.
+      exists x3.
+      intuition.
+Admitted.
+
 Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -915,6 +1001,8 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     rewrite Heqm2 in H5.
     destruct c.
     intuition.
+    rename H7 into varsPre.
+    rename H12 into varsPost.
     
     (*unify method knowledge*)
     unfold mpre, mpost, mcontract in *.
@@ -957,7 +1045,11 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
         unfold phiImplies in H8.
         apply H8 in INV2. clear H8.
         apply evalPhiPrefix in INV2.
-        admit. (*TODO: make lemma*)
+        rewrite Heqr'.
+        eapply rhoPhiHelper; eauto.
+        intros.
+        specialize (varsPre x5).
+        intuition.
 
     (*Part 2: method body (assumes soundness, termination, ... for method body)*)
     assert soundness as sdn. admit.
