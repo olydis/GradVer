@@ -493,6 +493,11 @@ Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
 Definition rhoFrom2 (x1 : x) (v1 : v) (x2 : x) (v2 : v) : rho := 
   fun rx => if x_decb rx x1 then Some v1 else
            (if x_decb rx x2 then Some v2 else None).
+Definition rhoFrom3 (x1 : x) (v1 : v) (x2 : x) (v2 : v) (x3 : x) (v3 : v) : rho := 
+  fun rx => if x_decb rx x1 then Some v1 else
+           (if x_decb rx x2 then Some v2 else
+           (if x_decb rx x3 then Some v3 else None)).
+
 Definition execState : Set := H * S.
 Inductive dynSem : execState -> execState -> Prop :=
 | ESFieldAssign : forall Heap Heap' C (S : S) (s_bar : list s) (A : A_d) rho (x y : x) (v_y : v) (o : o) (f : f),
@@ -516,14 +521,15 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale Heap rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (Heap, (rho, A, sReturn x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T (rho rho' : rho) (w x y z : x) (v : v) (m : m) (o : o) (C : C) c,
+| ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T T_r (rho rho' : rho) (w x y z : x) (v : v) (m : m) (o : o) (C : C) c,
     evale Heap rho (ex y) (vo C o) ->
     evale Heap rho (ex z) v ->
     Heap o = Some (C, c) ->
     mbody C m = Some r_bar ->
     mparam C m = Some (T, w) ->
     mpre C m = Some phi ->
-    rho' = rhoFrom2 xthis (vo C o) w v ->
+    mrettype C m = Some T_r ->
+    rho' = rhoFrom3 xresult (defaultValue T_r) xthis (vo C o) w v ->
     evalphi Heap rho' A phi ->
     A' = footprint Heap rho' phi ->
     dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
@@ -721,6 +727,13 @@ Proof.
   eapply H0; eauto.
 Qed.
 
+Lemma lengthId : forall {A : Type} (a b : list A), a = b -> Datatypes.length a = Datatypes.length b.
+Proof.
+  intros.
+  rewrite H0.
+  tauto.
+Qed.
+
 Lemma HeapGetsMoreSpecific' : forall s1 s2 (H1 H2 : H) (C : C) m1 (o : o),
   dynSem (H1, s1) (H2, s2) ->
              H1 o = Some (C, m1) ->
@@ -745,12 +758,67 @@ Proof.
     inversion H8.
 Qed.
 
-Lemma HeapGetsMoreSpecific : forall s1 s2 (H1 H2 : H) (C : C) m1 (o : o),
+Lemma HeapGetsMoreSpecific : forall (C : C) (o : o) m1 s1 s2 (H1 H2 : H),
   dynSemStar (H1, s1) (H2, s2) ->
              H1 o = Some (C, m1) ->
-  exists m2, H2 o = Some (C, .
+  exists m2, H2 o = Some (C, m2).
 Proof.
-  
+  specialize (HeapGetsMoreSpecific').
+  intro.
+  intro.
+  intro.
+  specialize (PropLift (fun x => exists m1, fst x o0 = Some (C0, m1))).
+  intro.
+  assert (∀ a b : execState,
+      dynSem a b
+      → (∃ m1 : f → option v, fst a o0 = Some (C0, m1))
+        → ∃ m1 : f → option v, fst b o0 = Some (C0, m1)).
+    clear H1.
+    intros.
+    destruct a, b.
+    inversionx H2.
+    eapply H0 in H1.
+      inversionx H1.
+      eexists; eassumption.
+
+      eassumption.
+  intuition.
+  clear H0 H2.
+  specialize (H3 (H1, s1) (H4, s2)).
+  intuition.
+  apply H0.
+  eexists. eassumption.
+Qed.
+
+Lemma RhoGetsMoreSpecific' : forall r1 r2 a1 a2 s1 s2 S (H1 H2 : H) v1 (x : x),
+  dynSem (H1, (r1, a1, s1) :: S) (H2, (r2, a2, s2) :: S) ->
+             r1 x = Some v1 ->
+  exists v2, r2 x = Some v2.
+Proof.
+  intros.
+  inversion H0; clear H0; try subst;
+  try (eexists; eauto; fail);
+  try (unfold rhoSubst, x_decb, dec2decb;
+    destruct (x_dec x0 x1); subst; eexists; eauto; fail).
+  - unfold rhoSubst, x_decb, dec2decb.
+    destruct (x_dec x0 xresult); subst; eexists; eauto.
+  - apply lengthId in H13.
+    simpl in H13.
+    contradict H13.
+    auto with arith.
+  - apply lengthId in H14.
+    simpl in H14.
+    contradict H14.
+    auto with arith.
+Qed.
+
+Lemma RhoGetsMoreSpecific : forall r1 r2 a1 a2 s1 s2 S (H1 H2 : H) v1 (x : x),
+  dynSemStar (H1, (r1, a1, s1) :: S) (H2, (r2, a2, s2) :: S) ->
+             r1 x = Some v1 ->
+  exists v2, r2 x = Some v2.
+Proof.
+Admitted.
+
 
 Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -847,12 +915,17 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     rewrite Heqm2 in H5.
     destruct c.
     intuition.
-
+    
+    (*unify method knowledge*)
     unfold mpre, mpost, mcontract in *.
     rewrite mm in *. simpl in *.
     rewrite Heqm2 in *.
     inversionx H9.
     inversionx H10.
+
+    remember (projT1 v1) as ret_type.
+    remember (rhoFrom3 xresult (defaultValue ret_type) xthis (vo C0 o0) z v0) as r'.
+    remember (footprint initialHeap r' phi_pre) as fp.
 
     (*proof strategy*)
     assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)
@@ -860,9 +933,6 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
       intros.
       econstructor; eauto.
       eapply dynSemStarBack; eauto.
-    
-    remember (rhoFrom2 xthis (vo C0 o0) z v0) as r'.
-    remember (footprint initialHeap r' phi_pre) as fp.
 
     (*Part 1: make the call*)
     assert (dynSem 
@@ -890,36 +960,49 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
         admit. (*TODO: make lemma*)
 
     (*Part 2: method body (assumes soundness, termination, ... for method body)*)
-    assert (exists fh r'' fp', dynSemStar
-              (initialHeap, (r' , fp , l ) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
-              (fh,          (r'', fp', []) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
-           ).
-      assert soundness as sdn. admit.
-      unfold soundness in sdn.
-      remember ((initialRho, Aexcept initialAccess fp,
-        sCall x0 x1 m0 x2 :: s') :: S') as S''.
-      specialize (sdn phi_pre l phi_post initialHeap r' fp S'').
-      apply sdn in H3. clear sdn.
-      inversion H3; clear H3.
-      inversion H9; clear H9.
-      inversion H3; clear H3.
-      inversion H9; clear H9.
-
-      repeat eexists. eassumption.
-
-      (*invariants initially hold*)
-      admit. (*that follows from progress proof of Part 1!*)
-
+    assert soundness as sdn. admit.
+    unfold soundness in sdn.
+    remember ((initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S') as S''.
+    specialize (sdn phi_pre l phi_post initialHeap r' fp S'').
+    apply sdn in H3. clear sdn.
+    inversion H3; clear H3.
     inversion H9; clear H9.
-    inversion H10; clear H10.
+    inversion H3; clear H3.
     inversion H9; clear H9.
+    Focus 2.
+      admit. (*that follows from preservation proof of Part 1!*)
+
     (*Part 3: call finish*)
-    assert (exists initialRh', dynSemStar
+    assert (exists initialRh', dynSem
               (x5, (x6, x7, []) :: (initialRho, Aexcept initialAccess fp , sCall x0 x1 m0 x2 :: s') :: S')
-              (x5,                 (initialRh', Aexcept initialAccess fp ++ footprint phi_post, s') :: S')
+              (x5,                 (initialRh', Aexcept initialAccess fp ++ footprint x5 x6 phi_post, s') :: S')
            ).
-      emagicProgress.
-      
+      assert (dss := H3).
+
+      (*heap*)
+      eapply HeapGetsMoreSpecific in H3; try eassumption.
+      inversion H3; clear H3.
+
+      (*rho*)
+      eapply RhoGetsMoreSpecific in dss.
+      Focus 2.
+        instantiate (2 := xresult).
+        rewrite Heqr'.
+        unfold rhoFrom3, x_decb, dec2decb.
+        simpl. eauto.
+      inversion dss; clear dss.
+
+      eexists. econstructor; eauto.
+        unfold mpost, mcontract.
+        rewrite mm. simpl. tauto.
+
+        uninv. apply H10.
+    inversion H9; clear H9.
+    
+    (*marriage*)
+    subst.
+    repeat eexists.
+    eapply strat; eauto.
   - applyINV3 INV3 H1.
     common.
     emagicProgress.
@@ -1039,12 +1122,6 @@ Admitted. (* TODO: entangle *)
 
 Definition consistent (H' : H) (r : rho) := forall x' o' res, r x' = Some (vo o') -> H' o' = Some res.
 
-Lemma lengthId : forall {A : Type} (a b : list A), a = b -> Datatypes.length a = Datatypes.length b.
-Proof.
-  intros.
-  rewrite H0.
-  tauto.
-Qed.
 
 Theorem staSemProgress : forall G (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   wellTyped G s'' ->
