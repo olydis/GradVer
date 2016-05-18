@@ -612,11 +612,13 @@ Definition mWellDefined (m : method) :=
       (forall x, In x (getVarsPhi pre) -> In x [xUserDef px ; xthis ; xresult])
     end
   end.
+SearchAbout list.
 Definition CWellDefined (c : cls) :=
   match c with Cls _ fs ms =>
-    (forall m, In m ms -> mWellDefined m)
+    (forall m, In m ms -> mWellDefined m) /\
+    (forall (f : f) T1 T2, In (Field T1 f) fs -> In (Field T2 f) fs -> T1 = T2)
   end.
-Axiom pWellDefined : forall m, In m allMethods -> mWellDefined m.
+Axiom pWellDefined : forall c, In c classes -> CWellDefined c.
 
 (* PROOF SECTION *)
 Notation "'φ'" := phi.
@@ -1102,32 +1104,33 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
 
     (*well def*)
     remember (Method t m1 (projT1 v0) z c l) as m2.
-    specialize (pWellDefined m2). intros.
-    assert (In m2 allMethods).
-      unfold allMethods.
-      apply in_flat_map.
-      unfold mmethod in mm.
-      destruct (class C0) eqn: cc; try (inversion mm; fail).
-      exists c0.
-      unfold class in cc.
-      apply find_some in cc.
-      inversionx cc.
-      constructor; auto.
-      destruct c0.
-      apply find_some in mm.
-      inversionx mm. auto.
+    assert (mm2 := mm).
+    unfold mmethod in mm2.
+    destruct (class C0) eqn: cc; try (inversion mm2; fail).
+    specialize (pWellDefined c0). intros.
+    unfold class in cc.
+    apply find_some in cc.
+    inversionx cc.
+    destruct c0.
+    unfold C_decb, string_decb, dec2decb in H6.
+    destruct (string_dec c0 C0); inversionx H6.
     apply H3 in H5. clear H3.
-    unfold mWellDefined in H5.
-    rewrite Heqm2 in H5.
+    apply find_some in mm2.
+    inversionx mm2.
+    unfold m_decb, string_decb, dec2decb in H6.
+    destruct (string_dec m1 m0); inversionx H6.
+    unfold CWellDefined in H5.
+    inversionx H5.
+    apply H6 in H3. clear H6.
+    unfold mWellDefined in H3.
     destruct c.
     intuition.
-    rename H7 into varsPre.
-    rename H12 into varsPost.
+    rename H11 into varsPre.
+    rename H13 into varsPost.
     
     (*unify method knowledge*)
     unfold mpre, mpost, mcontract in *.
     rewrite mm in *. simpl in *.
-    rewrite Heqm2 in *.
     inversionx H9.
     inversionx H10.
 
@@ -1176,11 +1179,11 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     unfold soundness in sdn.
     remember ((initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S') as S''.
     specialize (sdn phi_pre l phi_post initialHeap r' fp S'').
-    apply sdn in H3. clear sdn.
-    inversion H3; clear H3.
-    inversion H9; clear H9.
-    inversion H3; clear H3.
-    inversion H9; clear H9.
+    apply sdn in H5. clear sdn.
+    inversion H5; clear H5.
+    inversion H10; clear H10.
+    inversion H5; clear H5.
+    inversion H10; clear H10.
     Focus 2.
       admit. (*that follows from preservation proof of Part 1!*)
 
@@ -1189,11 +1192,11 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
               (x5, (x6, x7, []) :: (initialRho, Aexcept initialAccess fp , sCall x0 x1 m0 x2 :: s') :: S')
               (x5,                 (initialRh', Aexcept initialAccess fp ++ footprint x5 x6 phi_post, s') :: S')
            ).
-      assert (dss := H3).
+      assert (dss := H5).
 
       (*heap*)
-      eapply HeapGetsMoreSpecific in H3; try eassumption.
-      inversion H3; clear H3.
+      eapply HeapGetsMoreSpecific in H5; try eassumption.
+      inversion H5; clear H5.
 
       (*rho*)
       eapply RhoGetsMoreSpecific in dss.
@@ -1208,8 +1211,8 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
         unfold mpost, mcontract.
         rewrite mm. simpl. tauto.
 
-        uninv. apply H10.
-    inversion H9; clear H9.
+        uninv. apply H11.
+    inversion H10; clear H10.
     
     (*marriage*)
     subst.
@@ -1277,22 +1280,27 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
 
     (*PRESERVATION*)
     intuition.
-    * destruct (x_dec x0 x3).
+    * destruct (o_dec o0 o1).
       + subst.
-        rewrite H0 in H2.
-        remember (existT v' (TClass C1) (v'o C1 o1)).
-        remember (existT v' (TClass C0) (v'o C0 o0)).
-        inversionx H2.
-        inversion H3. subst.
-        apply inj_pair2_eq_dec in H3; try apply T_dec.
-        inversionx H3.
+        assert (C0 = C1).
+          apply INV1 in H0.
+          apply INV1 in H2.
+          inversionx H0.
+          inversionx H1.
+          inversionx H2.
+          inversionx H1.
+          intuition.
+          rewrite H2 in H3.
+          inversion H3.
+          tauto.
+        subst.
         apply INV1 in H0. inversionx H0. inversionx H1.
-        exists (fun f => if f_decb f f0 then Some (existT v' x2 v0) else x0 f).
-        exists x4.
+        exists (fun f => if f_decb f f0 then Some (existT v' x2 v0) else x4 f).
+        exists x5.
         intuition.
           unfold HSubst.
           unfold o_decb, f_decb, dec2decb.
-          destruct (o_dec o0 o0); try (contradict n; tauto).
+          destruct (o_dec o1 o1); try (contradict n; tauto).
           rewrite H0.
           tauto.
 
@@ -1301,243 +1309,55 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
             subst.
             unfold fieldType in H4.
             unfold fields in H1.
-            destruct (class C0); try (inversion H1; fail).
+            destruct (class C1) eqn: cc; try (inversion H1; fail).
             destruct c.
             common.
             apply find_some in Heqo0.
             destruct f1.
             inversionx Heqo0.
             unfold f_decb, string_decb, dec2decb in *.
-            destruct (string_dec f1 f0); try (inversion H5).
+            destruct (string_dec f1 f0); inversionx H6.
             subst.
             inversionx H1.
-            apply in_map_iff in H2.
-            inversionx H2.
+            apply in_map_iff in H3.
+            inversionx H3.
             inversionx H1.
             destruct x2.
-            inversionx H2.
-            assert (T0 = x2).
-
-            apply H3 in H2.
-            inversionx H2.
-            exists x5.
-            assumption.
-
-
-
-
-          exists v0.
-        
-        subst.
-        assert (existT v' (TClass C0) (v'o C0 o1) = existT v' (TClass C0) (v'o C0 o0)).
-          
-        Check functional_extensionality.
-        inversionx H2.
-        assert (ft := H4).
-        remember (fields C1) as ff.
-        unfold fieldType in H4.
-        unfold fields in Heqff.
-        destruct (class C1) eqn: cc; try (inversion H4; fail).
-        destruct c.
-        destruct ff; try (inversion Heqff; fail).
-        exists (fun f => if f_decb f f0 then Some (existT v' x2 v0) else Some (existT v' x2 v0)).
-        exists l1.
-        common.
-        intuition.
-          unfold HSubst.
-          unfold o_decb, f_decb, dec2decb.
-          destruct (o_dec o1 o0).
-    
+            inversionx H3.
+            specialize (pWellDefined (Cls c l l0)).
+            intros.
+            unfold class in cc.
+            apply find_some in cc.
+            intuition.
+            unfold C_decb, string_decb, dec2decb in *.
+            destruct (string_dec c C1); inversionx H7.
+            unfold CWellDefined in H8.
+            intuition.
+            eapply H7 in H4; eauto.
             subst.
-        
-        inversionx Heqff.
-        
-        repeat eexists.
+            exists v0.
+            tauto.
 
-      apply INV1 in H0. inversionx H0. inversionx H1.
-      intuition.
-      
-      unfold HSubst.
-      unfold o_decb, f_decb, dec2decb.
-      destruct (o_dec o1 o0).
-      + subst.
-        exists (fun f => if f_decb f f0 then Some v0 else x3 f).
+            apply H5 in H3.
+            inversionx H3.
+            eexists. eauto.
+      + apply INV1 in H0.
+        inversionx H0.
+        inversionx H1.
+        intuition.
         exists x4.
+        exists x5.
         intuition.
-          rewrite H0.
-          tauto.
-
-          apply H5 in H3.
-          inversionx H3.
-          destruct (f_decb f1 f0); try (eexists; eauto; fail).
-          exists x5.
-          unfold string_decb, dec2decb.
-      + 
-    emagicProgress.
-
-  - applyINV3 INV3 H2.
-    applyINV3 INV3 H3.
-    common.
-
-    emagicProgress.
-
-  - specialize (HnotTotal initialHeap). intros.
-    inversionx H0.
-    unfold fieldsNames in H5.
-    destruct (fields c) eqn: fi; simpl in H5; inversionx H5.
-    emagicProgress.
-  - applyINV2 INV2 H7.
-    applyINV3 INV3 H4.
-    applyINV3 INV3 H5.
-    applyINV3 INV3 H6.
-    common.
-    rewrite H2 in *.
-    inversionx Heqo2.
-    inversionx H15.
-
-    destruct v2. simpl in *. subst.
-    destruct v2. contradict H16. auto.
-
-    assert (H1 := H2).
-    apply INV1 in H1.
-    inversionx H1.
-    inversionx H0.
-    inversionx H1.
-    inversionx H3.
-
-    (*get method*)
-    unfold mparam in H12.
-    destruct (mmethod C0 m0) eqn: mm; simpl in *; inversionx H12.
-    destruct m1.
-    inversionx H5.
-
-    (*well def*)
-    remember (Method t m1 (projT1 v0) z c l) as m2.
-    specialize (pWellDefined m2). intros.
-    assert (In m2 allMethods).
-      unfold allMethods.
-      apply in_flat_map.
-      unfold mmethod in mm.
-      destruct (class C0) eqn: cc; try (inversion mm; fail).
-      exists c0.
-      unfold class in cc.
-      apply find_some in cc.
-      inversionx cc.
-      constructor; auto.
-      destruct c0.
-      apply find_some in mm.
-      inversionx mm. auto.
-    apply H3 in H5. clear H3.
-    unfold mWellDefined in H5.
-    rewrite Heqm2 in H5.
-    destruct c.
-    intuition.
-    rename H7 into varsPre.
-    rename H12 into varsPost.
-    
-    (*unify method knowledge*)
-    unfold mpre, mpost, mcontract in *.
-    rewrite mm in *. simpl in *.
-    rewrite Heqm2 in *.
-    inversionx H9.
-    inversionx H10.
-
-    remember (projT1 v1) as ret_type.
-    remember (rhoFrom3 xresult (defaultValue ret_type) xthis (vo C0 o0) (xUserDef z) v0) as r'.
-    remember (footprint initialHeap r' phi_pre) as fp.
-
-    (*proof strategy*)
-    assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)
-           as strat.
-      intros.
-      econstructor; eauto.
-      eapply dynSemStarBack; eauto.
-
-    (*Part 1: make the call*)
-    assert (dynSem 
-              (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') :: S')
-              (initialHeap, (r', fp, l) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
-           ).
-      econstructor; unfold evale; simpl; eauto.
-        unfold mbody.
-        rewrite mm. simpl.
-        eauto.
-
-        unfold mparam.
-        rewrite mm. simpl.
-        eauto.
-
-        unfold mpre.
-        unfold mcontract.
-        rewrite mm. simpl.
-        eauto.
-
-        clear INV1 INV3.
-        unfold phiImplies in H8.
-        apply H8 in INV2. clear H8.
-        apply evalPhiPrefix in INV2.
-        rewrite Heqr'.
-        eapply rhoPhiHelper; eauto.
-        intros.
-        specialize (varsPre x5).
-        intuition.
-
-    (*Part 2: method body (assumes soundness, termination, ... for method body)*)
-    assert soundness as sdn. admit.
-    unfold soundness in sdn.
-    remember ((initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S') as S''.
-    specialize (sdn phi_pre l phi_post initialHeap r' fp S'').
-    apply sdn in H3. clear sdn.
-    inversion H3; clear H3.
-    inversion H9; clear H9.
-    inversion H3; clear H3.
-    inversion H9; clear H9.
-    Focus 2.
-      admit. (*that follows from preservation proof of Part 1!*)
-
-    (*Part 3: call finish*)
-    assert (exists initialRh', dynSem
-              (x5, (x6, x7, []) :: (initialRho, Aexcept initialAccess fp , sCall x0 x1 m0 x2 :: s') :: S')
-              (x5,                 (initialRh', Aexcept initialAccess fp ++ footprint x5 x6 phi_post, s') :: S')
-           ).
-      assert (dss := H3).
-
-      (*heap*)
-      eapply HeapGetsMoreSpecific in H3; try eassumption.
-      inversion H3; clear H3.
-
-      (*rho*)
-      eapply RhoGetsMoreSpecific in dss.
-      Focus 2.
-        instantiate (2 := xresult).
-        rewrite Heqr'.
-        unfold rhoFrom3, x_decb, dec2decb.
-        simpl. eauto.
-      inversion dss; clear dss.
-
-      eexists. econstructor; eauto.
-        unfold mpost, mcontract.
-        rewrite mm. simpl. tauto.
-
-        uninv. apply H10.
-    inversion H9; clear H9.
-    
-    (*marriage*)
-    subst.
-    repeat eexists.
-    eapply strat; eauto.
-  - applyINV3 INV3 H1.
-    common.
-    emagicProgress.
-  - emagicProgress.
-  - emagicProgress.
-    unfold phiImplies in H1.
-    apply H1 in INV2.
-    unfold evalphi in INV2.
-    apply INV2.
-    constructor.
-    tauto.
-  - emagicProgress.
+        unfold HSubst.
+        unfold o_decb, dec2decb.
+        destruct (o_dec o1 o0); intuition.
+    * unfold evalphi in *.
+      intros. specialize (INV2 p').
+      unfold appEnd in *.
+      apply in_app_iff in H0.
+      inversionx H0.
+      + intuition.
+        
 Proof.
 
 

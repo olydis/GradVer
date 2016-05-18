@@ -24,7 +24,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=EAType]
-{ \rho(x) = T }
+{ \rho(x) = (existT  _  T  v) }
 {\evalphix {\Heap} {\rho} {A} {x{\::\:}T}}
 \end{mathpar}
 

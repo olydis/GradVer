@@ -6,7 +6,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{ \texttt{staticType}_{\phi}(x) = C \\ \fieldType(C,f) = T \\ \texttt{staticType}_{\phi}(y) = T \\\acc(x,f) \implies \phi\\x{\:\neq\:}\vnull \implies \phi}
+{ \texttt{staticType}_{\phi}(x) = C \\ \fieldType(C,f) = T \\ \texttt{staticType}_{\phi}(y) = T \\\acc(x,f) \impliedby \phi\\x{\:\neq\:}\vnull \impliedby \phi}
 {\hoare {\phi} {x.f{\::=\:}y} {\phi{\:*\:}x.f{\:=\:}y}}
 \end{mathpar}
 
@@ -24,13 +24,13 @@
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{ \texttt{staticType}_{\phi}(y) = C \\ \texttt{staticType}_{\phi}(x) = T_r \\ \texttt{staticType}_{\phi}(z') = T_p \\y{\:\neq\:}\vnull \implies \phi\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mpre(C,m) = \phi_{pre} \\ \mpost(C,m) = \phi_{post} \\ \mparam(C,m) = ( T_p , z ) \\ \mrettype(C,m) = T_r \\ \phi_p = \phi_{pre}[y,z'/\xthis,z] \\ \phi_q = \phi_{post}[y,z',x/\xthis,z,\xresult] }
+{ \texttt{staticType}_{\phi}(y) = C \\ \texttt{staticType}_{\phi}(x) = T_r \\ \texttt{staticType}_{\phi}(z') = T_p \\y{\:\neq\:}\vnull \impliedby \phi\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mpre(C,m) = \phi_{pre} \\ \mpost(C,m) = \phi_{post} \\ \mparam(C,m) = ( T_p , z ) \\ \mrettype(C,m) = T_r \\ \phi_p = \phi_{pre}[y,z'/\xthis,z] \\ \phi_q = \phi_{post}[y,z',x/\xthis,z,\xresult] }
 {\hoare {\phi} {x{\::=\:}y.m(z')} {( \phi_q * \phi_r )}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HAssert]
-{\phi_2 \implies \phi_1}
+{\phi_2 \impliedby \phi_1}
 {\hoare {\phi_1} {{\assert}\phi_2} {\phi_1}}
 \end{mathpar}
 

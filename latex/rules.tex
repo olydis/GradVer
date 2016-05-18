@@ -105,10 +105,10 @@
 				  ~|~ e.f
 \\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other \rangle
 \\ &v			&&::= o ~|~ n ~|~ \vnull
-\\ &n			&&\in \mathbb{Z}
+\\ &n			&&\in~~ \mathbb{Z}
 \\				  
-\\ &H			&&\in (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
-\\ &\rho		&&\in (x \rightharpoonup v)
+\\ &H			&&\in~~ (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
+\\ &\rho		&&\in~~ (x \rightharpoonup v)
 \\ &A_s			&&::= \overline{(x, f)}
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
@@ -273,7 +273,7 @@ and Equirecursive State Abstractions''.
 \forall~ ... &:~~ \hoare {\phi_1} {s'} {\phi_2} 
 \\ &\implies invariant(H_1, \rho_1, A_1, \phi_1)
 \\ &\implies (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
-  \rightarrow (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
+  \rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
 \\ &\implies invariant(H_2, \rho_2, A_2, \phi_2)
 \end{align*}
 
