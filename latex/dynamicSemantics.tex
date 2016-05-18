@@ -12,7 +12,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESNewObj]
-{ \Heap(o) = \bot \\ \fields(C) = f \\ \rho' = \rho[x{\:\mapsto\:}o] \\\textcolor{gray}{ A' = A * \overline{ ( o , f_i ) } }\\ \Heap' = \Heap[o{\:\mapsto\:\new\:}C] }
+{ \Heap(o)~\textit{undefined} \\ \fields(C) = \Tfs \\ \rho' = \rho[x{\:\mapsto\:}o] \\\textcolor{gray}{ A' = A * \overline{ ( o , f_i ) } }\\ \Heap' = \Heap[o{\:\mapsto\:}[\overline{f{\:\mapsto\:}\texttt{defaultValue}(T)}]] }
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:\new\:}C; \overline{s} ) \cdot S )} \rightarrow {( \Heap' , ( \rho' ,\textcolor{gray}{ A' }, \overline{s} ) \cdot S )}}
 \end{mathpar}
 
@@ -24,14 +24,14 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESApp]
-{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}\\ \Heap(o) = ( C , c ) \\ \mbody(C,m) = \overline{r} \\ \mparam(C,m) = ( T , w ) \\\textcolor{gray}{ \mpre(C,m) = \phi }\\ \rho' = [\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}\\\textcolor{gray}{ A' = \texttt{footprint}_{\Heap,\rho'}(\phi) }}
-{{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \overline{r} ) * ( \rho ,\textcolor{gray}{ A{\:\backslash\:}A' }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )}}
+{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}\\ \Heap(o) = ( C , \_ ) \\ \mbody(C,m) = \overline{r} \\ \mparam(C,m) = ( T , w ) \\\textcolor{gray}{ \mpre(C,m) = \phi }\\ \mrettype(C,m) = T_r \\ \rho' = [\xresult{\:\mapsto\:}\texttt{defaultValue}(T_r),\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}\\\textcolor{gray}{ A' = \texttt{footprint}_{\Heap,\rho'}(\phi) }}
+{{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \overline{r} ) \cdot ( \rho ,\textcolor{gray}{ A{\:\backslash\:}A' }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=ESAppFinish]
-{\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\textcolor{gray}{ A'' = \texttt{footprint}_{\Heap,\rho'}(\phi) }\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
-{{( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \emptyset ) * ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,\textcolor{gray}{ A * A'' }, \overline{s} ) \cdot S )}}
+{\evalex {\Heap} {\rho} {y} {o}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\textcolor{gray}{ A'' = \texttt{footprint}_{\Heap,\rho'}(\phi) }\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
+{{( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \emptyset ) \cdot ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,\textcolor{gray}{ A * A'' }, \overline{s} ) \cdot S )}}
 \end{mathpar}
 
 \begin{mathpar}

@@ -66,6 +66,7 @@
 \newcommand{\mpost}{\ensuremath{\texttt{mpost}}}
 \newcommand{\mbody}{\ensuremath{\texttt{mbody}}}
 \newcommand{\mparam}{\ensuremath{\texttt{mparam}}}
+\newcommand{\mrettype}{\ensuremath{\texttt{mrettype}}}
 \newcommand{\fieldType}{\ensuremath{\texttt{fieldType}}}
 \newcommand{\staticFP}{\ensuremath{\texttt{static-footprint}}}
 \newcommand{\dynamicFP}{\ensuremath{\texttt{footprint}_{H, \rho}}}
@@ -103,9 +104,11 @@
 				  ~|~ x
 				  ~|~ e.f
 \\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other \rangle
+\\ &v			&&::= o ~|~ n ~|~ \vnull
+\\ &n			&&\in \mathbb{Z}
 \\				  
-\\ &H			&&::= (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
-\\ &\rho		&&::= (x \rightharpoonup v)
+\\ &H			&&\in (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
+\\ &\rho		&&\in (x \rightharpoonup v)
 \\ &A_s			&&::= \overline{(x, f)}
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
@@ -132,11 +135,18 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \subsection{Footprint ($\staticFP(\phi) = A_s$)}
 \begin{align*}
-\\ &\staticFP(\true)    		&&= \emptyset
+ &\staticFP(\true)    		&&= \emptyset
 \\ &\staticFP(e_1 = e_2)     	&&= \emptyset
 \\ &\staticFP(e_1 \neq e_2)  	&&= \emptyset
 \\ &\staticFP(\acc(x.f)) 		&&= \{(x,f)\}
 \\ &\staticFP(\phi_1 * \phi_2) 	&&= \staticFP(\phi_1) \cup \staticFP(\phi_2)
+\end{align*}
+
+\subsection{Type ($\texttt{staticType}_{\phi}(e) = T$)}
+\begin{align*}
+ &\texttt{staticType}_{\phi}(v_T)	&&= T
+\\ &\texttt{staticType}_{\phi}(x)	&&= T  ~~\text{ where } \phi \implies (x : T)
+\\ &\texttt{staticType}_{\phi}(e.f)	&&= \texttt{fieldType}(C, f)  ~~\text{ where } \texttt{staticType}_{\phi}(e) = C
 \end{align*}
 
 
@@ -204,11 +214,16 @@ and Equirecursive State Abstractions''.
 
 \subsection{Footprint ($\dynamicFP(\phi) = A_d$)}
 \begin{align*}
-\\ &\dynamicFP(\true)    		&&= \emptyset
+ &\dynamicFP(\true)    		&&= \emptyset
 \\ &\dynamicFP(e_1 = e_2)     	&&= \emptyset
 \\ &\dynamicFP(e_1 \neq e_2)  	&&= \emptyset
 \\ &\dynamicFP(\acc(e.f)) 		&&= \{(o,f)\} \text{ where } \evale e o
 \\ &\dynamicFP(\phi_1 * \phi_2) &&= \dynamicFP(\phi_1) \cup \dynamicFP(\phi_2)
+\end{align*}
+
+\subsection{Type ($\texttt{dynamicType}_{H,\rho}(e) = T$)}
+\begin{align*}
+&\texttt{dynamicType}_{H,\rho}(e) = T ~~\text{ where } \evale e v_T  
 \end{align*}
 
 \newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
@@ -216,32 +231,50 @@ and Equirecursive State Abstractions''.
 \newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}} 
 \newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
 \newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
+
+\newcommand{\Tfs}{\overline{T}~\overline{f}}
 \subsection{Small-step ($\sstep H S H S$)}
 \input{dynamicSemantics}
 
 \section{Theorems}
-Hoare preserves self-framing?
+\subsection{Invariant $invariant(H, \rho, A_d, \phi)$}
+\subsubsection{Heap consistent}
 \begin{align*}
-\forall~ \Gamma, \phi_1, \phi_2, s &: \hoare {\phi_1} s {\phi_2} 
-\\ &\implies \emptyset \sfrmphi \phi_1 
-\\ &\implies \emptyset \sfrmphi \phi_2
+\forall x, o, C : 
+	\rho(x) = o_C &\implies\\
+      \exists f_C, m :&~ 
+        \texttt{fields}(C) = f_C \\
+      \wedge&~ H(o_C) = (C, m) \\
+      \wedge&~(\forall (T, f) \in f_C : \texttt{dynamicType}_{H,\rho}(res(f)) = T)
 \end{align*}
 
-Hoare progress
+\subsubsection{Phi holds}
 \begin{align*}
-\forall~ ... &: \hoare {\phi_1} {s'} {\phi_2} 
-\\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
+    \evalphix {H} {\rho} {A_d} {\phi}
+\end{align*}
+
+\subsubsection{Types preserved}
+\begin{align*}
+    \forall e, T :&~ \texttt{staticType}_{\phi}(e) = T \\
+    \implies&~ \texttt{dynamicType}_{H, \rho}(e) = T
+\end{align*}
+
+\subsection{Soundness}
+\subsubsection{Progress}
+\begin{align*}
+\forall~ ... &:~~ \hoare {\phi_1} {s'} {\phi_2} 
+\\ &\implies invariant(H_1, \rho_1, A_1, \phi_1)
 \\ &\implies \exists H_2, \rho_2, A_2 : (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
 							\rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
 \end{align*}
 
-Hoare preservation
+\subsubsection{Preservation}
 \begin{align*}
-\forall~ ... &: \hoare {\phi_1} {s'} {\phi_2} 
-\\ &\implies \evalphix {H_1} {\rho_1} {A_1} {\phi_1}
+\forall~ ... &:~~ \hoare {\phi_1} {s'} {\phi_2} 
+\\ &\implies invariant(H_1, \rho_1, A_1, \phi_1)
 \\ &\implies (H_1, (\rho_1, A_1, s' ; \overline{s}) \cdot S)
-  \rightarrow^* (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
-\\ &\implies \evalphix {H_2} {\rho_2} {A_2} {\phi_2}
+  \rightarrow (H_2, (\rho_2, A_2, \overline{s}) \cdot S)
+\\ &\implies invariant(H_2, \rho_2, A_2, \phi_2)
 \end{align*}
 
 

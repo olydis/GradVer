@@ -1,36 +1,36 @@
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{ \phi(x) = C \\ \fields(C) = fs }
-{\hoare {\phi} {x{\::=\:\new\:}C} {( \acc(x,\overline{fs_i}) * ( x{\:\neq\:}\vnull * \phi ) )}}
+{ \texttt{staticType}_{\phi}(x) = C \\ \fields(C) = \overline{f} }
+{\hoare {\phi} {x{\::=\:\new\:}C} {( \acc(x,\overline{f_i}) * ( x{\:\neq\:}\vnull * \phi ) )}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{ \phi(x) = C \\ \fieldType(C,f) = T \\ \phi(y) = T \\\acc(x,f) \in \phi\\x{\:\neq\:}\vnull \in \phi}
+{ \texttt{staticType}_{\phi}(x) = C \\ \fieldType(C,f) = T \\ \texttt{staticType}_{\phi}(y) = T \\\acc(x,f) \implies \phi\\x{\:\neq\:}\vnull \implies \phi}
 {\hoare {\phi} {x.f{\::=\:}y} {\phi{\:*\:}x.f{\:=\:}y}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{ \phi_1(x) = T \\ \texttt{staticType}_{\phi_1}(e) = T \\ \phi_1 = \phi_2[e/x] \\\emptyset \sfrmphi \phi_1\\\staticFP(\phi_1) \sfrme e}
+{ \texttt{staticType}_{\phi_1}(x) = T \\ \texttt{staticType}_{\phi_1}(e) = T \\ \phi_1 = \phi_2[e/x] \\\emptyset \sfrmphi \phi_1\\\staticFP(\phi_1) \sfrme e}
 {\hoare {\phi_1} {x{\::=\:}e} {\phi_2}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{ \phi(x) = T \\ \phi(\xresult) = T }
+{ \texttt{staticType}_{\phi}(x) = T \\ \texttt{staticType}_{\phi}(\xresult) = T }
 {\hoare {\phi} {{\return}x} {\phi{\:*\:}\xresult{\:=\:}x}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{ \phi(y) = C \\ \phi(x) = T_r \\ \phi(z') = T_p \\y{\:\neq\:}\vnull \in \phi\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mpre(C,m) = \phi_{pre} \\ \mpost(C,m) = \phi_{post} \\ \mparam(C,m) = ( T_p , z ) \\ mrettype  C  m = T_r \\ \phi_p = \phi_{pre}[y,z'/\xthis,z] \\ \phi_q = \phi_{post}[y,z',x/\xthis,z,\xresult] }
+{ \texttt{staticType}_{\phi}(y) = C \\ \texttt{staticType}_{\phi}(x) = T_r \\ \texttt{staticType}_{\phi}(z') = T_p \\y{\:\neq\:}\vnull \implies \phi\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mpre(C,m) = \phi_{pre} \\ \mpost(C,m) = \phi_{post} \\ \mparam(C,m) = ( T_p , z ) \\ \mrettype(C,m) = T_r \\ \phi_p = \phi_{pre}[y,z'/\xthis,z] \\ \phi_q = \phi_{post}[y,z',x/\xthis,z,\xresult] }
 {\hoare {\phi} {x{\::=\:}y.m(z')} {( \phi_q * \phi_r )}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HAssert]
-{\phi_2 \in \phi_1}
+{\phi_2 \implies \phi_1}
 {\hoare {\phi_1} {{\assert}\phi_2} {\phi_1}}
 \end{mathpar}
 
@@ -42,7 +42,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{ \phi_1(x) = \bot \\ \phi_2 = \phi_1{\:*\:}x{\::\:}T }
+{ \texttt{staticType}_{\phi_1}(x)~\textit{undefined} \\ \phi_2 = \phi_1{\:*\:}x{\::\:}T }
 {\hoare {\phi_1} {T{\:}x} {\phi_2}}
 \end{mathpar}
 

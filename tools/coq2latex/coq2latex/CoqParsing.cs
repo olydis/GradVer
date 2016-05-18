@@ -57,6 +57,10 @@ namespace coq2latex
             coq = coq.Replace(@" * S", @" \cdot S");
             coq = coq.Replace(@" * \overline{s", @"; \overline{s");
             coq = coq.Replace(@"<>", @" \neq ");
+            coq = coq.Replace(@"\in \phi", @"\implies \phi");
+            coq = coq.Replace(@" = \bot", @"~\textit{undefined}");
+            coq = coq.Replace(@" * ( \rho", @" \cdot ( \rho");
+            coq = coq.Replace(@"\overline{\overline{f}_i}", @"\overline{f_i}");
             return coq;
         }
 

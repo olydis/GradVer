@@ -111,6 +111,10 @@ namespace coq2latex
                 4,
                 x => "[" + x[0] + @"{\:\mapsto\:}" + x[1] + "," + x[2] + @"{\:\mapsto\:}" + x[3] + "]"
             );
+            le("rhoFrom3",
+                6,
+                x => "[" + x[0] + @"{\:\mapsto\:}" + x[1] + "," + x[2] + @"{\:\mapsto\:}" + x[3] + "," + x[4] + @"{\:\mapsto\:}" + x[5] + "]"
+            );
             le("rhoSubst",
                 3,
                 x => x[2] + "[" + x[0] + @"{\:\mapsto\:}" + x[1] + "]"
@@ -123,7 +127,17 @@ namespace coq2latex
                 x => x[2] + "[" + x[0] + @"{\:\mapsto\:}[" + x[1] + "]]");
             le("Halloc",
                 3,
-                x => x[2] + "[" + x[0] + @"{\:\mapsto\:\new\:}" + x[1] + "]");
+                x => {
+                    if (x[1] != @"\Tfs") throw new ArgumentException();
+                    return x[2] + "[" + x[0] + @"{\:\mapsto\:}[\overline{f{\:\mapsto\:}\texttt{defaultValue}(T)}]]";
+                });
+            le("snd",
+                1,
+                x =>
+                {
+                    if (x[0] != @"cf'") throw new ArgumentException();
+                    return "f_i";
+                });
             le("phiSubst",
                 3,
                 x => x[2] + "[" + x[1] + "/" + x[0] + "]"
@@ -176,10 +190,11 @@ namespace coq2latex
                 2,
                 x => x[0] + @"{\:\backslash\:}" + x[1]
             );
-            le("getType",
-                2,
-                x => x[0] + "(" + x[1] + ")"
-            );
+            //le("getType",
+            //    2,
+            //    x => x[0] + "(" + x[1] + ")"
+            //);
+            le("getType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
             le("staticType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
             functionify("dynamicType");
             functionify("Gamma");
@@ -194,6 +209,10 @@ namespace coq2latex
             commandify("Heap'");
             commandify2("s_bar", "overline{s}");
             commandify2("r_bar", "overline{r}");
+            commandify2("f_bar", "overline{f}");
+            commandify2("underscore", "_");
+
+            commandify("Tfs");
 
             le("defaultValue", 1, x => @"\texttt{defaultValue}(" + x[0] + ")");
 
@@ -205,6 +224,7 @@ namespace coq2latex
 
             swallowCtor("projT1");
             swallowCtor("Some");
+            swallowCtor("xUserDef");
             swallowCtor("TClass");
             le("option_map", 2, x => {
                 if (x[0].Contains("fun") || !x[0].StartsWith("(") || !x[0].EndsWith(")"))
@@ -229,6 +249,7 @@ namespace coq2latex
             le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
             le("mbody", 2, x => @"\mbody" + "(" + x[0] + "," + x[1] + ")");
             le("mparam", 2, x => @"\mparam" + "(" + x[0] + "," + x[1] + ")");
+            le("mrettype", 2, x => @"\mrettype" + "(" + x[0] + "," + x[1] + ")");
             le("fieldType", 2, x => @"\fieldType" + "(" + x[0] + "," + x[1] + ")");
 
             le("fold_left",

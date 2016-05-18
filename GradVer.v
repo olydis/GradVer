@@ -265,11 +265,8 @@ Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
 Definition HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
   fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
-Definition Halloc (o : o) (C : C) (h : H) : H :=
-  match fields C with
-  | Some fs => HSubsts o (map (fun x => (snd x, defaultValue (fst x))) fs) h
-  | None => h
-  end.
+Definition Halloc (o : o) (fs : list (T * f)) (h : H) : H :=
+  HSubsts o (map (fun x => (snd x, defaultValue (fst x))) fs) h.
 
 Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
   fun x'' => if x_decb x'' x' then Some v' else r x''.
@@ -380,13 +377,13 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi x (C : C) fs,
     getType phi x = Some (TClass C) ->
-    fieldsNames C = Some fs ->
+    fieldsNames C = Some f_bar ->
     hoareSingle
       phi
       (sAlloc x C)
       (fold_left 
         (fun arg1 arg2 => phiAcc x arg2 :: arg1)
-        fs 
+        f_bar
         (phiNeq (ex x) (ev (vnull C)) :: phi))
 | HFieldAssign : forall (phi : phi) (x y : x) (f : f) C T,
     getType phi x = Some (TClass C) ->
@@ -508,21 +505,21 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale Heap rho e v ->
     rho' = rhoSubst x v rho ->
     dynSem (Heap, (rho, A, sAssign x e :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) f,
+| ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) Tfs,
     Heap o = None ->
-    fieldsNames C = Some f ->
+    fields C = Some Tfs ->
     rho' = rhoSubst x (vo C o) rho ->
-    A' = A ++ map (fun cf' => (o, cf')) f ->
-    Heap' = Halloc o C Heap ->
+    A' = A ++ map (fun cf' => (o, snd cf')) Tfs ->
+    Heap' = Halloc o Tfs Heap ->
     dynSem (Heap, (rho, A, sAlloc x C :: s_bar) :: S) (Heap', (rho', A', s_bar) :: S)
 | ESReturn : forall Heap (S : S) (s_bar : list s) (A : A_d) rho rho' (x : x) (v_x : v),
     evale Heap rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (Heap, (rho, A, sReturn x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T T_r (rho rho' : rho) w (x y z : x) (v : v) (m : m) (o : o) (C : C) c,
+| ESApp : forall phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T T_r (rho rho' : rho) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore,
     evale Heap rho (ex y) (vo C o) ->
     evale Heap rho (ex z) v ->
-    Heap o = Some (C, c) ->
+    Heap o = Some (C, underscore) ->
     mbody C m = Some r_bar ->
     mparam C m = Some (T, w) ->
     mpre C m = Some phi ->
@@ -531,9 +528,9 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi Heap rho' A phi ->
     A' = footprint Heap rho' phi ->
     dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESAppFinish : forall c o phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
+| ESAppFinish : forall underscore o phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
     evale Heap rho (ex y) (vo C o) ->
-    Heap o = Some (C, c) ->
+    Heap o = Some (C, underscore) ->
     mpost C m = Some phi ->
     evalphi Heap rho' A' phi ->
     A'' = footprint Heap rho' phi ->
@@ -621,7 +618,7 @@ Definition invHeapConsistent
       exists res fs,
         fields C = Some fs /\
         Heap o = Some (C, res) /\
-        (forall (T : T) (f : f) fs, In (T, f) fs -> exists v, res f = Some v)
+        (forall (T : T) (f : f), In (T, f) fs -> exists v, res f = Some (existT _ T v))
         .
 Definition invPhiHolds
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
