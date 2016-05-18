@@ -194,8 +194,12 @@ namespace coq2latex
             //    2,
             //    x => x[0] + "(" + x[1] + ")"
             //);
-            le("getType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
-            le("staticType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
+            //le("getType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
+            //le("staticType", 2, x => @"\texttt{staticType}_{" + x[0] + "}(" + x[1] + ")");
+            le("hasStaticType", 3, x => x[0] + @"\vdash{" + x[1] + "}:{" + x[2] + "}");
+            le("hasNoStaticType", 2, x => x[1] + @"\not\in \dom(" +  x[0] + @")");
+            le("HeapNotSetAt", 2, x => x[1] + @"\not\in \dom(" +  x[0] + @")");
+            le("fieldHasType", 3, x => @"\vdash{" + x[0] + "." + x[1] + "}:{" + x[2] + "}");
             functionify("dynamicType");
             functionify("Gamma");
             functionify("rho");
@@ -211,6 +215,7 @@ namespace coq2latex
             commandify2("r_bar", "overline{r}");
             commandify2("f_bar", "overline{f}");
             commandify2("underscore", "_");
+            commandify2("underscore2", "_");
 
             commandify("Tfs");
 
@@ -218,9 +223,9 @@ namespace coq2latex
 
             functionify2("fieldsNames", "fields");
             functionify2("fields", "fields");
-            functionify2("staticFootprint", "staticFP");
-            le("footprint", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
-            le("footprint'", 3, x => @"\texttt{footprint}_{" + x[0] + "," + x[1] + "}(" + x[2] + ")");
+            le("staticFootprint", 1, x => @"\staticFP{" + x[0] + "}");
+            le("footprint", 3, x => @"\dynamicFP{" + x[0] + "}{" + x[1] + "}{" + x[2] + "}");
+            le("footprint'", 3, x => @"\dynamicFP{" + x[0] + "}{" + x[1] + "}{" + x[2] + "}");
 
             swallowCtor("projT1");
             swallowCtor("Some");
@@ -245,6 +250,9 @@ namespace coq2latex
             commandify("phi_q");
             commandify2("phi_pre", "phi_{pre}");
             commandify2("phi_post", "phi_{post}");
+            le("Method", 6, x => x[0] + "~" + x[1] + "(" + x[2] + "~" + x[3] + ")~" + x[4] + @"~\{" + x[5] + @"\}");
+            le("Contract", 2, x => @"\requires{" + x[0] + @"};~\ensures{" + x[1] + "};");
+            le("mmethod", 2, x => @"\mmethod" + "(" + x[0] + "," + x[1] + ")");
             le("mpre", 2, x => @"\mpre" + "(" + x[0] + "," + x[1] + ")");
             le("mpost", 2, x => @"\mpost" + "(" + x[0] + "," + x[1] + ")");
             le("mbody", 2, x => @"\mbody" + "(" + x[0] + "," + x[1] + ")");

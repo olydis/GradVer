@@ -6,6 +6,7 @@
 \usepackage{tikz}
 \usepackage[margin=1.2in]{geometry}
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{hyperref}
 \usepackage{amssymb}
 \usepackage{latexsym}
@@ -67,10 +68,18 @@
 \newcommand{\mbody}{\ensuremath{\texttt{mbody}}}
 \newcommand{\mparam}{\ensuremath{\texttt{mparam}}}
 \newcommand{\mrettype}{\ensuremath{\texttt{mrettype}}}
-\newcommand{\fieldType}{\ensuremath{\texttt{fieldType}}}
-\newcommand{\staticFP}{\ensuremath{\texttt{static-footprint}}}
-\newcommand{\dynamicFP}{\ensuremath{\texttt{footprint}_{H, \rho}}}
+\newcommand{\mmethod}{\ensuremath{\texttt{mmethod}}}
+
+%\newcommand{\staticFP}[1]{\ensuremath{\texttt{static-footprint}(#1)}}
+%\newcommand{\dynamicFP}[3]{\ensuremath{\texttt{footprint}_{#1,#2}(#3)}}
+
+\newcommand\floor[1]{\lfloor#1\rfloor}
+\newcommand\ceil[1]{\lceil#1\rceil}
+\newcommand{\staticFP}[1]{\ensuremath{\floor{#1}}}
+\newcommand{\dynamicFP}[3]{\ensuremath{\floor{#3}_{#1,#2}}}
+
 \newcommand{\rlabel}[1]{\RightLabel{\quad #1}}
+\newcommand{\dom}{\ensuremath{\texttt{dom}}}
 
 \newcommand{\class}{\ensuremath{\texttt{class}~}}
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
@@ -125,7 +134,7 @@
 \inferrule* [Right=WFSepOp]
 {
 A_s \sfrmphi \phi_1 \\ 
-A_s \cup \staticFP(\phi_1) \sfrmphi \phi_2
+A_s \cup \staticFP {\phi_1} \sfrmphi \phi_2
 }
 {A_s \sfrmphi \phi_1 * \phi_2}
 \end{mathpar}
@@ -133,22 +142,35 @@ A_s \cup \staticFP(\phi_1) \sfrmphi \phi_2
 \subsubsection{Implication ($\phi_1 \dot{\implies} \phi_2$)}
 Conservative approx. of $\phi_1 \implies \phi_2$.
 
-\subsection{Footprint ($\staticFP(\phi) = A_s$)}
+\subsection{Footprint ($\staticFP {\phi} = A_s$)}
 \begin{align*}
- &\staticFP(\true)    		&&= \emptyset
-\\ &\staticFP(e_1 = e_2)     	&&= \emptyset
-\\ &\staticFP(e_1 \neq e_2)  	&&= \emptyset
-\\ &\staticFP(\acc(x.f)) 		&&= \{(x,f)\}
-\\ &\staticFP(\phi_1 * \phi_2) 	&&= \staticFP(\phi_1) \cup \staticFP(\phi_2)
+ &\staticFP {\true}    		&&= \emptyset
+\\ &\staticFP {e_1 = e_2}     	&&= \emptyset
+\\ &\staticFP {e_1 \neq e_2}  	&&= \emptyset
+\\ &\staticFP {\acc(x.f)} 		&&= \{(x,f)\}
+\\ &\staticFP {\phi_1 * \phi_2} 	&&= \staticFP {\phi_1} \cup \staticFP {\phi_2}
 \end{align*}
 
-\subsection{Type ($\texttt{staticType}_{\phi}(e) = T$)}
-\begin{align*}
- &\texttt{staticType}_{\phi}(v_T)	&&= T
-\\ &\texttt{staticType}_{\phi}(x)	&&= T  ~~\text{ where } \phi \implies (x : T)
-\\ &\texttt{staticType}_{\phi}(e.f)	&&= \texttt{fieldType}(C, f)  ~~\text{ where } \texttt{staticType}_{\phi}(e) = C
-\end{align*}
+\newcommand{\sType}[3]{#1 \vdash #2 : #3}
+\subsection{Type ($\sType {\phi} {e} {T}$)}
+\begin{mathpar}
+\inferrule* [Right=STValue]
+{~}
+{\sType {\phi} {v_T} {T}}
+\end{mathpar}
 
+\begin{mathpar}
+\inferrule* [Right=STVar]
+{\phi \implies (x : T)}
+{\sType {\phi} {x} {T}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=STField]
+{ \sType {\phi} {e} {C}
+\\ \vdash C.f : T}
+{\sType {\phi} {e.f} {T}}
+\end{mathpar}
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \subsection{Hoare ($\hoare {\phi} {\overline s} {\phi}$)}
@@ -212,19 +234,22 @@ A_1 = A \backslash A_2 \\
 Drawn from def. of entailment in ``A Formal Semantics for Isorecursive
 and Equirecursive State Abstractions''.
 
-\subsection{Footprint ($\dynamicFP(\phi) = A_d$)}
+\subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
 \begin{align*}
- &\dynamicFP(\true)    		&&= \emptyset
-\\ &\dynamicFP(e_1 = e_2)     	&&= \emptyset
-\\ &\dynamicFP(e_1 \neq e_2)  	&&= \emptyset
-\\ &\dynamicFP(\acc(e.f)) 		&&= \{(o,f)\} \text{ where } \evale e o
-\\ &\dynamicFP(\phi_1 * \phi_2) &&= \dynamicFP(\phi_1) \cup \dynamicFP(\phi_2)
+ &\dynamicFP {H} {\rho} {\true}    		&&= \emptyset
+\\ &\dynamicFP {H} {\rho} {e_1 = e_2}     	&&= \emptyset
+\\ &\dynamicFP {H} {\rho} {e_1 \neq e_2}  	&&= \emptyset
+\\ &\dynamicFP {H} {\rho} {\acc(e.f)} 		&&= \{(o,f)\} \text{ where } \evale e o
+\\ &\dynamicFP {H} {\rho} {\phi_1 * \phi_2} &&= \dynamicFP {H} {\rho} {\phi_1} \cup \dynamicFP {H} {\rho} {\phi_2}
 \end{align*}
 
-\subsection{Type ($\texttt{dynamicType}_{H,\rho}(e) = T$)}
-\begin{align*}
-&\texttt{dynamicType}_{H,\rho}(e) = T ~~\text{ where } \evale e v_T  
-\end{align*}
+\newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
+\subsection{Type ($\dType {H} {\rho} {e} {T}$)}
+\begin{mathpar}
+\inferrule* [Right=DTEval]
+{ \evale {e} {v_T} }
+{\dType {H} {\rho} {e} {T}}
+\end{mathpar}
 
 \newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
 \newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
@@ -245,7 +270,7 @@ and Equirecursive State Abstractions''.
       \exists f_C, m :&~ 
         \texttt{fields}(C) = f_C \\
       \wedge&~ H(o_C) = (C, m) \\
-      \wedge&~(\forall (T, f) \in f_C : \texttt{dynamicType}_{H,\rho}(res(f)) = T)
+      \wedge&~(\forall (T, f) \in f_C : \dType {H} {\rho} {m(f)} {T})
 \end{align*}
 
 \subsubsection{Phi holds}
@@ -255,8 +280,8 @@ and Equirecursive State Abstractions''.
 
 \subsubsection{Types preserved}
 \begin{align*}
-    \forall e, T :&~ \texttt{staticType}_{\phi}(e) = T \\
-    \implies&~ \texttt{dynamicType}_{H, \rho}(e) = T
+    \forall e, T : \sType {\phi} {e} {T}& \\
+    \implies \dType {H} {\rho} {e} {T}&
 \end{align*}
 
 \subsection{Soundness}
