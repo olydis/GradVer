@@ -7,13 +7,13 @@
 \begin{mathpar}
 \inferrule* [Right=EAEqual]
 {\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1 = v_2 }
-{\evalphix {\Heap} {\rho} {A} {e_1{\:=\:}e_2}}
+{\evalphix {\Heap} {\rho} {A} {(e_1{\:=\:}e_2)}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EANEqual]
 {\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1  \neq  v_2 }
-{\evalphix {\Heap} {\rho} {A} {e_1{\:\neq\:}e_2}}
+{\evalphix {\Heap} {\rho} {A} {(e_1{\:\neq\:}e_2)}}
 \end{mathpar}
 
 \begin{mathpar}

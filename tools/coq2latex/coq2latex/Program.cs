@@ -72,7 +72,12 @@ namespace coq2latex
 
             le("In",
                 2,
-                x => x[0] + @" \in " + x[1]
+                x =>
+                {
+                    if ((x[0] + x[1]).Contains(@"\phi"))
+                        return x[1] + @"{\:\implies\:}" + x[0];
+                    return x[0] + @" \in " + x[1];
+                }
             );
             swallowCtor("vo");
             le("vo", 2, x => x[1]);
@@ -89,15 +94,15 @@ namespace coq2latex
             commandify2("phiTrue", "true");
             le("phiEq",
                 2,
-                x => x[0] + @"{\:=\:}" + x[1]
+                x => "(" + x[0] + @"{\:=\:}" + x[1] + ")"
+            );
+            le("phiNeq",
+                2,
+                x => "(" + x[0] + @"{\:\neq\:}" + x[1] + ")"
             );
             le("phiImplies",
                 2,
                 x => x[0] + @"{\:\implies\:}" + x[1]
-            );
-            le("phiNeq",
-                2,
-                x => x[0] + @"{\:\neq\:}" + x[1]
             );
             le("phiAcc",
                 2,
