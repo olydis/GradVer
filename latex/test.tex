@@ -1,0 +1,49 @@
+% Inductive hoareSingle
+\begin{mathpar}
+\inferrule* [Right=HNewObj]
+{Semantics.hasStaticType~\phi~ex~x~TClass~C\\@eq~option~list~f~Semantics.fieldsNames~C~@Some~list~f~f_bar}
+{\hoare {\phi} {sAlloc~x~C} {@fold_left~list~phi'~f~fun~arg1~:~list~phi'~arg2~:~f~=>~@cons~phi'~phiAcc~x~arg2~arg1~f_bar~@cons~phi'~phiNeq~ex~x~ev~vnull~C~\phi}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HFieldAssign]
+{Semantics.hasStaticType~phi~ex~x0~TClass~C\\Semantics.fieldHasType~C~f~T\\Semantics.hasStaticType~phi~ex~y~T\\@In~phi'~phiAcc~x0~f~phi\\@In~phi'~phiNeq~ex~x0~ev~vnull~C~phi}
+{\hoare {phi} {sMemberSet~x0~f~y} {@appEnd~phi'~phi~phiEq~edot~ex~x0~f~ex~y}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HVarAssign]
+{Semantics.hasStaticType~phi_1~ex~x0~T\\Semantics.hasStaticType~phi_1~e~T\\@eq~phi~phi_1~Semantics.phiSubst~x0~e~phi_2\\Semantics.sfrmphi~@nil~prod~x~f~phi_1\\Semantics.sfrme~Semantics.staticFootprint~phi_1~e}
+{\hoare {phi_1} {sAssign~x0~e} {phi_2}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HReturn]
+{Semantics.hasStaticType~phi~ex~x~T\\Semantics.hasStaticType~phi~ex~xresult~T}
+{\hoare {phi} {sReturn~x} {@appEnd~phi'~phi~phiEq~ex~xresult~ex~x}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HApp]
+{Semantics.hasStaticType~phi0~ex~y~TClass~C\\@eq~option~method~Semantics.mmethod~C~m~@Some~method~Method~T_r~m~T_p~z~Contract~phi_pre~phi_post~underscore\\Semantics.hasStaticType~phi0~ex~x0~T_r\\Semantics.hasStaticType~phi0~ex~z'~T_p\\@In~phi'~phiNeq~ex~y~ev~vnull~C~phi0\\Semantics.phiImplies~phi0~@app~phi'~phi_p~phi_r\\@eq~list~phi'~phi_p~Semantics.phiSubsts2~xthis~ex~y~xUserDef~z~ex~z'~phi_pre\\@eq~phi~phi_q~Semantics.phiSubsts3~xthis~ex~y~xUserDef~z~ex~z'~xresult~ex~x0~phi_post}
+{\hoare {phi0} {sCall~x0~y~m~z'} {@app~phi'~phi_q~phi_r}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HAssert]
+{@In~phi'~phi_2~phi_1}
+{\hoare {phi_1} {sAssert~phi_2} {phi_1}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HRelease]
+{Semantics.phiImplies~phi_1~@cons~phi'~phi_2~phi_r\\Semantics.sfrmphi~@nil~prod~x~f~phi_r}
+{\hoare {phi_1} {sRelease~phi_2} {phi_r}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HDeclare]
+{Semantics.hasNoStaticType~phi_1~ex~x\\@eq~list~phi'~phi_2~@appEnd~phi'~@appEnd~phi'~phi_1~phiType~x~T~phiEq~ex~x~ev~defaultValue~T}
+{\hoare {phi_1} {sDeclare~T~x} {phi_2}}
+\end{mathpar}
+

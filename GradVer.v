@@ -388,57 +388,166 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
 
 (* Figure 5: Hoare-based proof rules for core language *)
 Definition fieldHasType C f T := fieldType C f = Some T.
+(* CTORS *)
+(*coq2latex: projT1 #x := #x *)
+(*coq2latex: @Some #_ #x := #x *)
+(*coq2latex: None := \bot *)
+
+(*coq2latex: xresult := \xresult *)
+(*coq2latex: xthis := \xthis *)
+(*coq2latex: xUserDef #x := #x *)
+
+(*coq2latex: ex #x := #x *)
+(*coq2latex: ev #v := #v *)
+(*coq2latex: edot #e #f := #e.#f *)
+
+(*coq2latex: vo #o := #o *)
+(*coq2latex: vnull #C := \vnull *)
+
+(*coq2latex: TClass #C := #C *)
+(*coq2latex: TPrimitiveInt := \Tint *)
+
+(*coq2latex: phiTrue := \true *)
+(*coq2latex: phiEq #a #b := (#a = #b) *)
+(*coq2latex: phiNeq #a #b := (#a \neq #b) *)
+(*coq2latex: phiAcc #x #f := \acc(#x.#f) *)
+(*coq2latex: phiType #x #T := #x : #T *)
+
+(*coq2latex: sAlloc #x #C := #x := \new #C *)
+(*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
+(*coq2latex: sCall #x #y #m #z := #x := #y.#m(#z) *)
+(*coq2latex: sAssign #x #e := #x := #e *)
+(*coq2latex: sReturn #x := \return #x *)
+(*coq2latex: sAssert #p := \assert #p *)
+(*coq2latex: sRelease #p := \release #p *)
+(*coq2latex: sDeclare #T #x := #T~#x *)
+
+
+(*coq2latex: Method #Tr #m #Tp #xp #c #s := #Tr~#m(#Tp~#xp)~#c~\{ #s \} *)
+(*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
+(*coq2latex: mmethod #C #m := \mmethod(#C, #m) *)
+(*coq2latex: mpre #C #m := \mpre(#C, #m) *)
+(*coq2latex: mpost #C #m := \mpost(#C, #m) *)
+(*coq2latex: mbody #C #m := \mbody(#C, #m) *)
+(*coq2latex: mparam #C #m := \mparam(#C, #m) *)
+(*coq2latex: mrettype #C #m := \mrettype(#C, #m) *)
+(*coq2latex: fieldType #C #f := \fieldType(#C, #f) *)
+
+(*coq2latex: @eq #_ #a #b := #a = #b *)
+
+(*coq2latex: sfrme #A #e := #A \sfrme #e *)
+(*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
+(*coq2latex: sfrmphi' #A #e := #A \sfrmphi #e *)
+(*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
+(*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
+(*coq2latex: staticFootprint #p := \staticFP #p *)
+
+(*coq2latex: evale #H #rho #e #v := \evalex #H #rho #e #v *)
+(*coq2latex: evalphi #H #rho #A #p := \evalphi #H #rho #A #p *)
+(*coq2latex: evalphi' #H #rho #A #p := \evalphi #H #rho #A #p *)
+(*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
+(*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
+(*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
+
+(*coq2latex: dynamicType #e := \dynamicType(#e) *)
+(*coq2latex: rho #x := \rho(#x) *)
+(*coq2latex: rho' #x := \rho'(#x) *)
+(*coq2latex: Heap #o := \Heap(#o) *)
+(*coq2latex: Heap' #o := \Heap'(#o) *)
+
+
+(*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @nil #_ := \emptyset *)
+(*coq2latex: @In phi' #x #xs := #xs \implies #x *)
+(*coq2latex: phiImplies #a #b := #a \implies #b *)
+
+(*coq2latex: @appEnd phi' #xs #x := #xs * #x *)
+(*coq2latex: rhoSubst #x #v #rho := #rho[#x \mapsto #v] *)
+(*coq2latex: rhoFrom2 #x1 #v1 #x2 #v2 := [#x1 \mapsto #v1, #x2 \mapsto #v2] *)
+(*coq2latex: rhoFrom3 #x1 #v1 #x2 #v2 #x3 #v3 := [#x1 \mapsto #v1, #x2 \mapsto #r2, #x3 \mapsto #v3] *)
+
+(*coq2latex: HSubst #o #f #v #H := #H[#o \mapsto [#f \mapsto #v]] *)
+(*coq2latex: HSubsts #o #m #H := #H[#o \mapsto [#m]] *)
+
+(*coq2latex: phiSubst #x #e #phi := #phi[#e / #x] *)
+(*coq2latex: phiSubsts2 #x1 #e1 #x2 #e2 #phi := #phi[#e1, #e2 / #x1, #x2] *)
+(*coq2latex: phiSubsts3 #x1 #e1 #x2 #e2 #x3 #e3 #phi := #phi[#e1, #e2, #e3 / #x1, #x2, #x3] *)
+(*coq2latex: phiSubsts #m #phi := #phi[#m] *)
+
+(*coq2latex: Aexcept #A1 #A2 := #A1 \backslash #A2 *)
+
+(*hacky: *)
+(*coq2latex: optionVisO #mv #o := #mv = #o *)
+(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
+(*coq2latex: Halloc #o \Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+(*coq2latex: snd cf' := f_i *)
+
+(*coq2latex: fields #C := \fields(#C) *)
+(*coq2latex: fieldsNames #C := \fields(#C) *)
+
+(*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
+(*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
+(*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
+(*coq2latex: fieldHasType #x #f #T := \vdash #x.#f : #T *)
+
+(*coq2latex: accListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
+Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_left 
+        (fun arg1 arg2 => phiAcc x arg2 :: arg1)
+        f_bar
+        p.
+
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
-| HNewObj : forall phi x (C : C) f_bar,
+| HNewObj : forall phi(*\phi*) x (C : C) f_bar(*\overline{f}*),
     hasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
     hoareSingle
       phi
       (sAlloc x C)
-      (fold_left 
-        (fun arg1 arg2 => phiAcc x arg2 :: arg1)
-        f_bar
-        (phiNeq (ex x) (ev (vnull C)) :: phi))
-| HFieldAssign : forall (phi : phi) (x y : x) (f : f) C T,
-    hasStaticType phi (ex x) (TClass C) ->
+      (accListApp x f_bar (phiNeq (ex x) (ev (vnull C)) :: phi))
+| HFieldAssign : forall (phi(*\phi*) : phi) (x'(*x*) y : x) (f : f) C T,
+    hasStaticType phi (ex x') (TClass C) ->
     fieldHasType C f T ->
     hasStaticType phi (ex y) T ->
-    In (phiAcc x f) phi ->
-    In (phiNeq (ex x) (ev (vnull C))) phi ->
-    hoareSingle phi (sMemberSet x f y) (appEnd phi (phiEq (edot (ex x) f) (ex y)))
-| HVarAssign : forall T phi_1 phi_2 (x : x) (e : e),
-    hasStaticType phi_1 (ex x) T ->
+    In (phiAcc x' f) phi ->
+    In (phiNeq (ex x') (ev (vnull C))) phi ->
+    hoareSingle phi (sMemberSet x' f y) (appEnd phi (phiEq (edot (ex x') f) (ex y)))
+| HVarAssign : forall T phi_1(*\phi_1*) phi_2(*\phi_2*) (x'(*x*) : x) (e : e),
+    hasStaticType phi_1 (ex x') T ->
     hasStaticType phi_1 e T ->
-    phi_1 = phiSubst x e phi_2 ->
+    phi_1 = phiSubst x' e phi_2 ->
     sfrmphi [] phi_1 ->
     sfrme (staticFootprint phi_1) e ->
-    hoareSingle phi_1 (sAssign x e) phi_2
-| HReturn : forall phi (x : x) T,
+    hoareSingle phi_1 (sAssign x' e) phi_2
+| HReturn : forall phi(*\phi*) (x : x) T,
     hasStaticType phi (ex x) T ->
     hasStaticType phi (ex xresult) T ->
     hoareSingle phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
-| HApp : forall underscore phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) z (z' : x) (x y : x) phi_post phi_pre,
-    hasStaticType phi (ex y) (TClass C) ->
+| HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\phi_p*) phi_r(*\phi_r*) phi_q(*\phi_q*) T_r T_p (C : C) (m : m) z (z' : x) x'(*x*) y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hasStaticType phi_i (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
-    hasStaticType phi (ex x) T_r ->
-    hasStaticType phi (ex z') T_p ->
-    In (phiNeq (ex y) (ev (vnull C))) phi ->
-    phiImplies phi (phi_p ++ phi_r) ->
+    hasStaticType phi_i (ex x') T_r ->
+    hasStaticType phi_i (ex z') T_p ->
+    In (phiNeq (ex y) (ev (vnull C))) phi_i ->
+    phiImplies phi_i (phi_p ++ phi_r) ->
     phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
-    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
-    hoareSingle phi (sCall x y m z') (phi_q ++ phi_r)
-| HAssert : forall phi_1 phi_2,
+    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x') phi_post ->
+    hoareSingle phi_i (sCall x' y m z') (phi_q ++ phi_r)
+| HAssert : forall phi_1(*\phi_1*) phi_2(*\phi_2*),
     In phi_2 phi_1 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
-| HRelease : forall phi_1 phi_2 phi_r,
+| HRelease : forall phi_1(*\phi_1*) phi_2(*\phi_2*) phi_r(*\phi_r*),
     phiImplies phi_1 (phi_2 :: phi_r) ->
     sfrmphi [] phi_r ->
     hoareSingle phi_1 (sRelease phi_2) phi_r
-| HDeclare : forall phi_1 phi_2 x T,
+| HDeclare : forall phi_1(*\phi_1*) phi_2(*\phi_2*) x T,
     hasNoStaticType phi_1 (ex x) ->
     phi_2 = appEnd (appEnd phi_1 (phiType x T)) (phiEq (ex x) (ev (defaultValue T))) ->
     hoareSingle phi_1 (sDeclare T x) phi_2
+| HDUMM : hoareSingle [] (sDeclare TPrimitiveInt xthis) []
 .
+
+Print HDeclare.
 
 Inductive hoare : phi -> list s -> phi -> Prop :=
 | HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)

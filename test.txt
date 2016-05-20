@@ -1,0 +1,59 @@
+
+(* coq2latex: Semantics.hoareSingle #p1 #s #p2 := \hoare {#p1} {#s} {#p2} *)
+Inductive hoareSingle : forall (_ : phi) (_ : s) (_ : phi), Prop :=  HNewObj : forall (phi : phi) (x : x) (C : C) (f_bar : list f) (_ : Semantics.hasStaticType phi (ex x) (TClass C)) (_ : @eq (option (list f)) (Semantics.fieldsNames C) (@Some (list f) f_bar)), Semantics.hoareSingle phi (sAlloc x C) (@fold_left (list phi') f (fun (arg1 : list phi') (arg2 : f) => @cons phi' (phiAcc x arg2) arg1) f_bar (@cons phi' (phiNeq (ex x) (ev (vnull C))) phi)) | HFieldAssign : forall (phi : phi) (x0 y : x) (f : f) (C : C) (T : T) (_ : Semantics.hasStaticType phi (ex x0) (TClass C)) (_ : Semantics.fieldHasType C f T) (_ : Semantics.hasStaticType phi (ex y) T) (_ : @In phi' (phiAcc x0 f) phi) (_ : @In phi' (phiNeq (ex x0) (ev (vnull C))) phi), Semantics.hoareSingle phi (sMemberSet x0 f y) (@appEnd phi' phi (phiEq (edot (ex x0) f) (ex y))) | HVarAssign : forall (T : T) (phi_1 phi_2 : phi) (x0 : x) (e : e) (_ : Semantics.hasStaticType phi_1 (ex x0) T) (_ : Semantics.hasStaticType phi_1 e T) (_ : @eq phi phi_1 (Semantics.phiSubst x0 e phi_2)) (_ : Semantics.sfrmphi (@nil (prod x f)) phi_1) (_ : Semantics.sfrme (Semantics.staticFootprint phi_1) e), Semantics.hoareSingle phi_1 (sAssign x0 e) phi_2 | HReturn : forall (phi : phi) (x : x) (T : T) (_ : Semantics.hasStaticType phi (ex x) T) (_ : Semantics.hasStaticType phi (ex xresult) T), Semantics.hoareSingle phi (sReturn x) (@appEnd phi' phi (phiEq (ex xresult) (ex x))) | HApp : forall (underscore : list s) (phi0 : phi) (phi_p phi_r : list phi') (phi_q : phi) (T_r T_p : T) (C : C) (m : m) (z : x') (z' x0 y : x) (phi_post phi_pre : phi) (_ : Semantics.hasStaticType phi0 (ex y) (TClass C)) (_ : @eq (option method) (Semantics.mmethod C m) (@Some method (Method T_r m T_p z (Contract phi_pre phi_post) underscore))) (_ : Semantics.hasStaticType phi0 (ex x0) T_r) (_ : Semantics.hasStaticType phi0 (ex z') T_p) (_ : @In phi' (phiNeq (ex y) (ev (vnull C))) phi0) (_ : Semantics.phiImplies phi0 (@app phi' phi_p phi_r)) (_ : @eq (list phi') phi_p (Semantics.phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre)) (_ : @eq phi phi_q (Semantics.phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x0) phi_post)), Semantics.hoareSingle phi0 (sCall x0 y m z') (@app phi' phi_q phi_r) | HAssert : forall (phi_1 : list phi') (phi_2 : phi') (_ : @In phi' phi_2 phi_1), Semantics.hoareSingle phi_1 (sAssert phi_2) phi_1 | HRelease : forall (phi_1 : phi) (phi_2 : phi') (phi_r : list phi') (_ : Semantics.phiImplies phi_1 (@cons phi' phi_2 phi_r)) (_ : Semantics.sfrmphi (@nil (prod x f)) phi_r), Semantics.hoareSingle phi_1 (sRelease phi_2) phi_r | HDeclare : forall (phi_1 : phi) (phi_2 : list phi') (x : x) (T : T) (_ : Semantics.hasNoStaticType phi_1 (ex x)) (_ : @eq (list phi') phi_2 (@appEnd phi' (@appEnd phi' phi_1 (phiType x T)) (phiEq (ex x) (ev (defaultValue T))))), Semantics.hoareSingle phi_1 (sDeclare T x) phi_2
+
+
+Inductive hoareSingle : phi -> s -> phi -> Prop :=
+| HNewObj : forall phi(*\phi*) x (C : C) f_bar,
+    hasStaticType phi (ex x) (TClass C) ->
+    fieldsNames C = Some f_bar ->
+    hoareSingle
+      phi
+      (sAlloc x C)
+      (fold_left 
+        (fun arg1 arg2 => phiAcc x arg2 :: arg1)
+        f_bar
+        (phiNeq (ex x) (ev (vnull C)) :: phi))
+| HFieldAssign : forall (phi : phi) (x y : x) (f : f) C T,
+    hasStaticType phi (ex x) (TClass C) ->
+    fieldHasType C f T ->
+    hasStaticType phi (ex y) T ->
+    In (phiAcc x f) phi ->
+    In (phiNeq (ex x) (ev (vnull C))) phi ->
+    hoareSingle phi (sMemberSet x f y) (appEnd phi (phiEq (edot (ex x) f) (ex y)))
+| HVarAssign : forall T phi_1 phi_2 (x : x) (e : e),
+    hasStaticType phi_1 (ex x) T ->
+    hasStaticType phi_1 e T ->
+    phi_1 = phiSubst x e phi_2 ->
+    sfrmphi [] phi_1 ->
+    sfrme (staticFootprint phi_1) e ->
+    hoareSingle phi_1 (sAssign x e) phi_2
+| HReturn : forall phi (x : x) T,
+    hasStaticType phi (ex x) T ->
+    hasStaticType phi (ex xresult) T ->
+    hoareSingle phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
+| HApp : forall underscore phi phi_p phi_r phi_q T_r T_p (C : C) (m : m) z (z' : x) (x y : x) phi_post phi_pre,
+    hasStaticType phi (ex y) (TClass C) ->
+    mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
+    hasStaticType phi (ex x) T_r ->
+    hasStaticType phi (ex z') T_p ->
+    In (phiNeq (ex y) (ev (vnull C))) phi ->
+    phiImplies phi (phi_p ++ phi_r) ->
+    phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
+    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
+    hoareSingle phi (sCall x y m z') (phi_q ++ phi_r)
+| HAssert : forall phi_1 phi_2,
+    In phi_2 phi_1 ->
+    hoareSingle phi_1 (sAssert phi_2) phi_1
+| HRelease : forall phi_1 phi_2 phi_r,
+    phiImplies phi_1 (phi_2 :: phi_r) ->
+    sfrmphi [] phi_r ->
+    hoareSingle phi_1 (sRelease phi_2) phi_r
+| HDeclare : forall phi_1 phi_2 x T,
+    hasNoStaticType phi_1 (ex x) ->
+    phi_2 = appEnd (appEnd phi_1 (phiType x T)) (phiEq (ex x) (ev (defaultValue T))) ->
+    hoareSingle phi_1 (sDeclare T x) phi_2
+| HDUMM : hoareSingle [] (sDeclare TPrimitiveInt xthis) []
+.
+
+fuzz

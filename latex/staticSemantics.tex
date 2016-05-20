@@ -1,48 +1,55 @@
+% Inductive hoareSingle
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{\phi\vdash{x}:{C}\\ \fields(C) = \overline{f} }
-{\hoare {\phi} {x{\::=\:\new\:}C} {( \acc(x,\overline{f_i}) * ( (x{\:\neq\:}\vnull) * \phi ) )}}
+{{\phi} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{\hoare {\phi} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{({{x}} \neq {{\vnull}})} * {\phi}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{\phi\vdash{x}:{C}\\\vdash{C.f}:{T}\\\phi\vdash{y}:{T}\\\phi{\:\implies\:}\acc(x,f)\\\phi{\:\implies\:}(x{\:\neq\:}\vnull)}
-{\hoare {\phi} {x.f{\::=\:}y} {\phi{\:*\:}(x.f{\:=\:}y)}}
+{{\phi} \vdash {{x}} : {{C}}\\\vdash {C}.{f} : {T}\\{\phi} \vdash {{y}} : {T}\\{\phi} \implies {\acc({x}.{f})}\\{\phi} \implies {({{x}} \neq {{\vnull}})}}
+{\hoare {\phi} {{x}.{f} := {y}} {{\phi} * {({{{x}}.{f}} = {{y}})}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{\phi_1\vdash{x}:{T}\\\phi_1\vdash{e}:{T}\\ \phi_1 = \phi_2[e/x] \\\emptyset \sfrmphi \phi_1\\\staticFP{\phi_1} \sfrme e}
-{\hoare {\phi_1} {x{\::=\:}e} {\phi_2}}
+{{\phi_1} \vdash {{x}} : {T}\\{\phi_1} \vdash {e} : {T}\\{\phi_1} = {{\phi_2}[{e} / {x}]}\\{\emptyset} \sfrmphi {\phi_1}\\{\staticFP {\phi_1}} \sfrme {e}}
+{\hoare {\phi_1} {{x} := {e}} {\phi_2}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{\phi\vdash{x}:{T}\\\phi\vdash{\xresult}:{T}}
-{\hoare {\phi} {{\return}x} {\phi{\:*\:}(\xresult{\:=\:}x)}}
+{{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {{\xresult}} : {T}}
+{\hoare {\phi} {\return {x}} {{\phi} * {({{\xresult}} = {{x}})}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{\phi\vdash{y}:{C}\\\phi\vdash{x}:{T_r}\\\phi\vdash{z'}:{T_p}\\\phi{\:\implies\:}(y{\:\neq\:}\vnull)\\\phi{\:\implies\:}( \phi_p * \phi_r )\\ \mmethod(C,m) = T_r~m(T_p~z)~\requires{\phi_{pre}};~\ensures{\phi_{post}};~\{\_\} \\ \phi_p = \phi_{pre}[y,z'/\xthis,z] \\ \phi_q = \phi_{post}[y,z',x/\xthis,z,\xresult] }
-{\hoare {\phi} {x{\::=\:}y.m(z')} {( \phi_q * \phi_r )}}
+{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {({{y}} \neq {{\vnull}})}\\{\phi} \implies {{\phi_p} * {\phi_r}}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
+{\hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HAssert]
-{\phi_1{\:\implies\:}\phi_2}
-{\hoare {\phi_1} {{\assert}\phi_2} {\phi_1}}
+{{\phi_1} \implies {\phi_2}}
+{\hoare {\phi_1} {\assert {\phi_2}} {\phi_1}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HRelease]
-{\phi_1{\:\implies\:}( \phi_2 * \phi_r )\\\emptyset \sfrmphi \phi_r}
-{\hoare {\phi_1} {{\release}\phi_2} {\phi_r}}
+{{\phi_1} \implies {{\phi_2} * {\phi_r}}\\{\emptyset} \sfrmphi {\phi_r}}
+{\hoare {\phi_1} {\release {\phi_2}} {\phi_r}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{x\not\in \dom(\phi_1)\\ \phi_2 = \phi_1{\:*\:}x{\::\:}T{\:*\:}(x{\:=\:}\texttt{defaultValue}(T)) }
-{\hoare {\phi_1} {T{\:}x} {\phi_2}}
+{{{x}} \not\in \dom({\phi_1})\\{\phi_2} = {{{\phi_1} * {{x} : {T}}} * {({{x}} = {{\texttt{defaultValue}({T})}})}}}
+{\hoare {\phi_1} {{T}~{x}} {\phi_2}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HDUMM]
+{~}
+{\hoare {\emptyset} {{\Tint}~{\xthis}} {\emptyset}}
 \end{mathpar}
 
