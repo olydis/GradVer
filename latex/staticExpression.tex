@@ -1,18 +1,19 @@
+% Inductive Semantics.sfrme
 \begin{mathpar}
 \inferrule* [Right=WFVar]
 {~}
-{A \sfrme x}
+{{A} \sfrme {{x}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFValue]
 {~}
-{A \sfrme v}
+{{A} \sfrme {{v}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFField]
-{( x , f ) \in A}
-{A \sfrme x.f}
+{{({x}, {f})} \in {A}}
+{{A} \sfrme {{{x}}.{f}}}
 \end{mathpar}
 

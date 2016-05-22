@@ -34,11 +34,16 @@ Definition m := string.
 Definition o := nat.
 Definition x' := string.
 Inductive x :=
+(*coq2latex: xUserDef #x := #x *)
 | xUserDef : x' -> x
+(*coq2latex: xthis := \xthis *)
 | xthis : x
+(*coq2latex: xresult := \xresult *)
 | xresult : x.
 Inductive T :=
+(*coq2latex: TPrimitiveInt := \Tint *)
 | TPrimitiveInt : T
+(*coq2latex: TClass #C := #C *)
 | TClass : C -> T.
 
 (*Inductive v :=
@@ -56,10 +61,14 @@ Definition v' (T' : T) : Set :=
   | TClass C' => v'Class C'
   end.
 Definition v := sigT v'.
+(*coq2latex: vnull #C := \vnull *)
 Definition vnull (C : C) : v := existT v' (TClass C) (v'null C).
+(*coq2latex: vo #o := #o *)
 Definition vo (C : C) (o : o) : v := existT v' (TClass C) (v'o C o).
+(*coq2latex: vn #n := #n *)
 Definition vn (n : nat) : v := existT v' (TPrimitiveInt) n.
 
+(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
 Definition defaultValue (T : T) : v :=
   match T with
   | TPrimitiveInt => vn 0
@@ -68,28 +77,46 @@ Definition defaultValue (T : T) : v :=
 
 
 Inductive e :=
+(*coq2latex: ev #v := #v *)
 | ev : v -> e
+(*coq2latex: ex #x := #x *)
 | ex : x -> e
+(*coq2latex: edot #e #f := #e.#f *)
 | edot : e -> f -> e.
 Inductive phi' :=
+(*coq2latex: phiTrue := \true *)
 | phiTrue : phi'
+(*coq2latex: phiEq #a #b := (#a = #b) *)
 | phiEq : e -> e -> phi'
+(*coq2latex: phiNeq #a #b := (#a \neq #b) *)
 | phiNeq : e -> e -> phi'
+(*coq2latex: phiAcc #x #f := \acc(#x.#f) *)
 | phiAcc : x -> f -> phi'
+(*coq2latex: phiType #x #T := #x : #T *)
 | phiType : x -> T -> phi'.
 Definition phi := list phi'.
 Inductive s :=
+(*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
 | sMemberSet : x -> f -> x -> s
+(*coq2latex: sAssign #x #e := #x := #e *)
 | sAssign : x -> e -> s
+(*coq2latex: sAlloc #x #C := #x := \new #C *)
 | sAlloc : x -> C -> s
+(*coq2latex: sCall #x #y #m #z := #x := #y.#m(#z) *)
 | sCall : x -> x -> m -> x -> s
+(*coq2latex: sReturn #x := \return #x *)
 | sReturn : x -> s
+(*coq2latex: sAssert #p := \assert #p *)
 | sAssert : phi' -> s
+(*coq2latex: sRelease #p := \release #p *)
 | sRelease : phi' -> s
+(*coq2latex: sDeclare #T #x := #T~#x *)
 | sDeclare : T -> x -> s.
 Inductive contract :=
+(*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
 | Contract : phi -> phi -> contract.
 Inductive method :=
+(*coq2latex: Method #Tr #m #Tp #xp #c #s := #Tr~#m(#Tp~#xp)~#c~\{ #s \} *)
 | Method : T -> m -> T -> x' -> contract -> list s -> method.
 Inductive field :=
 | Field : T -> f -> field.
@@ -139,7 +166,11 @@ Hint Resolve list_eq_dec v'_dec.
 Definition A_s'_decb (a b : x * f) : bool := x_decb (fst a) (fst b) && string_decb (snd a) (snd b).
 Definition A_d'_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
 Definition A_sexcept := except A_s'_decb.
+(*coq2latex: Aexcept #A1 #A2 := #A1 \backslash #A2 *)
 Definition Aexcept := except A_d'_decb.
+
+(*coq2latex: neq #a #b := #a \neq #b *)
+Definition neq (a b : v) : Prop := a <> b.
 
 Module Semantics.
 
@@ -149,6 +180,7 @@ Parameter p : program.
 Definition classes : list cls := match p with Program clss _ => clss end.
 Definition class (C' : C) : option cls :=
     find (fun class => match class with Cls C'' _ _ => C_decb C'' C' end) classes.
+(*coq2latex: fields #C := \fields(#C) *)
 Definition fields (C' : C) : option (list (T * f)) :=
   match class C' with
   | None => None
@@ -157,8 +189,10 @@ Definition fields (C' : C) : option (list (T * f)) :=
     | Cls _ fs _ => Some (map (fun f => match f with Field T' f' => (T', f') end) fs)
     end
   end.
+(*coq2latex: fieldsNames #C := \fields(#C) *)
 Definition fieldsNames (C' : C) : option (list f) :=
   option_map (fun l => map snd l) (fields C').
+(*coq2latex: fieldType #C #f := \fieldType(#C, #f) *)
 Definition fieldType (C' : C) (f' : f) : option T :=
   match class C' with
   | None => None
@@ -170,6 +204,7 @@ Definition fieldType (C' : C) (f' : f) : option T :=
     end
   end.
 Definition allMethods : list method := flat_map (fun cl => match cl with Cls _ _ x => x end) classes.
+(*coq2latex: mmethod #C #m := \mmethod(#C, #m) *)
 Definition mmethod (C' : C) (m' : m) : option method :=
   match class C' with
   | None => None
@@ -183,22 +218,27 @@ Definition mcontract (C' : C) (m' : m) : option contract :=
   option_map
     (fun me => match me with Method _ _ _ _ contr _ => contr end)
     (mmethod C' m').
+(*coq2latex: mpre #C #m := \mpre(#C, #m) *)
 Definition mpre (C' : C) (m' : m) : option phi :=
   option_map
     (fun contr => match contr with Contract res _ => res end)
     (mcontract C' m').
+(*coq2latex: mpost #C #m := \mpost(#C, #m) *)
 Definition mpost (C' : C) (m' : m) : option phi :=
   option_map
     (fun contr => match contr with Contract _ res => res end)
     (mcontract C' m').
+(*coq2latex: mbody #C #m := \mbody(#C, #m) *)
 Definition mbody (C' : C) (m' : m) : option (list s) :=
   option_map
     (fun me => match me with Method _ _ _ _ _ instrs => instrs end)
     (mmethod C' m').
+(*coq2latex: mparam #C #m := \mparam(#C, #m) *)
 Definition mparam (C' : C) (m' : m) : option (T * x') :=
   option_map
     (fun me => match me with Method _ _ paramT paramx _ _ => (paramT, paramx) end)
     (mmethod C' m').
+(*coq2latex: mrettype #C #m := \mrettype(#C, #m) *)
 Definition mrettype (C' : C) (m' : m) : option T :=
   option_map
     (fun me => match me with Method rt _ _ _ _ _ => rt end)
@@ -239,16 +279,21 @@ match p with
 | phiTrue => p
 end.
 
+(*coq2latex: phiSubsts #m #phi := #phi[#m] *)
 Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
   map (phi'Substs r) p.
 
+(*coq2latex: phiSubst #x #e #phi := #phi[#e / #x] *)
 Definition phiSubst (x' : x) (e' : e) (p : phi) : phi :=
   phiSubsts [(x', e')] p.
+(*coq2latex: phiSubsts2 #x1 #e1 #x2 #e2 #phi := #phi[#e1, #e2 / #x1, #x2] *)
 Definition phiSubsts2 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (p : phi) : phi :=
   phiSubsts [(x1, e1) ; (x2, e2)] p.
+(*coq2latex: phiSubsts3 #x1 #e1 #x2 #e2 #x3 #e3 #phi := #phi[#e1, #e2, #e3 / #x1, #x2, #x3] *)
 Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p : phi) : phi :=
   phiSubsts [(x1, e1) ; (x2, e2) ; (x3, e3)] p.
 
+(*coq2latex: HSubst #o #f #v #H := #H[#o \mapsto [#f \mapsto #v]] *)
 Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
   fun o'' =>
     if o_decb o'' o'
@@ -262,16 +307,19 @@ Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
       else h o''
 .
 
+(*coq2latex: HSubsts #o #m #H := #H[#o \mapsto [#m]] *)
 Definition HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
   fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
 Definition Halloc (o : o) (fs : list (T * f)) (h : H) : H :=
   HSubsts o (map (fun x => (snd x, defaultValue (fst x))) fs) h.
 
+(*coq2latex: rhoSubst #x #v #rho := #rho[#x \mapsto #v] *)
 Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
   fun x'' => if x_decb x'' x' then Some v' else r x''.
 
 (* Figure 2: Static typing rules for expressions of the core language *)
+(*coq2latex: sfrme #A #e := #A \sfrme #e *)
 Inductive sfrme : A_s -> e -> Prop :=
 | WFVar : forall A x,
     sfrme A (ex x)
@@ -284,14 +332,17 @@ Inductive sfrme : A_s -> e -> Prop :=
 
 
 (* Figure 4: Deﬁnition of a static version of footprint *)
+(*coq2latex: staticFootprint' #p := \staticFP #p *)
 Definition staticFootprint' (p : phi') : A_s := 
   match p with
   | phiAcc x' f' => [(x', f')]
   | _ => []
   end.
+(*coq2latex: staticFootprint #p := \staticFP #p *)
 Definition staticFootprint (p : phi) : A_s := flat_map staticFootprint' p.
 
 (* Figure 3: Static rules for syntactically self-framed formulas *)
+(*coq2latex: sfrmphi' #A #e := #A \sfrmphi #e *)
 Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFTrue : forall A, sfrmphi' A phiTrue
 | WFEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiEq e_1 e_2)
@@ -299,6 +350,7 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFAcc : forall A x f, sfrmphi' A (phiAcc x f)
 | WFType : forall A x T, sfrmphi' A (phiType x T)
 .
+(*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
 Fixpoint sfrmphi (a : A_s) (p : phi) : Prop :=
   match p with
   | [] => True
@@ -325,8 +377,10 @@ Fixpoint staticType (phi : phi) (e' : e) : option T :=
         end)
       (staticType phi e')
   end.
+(*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
 Definition hasStaticType (phi : phi) (e : e) (T : T) : Prop :=
   staticType phi e = Some T.
+(*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
 Definition hasNoStaticType (phi : phi) (e : e) : Prop :=
   staticType phi e = None.
 
@@ -342,9 +396,11 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
   | ev v => Some v
   end.
 
+(*coq2latex: evale #H #rho #e #v := \evalex #H #rho #e #v *)
 Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = Some v.
 
 (* dynamic type derivation *)
+(*coq2latex: dynamicType #e := \dynamicType(#e) *)
 Definition dynamicType (H : H) (rho : rho) (e' : e) : option T :=
   option_map (fun v : v => projT1 v) (evale' H rho e').
 Definition hasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
@@ -356,147 +412,63 @@ Definition hasNoDynamicType (H : H) (rho : rho) (e : e) : Prop :=
 (* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
 
 (* Figure 7: Evaluation of formulas for core language *)
+(*coq2latex: optionVisO #mv #o := #mv = #o *)
 Definition optionVisO (v : option v) (o : o) :=
   exists C, v = Some (existT _ (TClass C) (v'o C o)).
+(*coq2latex: evalphi' #H #rho #A #p := \evalphix #H #rho #A #p *)
 Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
-| EATrue : forall Heap rho A,
-    evalphi' Heap rho A phiTrue
-| EAEqual : forall Heap rho A e_1 e_2 v_1 v_2,
-    evale Heap rho e_1 v_1 ->
-    evale Heap rho e_2 v_2 ->
+| EATrue : forall H rho(*\*) A,
+    evalphi' H rho A phiTrue
+| EAEqual : forall H rho(*\*) A e_1 e_2 v_1 v_2,
+    evale H rho e_1 v_1 ->
+    evale H rho e_2 v_2 ->
     v_1 = v_2 ->
-    evalphi' Heap rho A (phiEq e_1 e_2)
-| EANEqual : forall Heap rho A e_1 e_2 v_1 v_2,
-    evale Heap rho e_1 v_1 ->
-    evale Heap rho e_2 v_2 ->
-    v_1 <> v_2 ->
-    evalphi' Heap rho A (phiNeq e_1 e_2)
-| EAAcc : forall Heap rho (A : A_d) x (o : o) f,
+    evalphi' H rho A (phiEq e_1 e_2)
+| EANEqual : forall H rho(*\*) A e_1 e_2 v_1 v_2,
+    evale H rho e_1 v_1 ->
+    evale H rho e_2 v_2 ->
+    neq v_1 v_2 ->
+    evalphi' H rho A (phiNeq e_1 e_2)
+| EAAcc : forall H rho(*\*) (A : A_d) x (o : o) f,
     optionVisO (rho x) o ->
     In (o, f) A ->
-    evalphi' Heap rho A (phiAcc x f)
-| EAType : forall Heap rho (A : A_d) x T v,
+    evalphi' H rho A (phiAcc x f)
+| EAType : forall H rho(*\*) (A : A_d) x T v,
     rho x = Some (existT _ T v) ->
-    evalphi' Heap rho A (phiType x T)
+    evalphi' H rho A (phiType x T)
 .
+(*coq2latex: evalphi #H #rho #A #p := \evalphix #H #rho #A #p *)
 Definition evalphi : H -> rho -> A_d -> phi -> Prop :=
   fun h r a p => forall p', In p' p -> evalphi' h r a p'.
 
 (* implication on phi *)
+(*coq2latex: phiImplies #a #b := #a \implies #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
 
-(* Figure 5: Hoare-based proof rules for core language *)
-Definition fieldHasType C f T := fieldType C f = Some T.
-(* CTORS *)
-(*coq2latex: projT1 #x := #x *)
-(*coq2latex: @Some #_ #x := #x *)
-(*coq2latex: None := \bot *)
-
-(*coq2latex: xresult := \xresult *)
-(*coq2latex: xthis := \xthis *)
-(*coq2latex: xUserDef #x := #x *)
-
-(*coq2latex: ex #x := #x *)
-(*coq2latex: ev #v := #v *)
-(*coq2latex: edot #e #f := #e.#f *)
-
-(*coq2latex: vo #o := #o *)
-(*coq2latex: vnull #C := \vnull *)
-
-(*coq2latex: TClass #C := #C *)
-(*coq2latex: TPrimitiveInt := \Tint *)
-
-(*coq2latex: phiTrue := \true *)
-(*coq2latex: phiEq #a #b := (#a = #b) *)
-(*coq2latex: phiNeq #a #b := (#a \neq #b) *)
-(*coq2latex: phiAcc #x #f := \acc(#x.#f) *)
-(*coq2latex: phiType #x #T := #x : #T *)
-
-(*coq2latex: sAlloc #x #C := #x := \new #C *)
-(*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
-(*coq2latex: sCall #x #y #m #z := #x := #y.#m(#z) *)
-(*coq2latex: sAssign #x #e := #x := #e *)
-(*coq2latex: sReturn #x := \return #x *)
-(*coq2latex: sAssert #p := \assert #p *)
-(*coq2latex: sRelease #p := \release #p *)
-(*coq2latex: sDeclare #T #x := #T~#x *)
-
-
-(*coq2latex: Method #Tr #m #Tp #xp #c #s := #Tr~#m(#Tp~#xp)~#c~\{ #s \} *)
-(*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
-(*coq2latex: mmethod #C #m := \mmethod(#C, #m) *)
-(*coq2latex: mpre #C #m := \mpre(#C, #m) *)
-(*coq2latex: mpost #C #m := \mpost(#C, #m) *)
-(*coq2latex: mbody #C #m := \mbody(#C, #m) *)
-(*coq2latex: mparam #C #m := \mparam(#C, #m) *)
-(*coq2latex: mrettype #C #m := \mrettype(#C, #m) *)
-(*coq2latex: fieldType #C #f := \fieldType(#C, #f) *)
-
-(*coq2latex: @eq #_ #a #b := #a = #b *)
-
-(*coq2latex: sfrme #A #e := #A \sfrme #e *)
-(*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
-(*coq2latex: sfrmphi' #A #e := #A \sfrmphi #e *)
-(*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
-(*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
-(*coq2latex: staticFootprint #p := \staticFP #p *)
-
-(*coq2latex: evale #H #rho #e #v := \evalex #H #rho #e #v *)
-(*coq2latex: evalphi #H #rho #A #p := \evalphi #H #rho #A #p *)
-(*coq2latex: evalphi' #H #rho #A #p := \evalphi #H #rho #A #p *)
-(*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
-(*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
-(*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
-
-(*coq2latex: dynamicType #e := \dynamicType(#e) *)
-(*coq2latex: rho #x := \rho(#x) *)
-(*coq2latex: rho' #x := \rho'(#x) *)
-(*coq2latex: Heap #o := \Heap(#o) *)
-(*coq2latex: Heap' #o := \Heap'(#o) *)
-
-
-(*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
-(*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
-(*coq2latex: @nil #_ := \emptyset *)
-(*coq2latex: @In phi' #x #xs := #xs \implies #x *)
-(*coq2latex: phiImplies #a #b := #a \implies #b *)
-
-(*coq2latex: @appEnd phi' #xs #x := #xs * #x *)
-(*coq2latex: rhoSubst #x #v #rho := #rho[#x \mapsto #v] *)
-(*coq2latex: rhoFrom2 #x1 #v1 #x2 #v2 := [#x1 \mapsto #v1, #x2 \mapsto #v2] *)
-(*coq2latex: rhoFrom3 #x1 #v1 #x2 #v2 #x3 #v3 := [#x1 \mapsto #v1, #x2 \mapsto #r2, #x3 \mapsto #v3] *)
-
-(*coq2latex: HSubst #o #f #v #H := #H[#o \mapsto [#f \mapsto #v]] *)
-(*coq2latex: HSubsts #o #m #H := #H[#o \mapsto [#m]] *)
-
-(*coq2latex: phiSubst #x #e #phi := #phi[#e / #x] *)
-(*coq2latex: phiSubsts2 #x1 #e1 #x2 #e2 #phi := #phi[#e1, #e2 / #x1, #x2] *)
-(*coq2latex: phiSubsts3 #x1 #e1 #x2 #e2 #x3 #e3 #phi := #phi[#e1, #e2, #e3 / #x1, #x2, #x3] *)
-(*coq2latex: phiSubsts #m #phi := #phi[#m] *)
-
-(*coq2latex: Aexcept #A1 #A2 := #A1 \backslash #A2 *)
-
-(*hacky: *)
-(*coq2latex: optionVisO #mv #o := #mv = #o *)
-(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
-(*coq2latex: Halloc #o \Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
-(*coq2latex: snd cf' := f_i *)
-
-(*coq2latex: fields #C := \fields(#C) *)
-(*coq2latex: fieldsNames #C := \fields(#C) *)
-
-(*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
-(*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
-(*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
 (*coq2latex: fieldHasType #x #f #T := \vdash #x.#f : #T *)
+Definition fieldHasType C f T := fieldType C f = Some T.
 
+(* Figure 5: Hoare-based proof rules for core language *)
 (*coq2latex: accListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
 Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_left 
         (fun arg1 arg2 => phiAcc x arg2 :: arg1)
         f_bar
         p.
 
+
+(*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @pair \rho A_d #a #b := #a, #b *)
+(*coq2latex: @In phi' #x #xs := #xs \implies #x *)
+(*coq2latex: @cons #_ #p1 #p2 := #p1 \cdot #p2 *)
+(*coq2latex: @appEnd phi' #xs #x := #xs * #x *)
+
+(*hacky: *)
+(*coq2latex: snd cf' := f_i *)
+(*coq2latex: Halloc #o \Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+
+(*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi(*\phi*) x (C : C) f_bar(*\overline{f}*),
     hasStaticType phi (ex x) (TClass C) ->
@@ -544,11 +516,9 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     hasNoStaticType phi_1 (ex x) ->
     phi_2 = appEnd (appEnd phi_1 (phiType x T)) (phiEq (ex x) (ev (defaultValue T))) ->
     hoareSingle phi_1 (sDeclare T x) phi_2
-| HDUMM : hoareSingle [] (sDeclare TPrimitiveInt xthis) []
 .
 
-Print HDeclare.
-
+(*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoare : phi -> list s -> phi -> Prop :=
 | HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
     hoareSingle p s1 q1 ->
@@ -592,6 +562,7 @@ Definition wellTyped (G : phi) (s' : s) : Prop :=
 
 
 (* Figure 8: Definition of footprint meta-function *)
+(*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
 Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
   | phiAcc x' f' => 
@@ -601,70 +572,75 @@ Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
       end
   | _ => []
   end.
+(*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
 Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
   flat_map (footprint' h r) p.
 
 (* Figure 9: Dynamic semantics for core language *)
+(*coq2latex: rhoFrom2 #x1 #v1 #x2 #v2 := [#x1 \mapsto #v1, #x2 \mapsto #v2] *)
 Definition rhoFrom2 (x1 : x) (v1 : v) (x2 : x) (v2 : v) : rho := 
   fun rx => if x_decb rx x1 then Some v1 else
            (if x_decb rx x2 then Some v2 else None).
+(*coq2latex: rhoFrom3 #x1 #v1 #x2 #v2 #x3 #v3 := [#x1 \mapsto #v1, #x2 \mapsto #v2, #x3 \mapsto #v3] *)
 Definition rhoFrom3 (x1 : x) (v1 : v) (x2 : x) (v2 : v) (x3 : x) (v3 : v) : rho := 
   fun rx => if x_decb rx x1 then Some v1 else
            (if x_decb rx x2 then Some v2 else
            (if x_decb rx x3 then Some v3 else None)).
 
+(*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
 Definition HeapNotSetAt (H : H) (o : o) : Prop := H o = None.
 
 Definition execState : Set := H * S.
+(*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
 Inductive dynSem : execState -> execState -> Prop :=
-| ESFieldAssign : forall Heap Heap' C (S : S) (s_bar : list s) (A : A_d) rho (x y : x) (v_y : v) (o : o) (f : f),
-    evale Heap rho (ex x) (vo C o) ->
-    evale Heap rho (ex y) v_y ->
+| ESFieldAssign : forall H H' C (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) (x y : x) (v_y : v) (o : o) (f : f),
+    evale H rho (ex x) (vo C o) ->
+    evale H rho (ex y) v_y ->
     In (o, f) A ->
-    Heap' = HSubst o f v_y Heap ->
-    dynSem (Heap, (rho, A, sMemberSet x f y :: s_bar) :: S) (Heap', (rho, A, s_bar) :: S)
-| ESVarAssign : forall Heap (S : S) (s_bar : list s) (A : A_d) rho rho' (x : x) (e : e) (v : v),
-    evale Heap rho e v ->
+    H' = HSubst o f v_y H ->
+    dynSem (H, (rho, A, sMemberSet x f y :: s_bar) :: S) (H', (rho, A, s_bar) :: S)
+| ESVarAssign : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (e : e) (v : v),
+    evale H rho e v ->
     rho' = rhoSubst x v rho ->
-    dynSem (Heap, (rho, A, sAssign x e :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESNewObj : forall Heap Heap' (S : S) (s_bar : list s) (A A' : A_d) rho rho' (x : x) (o : o) (C : C) Tfs,
-    HeapNotSetAt Heap o ->
+    dynSem (H, (rho, A, sAssign x e :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
+| ESNewObj : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs,
+    HeapNotSetAt H o ->
     fields C = Some Tfs ->
     rho' = rhoSubst x (vo C o) rho ->
     A' = A ++ map (fun cf' => (o, snd cf')) Tfs ->
-    Heap' = Halloc o Tfs Heap ->
-    dynSem (Heap, (rho, A, sAlloc x C :: s_bar) :: S) (Heap', (rho', A', s_bar) :: S)
-| ESReturn : forall Heap (S : S) (s_bar : list s) (A : A_d) rho rho' (x : x) (v_x : v),
-    evale Heap rho (ex x) v_x ->
+    H' = Halloc o Tfs H ->
+    dynSem (H, (rho, A, sAlloc x C :: s_bar) :: S) (H', (rho', A', s_bar) :: S)
+| ESReturn : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (v_x : v),
+    evale H rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
-    dynSem (Heap, (rho, A, sReturn x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
-| ESApp : forall underscore2 phi Heap (S : S) (s_bar r_bar : list s) (A A' : A_d) T T_r (rho rho' : rho) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore,
-    evale Heap rho (ex y) (vo C o) ->
-    evale Heap rho (ex z) v ->
-    Heap o = Some (C, underscore) ->
+    dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
+| ESApp : forall underscore2(*\_*) phi H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
+    evale H rho (ex y) (vo C o) ->
+    evale H rho (ex z) v ->
+    H o = Some (C, underscore) ->
     mmethod C m = Some (Method T_r m T w (Contract phi underscore2) r_bar) ->
     rho' = rhoFrom3 xresult (defaultValue T_r) xthis (vo C o) (xUserDef w) v ->
-    evalphi Heap rho' A phi ->
-    A' = footprint Heap rho' phi ->
-    dynSem (Heap, (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESAppFinish : forall underscore o phi Heap (S : S) (s_bar : list s) (A A' A'' : A_d) rho rho' (x : x) z (m : m) y (C : C) v_r,
-    evale Heap rho (ex y) (vo C o) ->
-    Heap o = Some (C, underscore) ->
+    evalphi H rho' A phi ->
+    A' = footprint H rho' phi ->
+    dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
+| ESAppFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
+    evale H rho (ex y) (vo C o) ->
+    H o = Some (C, underscore) ->
     mpost C m = Some phi ->
-    evalphi Heap rho' A' phi ->
-    A'' = footprint Heap rho' phi ->
-    evale Heap rho' (ex xresult) v_r ->
-    dynSem (Heap, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (Heap, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
-| ESAssert : forall Heap rho A phi s_bar S,
-    evalphi' Heap rho A phi ->
-    dynSem (Heap, (rho, A, sAssert phi :: s_bar) :: S) (Heap, (rho, A, s_bar) :: S)
-| ESRelease : forall Heap rho A A' phi s_bar S,
-    evalphi' Heap rho A phi ->
-    A' = Aexcept A (footprint' Heap rho phi) ->
-    dynSem (Heap, (rho, A, sRelease phi :: s_bar) :: S) (Heap, (rho, A', s_bar) :: S)
-| ESDeclare : forall Heap rho rho' A s_bar S T x,
+    evalphi H rho' A' phi ->
+    A'' = footprint H rho' phi ->
+    evale H rho' (ex xresult) v_r ->
+    dynSem (H, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (H, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
+| ESAssert : forall H rho(*\*) A phi(*\*) s_bar(*\overline{s}*) S,
+    evalphi' H rho A phi ->
+    dynSem (H, (rho, A, sAssert phi :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
+| ESRelease : forall H rho(*\*) A A' phi(*\*) s_bar(*\overline{s}*) S,
+    evalphi' H rho A phi ->
+    A' = Aexcept A (footprint' H rho phi) ->
+    dynSem (H, (rho, A, sRelease phi :: s_bar) :: S) (H, (rho, A', s_bar) :: S)
+| ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*\overline{s}*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
-    dynSem (Heap, (rho, A, sDeclare T x :: s_bar) :: S) (Heap, (rho', A, s_bar) :: S)
+    dynSem (H, (rho, A, sDeclare T x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
 .
 
 (* helper definitions *)
@@ -734,3 +710,14 @@ Definition CWellDefined (c : cls) :=
 Axiom pWellDefined : forall c, In c classes -> CWellDefined c.
 
 End Semantics.
+
+
+(*coq2latex: projT1 #x := #x *)
+(*coq2latex: @Some #_ #x := #x *)
+(*coq2latex: None := \bot *)
+(*coq2latex: @existT #_ #_ #T #v := {#v}_{#T} *)
+(*coq2latex: @eq #_ #a #b := #a = #b *)
+(*coq2latex: @pair #_ #_ #a #b := (#a, #b) *)
+(*coq2latex: @nil #_ := \emptyset *)
+(*coq2latex: @In #_ #x #xs := #x \in #xs *)
+

@@ -1,4 +1,4 @@
-% Inductive hoareSingle
+% Inductive Semantics.hoareSingle
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
 {{\phi} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
@@ -45,11 +45,5 @@
 \inferrule* [Right=HDeclare]
 {{{x}} \not\in \dom({\phi_1})\\{\phi_2} = {{{\phi_1} * {{x} : {T}}} * {({{x}} = {{\texttt{defaultValue}({T})}})}}}
 {\hoare {\phi_1} {{T}~{x}} {\phi_2}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=HDUMM]
-{~}
-{\hoare {\emptyset} {{\Tint}~{\xthis}} {\emptyset}}
 \end{mathpar}
 

@@ -1,0 +1,55 @@
+% Inductive Semantics.dynSem
+\begin{mathpar}
+\inferrule* [Right=ESFieldAssign]
+{\evalex {H} {\rho} {{x}} {{C}(o)}\\\evalex {H} {\rho} {{y}} {v_y}\\{({o}, {f})} \in {A}\\{H'} = {{H}[{o} \mapsto [{f} \mapsto {v_y}]]}}
+{{({H}, {{({{\rho}, {A}}, {{{x}.{f} := {y}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H'}, {{({{\rho}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESVarAssign]
+{\evalex {H} {\rho} {e} {v}\\{\rho'} = {{\rho}[{x} \mapsto {v}]}}
+{{({H}, {{({{\rho}, {A}}, {{{x} := {e}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESNewObj]
+{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{C}(o)}]}\\{A'} = {@app(prod(o, f), A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {Halloc(o, Tfs, H)}}
+{{({H}, {{({{\rho}, {A}}, {{{x} := \new {C}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H'}, {{({{\rho'}, {A'}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESReturn]
+{\evalex {H} {\rho} {{x}} {v_x}\\{\rho'} = {{\rho}[{\xresult} \mapsto {v_x}]}}
+{{({H}, {{({{\rho}, {A}}, {{\return {x}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESApp]
+{\evalex {H} {\rho} {{y}} {{C}(o)}\\\evalex {H} {\rho} {{z}} {v}\\{H(o)} = {{({C}, {\_})}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T}~{w})~{\requires {phi};~\ensures {\_};}~\{ {\overline{r}} \}}}\\{\rho'} = {[{\xresult} \mapsto {\texttt{defaultValue}({T_r})}, {\xthis} \mapsto {{C}(o)}, {{w}} \mapsto {v}]}\\\evalphix {H} {\rho'} {A} {phi}\\{A'} = {\dynamicFP {H} {\rho'} {phi}}}
+{{({H}, {{({{\rho}, {A}}, {{{x} := {y}.{m}({z})} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A'}}, {\overline{r}})} \cdot {{({({\rho}, {{A} \backslash {A'}})}, {{{x} := {y}.{m}({z})} \cdot {\overline{s}}})} \cdot {S}}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESAppFinish]
+{\evalex {H} {\rho} {{y}} {{C}(o)}\\{H(o)} = {{({C}, {\_})}}\\{\mpost({C}, {m})} = {{\phi}}\\\evalphix {H} {\rho'} {A'} {\phi}\\{A''} = {\dynamicFP {H} {\rho'} {\phi}}\\\evalex {H} {\rho'} {{\xresult}} {v_r}}
+{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{{x} := {y}.{m}({z})} \cdot {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({({{\rho}[{x} \mapsto {v_r}]}, {@app(prod(o, f), A, A'')})}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESAssert]
+{\evalphix {H} {\rho} {A} {\phi}}
+{{({H}, {{({{\rho}, {A}}, {{\assert {\phi}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESRelease]
+{\evalphix {H} {\rho} {A} {\phi}\\{A'} = {{A} \backslash {\dynamicFP {H} {\rho} {\phi}}}}
+{{({H}, {{({{\rho}, {A}}, {{\release {\phi}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({({\rho}, {A'})}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESDeclare]
+{{\rho'} = {{\rho}[{x} \mapsto {\texttt{defaultValue}({T})}]}}
+{{({H}, {{({{\rho}, {A}}, {{{T}~{x}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+

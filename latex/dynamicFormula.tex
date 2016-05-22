@@ -1,30 +1,31 @@
+% Inductive Semantics.evalphi'
 \begin{mathpar}
 \inferrule* [Right=EATrue]
 {~}
-{\evalphix {\Heap} {\rho} {A} {\true}}
+{\evalphix {H} {\rho} {A} {\true}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EAEqual]
-{\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1 = v_2 }
-{\evalphix {\Heap} {\rho} {A} {(e_1{\:=\:}e_2)}}
+{\evalex {H} {\rho} {e_1} {v_1}\\\evalex {H} {\rho} {e_2} {v_2}\\{v_1} = {v_2}}
+{\evalphix {H} {\rho} {A} {({e_1} = {e_2})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EANEqual]
-{\evalex {\Heap} {\rho} {e_1} {v_1}\\\evalex {\Heap} {\rho} {e_2} {v_2}\\ v_1  \neq  v_2 }
-{\evalphix {\Heap} {\rho} {A} {(e_1{\:\neq\:}e_2)}}
+{\evalex {H} {\rho} {e_1} {v_1}\\\evalex {H} {\rho} {e_2} {v_2}\\{v_1} \neq {v_2}}
+{\evalphix {H} {\rho} {A} {({e_1} \neq {e_2})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EAAcc]
-{\rho(x){\:=\:}o\\( o , f ) \in A}
-{\evalphix {\Heap} {\rho} {A} {\acc(x,f)}}
+{{\rho(x)} = {o}\\{({o}, {f})} \in {A}}
+{\evalphix {H} {\rho} {A} {\acc({x}.{f})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EAType]
-{ \rho(x) = (existT  _  T  v) }
-{\evalphix {\Heap} {\rho} {A} {x{\::\:}T}}
+{{\rho(x)} = {{{{v}}_{{T}}}}}
+{\evalphix {H} {\rho} {A} {{x} : {T}}}
 \end{mathpar}
 
