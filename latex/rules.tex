@@ -262,6 +262,42 @@ and Equirecursive State Abstractions''.
 \input{dynamicSemantics}
 %\input{dynamicSemanticsX}
 
+\section{Gradualization}
+\subsection{Syntax}
+\begin{align*}
+&\widetilde{\phi} \quad ::= \quad \phi ~|~ \phi\:*\:?
+\end{align*}
+
+\subsection{Concretization A?}
+\begin{align*}
+&\gamma(\phi) ~&&= \{~ \phi' ~|~ \phi' \iff \phi ~\} \\
+&\gamma(\phi\:*\:?) ~&&= \{~ \phi' ~|~ \exists \phi_x : \phi\:*\:\phi_x \iff \phi' ~\} \\
+&  ~&&= \{~ \phi' ~|~ \phi' \implies \phi ~\} \\
+\end{align*}
+
+
+\subsection{Abstraction (to show: set of $\phi$s is poset)}
+\begin{align*}
+&\alpha(\overline{\phi}) = (\sqcap \overline{\phi})\:*\:? \\
+\end{align*}
+
+\subsection{Theorems}
+\subsubsection{Soundness}
+\begin{align*}
+&\forall \overline{\phi} : \overline{\phi} \subseteq \gamma(\alpha(\overline{\phi}))
+\end{align*}
+\subsubsection{Optimality}
+\begin{align*}
+&\forall \overline{\phi}, \widetilde{\phi} : \overline{\phi} \subseteq \gamma(\widetilde{\phi}) \implies \gamma(\widetilde{\phi}) \subseteq \gamma(\alpha(\overline{\phi}))
+\end{align*}
+
+\subsection{Concretization B?}
+\begin{align*}
+&\gamma(\phi) ~&&= \{~ (H,\rho,A) ~|~ \evalphi \phi ~\} \\
+&\gamma(\phi\:*\:?) ~&&= \{~ (H,\rho,A) ~|~ \evalphi \phi ~\} \\
+\end{align*}
+
+
 \section{Theorems}
 \subsection{Invariant $invariant(H, \rho, A_d, \phi)$}
 \subsubsection{Heap consistent}

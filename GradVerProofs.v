@@ -10,6 +10,181 @@ Require Import Coq.Logic.Eqdep_dec.
 Load GradVer.
 Import Semantics.
 
+(* playground *)
+Definition phiEquiv (p1 p2 : phi) := phiImplies p1 p2 /\ phiImplies p2 p1.
+Definition gradPhiA (p1 : phi) (p2 : phi) := exists p1x, phiEquiv (p1 ++ p1x) p2.
+Definition gradPhiB (p1 : phi) (p2 : phi) := phiImplies p2 p1.
+
+Ltac inversionE H :=
+  inversion H; clear H.
+Ltac inversionx H :=
+  inversion H; clear H; subst.
+
+Lemma evalphiTrue : forall H r A, True -> evalphi H r A [].
+Proof.
+  intros.
+  constructor.
+Qed.
+
+Lemma evalphiApp : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A p1.
+Proof.
+  induction p1; intros; try constructor.
+  assert (Hx := app_comm_cons).
+  specialize (Hx phi' p1 p2 a).
+  symmetry in Hx.
+  rewrite Hx in H1.
+  clear Hx.
+  inversionx H1.
+  apply IHp1 in H12.
+  econstructor; eauto.
+Qed.
+
+Lemma inclAexcept : forall A1 A2 A3,
+  incl A1 (Aexcept A2 A3) -> incl A1 A2.
+Proof.
+  unfold incl.
+  intros.
+  apply H0 in H1.
+  unfold Aexcept in H1.
+  unfold except in H1.
+  apply filter_In in H1.
+  intuition.
+Qed.
+
+Lemma AexceptComm : forall A1 A2 A3,
+  Aexcept (Aexcept A1 A2) A3 = Aexcept (Aexcept A1 A3) A2.
+Proof.
+Admitted.
+
+Lemma evalphiFootprint : forall p p' H r A,
+    evalphi H r A p ->
+    In p' p ->
+    incl (footprint' H r p') A.
+Proof.
+  induction p0; intros; inversionx H1;
+  try (inversion H2; fail).
+  inversionx H2; try assumption.
+  eapply IHp0 in H13; eauto.
+  apply inclAexcept in H13.
+  assumption.
+Qed.
+
+Lemma evalphiSymm : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A (p2 ++ p1).
+Proof.
+  induction p1.
+  - intros.
+    rewrite app_nil_r.
+    rewrite app_nil_l in H1.
+    assumption.
+  - intros.
+    assert (Hx := app_comm_cons).
+    specialize (Hx phi' p1 p2 a).
+    symmetry in Hx.
+    rewrite Hx in H1.
+    clear Hx.
+    inversionx H1.
+    apply IHp1 in H12.
+    clear IHp1.
+    generalize p2 H0 r A H11 H12 H6.
+    clear.
+    induction p2; intros.
+    * rewrite app_nil_l.
+      rewrite app_nil_l in H12.
+      econstructor; eauto.
+    * assert (Hx := app_comm_cons).
+      specialize (Hx phi' p2 (a :: p1) a0).
+      symmetry in Hx.
+      rewrite Hx.
+      clear Hx.
+      econstructor; eauto.
+      + eapply evalphiFootprint in H12.
+        eapply inclAexcept in H12.
+        eauto.
+        assert (Hx := app_comm_cons).
+        specialize (Hx phi' p2 p1 a0).
+        symmetry in Hx.
+        rewrite Hx.
+        clear Hx.
+        constructor.
+        tauto.
+      + assert (Hx := app_comm_cons).
+        specialize (Hx phi' p2 p1 a0).
+        symmetry in Hx.
+        rewrite Hx in H12.
+        clear Hx.
+        inversionx H12.
+        assumption.
+      + apply IHp2; auto.
+          assert (Hx := app_comm_cons).
+          specialize (Hx phi' p2 p1 a0).
+          symmetry in Hx.
+          rewrite Hx in H12.
+          clear Hx.
+          inversionx H12.
+          rewrite AexceptComm.
+          assumption.
+
+Admitted.
+
+Definition phiMinusAccess (p1 p2 : phi) :=
+  let fp := staticFootprint p2 in
+  filter (fun p => match p with
+                   | phiAcc x f => match find (fun fp => x_decb x (fst fp) && f_decb f (snd fp)) fp with
+                                   | Some _ => true
+                                   | None => false
+                                   end
+                   | _ => true
+                   end) p1.
+
+Lemma evalphiAexcept : forall p h r a a2,
+  evalphi h r (Aexcept a a2) p -> evalphi h r a p.
+Proof.
+  induction p0;
+  intros; try constructor.
+  inversionx H0.
+  econstructor; eauto.
+  - apply inclAexcept in H5.
+    assumption.
+  - eapply IHp0.
+    erewrite AexceptComm.
+    eauto.
+Qed.
+
+Theorem gradPhiEquiv : forall (p1 p2 : phi),
+  gradPhiA p1 p2 <-> gradPhiB p1 p2.
+Proof.
+  split;
+  generalize p1, p2; clear p1 p2.
+  * unfold gradPhiA, gradPhiB, phiEquiv, phiImplies in *.
+    intros.
+    inversionE H0.
+    inversionx H2.
+    apply H3 in H1.
+    clear H0 H3.
+    apply evalphiApp in H1.
+    assumption.
+  * unfold gradPhiA, gradPhiB, phiEquiv, phiImplies in *;
+    intros.
+    exists (phiMinusAccess p2 p1).
+    split; intros.
+    - generalize p2 a r h H1.
+      clear.
+      induction p2; intros; try constructor.
+      econstructor; eauto.
+      + destruct a; simpl; try (unfold incl; intros; inversion H0).
+        destruct (r x0) eqn: rx; try (unfold incl; intros; inversion H0).
+        destruct v0.
+        destruct x1; try (unfold incl; intros; inversion H0).
+        destruct v0; unfold incl; intros; inversion H0; inversionx H2.
+        clear H0.
+        admit.
+      + admit.
+      + admit.
+    - assert (H11 := H1).
+      apply H0 in H11.
+      admit.
+Admitted.
+
 (* PROOF SECTION *)
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
@@ -66,9 +241,6 @@ Ltac applyINV3 INV3 H :=
   apply INV3 in H;
   unfold dynamicType in H;
   simpl in H.
-
-Ltac inversionx H :=
-  inversion H; clear H; subst.
 
 Ltac emagicProgress :=
   repeat eexists;

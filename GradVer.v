@@ -411,6 +411,23 @@ Definition hasNoDynamicType (H : H) (rho : rho) (e : e) : Prop :=
 
 (* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
 
+
+
+(* Figure 8: Definition of footprint meta-function *)
+(*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
+Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
+  match p with
+  | phiAcc x' f' => 
+      match r x' with
+      | Some (existT _ (TClass _) (v'o _ o')) => [(o', f')]
+      | _ => [] (*???*)
+      end
+  | _ => []
+  end.
+(*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
+Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
+  flat_map (footprint' h r) p.
+
 (* Figure 7: Evaluation of formulas for core language *)
 (*coq2latex: optionVisO #mv #o := #mv = #o *)
 Definition optionVisO (v : option v) (o : o) :=
@@ -438,8 +455,16 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     evalphi' H rho A (phiType x T)
 .
 (*coq2latex: evalphi #H #rho #A #p := \evalphix #H #rho #A #p *)
-Definition evalphi : H -> rho -> A_d -> phi -> Prop :=
-  fun h r a p => forall p', In p' p -> evalphi' h r a p'.
+Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
+| EAEmpty : forall H r A, evalphi H r A []
+| EASepOp : forall H r A A1 A2 x xs,
+    A1 = footprint' H r x ->
+    incl A1 A ->
+    A2 = Aexcept A A1 ->
+    evalphi' H r A1 x ->
+    evalphi H r A2 xs ->
+    evalphi H r A (x :: xs)
+.
 
 (* implication on phi *)
 (*coq2latex: phiImplies #a #b := #a \implies #b *)
@@ -559,22 +584,6 @@ Definition wellTyped (G : phi) (s' : s) : Prop :=
   | sRelease p => wellTypedPhi' G p
   | sDeclare T x => getType G x = Some T
   end.
-
-
-(* Figure 8: Definition of footprint meta-function *)
-(*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
-Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
-  match p with
-  | phiAcc x' f' => 
-      match r x' with
-      | Some (existT _ (TClass _) (v'o _ o')) => [(o', f')]
-      | _ => [] (*???*)
-      end
-  | _ => []
-  end.
-(*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
-Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
-  flat_map (footprint' h r) p.
 
 (* Figure 9: Dynamic semantics for core language *)
 (*coq2latex: rhoFrom2 #x1 #v1 #x2 #v2 := [#x1 \mapsto #v1, #x2 \mapsto #v2] *)
