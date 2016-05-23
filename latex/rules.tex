@@ -85,6 +85,9 @@
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
+
+\newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
+
 \section{Syntax}
 
 \begin{align*}
@@ -122,6 +125,45 @@
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
 \end{align*}
+
+\newcommand{\OK}{~\texttt{OK}}
+\newcommand{\OKinC}{~\texttt{OK in}~C}
+\section{Assumptions}
+All the rules in the following sections are implicitly parameterized over a $program p$ that is well-formed.
+
+\subsubsection{Well-formed program ($program \OK$)}
+\begin{mathpar}
+\inferrule* [Right=OKProgram]
+{
+\overline{cls_i \OK}
+}
+{(\overline{cls_i}~\overline{s}) \OK}
+\end{mathpar}
+
+\subsubsection{Well-formed class ($cls \OK$)}
+\begin{mathpar}
+\inferrule* [Right=OKClass]
+{
+\text{unique $field$-names} \\
+\text{unique $method$-names} \\
+\overline{method_i \OKinC}
+}
+{(\class C~\{\overline{field_i}~\overline{method_i}\}) \OK}
+\end{mathpar}
+
+\subsubsection{Well-formed method ($method \OKinC$)}
+\begin{mathpar}
+\inferrule* [Right=OKClass]
+{
+FV(\phi_1) \subseteq \{ x, \xthis \} \\
+FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
+\hoare {x : T_x * \xthis : C * \phi_1} {\overline{s}} {x : T_x * \xthis : C * \xresult : T_m * \phi_2} \\
+\emptyset \sfrmphi {x : T_x * \xthis : C * \phi_1} \\
+\emptyset \sfrmphi {x : T_x * \xthis : C * \xresult : T_m * \phi_2}
+}
+{(T_m~m(T_x~x)~\requires \phi_1;~\ensures \phi_2;~\{\overline{s}\}) \OKinC}
+\end{mathpar}
+
 
 \section{Static semantics}
 \subsection{Expressions ($A_s \sfrme e$)}
@@ -172,7 +214,6 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 {\sType {\phi} {e.f} {T}}
 \end{mathpar}
 
-\newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \subsection{Hoare ($\hoare {\phi} {\overline s} {\phi}$)}
 \begin{mathpar}
 \inferrule* [Right=HSec]
