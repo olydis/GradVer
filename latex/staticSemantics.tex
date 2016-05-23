@@ -1,14 +1,14 @@
 % Inductive Semantics.hoareSingle
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{{\phi} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
-{\hoare {\phi} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{({{x}} \neq {{\vnull}})} * {\phi}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{\hoare {\phi} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{{x} : {{C}}} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{{\phi} \vdash {{x}} : {{C}}\\\vdash {C}.{f} : {T}\\{\phi} \vdash {{y}} : {T}\\{\phi} \implies {\acc({x}.{f})}\\{\phi} \implies {({{x}} \neq {{\vnull}})}}
-{\hoare {\phi} {{x}.{f} := {y}} {{\phi} * {({{{x}}.{f}} = {{y}})}}}
+{{\phi} \implies {{\acc({x}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {{C}}\\{\phi} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{\hoare {\phi} {{x}.{f} := {y}} {{{x} : {{C}}} * {{\acc({x}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi'}}}}}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -19,13 +19,13 @@
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {{\xresult}} : {T}}
-{\hoare {\phi} {\return {x}} {{\phi} * {({{\xresult}} = {{x}})}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{\xresult} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {{\xresult}} : {T}}
+{\hoare {\phi} {\return {x}} {{{\xresult} : {T}} * {{({{\xresult}} = {{x}})} * {\phi'}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {({{y}} \neq {{\vnull}})}\\{\phi} \implies {{\phi_p} * {\phi_r}}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
+{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {({{y}} \neq {{\vnull}})}\\{\phi} \implies {{\phi_p} * {\phi_r}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
 {\hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
@@ -43,7 +43,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{{{x}} \not\in \dom({\phi_1})\\{\phi_2} = {{{\phi_1} * {{x} : {T}}} * {({{x}} = {{\texttt{defaultValue}({T})}})}}}
-{\hoare {\phi_1} {{T}~{x}} {\phi_2}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}}
+{\hoare {\phi} {{T}~{x}} {{{x} : {T}} * {{({{x}} = {{\texttt{defaultValue}({T})}})} * {\phi'}}}}
 \end{mathpar}
 

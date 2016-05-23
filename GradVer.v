@@ -18,6 +18,9 @@ match x with
 | None => None
 end.
 
+(*coq2latex: @NotIn #_ #x #xs := #x \not \in #xs *)
+Definition NotIn {T : Type} (x : T) (xs : list T) : Prop := ~(In x xs).
+
 Definition nat_decb := dec2decb eq_nat_dec.
 Hint Resolve eq_nat_dec.
 Hint Resolve list_eq_dec eq_nat_dec.
@@ -484,63 +487,101 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_left
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
 (*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
-(*coq2latex: @pair \rho A_d #a #b := #a, #b *)
+(*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)
 (*coq2latex: @cons #_ #p1 #p2 := #p1 \cdot #p2 *)
 (*coq2latex: @appEnd phi' #xs #x := #xs * #x *)
 
 (*hacky: *)
 (*coq2latex: snd cf' := f_i *)
-(*coq2latex: Halloc #o \Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+(*coq2latex: Halloc #o Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+
+Fixpoint FVe (e : e) : list x :=
+  match e with
+  | ev v => []
+  | ex x => [x]
+  | edot e f => FVe e
+  end.
+Fixpoint FV' (phi : phi') : list x :=
+  match phi with
+  | phiTrue => []
+  | phiEq e1 e2 => FVe e1 ++ FVe e2
+  | phiNeq e1 e2 => FVe e1 ++ FVe e2
+  | phiAcc x f => [x]
+  | phiType x T => [x]
+  end.
+Fixpoint FV (phi : phi) : list x := flat_map FV' phi.
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
-| HNewObj : forall phi(*\phi*) x (C : C) f_bar(*\overline{f}*),
+| HNewObj : forall phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
+    phiImplies phi phi' ->
+    sfrmphi [] phi' ->
+    NotIn x (FV phi') ->
     hasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
     hoareSingle
       phi
       (sAlloc x C)
-      (accListApp x f_bar (phiNeq (ex x) (ev (vnull C)) :: phi))
-| HFieldAssign : forall (phi(*\phi*) : phi) (x'(*x*) y : x) (f : f) C T,
-    hasStaticType phi (ex x') (TClass C) ->
-    fieldHasType C f T ->
+      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev (vnull C)) :: phi'))
+| HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
+    phiImplies phi (phiAcc x f :: 
+                    phiNeq (ex x) (ev (vnull C)) :: phi') ->
+    sfrmphi [] phi' ->
+    NotIn x (FV phi') ->
+    hasStaticType phi (ex x) (TClass C) ->
     hasStaticType phi (ex y) T ->
-    In (phiAcc x' f) phi ->
-    In (phiNeq (ex x') (ev (vnull C))) phi ->
-    hoareSingle phi (sMemberSet x' f y) (appEnd phi (phiEq (edot (ex x') f) (ex y)))
-| HVarAssign : forall T phi_1(*\phi_1*) phi_2(*\phi_2*) (x'(*x*) : x) (e : e),
-    hasStaticType phi_1 (ex x') T ->
+    fieldHasType C f T ->
+    hoareSingle phi (sMemberSet x f y) 
+      (phiType x (TClass C) ::
+       phiAcc x f ::
+       phiNeq (ex x) (ev (vnull C)) ::
+       phiEq (edot (ex x) f) (ex y) :: phi')
+| HVarAssign : forall T phi_1(*\*) phi_2(*\*) (x : x) (e : e),
+    hasStaticType phi_1 (ex x) T ->
     hasStaticType phi_1 e T ->
-    phi_1 = phiSubst x' e phi_2 ->
+    phi_1 = phiSubst x e phi_2 ->
     sfrmphi [] phi_1 ->
     sfrme (staticFootprint phi_1) e ->
-    hoareSingle phi_1 (sAssign x' e) phi_2
-| HReturn : forall phi(*\phi*) (x : x) T,
+    hoareSingle phi_1 (sAssign x e) phi_2
+| HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
+    phiImplies phi phi' ->
+    sfrmphi [] phi' ->
+    NotIn xresult (FV phi') ->
     hasStaticType phi (ex x) T ->
     hasStaticType phi (ex xresult) T ->
-    hoareSingle phi (sReturn x) (appEnd phi (phiEq (ex xresult) (ex x)))
-| HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\phi_p*) phi_r(*\phi_r*) phi_q(*\phi_q*) T_r T_p (C : C) (m : m) z (z' : x) x'(*x*) y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hoareSingle 
+      phi 
+      (sReturn x) 
+      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
+| HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType phi_i (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
-    hasStaticType phi_i (ex x') T_r ->
+    hasStaticType phi_i (ex x) T_r ->
     hasStaticType phi_i (ex z') T_p ->
     In (phiNeq (ex y) (ev (vnull C))) phi_i ->
     phiImplies phi_i (phi_p ++ phi_r) ->
+    sfrmphi [] phi_r ->
+    NotIn x (FV phi_r) ->
     phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
-    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x') phi_post ->
-    hoareSingle phi_i (sCall x' y m z') (phi_q ++ phi_r)
-| HAssert : forall phi_1(*\phi_1*) phi_2(*\phi_2*),
+    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
+    hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
+| HAssert : forall phi_1(*\*) phi_2(*\*),
     In phi_2 phi_1 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
-| HRelease : forall phi_1(*\phi_1*) phi_2(*\phi_2*) phi_r(*\phi_r*),
+| HRelease : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
     phiImplies phi_1 (phi_2 :: phi_r) ->
     sfrmphi [] phi_r ->
     hoareSingle phi_1 (sRelease phi_2) phi_r
-| HDeclare : forall phi_1(*\phi_1*) phi_2(*\phi_2*) x T,
-    hasNoStaticType phi_1 (ex x) ->
-    phi_2 = appEnd (appEnd phi_1 (phiType x T)) (phiEq (ex x) (ev (defaultValue T))) ->
-    hoareSingle phi_1 (sDeclare T x) phi_2
+| HDeclare : forall phi(*\*) phi'(*\*) x T,
+    phiImplies phi phi' ->
+    sfrmphi [] phi' ->
+    NotIn x (FV phi') ->
+    hoareSingle 
+      phi
+      (sDeclare T x)
+      (phiType x T ::
+       phiEq (ex x) (ev (defaultValue T)) :: phi')
 .
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)

@@ -267,7 +267,12 @@ and Equirecursive State Abstractions''.
 \begin{align*}
 &\widetilde{\phi} \quad ::= \quad \phi ~|~ \phi\:*\:?
 \end{align*}
-Note: allowing $?$ at different position is hardly useful (no difference for dyn. semantics, useless difference in static semantics).
+Note: allowing $?$ at different position is hardly useful
+\begin{itemize}
+\item dynamically: order makes no difference
+\item statically: Imagine substituting $?$ with $acc(x.f) * [...]$. The only time this makes sense to \textbf{not} put to the very right is when there are expressions containing $x.f$ (in the non-gradual part). In other words, there are expressions that are framed only when $?$ is substituted in a specific way. But then why not require the necessary framing in the non-gradual part as well, i.e. why not simply \textbf{write out} $acc(x.f)$ instead of relying on $?$? Corollary: The non-gradual part of $\widetilde{\phi}$ should be self-framed.
+\end{itemize}
+; useless difference in static semantics).
 
 \subsection{Concretization A}
 \begin{align*}
@@ -276,39 +281,33 @@ Note: allowing $?$ at different position is hardly useful (no difference for dyn
 &  ~&&= \{~ \phi' ~|~ \phi' \implies \phi ~\} \\
 \end{align*}
 
-\subsection{Abstraction (to show: set of $\phi$s is poset - can we even say that on infinite sets?)}
+\subsection{Abstraction (to show: set of $\phi$s is lattice)}
 \begin{align*}
 &\alpha(\overline{\phi}) = (\sqcap \overline{\phi})\:*\:? \\
 \end{align*}
 
-\subsection{Concretization B}
+\subsection{Concretization B (as in better)}
 \begin{align*}
 &\gamma(\phi) ~&&= \{~ \phi ~\} \\
 &\gamma(\phi\:*\:?) ~&&= \{~ \phi\:*\:\phi_x ~|~ \phi_x ~\} \\
 \end{align*}
 
-\subsection{Abstraction}
+\subsection{Abstraction (to show: set of $\phi$s is lattice)}
 \begin{align*}
-&\alpha(\{~ \phi ~\}) = \phi \\
-&\alpha(\{~ \overline{\phi} ~\}) = \texttt{lcp}(\overline{\phi}) \\
+&\alpha(\{~ \phi ~\}) &&= \phi \\
+&\alpha(\overline{\phi}) &&= (\sqcap \overline{\phi})\:*\:? \\
 \end{align*}
 
 \subsection{Theorems}
-\subsubsection{Soundness}
+\subsubsection{Soundness of $\alpha$}
 \begin{align*}
 &\forall \overline{\phi} : \overline{\phi} \subseteq \gamma(\alpha(\overline{\phi}))
 \end{align*}
-\subsubsection{Optimality}
+\subsubsection{Optimality of $\alpha$}
 \begin{align*}
-&\forall \overline{\phi}, \widetilde{\phi} : \overline{\phi} \subseteq \gamma(\widetilde{\phi}) \implies \gamma(\widetilde{\phi}) \subseteq \gamma(\alpha(\overline{\phi}))
+&\forall \overline{\phi}, \widetilde{\phi} : \overline{\phi} \subseteq \gamma(\widetilde{\phi}) \implies  \gamma(\alpha(\overline{\phi}))\subseteq
+\gamma(\widetilde{\phi}) 
 \end{align*}
-
-\subsection{Concretization W (as in wrong)}
-\begin{align*}
-&\gamma(\phi) ~&&= \{~ (H,\rho,A) ~|~ \evalphi \phi ~\} \\
-&\gamma(\phi\:*\:?) ~&&= \{~ (H,\rho,A) ~|~ \evalphi \phi ~\} \\
-\end{align*}
-
 
 \section{Theorems}
 \subsection{Invariant $invariant(H, \rho, A_d, \phi)$}
@@ -320,6 +319,11 @@ Note: allowing $?$ at different position is hardly useful (no difference for dyn
         \texttt{fields}(C) = f_C \\
       \wedge&~ H(o_C) = (C, m) \\
       \wedge&~(\forall (T, f) \in f_C : \dType {H} {\rho} {m(f)} {T})
+\end{align*}
+
+\subsubsection{Phi self-framed}
+\begin{align*}
+    \sfrmphi {\phi}
 \end{align*}
 
 \subsubsection{Phi holds}
