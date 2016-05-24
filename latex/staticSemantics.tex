@@ -25,7 +25,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {({{y}} \neq {{\vnull}})}\\{\phi} \implies {{\phi_p} * {\phi_r}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
+{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\{y} \not \in {FV(\phi_r)}\\{z'} \not \in {FV(\phi_r)}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
 {\hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 

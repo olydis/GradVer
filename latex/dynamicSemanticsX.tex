@@ -13,7 +13,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESNewObj]
-{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{C}(o)}]}\\{A'} = {@app(prod(o, f), A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {Halloc(o, Tfs, H)}}
+{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{C}(o)}]}\\{A'} = {@app(prod(o, f), A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {{H}[{o} \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]]}}
 {{({H}, {{({{\rho}, {A}}, {{{x} := \new {C}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H'}, {{({{\rho'}, {A'}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 

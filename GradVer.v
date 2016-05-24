@@ -562,6 +562,8 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     phiImplies phi_i (phiNeq (ex y) (ev (vnull C)) :: phi_p ++ phi_r) ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
+    NotIn y (FV phi_r) ->
+    NotIn z' (FV phi_r) ->
     phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
     phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
@@ -721,36 +723,19 @@ Definition newRho : rho := fun _ => None.
 Definition newAccess : A_d := [].
 
 
-Fixpoint getVarsE (e : e) : list x :=
-  match e with
-  | ev _ => []
-  | ex x => [x]
-  | edot e _ => getVarsE e
-  end.
-Definition getVarsPhi' (phi : phi') : list x :=
-  match phi with
-  | phiTrue => []
-  | phiEq e1 e2 => getVarsE e1 ++ getVarsE e2
-  | phiNeq e1 e2 => getVarsE e1 ++ getVarsE e2
-  | phiAcc x _ => [x]
-  | phiType x _ => [x]
-  end.
-Definition getVarsPhi (phi : phi) : list x :=
-  flat_map getVarsPhi' phi.
-
 (* ASSUMPTIONS *)
 Definition mWellDefined (C : C) (m : method) := 
   match m with Method T' m' pT px c s =>
     match c with Contract pre post =>
       let pre' := phiType (xUserDef px) pT :: phiType xthis (TClass C) :: pre in
-        hoare pre' s post /\
+      let post' := phiType (xUserDef px) pT :: phiType xthis (TClass C) :: phiType xresult T' :: post in
+        incl (FV pre) [xUserDef px ; xthis] /\
+        incl (FV post) [xUserDef px ; xthis ; xresult] /\
+        hoare pre' s post' /\
         sfrmphi [] pre' /\
-        sfrmphi [] post /\
-        (forall x, In x (getVarsPhi pre') -> In x [xUserDef px ; xthis]) /\
-        (forall x, In x (getVarsPhi pre') -> In x [xUserDef px ; xthis ; xresult])
+        sfrmphi [] post'
     end
   end.
-SearchAbout list.
 Definition CWellDefined (c : cls) :=
   match c with Cls c fs ms =>
     (forall m, In m ms -> mWellDefined c m) /\

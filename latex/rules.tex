@@ -227,6 +227,8 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \input{staticSemantics}
 
+Note: issue with HApp and $z'$ in the post-condition: the substitution reflects \textbf{any changes} made to $z$ onto $z'$ which is wrong in general (except we make $z'$ a by-ref parameter in the small-step semantics) 
+
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
