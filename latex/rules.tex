@@ -355,14 +355,18 @@ Note: allowing $?$ at different position is hardly useful
 \subsection{Concretization B (as in better)}
 \begin{align*}
 &\gamma(\phi) ~&&= \{~ \phi ~\} \\
-&\gamma(\phi\:*\:?) ~&&= \{~ \phi\:*\:\phi_x ~|~ \phi_x ~\} \\
+&\gamma(\withqm{\phi}) ~&&= \{~ \phi\:*\:\phi_x ~|~ \exists \phi_x : \valphi{\phi\:*\:\phi_x} \neq \emptyset ~\} \\
 \end{align*}
 
 \subsection{Abstraction (to show: $(\phi, \implies)$ is lattice)}
 \begin{align*}
 &\alpha(\{~ \phi ~\}) &&= \phi \\
-&\alpha(\overline{\phi}) &&= (\sqcap \overline{\phi})\:*\:? \\
+&\alpha(\overline{\phi}) &&= (\bigsqcap \overline{\phi})\:*\:? \\
 \end{align*}
+
+Note: $\gamma(\withqm{\phi})$ contains  $\phi * \true$ which is obviously implies by all the other members of the set, so $\bigsqcap \gamma(\withqm{\phi}) = \withqm{\phi * \true}$. 
+
+It feels like the operations on $\phi$-sets we will encounter will preserve this property of $\bigsqcap \overline{\phi}$ actually being a well-known member of $\overline{\phi}$.
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}
