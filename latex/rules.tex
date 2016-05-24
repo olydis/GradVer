@@ -252,6 +252,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
 \newcommand{\evalphi}{\evalphix H \rho A}
+\newcommand{\valphi}[1]{\llbracket #1 \rrbracket}
 \subsection{Formulas ($\evalphi \phi$)}
 \input{dynamicFormula}
 
@@ -265,15 +266,22 @@ A_1 = A \backslash A_2 \\
 {\evalphi {\phi_1 * \phi_2}}
 \end{mathpar}
 
+We give a denotational semantics of formulas as $\valphi {\phi} = \{~ (H,\rho,A) ~|~ \evalphi {\phi} ~\}$
+
+Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 
 \subsubsection{Implication ($\phi_1 \implies \phi_2$)}
 \begin{equation*}
 \phi_1 \implies \phi_2
 \quad\quad \iff \quad\quad
-\forall H, \rho, A: \evalphi \phi_1 \implies \evalphi \phi_2
+\valphi {\phi_1} \subseteq \valphi {\phi_2}
 \end{equation*}
-Drawn from def. of entailment in ``A Formal Semantics for Isorecursive
-and Equirecursive State Abstractions''.
+%\begin{equation*}
+%\phi_1 \implies \phi_2
+%\quad\quad \iff \quad\quad
+%\forall H, \rho, A: \evalphi \phi_1 \implies \evalphi \phi_2
+%\end{equation*}
+%Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equirecursive State Abstractions''.
 
 \subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
 \begin{align*}
@@ -303,17 +311,34 @@ and Equirecursive State Abstractions''.
 \input{dynamicSemantics}
 %\input{dynamicSemanticsX}
 
+\newcommand{\grad}[1]{\widetilde{#1}}
+\newcommand{\withqm}[1]{#1\:*\:?}
 \section{Gradualization}
 \subsection{Syntax}
 \begin{align*}
-&\widetilde{\phi} \quad ::= \quad \phi ~|~ \phi\:*\:?
+&\grad{\phi} \quad ::= \quad \phi ~|~ \withqm{\phi}
 \end{align*}
 Note: allowing $?$ at different position is hardly useful
 \begin{itemize}
 \item dynamically: order makes no difference
-\item statically: Imagine substituting $?$ with $acc(x.f) * [...]$. The only time this makes sense to \textbf{not} put to the very right is when there are expressions containing $x.f$ (in the non-gradual part). In other words, there are expressions that are framed only when $?$ is substituted in a specific way. But then why not require the necessary framing in the non-gradual part as well, i.e. why not simply \textbf{write out} $acc(x.f)$ instead of relying on $?$? Corollary: The non-gradual part of $\widetilde{\phi}$ should be self-framed.
+\item statically: Imagine substituting $?$ with $acc(x.f) * [...]$. The only time this makes sense to \textbf{not} put to the very right is when there are expressions containing $x.f$ (in the non-gradual part). In other words, there are expressions that are framed only when $?$ is substituted in a specific way. But then why not require the necessary framing in the non-gradual part as well, i.e. why not simply \textbf{write out} $acc(x.f)$ instead of relying on a substitution? Corollary: The non-gradual part of $\grad{\phi}$ should be self-framed.
 \end{itemize}
-; useless difference in static semantics).
+
+\subsubsection{Discussion}
+\begin{itemize}
+\item We want $\withqm{\phi} \implies \phi$ for all $\phi$
+\item Meaning of $\hoare {\withqm{\phi_1}} {\overline{s}} {\phi_2}$ compared to $\hoare {\phi_1} {\overline{s}} {\phi_2}$?
+	\begin{itemize}
+	\item Caller: nothing
+	\item Callee: verification succeeds as long as there exists a (satisfiable) instantiation that makes proof about method body work.
+	\end{itemize}
+\item Meaning of $\hoare {\phi_1} {\overline{s}} {\withqm{\phi_2}}$ compared to $\hoare {\phi_1} {\overline{s}} {\phi_2}$?
+	\begin{itemize}
+	\item Caller: verification succeeds as long as there exists a (satisfiable) instantiation that makes upcoming proofs work.
+	\item Callee: nothing
+	\end{itemize}
+
+\end{itemize}
 
 \subsection{Concretization A}
 \begin{align*}
@@ -322,7 +347,7 @@ Note: allowing $?$ at different position is hardly useful
 &  ~&&= \{~ \phi' ~|~ \phi' \implies \phi ~\} \\
 \end{align*}
 
-\subsection{Abstraction (to show: set of $\phi$s is lattice)}
+\subsection{Abstraction (to show: $(\phi, \implies)$ is lattice)}
 \begin{align*}
 &\alpha(\overline{\phi}) = (\sqcap \overline{\phi})\:*\:? \\
 \end{align*}
@@ -333,7 +358,7 @@ Note: allowing $?$ at different position is hardly useful
 &\gamma(\phi\:*\:?) ~&&= \{~ \phi\:*\:\phi_x ~|~ \phi_x ~\} \\
 \end{align*}
 
-\subsection{Abstraction (to show: set of $\phi$s is lattice)}
+\subsection{Abstraction (to show: $(\phi, \implies)$ is lattice)}
 \begin{align*}
 &\alpha(\{~ \phi ~\}) &&= \phi \\
 &\alpha(\overline{\phi}) &&= (\sqcap \overline{\phi})\:*\:? \\
