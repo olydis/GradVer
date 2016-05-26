@@ -153,13 +153,13 @@ All the rules in the following sections are implicitly parameterized over a $pro
 
 \subsubsection{Well-formed method ($method \OKinC$)}
 \begin{mathpar}
-\inferrule* [Right=OKClass]
+\inferrule* [Right=OKMethod]
 {
 FV(\phi_1) \subseteq \{ x, \xthis \} \\
 FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
 \hoare {x : T_x * \xthis : C * \phi_1} {\overline{s}} {x : T_x * \xthis : C * \xresult : T_m * \phi_2} \\
-\emptyset \sfrmphi {x : T_x * \xthis : C * \phi_1} \\
-\emptyset \sfrmphi {x : T_x * \xthis : C * \xresult : T_m * \phi_2}
+\emptyset \sfrmphi {\phi_1} \\
+\emptyset \sfrmphi {\phi_2}
 }
 {(T_m~m(T_x~x)~\requires \phi_1;~\ensures \phi_2;~\{\overline{s}\}) \OKinC}
 \end{mathpar}
@@ -195,10 +195,20 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \newcommand{\sType}[3]{#1 \vdash #2 : #3}
 \subsection{Type ($\sType {\phi} {e} {T}$)}
+%\begin{mathpar}
+%\inferrule* [Right=STValue]
+%{~}
+%{\sType {\phi} {\null} {T}}
+%\end{mathpar}
 \begin{mathpar}
-\inferrule* [Right=STValue]
+\inferrule* [Right=STValNum]
 {~}
-{\sType {\phi} {v_T} {T}}
+{\sType {\phi} {n} {\Tint}}
+\end{mathpar}
+\begin{mathpar}
+\inferrule* [Right=STValNull]
+{~}
+{\sType {\phi} {\vnull} {T}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -295,12 +305,6 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 \end{align*}
 
 \newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
-\subsection{Type ($\dType {H} {\rho} {e} {T}$)}
-\begin{mathpar}
-\inferrule* [Right=DTEval]
-{ \evale {e} {v_T} }
-{\dType {H} {\rho} {e} {T}}
-\end{mathpar}
 
 \newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
 \newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
@@ -349,7 +353,7 @@ Note: allowing $?$ at different position is hardly useful
 &  ~&&= \{~ \phi' ~|~ \phi' \implies \phi ~\} \\
 \end{align*}
 
-\subsection{Abstraction (to show: $(\phi, \implies)$ is lattice)}
+\subsection{Abstraction}
 \begin{align*}
 &\alpha(\overline{\phi}) = (\sqcap \overline{\phi})\:*\:? \\
 \end{align*}
@@ -360,7 +364,7 @@ Note: allowing $?$ at different position is hardly useful
 &\gamma(\withqm{\phi}) ~&&= \{~ \phi\:*\:\phi_x ~|~ \exists \phi_x : \valphi{\phi\:*\:\phi_x} \neq \emptyset ~\} \\
 \end{align*}
 
-\subsection{Abstraction (to show: $(\phi, \implies)$ is lattice)}
+\subsection{Abstraction}
 \begin{align*}
 &\alpha(\{~ \phi ~\}) &&= \phi \\
 &\alpha(\overline{\phi}) &&= (\bigsqcap \overline{\phi})\:*\:? \\
@@ -369,6 +373,24 @@ Note: allowing $?$ at different position is hardly useful
 Note: $\gamma(\withqm{\phi})$ contains  $\phi * \true$ which is obviously implies by all the other members of the set, so $\bigsqcap \gamma(\withqm{\phi}) = \withqm{\phi * \true}$. 
 
 It feels like the operations on $\phi$-sets we will encounter will preserve this property of $\bigsqcap \overline{\phi}$ actually being a well-known member of $\overline{\phi}$.
+
+\subsection{$(\phi, \implies)$ is semilattice}
+According to the definition of $\implies$ via $\subseteq$, we define
+\begin{align*}
+\phi_a \sqcap \phi_b = \phi_c   \quad :\iff \quad   \valphi{\phi_a} \cap \valphi{\phi_b} = \valphi{\phi_c}
+\end{align*}
+
+The question is, whether such $\phi_c$ always exists.
+
+
+
+%\subsection{Concretization D (as in denotational)}
+%\begin{align*}
+%&\gamma(\phi) ~&&= \{~ \valphi{\phi} ~\} \\
+%&\gamma(\withqm{\phi}) ~&&= \{~ \valphi{\phi\:*\:\phi_x} ~|~ \exists \phi_x : \valphi{\phi\:*\:\phi_x} \neq \emptyset ~\} \\
+%& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \phi' \implies \phi ~\} \\
+%& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \valphi{\phi'} \subseteq \valphi{\phi} ~\} \\
+%\end{align*}
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}
