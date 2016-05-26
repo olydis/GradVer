@@ -49,35 +49,21 @@ Inductive T :=
 (*coq2latex: TClass #C := #C *)
 | TClass : C -> T.
 
-(*Inductive v :=
-| vn : nat -> v
-| vnull : v
-| vo : o -> v.*)
-
-Definition v'PrimitiveInt := nat.
-Inductive v'Class (C' : C) :=
-| v'null : v'Class C'
-| v'o : o -> v'Class C'.
-Definition v' (T' : T) : Set :=
-  match T' with
-  | TPrimitiveInt => v'PrimitiveInt
-  | TClass C' => v'Class C'
-  end.
-Definition v := sigT v'.
-(*coq2latex: vnull #C := \vnull *)
-Definition vnull (C : C) : v := existT v' (TClass C) (v'null C).
-(*coq2latex: vo #o := #o *)
-Definition vo (C : C) (o : o) : v := existT v' (TClass C) (v'o C o).
+Inductive v :=
 (*coq2latex: vn #n := #n *)
-Definition vn (n : nat) : v := existT v' (TPrimitiveInt) n.
+| vn : nat -> v
+(*coq2latex: vnull := \vnull *)
+| vnull : v
+(*coq2latex: vo #o := #o *)
+| vo : o -> v
+.
 
 (*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
 Definition defaultValue (T : T) : v :=
   match T with
   | TPrimitiveInt => vn 0
-  | TClass C => vnull C
+  | TClass C => vnull
   end.
-
 
 Inductive e :=
 (*coq2latex: ev #v := #v *)
@@ -110,9 +96,9 @@ Inductive s :=
 (*coq2latex: sReturn #x := \return #x *)
 | sReturn : x -> s
 (*coq2latex: sAssert #p := \assert #p *)
-| sAssert : phi' -> s
+| sAssert : phi -> s
 (*coq2latex: sRelease #p := \release #p *)
-| sRelease : phi' -> s
+| sRelease : phi -> s
 (*coq2latex: sDeclare #T #x := #T~#x *)
 | sDeclare : T -> x -> s.
 Inductive contract :=
@@ -161,10 +147,10 @@ Definition T_decb := dec2decb T_dec.
 Hint Resolve T_dec.
 Hint Resolve list_eq_dec T_dec.
 
-Definition v'_dec : ∀ (t : T) (n m : v' t), {n = m} + {n ≠ m}. destruct t; decide equality. Defined.
-Definition v'_decb (t : T) := dec2decb (v'_dec t).
-Hint Resolve v'_dec.
-Hint Resolve list_eq_dec v'_dec.
+Definition v_dec : ∀ (t : T) (n m : v), {n = m} + {n ≠ m}. decide equality. Defined.
+Definition v_decb (t : T) := dec2decb (v_dec t).
+Hint Resolve v_dec.
+Hint Resolve list_eq_dec v_dec.
 
 Definition A_s'_decb (a b : x * f) : bool := x_decb (fst a) (fst b) && string_decb (snd a) (snd b).
 Definition A_d'_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
@@ -361,31 +347,24 @@ Fixpoint sfrmphi (a : A_s) (p : phi) : Prop :=
   end.
 
 (* static type derivation *)
-Definition getType (phi : phi) (x : x) : option T :=
-  hd_error (flat_map (fun p => 
-    match p with
-    | phiType x' t => if x_decb x' x then [t] else []
-    | _ => []
-    end) phi).
-Fixpoint staticType (phi : phi) (e' : e) : option T :=
-  match e' with
-  | ev v => Some (projT1 v)
-  | ex x => getType phi x
-  | edot e' f' => 
-    option_bind
-      (fun t => 
-        match t with
-        | TPrimitiveInt => None
-        | TClass C' => fieldType C' f'
-        end)
-      (staticType phi e')
-  end.
 (*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
-Definition hasStaticType (phi : phi) (e : e) (T : T) : Prop :=
-  staticType phi e = Some T.
+Inductive hasStaticType : phi -> e -> T -> Prop :=
+| STValNum : forall p n, 
+  hasStaticType p (ev (vn n)) TPrimitiveInt
+| STValNull : forall p T, 
+  hasStaticType p (ev vnull) T
+| STVar : forall p T x, 
+  In (phiType x T) p -> 
+  hasStaticType p (ex x) T
+| STField : forall p e f C T, 
+  hasStaticType p e (TClass C) -> 
+  fieldType C f = Some T -> 
+  hasStaticType p (edot e f) T
+.
+
 (*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
 Definition hasNoStaticType (phi : phi) (e : e) : Prop :=
-  staticType phi e = None.
+  ~ exists T, hasStaticType phi e T.
 
 (* Figure 6: Evaluation of expressions for core language *)
 Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
@@ -393,7 +372,7 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
   | ex x' => rho x'
   | edot e'' f' =>
     match evale' H rho e'' with
-    | Some (existT _ (TClass _) (v'o _ o')) => option_bind (fun x => snd x f') (H o')
+    | Some (vo o') => option_bind (fun x => snd x f') (H o')
     | _ => None
     end
   | ev v => Some v
@@ -403,17 +382,16 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
 Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = Some v.
 
 (* dynamic type derivation *)
-(*coq2latex: dynamicType #e := \dynamicType(#e) *)
-Definition dynamicType (H : H) (rho : rho) (e' : e) : option T :=
-  option_map (fun v : v => projT1 v) (evale' H rho e').
-Definition hasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
-  dynamicType H rho e = Some T.
-Definition hasNoDynamicType (H : H) (rho : rho) (e : e) : Prop :=
-  dynamicType H rho e = None.
+Inductive hasDynamicType : H -> v -> T -> Prop :=
+| DTValNum : forall H n, hasDynamicType H (vn n) TPrimitiveInt
+| DTValNull : forall H T, hasDynamicType H vnull T
+| DTValObj : forall H C m o, H o = Some (C,m) -> hasDynamicType H (vo o) (TClass C)
+.
+Definition hasNoDynamicType (H : H) (rho : rho) (v : v) : Prop :=
+  ~ exists T, hasDynamicType H v T.
 
-
-(* NOTE: there are tons of calls like "evale h r (ex x)", wouldn't it be clearer to just say "r x"? or is that less consistent? *)
-
+Definition ehasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
+  exists v, evale H rho e v /\ hasDynamicType H v T.
 
 
 (* Figure 8: Definition of footprint meta-function *)
@@ -422,8 +400,8 @@ Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
   | phiAcc x' f' => 
       match r x' with
-      | Some (existT _ (TClass _) (v'o _ o')) => [(o', f')]
-      | _ => [] (*???*)
+      | Some (vo o) => [(o, f')]
+      | _ => []
       end
   | _ => []
   end.
@@ -432,9 +410,6 @@ Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
   flat_map (footprint' h r) p.
 
 (* Figure 7: Evaluation of formulas for core language *)
-(*coq2latex: optionVisO #mv #o := #mv = #o *)
-Definition optionVisO (v : option v) (o : o) :=
-  exists C, v = Some (existT _ (TClass C) (v'o C o)).
 (*coq2latex: evalphi' #H #rho #A #p := \evalphix #H #rho #A #p *)
 Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
 | EATrue : forall H rho(*\*) A,
@@ -450,11 +425,12 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     neq v_1 v_2 ->
     evalphi' H rho A (phiNeq e_1 e_2)
 | EAAcc : forall H rho(*\*) (A : A_d) x (o : o) f,
-    optionVisO (rho x) o ->
+    rho x = Some (vo o) ->
     In (o, f) A ->
     evalphi' H rho A (phiAcc x f)
 | EAType : forall H rho(*\*) (A : A_d) x T v,
-    rho x = Some (existT _ T v) ->
+    rho x = Some v ->
+    hasDynamicType H v T ->
     evalphi' H rho A (phiType x T)
 .
 (*coq2latex: evalphi #H #rho #A #p := \evalphix #H #rho #A #p *)
@@ -502,7 +478,7 @@ Fixpoint FVe (e : e) : list x :=
   | ex x => [x]
   | edot e f => FVe e
   end.
-Fixpoint FV' (phi : phi') : list x :=
+Definition FV' (phi : phi') : list x :=
   match phi with
   | phiTrue => []
   | phiEq e1 e2 => FVe e1 ++ FVe e2
@@ -510,7 +486,7 @@ Fixpoint FV' (phi : phi') : list x :=
   | phiAcc x f => [x]
   | phiType x T => [x]
   end.
-Fixpoint FV (phi : phi) : list x := flat_map FV' phi.
+Definition FV (phi : phi) : list x := flat_map FV' phi.
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
@@ -523,10 +499,10 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     hoareSingle
       phi
       (sAlloc x C)
-      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev (vnull C)) :: phi'))
+      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
 | HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
     phiImplies phi (phiAcc x f :: 
-                    phiNeq (ex x) (ev (vnull C)) :: phi') ->
+                    phiNeq (ex x) (ev vnull) :: phi') ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     hasStaticType phi (ex x) (TClass C) ->
@@ -535,7 +511,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     hoareSingle phi (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc x f ::
-       phiNeq (ex x) (ev (vnull C)) ::
+       phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi')
 | HVarAssign : forall T phi_1(*\*) phi_2(*\*) (x : x) (e : e),
     hasStaticType phi_1 (ex x) T ->
@@ -559,7 +535,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType phi_i (ex x) T_r ->
     hasStaticType phi_i (ex z') T_p ->
-    phiImplies phi_i (phiNeq (ex y) (ev (vnull C)) :: phi_p ++ phi_r) ->
+    phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
     NotIn y (FV phi_r) ->
@@ -568,10 +544,10 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
-    In phi_2 phi_1 ->
+    phiImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
 | HRelease : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
-    phiImplies phi_1 (phi_2 :: phi_r) ->
+    phiImplies phi_1 (phi_2 ++ phi_r) ->
     sfrmphi [] phi_r ->
     hoareSingle phi_1 (sRelease phi_2) phi_r
 | HDeclare : forall phi(*\*) phi'(*\*) x T,
@@ -595,38 +571,6 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 | HEMPTY : forall p, hoare p [] p
 .
 
-
-(* well-typedness *)
-Definition wellTypedE (phi : phi) (e' : e) : Prop :=
-  exists T', staticType phi e' = Some T'.
-Definition wellTypedPhi' (G : phi) (p : phi') : Prop :=
-  match p with
-  | phiTrue => True
-  | phiEq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
-  | phiNeq e1 e2 => wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
-  | phiAcc x' f => wellTypedE G (edot (ex x') f)
-  | phiType x T => getType G x = Some T
-  end.
-Definition wellTypedPhi (G : phi) (p : phi) : Prop :=
-  forall p', In p' p -> wellTypedPhi' G p'.
-Definition wellTyped (G : phi) (s' : s) : Prop :=
-  match s' with
-  | sMemberSet x' f' y' => let e1 := (edot (ex x') f') in
-                           let e2 := ex y' in 
-                            wellTypedE G e1 /\ wellTypedE G e2 /\ staticType G e1 = staticType G e2
-  | sAssign x' e' => True
-  | sAlloc x' C' => getType G x' = Some (TClass C')
-  | sCall x' y' f' z' => exists C' T' pT px contr s',
-                getType G y' = Some (TClass C') /\
-                mmethod C' f' = Some (Method T' f' pT px contr s') /\
-                getType G x' = Some T' /\
-                Some pT = getType G z' (* /\ anything with contr and s' ???*)
-  | sReturn x' => wellTypedE G (ex x')
-  | sAssert p => wellTypedPhi' G p
-  | sRelease p => wellTypedPhi' G p
-  | sDeclare T x => getType G x = Some T
-  end.
-
 (* Figure 9: Dynamic semantics for core language *)
 (*coq2latex: rhoFrom2 #x1 #v1 #x2 #v2 := [#x1 \mapsto #v1, #x2 \mapsto #v2] *)
 Definition rhoFrom2 (x1 : x) (v1 : v) (x2 : x) (v2 : v) : rho := 
@@ -644,8 +588,8 @@ Definition HeapNotSetAt (H : H) (o : o) : Prop := H o = None.
 Definition execState : Set := H * S.
 (*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
 Inductive dynSem : execState -> execState -> Prop :=
-| ESFieldAssign : forall H H' C (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) (x y : x) (v_y : v) (o : o) (f : f),
-    evale H rho (ex x) (vo C o) ->
+| ESFieldAssign : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) (x y : x) (v_y : v) (o : o) (f : f),
+    evale H rho (ex x) (vo o) ->
     evale H rho (ex y) v_y ->
     In (o, f) A ->
     H' = HSubst o f v_y H ->
@@ -657,7 +601,7 @@ Inductive dynSem : execState -> execState -> Prop :=
 | ESNewObj : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs,
     HeapNotSetAt H o ->
     fields C = Some Tfs ->
-    rho' = rhoSubst x (vo C o) rho ->
+    rho' = rhoSubst x (vo o) rho ->
     A' = A ++ map (fun cf' => (o, snd cf')) Tfs ->
     H' = Halloc o Tfs H ->
     dynSem (H, (rho, A, sAlloc x C :: s_bar) :: S) (H', (rho', A', s_bar) :: S)
@@ -666,16 +610,16 @@ Inductive dynSem : execState -> execState -> Prop :=
     rho' = rhoSubst xresult v_x rho ->
     dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
 | ESApp : forall underscore2(*\_*) phi H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
-    evale H rho (ex y) (vo C o) ->
+    evale H rho (ex y) (vo o) ->
     evale H rho (ex z) v ->
     H o = Some (C, underscore) ->
     mmethod C m = Some (Method T_r m T w (Contract phi underscore2) r_bar) ->
-    rho' = rhoFrom3 xresult (defaultValue T_r) xthis (vo C o) (xUserDef w) v ->
+    rho' = rhoFrom3 xresult (defaultValue T_r) xthis (vo o) (xUserDef w) v ->
     evalphi H rho' A phi ->
     A' = footprint H rho' phi ->
     dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
 | ESAppFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
-    evale H rho (ex y) (vo C o) ->
+    evale H rho (ex y) (vo o) ->
     H o = Some (C, underscore) ->
     mpost C m = Some phi ->
     evalphi H rho' A' phi ->
@@ -683,11 +627,11 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho' (ex xresult) v_r ->
     dynSem (H, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (H, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
 | ESAssert : forall H rho(*\*) A phi(*\*) s_bar(*\overline{s}*) S,
-    evalphi' H rho A phi ->
+    evalphi H rho A phi ->
     dynSem (H, (rho, A, sAssert phi :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
 | ESRelease : forall H rho(*\*) A A' phi(*\*) s_bar(*\overline{s}*) S,
-    evalphi' H rho A phi ->
-    A' = Aexcept A (footprint' H rho phi) ->
+    evalphi H rho A phi ->
+    A' = Aexcept A (footprint H rho phi) ->
     dynSem (H, (rho, A, sRelease phi :: s_bar) :: S) (H, (rho, A', s_bar) :: S)
 | ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*\overline{s}*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
@@ -723,6 +667,15 @@ Definition newRho : rho := fun _ => None.
 Definition newAccess : A_d := [].
 
 
+Inductive writesTo : x -> s -> Prop :=
+| wtAssign : forall x e, writesTo x (sAssign x e)
+| wtAlloc : forall x C, writesTo x (sAlloc x C)
+| wtCall : forall x y m z, writesTo x (sCall x y m z)
+| wtReturn : forall x, writesTo xresult (sReturn x)
+| wtDeclare : forall T x, writesTo x (sDeclare T x)
+.
+
+
 (* ASSUMPTIONS *)
 Definition mWellDefined (C : C) (m : method) := 
   match m with Method T' m' pT px c s =>
@@ -732,8 +685,9 @@ Definition mWellDefined (C : C) (m : method) :=
         incl (FV pre) [xUserDef px ; xthis] /\
         incl (FV post) [xUserDef px ; xthis ; xresult] /\
         hoare pre' s post' /\
-        sfrmphi [] pre' /\
-        sfrmphi [] post'
+        sfrmphi [] pre /\
+        sfrmphi [] post /\
+        (forall s', In s' s -> ~ writesTo (xUserDef px) s')
     end
   end.
 Definition CWellDefined (c : cls) :=
