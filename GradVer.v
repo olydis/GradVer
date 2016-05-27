@@ -147,8 +147,9 @@ Definition T_decb := dec2decb T_dec.
 Hint Resolve T_dec.
 Hint Resolve list_eq_dec T_dec.
 
-Definition v_dec : ∀ (t : T) (n m : v), {n = m} + {n ≠ m}. decide equality. Defined.
-Definition v_decb (t : T) := dec2decb (v_dec t).
+Definition v_dec : ∀ n m : v, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance v_EqDec : EqDec v eq := v_dec.
+Definition v_decb := dec2decb v_dec.
 Hint Resolve v_dec.
 Hint Resolve list_eq_dec v_dec.
 
@@ -346,26 +347,6 @@ Fixpoint sfrmphi (a : A_s) (p : phi) : Prop :=
   | x :: xs => sfrmphi' a x /\ sfrmphi (staticFootprint' x ++ a) xs
   end.
 
-(* static type derivation *)
-(*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
-Inductive hasStaticType : phi -> e -> T -> Prop :=
-| STValNum : forall p n, 
-  hasStaticType p (ev (vn n)) TPrimitiveInt
-| STValNull : forall p T, 
-  hasStaticType p (ev vnull) T
-| STVar : forall p T x, 
-  In (phiType x T) p -> 
-  hasStaticType p (ex x) T
-| STField : forall p e f C T, 
-  hasStaticType p e (TClass C) -> 
-  fieldType C f = Some T -> 
-  hasStaticType p (edot e f) T
-.
-
-(*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
-Definition hasNoStaticType (phi : phi) (e : e) : Prop :=
-  ~ exists T, hasStaticType phi e T.
-
 (* Figure 6: Evaluation of expressions for core language *)
 Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
   match e with
@@ -449,6 +430,27 @@ Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
 (*coq2latex: phiImplies #a #b := #a \implies #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
+
+
+(* static type derivation *)
+(*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
+Inductive hasStaticType : phi -> e -> T -> Prop :=
+| STValNum : forall p n, 
+  hasStaticType p (ev (vn n)) TPrimitiveInt
+| STValNull : forall p T, 
+  hasStaticType p (ev vnull) T
+| STVar : forall p T x, 
+  phiImplies p [phiType x T] -> 
+  hasStaticType p (ex x) T
+| STField : forall p e f C T, 
+  hasStaticType p e (TClass C) -> 
+  fieldType C f = Some T -> 
+  hasStaticType p (edot e f) T
+.
+
+(*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
+Definition hasNoStaticType (phi : phi) (e : e) : Prop :=
+  ~ exists T, hasStaticType phi e T.
 
 (*coq2latex: fieldHasType #x #f #T := \vdash #x.#f : #T *)
 Definition fieldHasType C f T := fieldType C f = Some T.

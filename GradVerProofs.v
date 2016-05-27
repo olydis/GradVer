@@ -7,6 +7,13 @@ Definition phiEquiv (p1 p2 : phi) := phiImplies p1 p2 /\ phiImplies p2 p1.
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
 
+Ltac des P :=
+    destruct P as [de1 | de2];
+    try (inversion de1; fail);
+    try (contradict de2; tauto; fail);
+    try (rewrite de1 in *);
+    try (clear de1).
+
 (* determinism? *)
 
 (*Lemma rhoPhiHelper'' : forall e r x1 x2 v0 o0 H0 z rt v,
@@ -223,7 +230,8 @@ Ltac applyINVtypes INVtypes H :=
   inversionx xt1.
 
 Ltac applyINVphi2 INVphi2 H :=
-  apply H in INVphi2.
+  assert (evp := INVphi2);
+  apply H in evp.
 
 Ltac common :=
   repeat rewrite AexceptEmpty in *;
@@ -242,13 +250,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     dynSemStar (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S')
 .
   destruct s'';
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
+  do 7 intro;
   intro HO;
   intro INV;
 
@@ -256,13 +258,12 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
   inversion HO; clear HO; subst;
 
   inversion INV as [INVphi INVtypes]; clear INV;
-  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
-  try rewrite getTypeImpliesStaticType in *.
+  inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
   - applyINVtypes INVtypes H9.
     applyINVtypes INVtypes H7.
     applyINVphi2 INVphi2 H3.
     
-    inversionx INVphi2.
+    inversionx evp.
     inversionx H16.
     simpl in *.
     clear H11.
@@ -291,7 +292,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     applyINVtypes INVtypes H7.
     applyINVphi2 INVphi2 H8.
     clear H8.
-    rename INVphi2 into H8.
+    rename evp into H8.
     inversionx H8.
     simpl in *.
     clear H11.
@@ -412,10 +413,10 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     emagicProgress.
   - emagicProgress.
   - applyINVphi2 INVphi2 H1.
-    apply evalPhiPrefix in INVphi2.
+    apply evalPhiPrefix in evp.
     emagicProgress.
   - emagicProgress.
-Proof.
+Admitted.
 
 Lemma inclEmpty : forall {T : Type} (x : list T), incl [] x.
 Proof.
@@ -495,6 +496,78 @@ Proof.
     eauto.
 Qed.
 
+Lemma infRecList : forall {T : Type} (x : T) (xs : list T), ~ x :: xs = xs.
+Proof.
+  intuition.
+  apply lengthId in H0.
+  simpl in H0.
+  contradict H0.
+  auto with arith.
+Qed.
+
+Lemma phiImpliesStaticType : forall p1 p2 e T, phiImplies p1 p2 -> hasStaticType p2 e T -> hasStaticType p1 e T.
+Proof.
+  induction e0; intros; inversionx H1; try constructor.
+  - unfold phiImplies in *.
+    intros.
+    apply H4.
+    apply H0.
+    assumption.
+  - econstructor; eauto.
+Qed.
+
+(*    x : T * y : T   =>  x : T                *)
+(*    x : T * y = 3   =>  x : T * y : T        *)
+(*    3 = 4           =>  x : T                *)
+
+Lemma evalphiImpliesType : forall H r A p x T,
+  evalphi H r A p -> phiImplies p [phiType x T] -> ehasDynamicType H r (ex x) T.
+Proof.
+  intros.
+  apply H2 in H1.
+  inversionx H1.
+  inversionx H12.
+  unfold ehasDynamicType.
+  eexists; eauto.
+Qed.
+
+Lemma edotSubst : forall m e f, exists e' f', (eSubsts m (edot e f)) = edot e' f'.
+Proof.
+  intros; simpl; repeat eexists; eauto.
+Qed.
+
+Lemma sfrmeSubst : forall m e, sfrme [] (eSubsts m e) -> sfrme [] e.
+Proof.
+  induction e0;
+  intros; try constructor.
+  assert (eds := edotSubst m0 e0 f0).
+  inversionE eds.
+  inversionE H1.
+  rewrite H2 in H0.
+  inversionx H0.
+  inversion H4.
+Qed.
+
+Lemma hasStaticTypePhiSubst : forall p x0 e0 e1 T0 T1,
+  hasStaticType (phiSubst x0 e0 p) (ex x0) T0 /\
+  hasStaticType (phiSubst x0 e0 p) e0 T0 ->
+  (hasStaticType p e1 T1 -> hasStaticType (phiSubst x0 e0 p) e1 T1)
+.
+Proof.
+  intros.
+  inversionx H0.
+  inversionx H1; try constructor.
+  - des (x_dec x0 x1).
+    * inversionx H2.
+      unfold phiImplies in H5.
+      intros.
+      apply H5 in H1.
+      apply H0.
+  induction p0; intros; simpl in *; try assumption.
+  inversionx H0.
+  inversionx H2.
+
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -503,13 +576,7 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     invAll finalHeap finalRho finalAccess post
 .
   destruct s'';
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
-  intro;
+  do 7 intro;
   intro HO;
   intro INV;
 
@@ -517,149 +584,93 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
   inversion HO; clear HO; subst;
 
   inversion INV as [INVphi INVtypes]; clear INV;
-  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
-  try rewrite getTypeImpliesStaticType in *.
-  - applyINVtypes INVtypes H9.
+  inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
+  - assert (HH9 := H9).
+    assert (HH7 := H7).
+    assert (HH3 := H3).
+    applyINVtypes INVtypes H9.
     applyINVtypes INVtypes H7.
     applyINVphi2 INVphi2 H3.
     
-    inversionx INVphi2.
+    inversionx evp.
     inversionx H16.
     simpl in *.
     clear H11.
     inversionx H18.
     common.
+    rewrite H8 in *.
+    inversionx H2.
+    inversionx H14.
     inversionx H15.
     rewrite H8 in *.
-    inversionx H17.
-    
-    inversionx xd0; try (inversionx H2).
+    inversionx H13.
+    clear H14 H16.
+    inversionx xd0.
 
     unfold incl in H9.
-    specialize (H9 (o1,f0)).
-
-    assert (In (o1, f0) initialAccess). apply H9. constructor. tauto.
-      clear H9.
+    specialize (H9 (o0,f0)). assert (In (o0, f0) [(o0, f0)]). constructor. tauto. intuition.
 
     do 4 eexists; try emagicProgress. (*progress*)
-    repeat split.
-    * constructor.
-    * constructor.
-    * repeat constructor.
-    * repeat constructor.
+    repeat split; repeat constructor.
     * eapply sfrmIncl; eauto. apply inclEmpty.
     * econstructor; eauto; simpl.
         apply inclEmpty.
         econstructor; eauto. econstructor.
           unfold HSubst.
           unfold o_decb, f_decb, string_decb, dec2decb.
-          destruct (o_dec o1 o1); try (contradict n; tauto).
-          rewrite H12.
+          des (o_dec o0 o0).
+          rewrite H11.
           eauto.
       common.
       econstructor; eauto; simpl; rewrite H8.
-        unfold incl. intros. inversionx H2; try inversion H6. assumption.
+        unfold incl. intros. inversionx H6; try inversion H7. assumption.
         econstructor; eauto.
       econstructor; eauto; simpl.
         apply inclEmpty.
-        econstructor; eauto.
+        econstructor; eauto. unfold evale. simpl. eauto. common. intuition. inversion H6.
       common.
       econstructor; eauto; simpl.
         apply inclEmpty.
         econstructor; eauto. unfold evale; simpl. rewrite H8.
           unfold HSubst.
           unfold o_decb, f_decb, string_decb, dec2decb.
-          destruct (o_dec o1 o1); try (contradict n; tauto).
-          rewrite H12.
+          des (o_dec o0 o0).
+          rewrite H11.
           simpl.
-          destruct (string_dec f0 f0); try (contradict n; tauto).
+          des (string_dec f0 f0).
           tauto.
       common.
       admit.
-    * unfold ehasDynamicType.
-      induction e0; intros.
-      + exists v0.
-        unfold evale.
-        simpl.
-        intuition.
-        inversionx H2; constructor.
-      + destruct (x_dec x3 x0); subst.
-      ++  exists (vo o1).
-          unfold evale.
-          simpl.
-          intuition.
-          inversionx H2.
-          inversionx H9. inversionx H2. econstructor. unfold HSubst, o_decb, dec2decb. rewrite H12. destruct (o_dec o1 o1); eauto. contradict n. tauto.
-          inversionx H2. inversion H6.
-          inversionx H6. inversion H2.
-          inversionx H2. inversion H6.
-          unfold NotIn in *.
-          contradict H5.
-          generalize phi'0 H6.
-          clear.
-          induction phi'0; intros; inversionx H6. constructor. tauto.
-          intuition.
-          unfold FV in *.
-          apply in_flat_map.
-          apply in_flat_map in H1.
-          inversionE H1.
-          exists x1.
-          intuition.
-      ++  inversionx H2.
-          inversionx H9. inversionx H2. contradict n. tauto.
-          inversionx H2. inversion H6.
-          inversionx H6. inversion H2.
-          inversionx H2. inversion H6.
-          eapply evalphiTypeUnlift in H6; eauto.
-          inversionx H6.
-          exists v0.
-          unfold evale.
-          simpl.
-          intuition.
-          apply hasDynamicTypeHSubst.
-          assumption.
-      + inversionx H2.
-        apply IHe0 in H11.
-        inversionE H11.
-        inversionx H2.
-        inversionx H7.
-
-          SearchAbout not.
-   inversionx CL.
-      + 
- admit. assert (hasStaticType pre e0 T1).
-      + inversionx H2; try constructor; try assumption.
-          inversionx H7.
-            inversionx H2.
-
-      unfold evale.
-      
-
-    try (unfold evale; simpl; eauto; fail);
-    try (apply inclEmpty; fail);
-    common;
-    try rewrite H7.
-    * apply H9. constructor. tauto.
-    * unfold incl. intros. inversionx H0; try inversion H2.
-      apply H9. constructor. tauto.
-    * constructor. tauto.
-    * unfold HSubst.
-      unfold o_decb, f_decb, string_decb, dec2decb.
-      destruct (o_dec o0 o0); try (contradict n; tauto).
-      rewrite H8.
-      simpl.
-      destruct (string_dec f0 f0); try (contradict n; tauto).
-      tauto.
+    * intros.
+      assert (hasStaticType pre e0 T1). admit.
+      apply INVtypes in H7. admit.
+  - assert (HH3 := H3).
+    applyINVtypes INVtypes H3.
+    do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * generalize post H6.
+      clear.
+      induction post; intros; constructor.
+      + inversionx H6.
+        destruct a; try constructor;
+        inversionx H0;
+        try apply sfrmeSubst in H5;
+        try apply sfrmeSubst in H6;
+        assumption.
+      + destruct a; simpl in *; intuition.
+      ++  unfold x_decb, dec2decb in *.
+          des (x_dec x1 x0).
+            destruct e0; simpl in *. 
+              apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
+              admit.
+              apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
+            simpl in *. admit.
+      ++  unfold x_decb, dec2decb in *.
+          des (x_dec x1 x0).
+            destruct e0; simpl in *; apply IHpost in H1; assumption.
+            simpl in *. apply IHpost in H1; assumption.
     * admit.
-    * Print hasStaticType. inversionx H0; simpl.
-      
-      
-
-SearchAbout incl.
-
-    emagicProgress.
-  - applyINVtypes INVtypes H3.
-    emagicProgress.
+    * intros.
   - assert (HnT := HnotTotal initialHeap). inversionE HnT.
     
     unfold fieldsNames in *.
