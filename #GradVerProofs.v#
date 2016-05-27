@@ -887,7 +887,7 @@ Proof.
   apply (sfrmeSubst m0); intuition.
 Admitted.
 
-(* counter-example
+(* counter-example:
 sfrmphi [] (phiSubsts (a => c, b => c) (acc(b.f) * a.f = 3)) ->
 sfrmphi [] (acc(b.f) * a.f = 3)
 *)
