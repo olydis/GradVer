@@ -834,34 +834,21 @@ Proof.
     contradict H4.
     simpl.
     intuition.
-  - destruct a; simpl in *; intuition;
-    try (apply IHp0 in H2); try assumption.
-    * destruct (find (λ r : x * e, x_decb x0 (fst r)) m0) eqn: ff.
-      + destruct p1.
-        destruct e0; simpl in *;
-        try (apply IHp0 in H2; eapply sfrmIncl; eauto; apply inclEmpty).
-        assert (fff := ff).
-        apply find_some in ff.
-        inversionx ff.
-        simpl in H3.
-        unfold x_decb, dec2decb in *.
-        des (x_dec x0 x1); try inversion H3.
-        clear H3 H1.
-        admit.
-      + simpl in *.
+  - inversionx H1.
+    apply (IHe0 m0); intros.
+    * specialize (H0 x0).
+      inversionx H0.
+      intuition.
+      + contradict H4.
+        simpl.
+        intuition.
+      + destruct a; simpl in *; intuition.
+    * destruct a; simpl in *; intuition.
+      destruct (find (λ r : x * e, x_decb x0 (fst r)) m0); intuition.
+      destruct p0.
+      destruct e1; intuition.
+Qed.
 
-      admit.
-  ++  unfold x_decb, dec2decb in *.
-      des (x_dec x1 x0).
-        destruct e0; simpl in *. 
-          apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
-          admit.
-          apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
-        simpl in *. admit.
-  ++  unfold x_decb, dec2decb in *.
-      des (x_dec x1 x0).
-        destruct e0; simpl in *; apply IHpost in H1; assumption.
-        simpl in *. apply IHpost in H1; assumption.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
