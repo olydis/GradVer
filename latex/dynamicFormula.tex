@@ -19,13 +19,13 @@
 
 \begin{mathpar}
 \inferrule* [Right=EAAcc]
-{{\rho(x)} = {o}\\{({o}, {f})} \in {A}}
+{{\rho(x)} = {{{o}}}\\{({o}, {f})} \in {A}}
 {\evalphix {H} {\rho} {A} {\acc({x}.{f})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=EAType]
-{{\rho(x)} = {{{{v}}_{{T}}}}}
+{{\rho(x)} = {{v}}\\hasDynamicType(H, v, T)}
 {\evalphix {H} {\rho} {A} {{x} : {T}}}
 \end{mathpar}
 

@@ -13,8 +13,8 @@
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{{\phi_1} \vdash {{x}} : {T}\\{\phi_1} \vdash {e} : {T}\\{\phi_1} = {{\phi_2}[{e} / {x}]}\\{\emptyset} \sfrmphi {\phi_1}\\{\staticFP {\phi_1}} \sfrme {e}}
-{\hoare {\phi_1} {{x} := {e}} {\phi_2}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
+{\hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})} * {\emptyset}}}}
 \end{mathpar}
 
 \begin{mathpar}

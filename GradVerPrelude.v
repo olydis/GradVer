@@ -12,41 +12,134 @@ Load GradVer.
 Load GradVerPreludeLtac.
 Import Semantics.
 
+Lemma AexceptEmpty : forall A, Aexcept A [] = A.
+Proof.
+  induction A.
+  - compute.
+    tauto.
+  - unfold Aexcept, except in *.
+    simpl in *.
+    rewrite IHA.
+    tauto.
+Qed.
+
+Lemma InAexcept : forall x a a', In x (Aexcept a a') -> In x a.
+Proof.
+  unfold Aexcept.
+  unfold except.
+  induction a; intros.
+  - compute in H0.
+    inversion H0.
+  - simpl.
+    simpl filter in H0.
+    destruct (existsb (A_d'_decb a) a'); simpl in H0.
+    * apply IHa in H0.
+      auto.
+    * inversion H0; auto.
+      apply IHa in H1.
+      auto.
+Qed.
+
+Lemma InAexceptNot : forall x a a', In x (Aexcept a a') -> ~ In x a'.
+Proof.
+  unfold Aexcept.
+  unfold except.
+  destruct a; intuition.
+  apply filter_In in H0.
+  inversionx H0.
+  contradict H3.
+  apply not_true_iff_false.
+  apply negb_false_iff.
+  apply existsb_exists.
+  eexists; split; eauto.
+  undecb.
+  simpl.
+  dec (o_dec a0 a0).
+  dec (string_dec b b).
+  auto.
+Qed.
+
+Lemma InAexceptConstr : forall x a a', ~ In x a' -> In x a -> In x (Aexcept a a').
+Proof.
+  unfold Aexcept.
+  unfold except.
+  intros.
+  apply filter_In.
+  intuition.
+  apply negb_true_iff.
+  apply not_true_iff_false.
+  intuition.
+  contradict H0.
+  apply existsb_exists in H2.
+  inversionE H2.
+  inversionx H0.
+  undecb.
+  destruct x0, x1. simpl in *.
+  dec (o_dec o0 o1); simpl in *; inversionx H3.
+  dec (string_dec f0 f1); simpl in *; inversionx H4.
+  auto.
+Qed.
+
 Lemma evalphiTrue : forall H r A, True -> evalphi H r A [].
 Proof.
   intros.
   constructor.
 Qed.
 
-Lemma evalphiApp : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A p1.
+
+Lemma AexceptApp : forall A B1 B2,
+  Aexcept (Aexcept A B1) B2 = Aexcept A (B1 ++ B2).
 Proof.
-  induction p1; intros; try constructor.
-  assert (Hx := app_comm_cons).
-  specialize (Hx phi' p1 p2 a).
-  symmetry in Hx.
-  rewrite Hx in H1.
-  clear Hx.
-  inversionx H1.
-  apply IHp1 in H12.
-  econstructor; eauto.
+  induction A; intros; simpl; try tauto.
+  rewrite existsb_app.
+  destruct (existsb (A_d'_decb a) B1) eqn: exb;
+  simpl; rewrite IHA; tauto.
 Qed.
 
-Lemma inclAexcept : forall A1 A2 A3,
-  incl A1 (Aexcept A2 A3) -> incl A1 A2.
+Lemma evalphiApp : forall p1 p2 H r A,
+  evalphi H r A (p1 ++ p2) ->
+  evalphi H r A p1 /\
+  evalphi H r (Aexcept A (footprint H r p1)) p2.
+Proof.
+  induction p1; intros; simpl in *.
+  - rewrite AexceptEmpty.
+    split; try constructor.
+    assumption.
+  - inversionx H1.
+    apply IHp1 in H12.
+    split; try econstructor; intuition.
+    rewrite AexceptApp in H2.
+    auto.
+Qed.
+
+Lemma AexceptIncl : forall A' A,
+  incl (Aexcept A A') A.
 Proof.
   unfold incl.
   intros.
-  apply H0 in H1.
-  unfold Aexcept in H1.
-  unfold except in H1.
-  apply filter_In in H1.
+  unfold Aexcept, except in H0.
+  apply filter_In in H0.
   intuition.
+Qed.
+  
+Lemma inclAexcept : forall A1 A2 A3,
+  incl A1 (Aexcept A2 A3) -> incl A1 A2.
+Proof.
+  intros.
+  eapply incl_tran; eauto.
+  apply AexceptIncl.
 Qed.
 
 Lemma AexceptComm : forall A1 A2 A3,
   Aexcept (Aexcept A1 A2) A3 = Aexcept (Aexcept A1 A3) A2.
 Proof.
-Admitted.
+  induction A1; simpl; intros; try tauto.
+  destruct (existsb (A_d'_decb a) A2) eqn: a2;
+  destruct (existsb (A_d'_decb a) A3) eqn: a3;
+  simpl; repeat rewrite a2;
+  simpl; repeat rewrite a3;
+  simpl; rewrite IHA1; tauto.
+Qed.
 
 Lemma evalphiFootprint : forall p p' H r A,
     evalphi H r A p ->
@@ -61,72 +154,29 @@ Proof.
   assumption.
 Qed.
 
-Lemma evalphiSymm : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A (p2 ++ p1).
-Proof.
-  induction p1.
-  - intros.
-    rewrite app_nil_r.
-    rewrite app_nil_l in H1.
-    assumption.
-  - intros.
-    assert (Hx := app_comm_cons).
-    specialize (Hx phi' p1 p2 a).
-    symmetry in Hx.
-    rewrite Hx in H1.
-    clear Hx.
-    inversionx H1.
-    apply IHp1 in H12.
-    clear IHp1.
-    generalize p2 H0 r A H11 H12 H6.
-    clear.
-    induction p2; intros.
-    * rewrite app_nil_l.
-      rewrite app_nil_l in H12.
-      econstructor; eauto.
-    * assert (Hx := app_comm_cons).
-      specialize (Hx phi' p2 (a :: p1) a0).
-      symmetry in Hx.
-      rewrite Hx.
-      clear Hx.
-      econstructor; eauto.
-      + eapply evalphiFootprint in H12.
-        eapply inclAexcept in H12.
-        eauto.
-        assert (Hx := app_comm_cons).
-        specialize (Hx phi' p2 p1 a0).
-        symmetry in Hx.
-        rewrite Hx.
-        clear Hx.
-        constructor.
-        tauto.
-      + assert (Hx := app_comm_cons).
-        specialize (Hx phi' p2 p1 a0).
-        symmetry in Hx.
-        rewrite Hx in H12.
-        clear Hx.
-        inversionx H12.
-        assumption.
-      + apply IHp2; auto.
-          assert (Hx := app_comm_cons).
-          specialize (Hx phi' p2 p1 a0).
-          symmetry in Hx.
-          rewrite Hx in H12.
-          clear Hx.
-          inversionx H12.
-          rewrite AexceptComm.
-          assumption.
-
-Admitted.
-
-Lemma evalphi'Aexcept : forall p h r a a2,
-  evalphi' h r (Aexcept a a2) p -> evalphi' h r a p.
+Lemma InSingle : forall {T : Type} (x y : T), In x [y] -> x = y.
 Proof.
   intros.
-  inversionx H0;
-  econstructor; eauto.
-  unfold Aexcept, except in H3.
-  apply filter_In in H3.
-  intuition.
+  inversionx H0; intuition.
+Qed.
+
+Lemma inclEmpty : forall {T : Type} (x : list T), incl [] x.
+Proof.
+  unfold incl.
+  intros.
+  inversion H0.
+Qed.
+
+Lemma inclSingle : forall {T : Type} (xs : list T) x, 
+  incl [x] xs <-> In x xs.
+Proof.
+  split; unfold incl; intros.
+  - apply H0.
+    constructor.
+    tauto.
+  - inversionx H1.
+    * assumption.
+    * inversion H2.
 Qed.
 
 Lemma evalphiAexcept : forall p h r a a2,
@@ -143,15 +193,95 @@ Proof.
     eauto.
 Qed.
 
-Lemma AexceptEmpty : forall A, Aexcept A [] = A.
+Lemma evalphi'ImpliesIncl : forall H r A p,
+  evalphi' H r A p ->
+  incl (footprint' H r p) A.
 Proof.
-  induction A.
-  - compute.
-    tauto.
-  - unfold Aexcept, except in *.
-    simpl in *.
-    rewrite IHA.
-    tauto.
+  intros.
+  inversionx H1;
+  simpl;
+  try apply inclEmpty.
+  rewrite H3.
+  rewrite inclSingle.
+  assumption.
+Qed.
+
+Lemma inclEmptyFalse : forall {T : Type} (x : T) xs,
+  ~ incl (x :: xs) [].
+Proof.
+  intuition.
+  unfold incl in H0.
+  specialize (H0 x0).
+  assert (In x0 (x0 :: xs)). apply in_eq.
+  intuition.
+Qed.
+
+Lemma incl_cons_reverse : forall {T : Type} (x : T) xs ys,
+  incl (x :: xs) ys -> incl xs ys /\ In x ys.
+Proof.
+  unfold incl.
+  intuition.
+Qed.
+
+Lemma inclAexceptTriple : forall P Q A,
+  incl P A ->
+  incl Q (Aexcept A P) ->
+  incl P (Aexcept A Q).
+Proof.
+  unfold incl.
+  intros.
+  assert (CL := classic (In a Q)).
+  inversionx CL.
+  * apply H1 in H3.
+    apply InAexceptNot in H3.
+    intuition.
+  * apply H0 in H2.
+    apply InAexceptConstr; auto.
+Qed.
+
+Lemma evalphiSymmHelper : forall p1 p2 H r A p,
+  evalphi H r A (p :: p1 ++ p2) ->
+  evalphi H r A (p1 ++ p :: p2).
+Proof.
+  induction p1;
+  intros;
+  inversionx H1;
+  simpl in *;
+  econstructor; eauto;
+  inversionx H12;
+  try assumption.
+  - eapply incl_tran; eauto.
+    apply AexceptIncl.
+  - rewrite AexceptComm in H14.
+    apply IHp1;
+    try assumption.
+    econstructor; eauto.
+    apply inclAexceptTriple; auto.
+Qed.
+
+Lemma evalphiSymm : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A (p2 ++ p1).
+Proof.
+  induction p1.
+  - intros.
+    rewrite app_nil_r.
+    assumption.
+  - intros.
+    app_cons H1.
+    inversionx H1.
+    apply IHp1 in H12.
+    apply evalphiSymmHelper; auto.
+    econstructor; eauto.
+Qed.
+
+Lemma evalphi'Aexcept : forall p h r a a2,
+  evalphi' h r (Aexcept a a2) p -> evalphi' h r a p.
+Proof.
+  intros.
+  inversionx H0;
+  econstructor; eauto.
+  unfold Aexcept, except in H3.
+  apply filter_In in H3.
+  intuition.
 Qed.
 
 Lemma evalphiFalse : forall a H r A x f, In (phiAcc x f) a -> ~ evalphi H r A (phiAcc x f :: a).
@@ -206,7 +336,7 @@ Qed.
 Lemma HnotTotal : forall (H' : H), exists x, H' x = None.
 Admitted.
 
-Lemma evalPhiPrefix : forall p1 h r a p2,
+Lemma evalphiPrefix : forall p1 h r a p2,
    evalphi h r a (p1 ++ p2) -> evalphi h r a p1.
 Proof.
   induction p1;
@@ -216,6 +346,20 @@ Proof.
     inversionx H0.
     apply IHp1 in H11.
     econstructor; eauto.
+Qed.
+
+Lemma evalphiSuffix : forall p1 h r a p2,
+   evalphi h r a (p1 ++ p2) -> evalphi h r a p2.
+Proof.
+  induction p1;
+  intros.
+  * rewrite app_nil_l in H0.
+    assumption.
+  * app_cons H0.
+    inversionx H0.
+    apply IHp1 in H11.
+    apply evalphiAexcept in H11.
+    assumption.
 Qed.
 
 Lemma HSubstsLeavesUntouched : forall mm o0 o1 C m H,
@@ -343,10 +487,34 @@ Proof.
 Qed.
 Hint Resolve phiImpliesRefl.
 
-Lemma AexceptReverse : forall a1 a2, Aexcept (a1 ++ a2) a2 = a1.
-Admitted.
+Lemma AexceptEmptier : forall a b b', 
+  Aexcept a b = [] -> Aexcept a (b' :: b) = [].
+Proof.
+  induction a; intros; simpl; try tauto.
+  simpl in *.
+  destruct (existsb (A_d'_decb a) b).
+  - rewrite orb_true_r.
+    simpl in *.
+    apply IHa.
+    assumption.
+  - simpl in *.
+    discriminate H0.
+Qed.
 
-Lemma evalPhiImplies : forall H' r A' q1 q2,
+Lemma AexceptSame : forall a, Aexcept a a = [].
+Proof.
+  induction a; simpl; try tauto.
+  destruct a.
+  undecb.
+  simpl.
+  dec (o_dec o0 o0).
+  dec (string_dec f0 f0).
+  simpl.
+  apply AexceptEmptier.
+  assumption.
+Qed.
+
+Lemma evalphiImplies : forall H' r A' q1 q2,
   phiImplies q1 q2 -> evalphi H' r A' q1 -> evalphi H' r A' q2.
 Proof.
   intros.
@@ -355,31 +523,135 @@ Proof.
   intuition.
 Qed.
 
-Lemma InAexcept : forall x a a', In x (Aexcept a a') -> In x a.
-Proof.
-  unfold Aexcept.
-  unfold except.
-  induction a; intros.
-  - compute in H0.
-    inversion H0.
-  - simpl.
-    simpl filter in H0.
-    destruct (existsb (A_d'_decb a) a'); simpl in H0.
-    * apply IHa in H0.
-      auto.
-    * inversion H0; auto.
-      apply IHa in H1.
-      auto.
-Qed.
-
-Lemma mapSplitFst : forall {A B : Type} (x : list (A * B)), map fst x = fst (split x).
-Admitted.
-Lemma mapSplitSnd : forall {A B : Type} (x : list (A * B)), map snd x = snd (split x).
-Admitted.
-
 Lemma exists_forall : forall {A : Type} (b : A -> Prop) (c : Prop), ((exists a, b a) -> c) -> (forall a, b a -> c).
 Proof.
   intros.
   apply H0.
   eauto.
+Qed.
+
+Lemma InReorder : forall {T : Type} (a : T) a1 a2 a3 a4,
+  In a (a1 ++ a2 ++ a3 ++ a4) ->
+  In a (a1 ++ a3 ++ a2 ++ a4).
+Proof.
+  intros.
+  repeat rewrite in_app_iff in H0.
+  repeat rewrite in_app_iff.
+  intuition.
+Qed.
+
+Lemma sfrmeAccessReorder : forall p a1 a2 a3 a4,
+  sfrme (a1 ++ a2 ++ a3 ++ a4) p ->
+  sfrme (a1 ++ a3 ++ a2 ++ a4) p.
+Proof.
+  destruct p0;
+  intros;
+  try constructor.
+  inversionx H0.
+  constructor.
+  apply InReorder.
+  assumption.
+Qed.
+
+Lemma sfrmphi'AccessReorder : forall p a1 a2 a3 a4,
+  sfrmphi' (a1 ++ a2 ++ a3 ++ a4) p ->
+  sfrmphi' (a1 ++ a3 ++ a2 ++ a4) p.
+Proof.
+  destruct p0;
+  intros;
+  constructor;
+  inversionx H0;
+  apply sfrmeAccessReorder;
+  assumption.
+Qed.
+
+Lemma sfrmphiAccessReorder : forall p a1 a2 a3 a4,
+  sfrmphi (a1 ++ a2 ++ a3 ++ a4) p ->
+  sfrmphi (a1 ++ a3 ++ a2 ++ a4) p.
+Proof.
+  induction p0;
+  intros;
+  constructor;
+  inversionx H0.
+  - apply sfrmphi'AccessReorder.
+    assumption.
+  - rewrite app_assoc.
+    rewrite app_assoc in H2.
+    apply IHp0.
+    assumption.
+Qed.
+
+Ltac rewriteRev R :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp;
+  clear temp.
+
+Ltac rewriteRevIn R H :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp in H;
+  clear temp.
+
+Lemma sfrmphiApp' : forall p1 p2 a,
+  sfrmphi a p1 ->
+  sfrmphi (a ++ staticFootprint p1) p2 ->
+  sfrmphi a (p1 ++ p2).
+Proof.
+  induction p1; intros; simpl in *.
+  - rewrite app_nil_r in H1.
+    assumption.
+  - inversionx H0.
+    intuition.
+    apply IHp1; try auto.
+    rewrite app_assoc_reverse.
+    rewriteRev (app_nil_l (staticFootprint' a ++ a0 ++ staticFootprint p1)).
+    apply sfrmphiAccessReorder.
+    assumption.
+Qed.
+
+Lemma sfrmphiApp : forall p1 p2,
+  sfrmphi [] p1 ->
+  sfrmphi (staticFootprint p1) p2 ->
+  sfrmphi [] (p1 ++ p2).
+Proof.
+  intros.
+  apply sfrmphiApp'; simpl; assumption.
+Qed.
+
+Lemma rhoSubstId : forall x v r, rhoSubst x v r x = Some v.
+Proof.
+  intros.
+  unfold rhoSubst.
+  dec (x_dec x0 x0).
+  tauto.
+Qed.
+    
+Lemma phiImpliesPrefix : forall A B C,
+  phiImplies A (B ++ C) -> phiImplies A B.
+Proof.
+  intros.
+  unfold phiImplies in *.
+  intros.
+  apply H0 in H1.
+  apply evalphiPrefix in H1.
+  assumption.
+Qed.
+
+Lemma phiImpliesSuffix : forall A B C,
+  phiImplies A (B ++ C) -> phiImplies A C.
+Proof.
+  intros.
+  unfold phiImplies in *.
+  intros.
+  apply H0 in H1.
+  apply evalphiSuffix in H1.
+  assumption.
+Qed.
+
+Lemma hasDynamicTypeId : forall H t,
+  hasDynamicType H (defaultValue t) t.
+Proof.
+  intros.
+  destruct t; constructor.
 Qed.

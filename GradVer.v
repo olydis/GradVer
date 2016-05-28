@@ -403,7 +403,7 @@ Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
   | _ => []
   end.
 (*coq2latex: footprint #H #r #p := \dynamicFP #H #r #p *)
-Fixpoint footprint (h : H) (r : rho) (p : phi) : A_d :=
+Definition footprint (h : H) (r : rho) (p : phi) : A_d :=
   flat_map (footprint' h r) p.
 
 (* Figure 7: Evaluation of formulas for core language *)

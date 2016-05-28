@@ -178,7 +178,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
            ).
       subst.
       econstructor; unfold evale; simpl; eauto.
-      apply evalPhiPrefix in H19.
+      apply evalphiPrefix in H19.
       admit. (*TODO: helper?*)
     rename H0 into step1.
 
@@ -238,17 +238,10 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     emagicProgress.
   - emagicProgress.
   - applyINVphi2 INVphi2 H1.
-    apply evalPhiPrefix in evp.
+    apply evalphiPrefix in evp.
     emagicProgress.
   - emagicProgress.
 Admitted.*)
-
-Lemma inclEmpty : forall {T : Type} (x : list T), incl [] x.
-Proof.
-  unfold incl.
-  intros.
-  inversion H0.
-Qed.
 
 
 Lemma sfrmeIncl : forall p a b, incl a b -> sfrme a p -> sfrme b p.
@@ -593,37 +586,8 @@ Proof.
       destruct e1; intuition.
 Qed.
 
-Lemma InSingle : forall {T : Type} (x y : T), In x [y] -> x = y.
-Proof.
-  intros.
-  inversionx H0; intuition.
-Qed.
-
 Ltac insing H := apply InSingle in H; inversionx H.
 
-    
-Lemma sfrmPhiApp' : forall p1 p2 a,
-  sfrmphi a p1 ->
-  sfrmphi (a ++ staticFootprint p1) p2 ->
-  sfrmphi a (p1 ++ p2).
-Proof.
-  induction p1; intros; simpl in *.
-  - rewrite app_nil_r in H1.
-    assumption.
-  - inversionx H0.
-    intuition.
-    apply IHp1; try auto.
-    admit.
-Qed.
-
-Lemma sfrmPhiApp : forall p1 p2,
-  sfrmphi [] p1 ->
-  sfrmphi (staticFootprint p1) p2 ->
-  sfrmphi [] (p1 ++ p2).
-Proof.
-  intros.
-  apply sfrmPhiApp'; simpl; assumption.
-Qed.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -742,191 +706,134 @@ Proof.
     applyINVphi2 INVphi2 H2.
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
-    * apply sfrmPhiApp; try assumption.
+    * apply sfrmphiApp; try assumption.
       repeat constructor.
       assumption.
     * admit.
-    * intros.
-      apply hasStaticTypePhiSubst
+    * assert (evalphi initialHeap (rhoSubst x0 x1 initialRho) initialAccess
+              (phi'0 ++ [phiEq (ex x0) e0])) as ep. admit.
+      induction e1; intros; unfold ehasDynamicType, evale.
+      + inversionx H0; simpl; eexists; split; eauto; constructor.
+      + unfold rhoSubst. simpl.
+        inversionx H0.
+        eapply evalphiImpliesType in H8; eauto.
+        inversionx H8.
+        inversionx H0.
+        inversionx H6.
+        eexists; split; eauto.
+      + inversionx H0.
+        apply IHe1 in H10.
+        admit.
+
+(*
+(*
+Lemma evalphiSingleton : forall H r A p,
+  evalphi H r A [p] <-> evalphi' H r A p.
+Proof.
+  split; intros.
+  - inversionx H1.
+    apply eval
+*)
+Lemma hasStaticTypeFromEq : forall e p T x,
+  NotIn x (FV p) ->
+  hasStaticType (p ++ [phiEq (ex x) e]) (ex x) T ->
+  hasStaticType p e T.
+Proof.
+  intros.
+  inversionx H1.
+  unfold phiImplies in H4.
+  
+Check evalphiImpliesType.
+  Print evalphi'.
+  
+
+  
+  induction e0;
+  intros;
+  inversionx H1;
+  unfold phiImplies in H4.
+  - destruct v0; try constructor.
+      
+        apply evalphiSuffix in ep.
+          destruct e0; simpl in *.
+            inversionx H1.
+            inversionx xd.
+          inversionx H6.
+          clear H18.
+          inversionx H17.
+          common.
+          unfold rhoSubst in H10. dec (x_dec x0 x0).
+            inversionx H10.
+          
+     intros.
+      eapply phiImpliesStaticType in H2; eauto.
+      + apply INVtypes in H2.
+        apply INVtypes in H5.
+        
+Lemma ehasDynamicTypeRhoSubst : forall e T T' x v H r,
+  hasDynamicType H v T' ->
+  ehasDynamicType H r (ex x) T' ->
+  ehasDynamicType H r e T ->
+  ehasDynamicType H (rhoSubst x v r) e T.
+Proof.
+  induction e0; intros; 
+  unfold ehasDynamicType, evale in *;
+  simpl in *; try assumption.
+  - unfold rhoSubst.
+    dec (x_dec x0 x1).
+    * inversionE H2.
+      inversionE H3.
+      intuition.
+      rewrite H3 in *.
+      inversionx H4.
+      eexists; split; eauto.
+        
       eapply hasStaticTypePhiSubst in H0.
       + apply INVtypes in H0. apply INVtypes in HH3. apply INVtypes in H2. admit.
-      + split; eauto.
+      + split; eauto.*)
   - assert (HnT := HnotTotal initialHeap). inversionE HnT.
     
     unfold fieldsNames in *.
     common.
-    
-    emagicProgress.
+    do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * admit.
+    * admit.
+    * admit.
+  - admit.
   - applyINVtypes INVtypes H4.
-    applyINVtypes INVtypes H6.
-    applyINVtypes INVtypes H7.
-    applyINVphi2 INVphi2 H8.
-    inversionx H8.
-    simpl in *.
-    clear H11.
-    inversionx H18.
-    common.
-    inversionx H15.
-    rewrite H7 in *. inversionx H1.
-    inversionx xd; try (contradict H16; tauto).
-
-    (*well def*)
-    remember (Method T_r m0 T_p z (Contract phi_pre phi_post) underscore) as mm.
-    assert (exists fs ms, class C0 = Some (Cls C0 fs ms) /\ In mm ms).
-      unfold mmethod in *.
-      destruct (class C0) eqn: cc; try (inversion H5; fail).
-      destruct c.
-      unfold class in cc.
-      apply find_some in cc.
-      inversionx cc.
-      unfold C_decb, string_decb, dec2decb in *.
-      destruct (string_dec c C0); inversionx H1.
-      apply find_some in H5. inversionx H5.
-      repeat eexists; eauto.
-    inversionE H0.
-    inversionE H1.
-    inversionE H0.
-    assert (mWellDefined C0 mm).
-      assert (CWellDefined (Cls C0 x3 x6)).
-        apply pWellDefined.
-        unfold class in H1.
-        apply find_some in H1.
-        intuition.
-      unfold CWellDefined in H0.
-      inversionE H0.
-      apply H6.
-      assumption.
-    unfold mWellDefined in H0.
-    rewrite Heqmm in H0.
-    intuition.
-    rename H6 into varsPre.
-    rename H0 into varsPost.
     
-    remember (rhoFrom3 xresult (defaultValue T_r) xthis (vo o0) (xUserDef z) x5) as r'.
-    remember (footprint initialHeap r' phi_pre) as fp.
-    remember (phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre) as phi_pre'.
-    remember (phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post) as phi_post'.
-
-    (*proof strategy*)
-    assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)
-           as strat.
-      intros.
-      econstructor; eauto.
-      eapply dynSemStarBack; eauto.
-
-    (*Part 1: make the call*)
-    assert (dynSem 
-              (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') :: S')
-              (initialHeap, (r', fp, underscore) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
-           ).
-      subst.
-      econstructor; unfold evale; simpl; eauto.
-      apply evalPhiPrefix in H19.
-      admit. (*TODO: helper?*)
-    rename H0 into step1.
-
-    (*Part 2: method body (assumes soundness, termination, ... for method body)*)
-    assert soundness as sdn. admit. (*assume that for method body*)
-    unfold soundness in sdn.
-    remember ((initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S') as S''.
-    specialize (sdn phi_pre' underscore phi_post' initialHeap r' fp S'').
-    apply sdn in H11. Focus 2. admit. (*that follows from preservation proof of Part 1!*)
-    clear sdn.
-    inversion H11; clear H11.
-    inversion H0; clear H0.
-    inversion H6; clear H6.
-    inversion H0; clear H0.
-    rename H6 into step2.
-
-    (*Part 3: call finish*)
-    assert (exists initialRh', dynSem
-              (x7, (x8, x9, []) :: (initialRho, Aexcept initialAccess fp , sCall x0 x1 m0 x2 :: s') :: S')
-              (x7,                 (initialRh', Aexcept initialAccess fp ++ footprint x7 x8 phi_post, s') :: S')
-           ).
-      assert (dss := step2).
-
-      (*heap*)
-      eapply HeapGetsMoreSpecific in step2; try eassumption.
-      inversionE step2.
-
-      (*rho*)
-      eapply RhoGetsMoreSpecific in dss.
-      Focus 2.
-        instantiate (2 := xresult).
-        rewrite Heqr'.
-        unfold rhoFrom3, x_decb, dec2decb.
-        simpl. eauto.
-      inversionE dss.
-
-      eexists. econstructor; eauto.
-        unfold mpost, mcontract.
-        rewrite H5, Heqmm. simpl. tauto.
-
-        uninv. inversionE H11. inversionE H17.
-        subst.
-        inversionx H21.
-        inversionx H31.
-        inversionx H33.
-        simpl in H35.
-        repeat common.
-        assumption.
-    inversionE H0.
-    rename H6 into step3.
-    
-    (*marriage*)
-    subst.
-    repeat eexists.
-    eapply strat; eauto.
-  - applyINVtypes INVtypes H4.
-    emagicProgress.
-  - emagicProgress.
+    do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * simpl. assumption.
+    * admit.
+    * admit.
+  - do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * assumption.
+    * assumption.
+    * assumption.
   - applyINVphi2 INVphi2 H1.
-    apply evalPhiPrefix in H1.
-    emagicProgress.
-  - emagicProgress.
+    do 4 eexists; try emagicProgress; 
+    try (apply evalphiPrefix in evp; assumption). (*progress*)
+    repeat split; repeat constructor.
+    * assumption.
+    * apply evalphiApp in evp. intuition.
+    * intros.
+      apply phiImpliesSuffix in H1.
+      eapply phiImpliesStaticType in H1; eauto.
+  - do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * assumption.
+    * apply H2 in INVphi2.
+      econstructor; simpl; eauto.
+      + apply inclEmpty.
+      + econstructor; eauto.
+      ++  rewrite rhoSubstId.
+          eauto.
+      ++  apply hasDynamicTypeDefault.
+    * assumption.
 Proof.
-
-
-Lemma phiImpliesRefl : forall x, phiImplies x x.
-Proof.
-  unfold phiImplies.
-  auto.
-Qed.
-Hint Resolve phiImpliesRefl.
-
-Lemma AexceptReverse : forall a1 a2, Aexcept (a1 ++ a2) a2 = a1.
-Admitted.
-
-Lemma evalPhiImplies : forall H' r A' q1 q2,
-  phiImplies q1 q2 -> evalphi H' r A' q1 -> evalphi H' r A' q2.
-Proof.
-  intros.
-  unfold phiImplies in H0.
-  specialize (H0 H' r A').
-  intuition.
-Qed.
-
-Lemma InAexcept : forall x a a', In x (Aexcept a a') -> In x a.
-Proof.
-  unfold Aexcept.
-  unfold except.
-  induction a; intros.
-  - compute in H0.
-    inversion H0.
-  - simpl.
-    simpl filter in H0.
-    destruct (existsb (A_d'_decb a) a'); simpl in H0.
-    * apply IHa in H0.
-      auto.
-    * inversion H0; auto.
-      apply IHa in H1.
-      auto.
-Qed.
-
-Lemma mapSplitFst : forall {A B : Type} (x : list (A * B)), map fst x = fst (split x).
-Admitted.
-Lemma mapSplitSnd : forall {A B : Type} (x : list (A * B)), map snd x = snd (split x).
-Admitted.
 
 (*
 Lemma phiTrueSubst : forall a b p, phiTrue = phiSubst a b p -> p = phiTrue.
@@ -986,18 +893,7 @@ Ltac unfWT :=
   unfold wellTypedE in *;
   simpl getType in *.
 
-Lemma evaleTClass : forall G e' C' h r, getType G e' = Some (TClass C') -> (let res := evale h r e' in res = Some vnull \/ exists o', res = Some (vo o')).
-Admitted. (* TODO: entangle *)
-
 Definition consistent (H' : H) (r : rho) := forall x' o' res, r x' = Some (vo o') -> H' o' = Some res.
-
-Lemma exists_forall : forall {A : Type} (b : A -> Prop) (c : Prop), ((exists a, b a) -> c) -> (forall a, b a -> c).
-Proof.
-  intros.
-  apply H0.
-  eauto.
-Qed.
-  
 
 Lemma rhoVSeSubst : forall e'' e''' h r e' x' v', 
  evale h r e' = Some v' ->
