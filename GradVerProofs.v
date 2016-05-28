@@ -1,5 +1,16 @@
-Load GradVerLemmas.
+Load GradVerPrelude.
 Import Semantics.
+
+
+Ltac common :=
+  repeat rewrite AexceptEmpty in *;
+  unfold neq in *;
+  repeat match goal with
+    | [ H : option_map _ ?T = _ |- _ ] =>
+                        destruct T eqn: ?;
+                        inversionx H
+    | [ H : evale _ _ _ _ |- _ ] => unfold evale in H; simpl in H
+  end.
 
 Definition phiEquiv (p1 p2 : phi) := phiImplies p1 p2 /\ phiImplies p2 p1.
 
@@ -7,188 +18,8 @@ Definition phiEquiv (p1 p2 : phi) := phiImplies p1 p2 /\ phiImplies p2 p1.
 Notation "'φ'" := phi.
 Notation "'ρ'" := rho.
 
-Ltac des P :=
-    destruct P as [de1 | de2];
-    try (inversion de1; fail);
-    try (contradict de2; tauto; fail);
-    try (rewrite de1 in *);
-    try (clear de1).
 
 (* determinism? *)
-
-(*Lemma rhoPhiHelper'' : forall e r x1 x2 v0 o0 H0 z rt v,
-  r x1 = Some (vo o0) ->
-  r x2 = Some v0 ->
-  (∀ x0 : x, In x0 (FVe e) → xUserDef z = x0 ∨ xthis = x0) ->
-  evale H0 r (eSubsts [(xthis, ex x1); (xUserDef z, ex x2)] e) v ->
-  evale H0
-    (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0)
-    e v.
-Proof.
-  unfold evale;
-  induction e0; intros; simpl in *.
-  - assumption.
-  - unfold rhoFrom3.
-    unfold x_decb, dec2decb in *.
-    destruct (x_dec x0 xthis).
-    * subst.
-      destruct (x_dec xthis xresult); try inversion e0.
-      simpl in H4.
-      rewrite H1 in H4.
-      assumption.
-    * destruct (x_dec x0 (xUserDef z)).
-      + subst.
-        destruct (x_dec (xUserDef z) xresult); try inversion e0.
-        simpl in H4.
-        rewrite H2 in H4.
-        assumption.
-      + specialize (H3 x0).
-        intuition.
-  - destruct (evale' H0 r (eSubsts [(xthis, ex x1); (xUserDef z, ex x2)] e0)) eqn: eva;
-    try (inversion H4; fail).
-    destruct v2; try (inversion H4; fail).
-    eapply IHe0 in eva; eauto.
-    erewrite eva.
-    apply H4.
-Qed.
-
-Lemma rhoPhiHelper' : forall r x1 x2 p' z H0 a0 v0 o0 rt,
-  r x1 = Some (vo o0) ->
-  r x2 = Some v0 ->
-  (∀ x0 : x, In x0 (FV' p') → xUserDef z = x0 ∨ xthis = x0) ->
-  evalphi' H0 r a0 (phi'Substs [(xthis, ex x1); (xUserDef z, ex x2)] p') ->
-  evalphi' H0 (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0) a0 p'.
-Proof.
-  intros.
-  inversionx H4;
-  unfold phi'Substs in *.
-  - destruct p'; simpl in H10; inversionx H10; try constructor.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-  - destruct p'; simpl in H6; inversionx H6; try constructor.
-    * econstructor.
-      + eapply rhoPhiHelper''; eauto. 
-        intros. specialize (H3 x0).
-        apply H3.
-        unfold FV'. apply in_or_app. auto.
-      + eapply rhoPhiHelper''; eauto. 
-        intros. specialize (H3 x0).
-        apply H3.
-        unfold FV'. apply in_or_app. auto.
-      + tauto.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-  - destruct p'; simpl in H6; inversionx H6; try constructor.
-    * econstructor.
-      + eapply rhoPhiHelper''; eauto. 
-        intros. specialize (H3 x0).
-        apply H3.
-        unfold FV'. apply in_or_app. auto.
-      + eapply rhoPhiHelper''; eauto. 
-        intros. specialize (H3 x0).
-        apply H3.
-        unfold FV'. apply in_or_app. auto.
-      + tauto.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-    * destruct (x_decb x0 xthis); inversionx H5.
-      destruct (x_decb x0 (xUserDef z)); inversionx H6.
-  - destruct p'; simpl in H6; inversionx H6; try constructor.
-    unfold x_decb, dec2decb in *.
-    destruct (x_dec x3 xthis); inversionx H5.
-    * econstructor; eauto.
-      unfold rhoFrom3.
-      unfold x_decb, dec2decb in *.
-      destruct (x_dec xthis xresult); try inversion e0.
-      destruct (x_dec xthis xthis); try (contradict n; tauto).
-      rewrite H1 in H7.
-      assumption.
-    * destruct (x_dec x3 (xUserDef z)); inversionx H6.
-      + econstructor; eauto.
-        unfold rhoFrom3.
-        unfold x_decb, dec2decb in *.
-        destruct (x_dec (xUserDef z) xresult); try inversion e0.
-        destruct (x_dec (xUserDef z) xthis); try inversion e0.
-        destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n2; tauto).
-        rewrite H2 in H7.
-        assumption.
-      + specialize (H3 x3).
-        simpl in H3.
-        intuition.
-    * destruct (x_decb x3 xthis); inversionx H5.
-      destruct (x_decb x3 (xUserDef z)); inversionx H6.
-  - destruct p'; simpl in H6; inversionx H6.
-    * destruct (x_decb x3 xthis); inversionx H5.
-      destruct (x_decb x3 (xUserDef z)); inversionx H6.
-    * specialize (H3 x3).
-      simpl in H3.
-      unfold rhoFrom3, x_decb, dec2decb in *.
-      destruct (x_dec x3 xthis).
-      + econstructor. eauto.
-      + econstructor. eauto.
-Qed.
-
-Lemma rhoPhiHelper : forall phi x1 x2 v0 o0 a z rt r H,
-  (∀ x : x, In x (FV phi) → (xUserDef z) = x ∨ xthis = x) ->
-  r x1 = Some (vo o0) ->
-  r x2 = Some v0 ->
-  evalphi H r a (phiSubsts2 xthis (ex x1) (xUserDef z) (ex x2) phi) ->
-  evalphi H (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0) a phi.
-Proof.
-  induction phi0; intros; inversionx H4; try constructor.
-  econstructor; eauto.
-  - unfold incl in *.
-    intros.
-    apply H9.
-    destruct a; simpl in *; try inversion H4.
-    unfold rhoFrom3 in *.
-    unfold x_decb, dec2decb in *.
-    specialize (H1 x0).
-    intuition; subst.
-    * destruct (x_dec (xUserDef z) xresult); try inversion e0.
-      destruct (x_dec (xUserDef z) xthis); try inversion e0.
-      destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n; tauto).
-      unfold footprint'.
-      rewrite H3.
-      assumption.
-    * destruct (x_dec xthis xresult); try inversion e0.
-      destruct (x_dec xthis xthis); try (contradict n; tauto).
-      unfold footprint'.
-      rewrite H2.
-      assumption.
-  - eapply rhoPhiHelper'; eauto.
-    * intros.
-      apply H1.
-      unfold FV.
-      apply in_flat_map.
-      eexists; intuition.
-    * inversionx H14;
-      try econstructor; eauto.
-      unfold rhoFrom3.
-      clear H11.
-      destruct a; simpl in *; try inversionx H5.
-      + specialize (H1 x3).
-        unfold x_decb, dec2decb in *.
-        intuition; subst; clear H5.
-          destruct (x_dec (xUserDef z) xthis); try inversion e0.
-          destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n; tauto).
-          destruct (x_dec (xUserDef z) xresult); try inversion e1.
-          inversionx H7.
-          rewrite H3 in H6.
-          inversionx H6. constructor. tauto.
-        destruct (x_dec xthis xthis); try (contradict n; tauto).
-        destruct (x_dec xthis xresult); try inversion e1.
-        inversionx H7.
-        rewrite H2 in H6.
-        inversionx H6. constructor. tauto.
-      + destruct (x_decb x3 xthis); try inversion H7.
-        destruct (x_decb x3 (xUserDef z)); try inversion H7.
-  - 
-Admitted.*)
 
 Definition invPhiHolds
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
@@ -196,6 +27,9 @@ Definition invPhiHolds
 Definition invTypesHold
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall e T, hasStaticType phi e T -> ehasDynamicType Heap rho e T.
+Definition invNoAlias
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    sfrmphi [] phi /\ evalphi Heap rho A phi.
 
 Definition invAll
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
@@ -233,16 +67,7 @@ Ltac applyINVphi2 INVphi2 H :=
   assert (evp := INVphi2);
   apply H in evp.
 
-Ltac common :=
-  repeat rewrite AexceptEmpty in *;
-  unfold neq in *;
-  repeat match goal with
-    | [ H : option_map _ ?T = _ |- _ ] =>
-                        destruct T eqn: ?;
-                        inversionx H
-    | [ H : evale _ _ _ _ |- _ ] => unfold evale in H; simpl in H
-  end.
-
+(*
 Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -416,7 +241,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     apply evalPhiPrefix in evp.
     emagicProgress.
   - emagicProgress.
-Admitted.
+Admitted.*)
 
 Lemma inclEmpty : forall {T : Type} (x : list T), incl [] x.
 Proof.
@@ -537,92 +362,13 @@ Proof.
   intros; simpl; repeat eexists; eauto.
 Qed.
 
-Lemma hasStaticTypePhiSubst : forall x0 e0 e1 p T0 T1,
+(*Lemma hasStaticTypePhiSubst : forall x0 e0 e1 p T0 T1,
   hasStaticType (phiSubst x0 e0 p) (ex x0) T0 /\
   hasStaticType (phiSubst x0 e0 p) e0 T0 ->
   (hasStaticType p e1 T1 -> hasStaticType (phiSubst x0 e0 p) e1 T1)
 .
 Proof.
-Admitted.
-
-(*
-Lemma hasDynamicTypeRhoSubst : forall e x0 x1 T0 T1 H r,
-  ehasDynamicType H r (ex x0) T0 ->
-  hasDynamicType H x1 T0 ->
-  ehasDynamicType H r e T1 ->
-  (exists v, evale' H r e = Some v /\ v <> vnull) ->
-  ehasDynamicType H (rhoSubst x0 x1 r) e T1.
-Proof.
-  induction e0; intros.
-  - inversionx H1.
-    inversionx H5.
-    inversionx H3.
-    inversionx H5.
-    inversionx H1.
-    inversionx H3.
-    econstructor.
-    split; eauto.
-    constructor.
-  - inversionx H1.
-    inversionx H5.
-    inversionx H3.
-    inversionx H5.
-    inversionx H1.
-    inversionx H3.
-    des (x_dec x0 x1).
-    * unfold ehasDynamicType.
-      unfold evale, rhoSubst, x_decb, dec2decb. simpl. des (x_dec x1 x1).
-      exists x2. intuition.
-      rewrite H5 in H8.
-      inversionx H8.
-      unfold evale in H4. simpl in H4.
-      inversionx H4.
-      inversionx H1.
-      rewrite H3 in H5.
-      inversionx H5.
-      
-      inversionx H2; try constructor;
-      inversionx H6; try (contradict H4; tauto);
-      inversionx H7;
-      econstructor.
-      
-      rewrite H8 in H10.
-      inversionx H10.
-      eauto.
-    * unfold ehasDynamicType.
-      rename de2 into de22.
-      unfold evale, rhoSubst, x_decb, dec2decb. simpl. des (x_dec x0 x1); try (contradict de22; tauto).
-      eexists; eauto.
-  - inversionx H3.
-    inversionx H5.
-    inversionx H3.
-    destruct (evale' H0 r e0) eqn: e0e; try inversionx H7.
-    destruct v0; try inversionx H5.
-    destruct (H0 o0) eqn: H0e; simpl in H7; try inversionx H7.
-    destruct p0. simpl in *.
-    specialize (IHe0 x0 x1 T0 (TClass c) H0 (rhoSubst x0 x1 r)).
-    intuition.
-    assert (ehasDynamicType H0 (rhoSubst x0 x1 r) e0 (TClass c)).
-      econstructor; split; eauto. econstructor. eauto.
-    intuition. clear H3.
-    assert (∃ v0 : v, evale' H0 r e0 = Some v0 ∧ (v0 = vnull → False)).
-      rewrite e0e. eexists; split; eauto. intuition. inversion H3.
-    intuition. clear H3.
-    inversionx H7.
-    inversionx H3.
-    inversionx H7.
-    
-    rewrite e0e in *. rewrite H0e in *. simpl in *.
-    inversionx H4. inversionx H3.
-    rewrite H4 in H5. inversionx H5.
-    unfold ehasDynamicType.
-    unfold evale. simpl.
-    rewrite H9.
-    destruct x3; inversionx H8.
-
- des (x_dec x0 x1); try (contradict de22; tauto).
-      
-    split.*)
+Admitted.*)
 
 Definition A_sSubsts m (A : A_s) : A_s := 
   flat_map (fun p =>
@@ -677,8 +423,7 @@ Proof.
     subst.
     apply find_some in ff.
     inversionx ff.
-    unfold x_decb, dec2decb in H2.
-    des (x_dec x1 (fst (x2, ex x0))); try inversionx H2.
+    dec (x_dec x1 (fst (x2, ex x0))); try inversionx H2.
     simpl in *.
     unfold A_sSubsts in H4.
     apply in_flat_map in H4.
@@ -699,8 +444,8 @@ Proof.
     * destruct p0. destruct e0; inversionx H4.
       apply find_some in fff1.
       inversionx fff1.
-      unfold x_decb, dec2decb in *. simpl in *.
-      des (x_dec x3 x4); inversionx H3.
+      simpl in *.
+      dec (x_dec x3 x4); inversionx H3.
       specialize (H0 x0).
       inversionx H0.
       unfold mMapsToUnique in H3.
@@ -734,9 +479,8 @@ Proof.
         destruct e0; inversionx H4.
         apply find_some in ff1.
         inversionx ff1.
-        unfold x_decb, dec2decb in H2.
         simpl in H2.
-        des (x_dec x0 x2); inversionx H2.
+        dec (x_dec x0 x2); inversionx H2.
         apply in_map_iff in H3.
         inversionx H3.
         inversionx H2.
@@ -849,6 +593,37 @@ Proof.
       destruct e1; intuition.
 Qed.
 
+Lemma InSingle : forall {T : Type} (x y : T), In x [y] -> x = y.
+Proof.
+  intros.
+  inversionx H0; intuition.
+Qed.
+
+Ltac insing H := apply InSingle in H; inversionx H.
+
+    
+Lemma sfrmPhiApp' : forall p1 p2 a,
+  sfrmphi a p1 ->
+  sfrmphi (a ++ staticFootprint p1) p2 ->
+  sfrmphi a (p1 ++ p2).
+Proof.
+  induction p1; intros; simpl in *.
+  - rewrite app_nil_r in H1.
+    assumption.
+  - inversionx H0.
+    intuition.
+    apply IHp1; try auto.
+    admit.
+Qed.
+
+Lemma sfrmPhiApp : forall p1 p2,
+  sfrmphi [] p1 ->
+  sfrmphi (staticFootprint p1) p2 ->
+  sfrmphi [] (p1 ++ p2).
+Proof.
+  intros.
+  apply sfrmPhiApp'; simpl; assumption.
+Qed.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -894,7 +669,7 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
 
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
-    * eapply sfrmIncl; eauto. apply inclEmpty.
+    * eapply sfrmIncl; eauto. intuition.
     * econstructor; eauto; simpl.
         apply inclEmpty.
         econstructor; eauto. econstructor.
@@ -922,37 +697,57 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
           des (string_dec f0 f0).
           tauto.
       common.
+
+(*
+Lemma evalphi'HSubstAexcept : forall p H r A o f x,
+  evalphi' H r (Aexcept A [(o, f)]) p ->
+  evalphi' (HSubst o f x H) r (Aexcept A [(o, f)]) p.
+Proof.
+  intros.
+  inversionx H1; try constructor; unfold evale in *.
+  * destruct e_1; inversionx H3;
+    destruct e_2; inversionx H4;
+    econstructor; eauto;
+    unfold evale; simpl; eauto.
+    - destruct (evale' H0 r e_2) eqn: ee; inversionx H2.
+      destruct v0; inversionx H3.
+      destruct (H0 o1) eqn: ff; inversionx H2.
+      destruct p0.
+      simpl in *.
+      destruct e_2; simpl in *; inversionx ee; simpl in *.
+      + unfold HSubst.
+        dec (o_dec o1 o0); rewrite ff; simpl; try tauto.
+        dec (string_dec f1 f0); try tauto.
+
+Lemma evalphiHSubstAexcept : forall p H r A o f x,
+  evalphi H r (Aexcept A [(o, f)]) p ->
+  evalphi (HSubst o f x H) r (Aexcept A [(o, f)]) p.
+Proof.
+  induction p0; intros; try constructor.
+  inversionx H1.
+  rewrite AexceptComm in H12.
+  eapply IHp0 in H12.
+  econstructor; eauto.
+  - admit.
+  - inversionx H11; simpl in *; try constructor.
+    * 
+*)
+
       admit.
     * intros.
       assert (hasStaticType pre e0 T1). admit.
       apply INVtypes in H7. admit.
   - assert (HH3 := H3).
-    applyINVtypes INVtypes H3.
+    applyINVtypes INVtypes H7.
+    applyINVphi2 INVphi2 H2.
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
-    * generalize post H6.
-      clear.
-      induction post; intros; constructor.
-      + inversionx H6.
-        destruct a; try constructor;
-        inversionx H0;
-        try apply sfrmeSubst in H5;
-        try apply sfrmeSubst in H6;
-        assumption.
-      + destruct a; simpl in *; intuition.
-      ++  unfold x_decb, dec2decb in *.
-          des (x_dec x1 x0).
-            destruct e0; simpl in *. 
-              apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
-              admit.
-              apply IHpost in H1. eapply sfrmIncl; eauto; apply inclEmpty.
-            simpl in *. admit.
-      ++  unfold x_decb, dec2decb in *.
-          des (x_dec x1 x0).
-            destruct e0; simpl in *; apply IHpost in H1; assumption.
-            simpl in *. apply IHpost in H1; assumption.
+    * apply sfrmPhiApp; try assumption.
+      repeat constructor.
+      assumption.
     * admit.
     * intros.
+      apply hasStaticTypePhiSubst
       eapply hasStaticTypePhiSubst in H0.
       + apply INVtypes in H0. apply INVtypes in HH3. apply INVtypes in H2. admit.
       + split; eauto.
@@ -1272,10 +1067,256 @@ Proof.
 Qed.
 
 
-(* playground *)
-Open Scope string_scope.
 
-Notation "AA '⊢sfrme' ee" := (sfrme AA ee) (at level 90).
+(*
+Lemma hasDynamicTypeRhoSubst : forall e x0 x1 T0 T1 H r,
+  ehasDynamicType H r (ex x0) T0 ->
+  hasDynamicType H x1 T0 ->
+  ehasDynamicType H r e T1 ->
+  (exists v, evale' H r e = Some v /\ v <> vnull) ->
+  ehasDynamicType H (rhoSubst x0 x1 r) e T1.
+Proof.
+  induction e0; intros.
+  - inversionx H1.
+    inversionx H5.
+    inversionx H3.
+    inversionx H5.
+    inversionx H1.
+    inversionx H3.
+    econstructor.
+    split; eauto.
+    constructor.
+  - inversionx H1.
+    inversionx H5.
+    inversionx H3.
+    inversionx H5.
+    inversionx H1.
+    inversionx H3.
+    des (x_dec x0 x1).
+    * unfold ehasDynamicType.
+      unfold evale, rhoSubst, x_decb, dec2decb. simpl. des (x_dec x1 x1).
+      exists x2. intuition.
+      rewrite H5 in H8.
+      inversionx H8.
+      unfold evale in H4. simpl in H4.
+      inversionx H4.
+      inversionx H1.
+      rewrite H3 in H5.
+      inversionx H5.
+      
+      inversionx H2; try constructor;
+      inversionx H6; try (contradict H4; tauto);
+      inversionx H7;
+      econstructor.
+      
+      rewrite H8 in H10.
+      inversionx H10.
+      eauto.
+    * unfold ehasDynamicType.
+      rename de2 into de22.
+      unfold evale, rhoSubst, x_decb, dec2decb. simpl. des (x_dec x0 x1); try (contradict de22; tauto).
+      eexists; eauto.
+  - inversionx H3.
+    inversionx H5.
+    inversionx H3.
+    destruct (evale' H0 r e0) eqn: e0e; try inversionx H7.
+    destruct v0; try inversionx H5.
+    destruct (H0 o0) eqn: H0e; simpl in H7; try inversionx H7.
+    destruct p0. simpl in *.
+    specialize (IHe0 x0 x1 T0 (TClass c) H0 (rhoSubst x0 x1 r)).
+    intuition.
+    assert (ehasDynamicType H0 (rhoSubst x0 x1 r) e0 (TClass c)).
+      econstructor; split; eauto. econstructor. eauto.
+    intuition. clear H3.
+    assert (∃ v0 : v, evale' H0 r e0 = Some v0 ∧ (v0 = vnull → False)).
+      rewrite e0e. eexists; split; eauto. intuition. inversion H3.
+    intuition. clear H3.
+    inversionx H7.
+    inversionx H3.
+    inversionx H7.
+    
+    rewrite e0e in *. rewrite H0e in *. simpl in *.
+    inversionx H4. inversionx H3.
+    rewrite H4 in H5. inversionx H5.
+    unfold ehasDynamicType.
+    unfold evale. simpl.
+    rewrite H9.
+    destruct x3; inversionx H8.
 
-Print sfrme.
-Print dynSem.
+ des (x_dec x0 x1); try (contradict de22; tauto).
+      
+    split.*)
+
+(*Lemma rhoPhiHelper'' : forall e r x1 x2 v0 o0 H0 z rt v,
+  r x1 = Some (vo o0) ->
+  r x2 = Some v0 ->
+  (∀ x0 : x, In x0 (FVe e) → xUserDef z = x0 ∨ xthis = x0) ->
+  evale H0 r (eSubsts [(xthis, ex x1); (xUserDef z, ex x2)] e) v ->
+  evale H0
+    (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0)
+    e v.
+Proof.
+  unfold evale;
+  induction e0; intros; simpl in *.
+  - assumption.
+  - unfold rhoFrom3.
+    unfold x_decb, dec2decb in *.
+    destruct (x_dec x0 xthis).
+    * subst.
+      destruct (x_dec xthis xresult); try inversion e0.
+      simpl in H4.
+      rewrite H1 in H4.
+      assumption.
+    * destruct (x_dec x0 (xUserDef z)).
+      + subst.
+        destruct (x_dec (xUserDef z) xresult); try inversion e0.
+        simpl in H4.
+        rewrite H2 in H4.
+        assumption.
+      + specialize (H3 x0).
+        intuition.
+  - destruct (evale' H0 r (eSubsts [(xthis, ex x1); (xUserDef z, ex x2)] e0)) eqn: eva;
+    try (inversion H4; fail).
+    destruct v2; try (inversion H4; fail).
+    eapply IHe0 in eva; eauto.
+    erewrite eva.
+    apply H4.
+Qed.
+
+Lemma rhoPhiHelper' : forall r x1 x2 p' z H0 a0 v0 o0 rt,
+  r x1 = Some (vo o0) ->
+  r x2 = Some v0 ->
+  (∀ x0 : x, In x0 (FV' p') → xUserDef z = x0 ∨ xthis = x0) ->
+  evalphi' H0 r a0 (phi'Substs [(xthis, ex x1); (xUserDef z, ex x2)] p') ->
+  evalphi' H0 (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0) a0 p'.
+Proof.
+  intros.
+  inversionx H4;
+  unfold phi'Substs in *.
+  - destruct p'; simpl in H10; inversionx H10; try constructor.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+  - destruct p'; simpl in H6; inversionx H6; try constructor.
+    * econstructor.
+      + eapply rhoPhiHelper''; eauto. 
+        intros. specialize (H3 x0).
+        apply H3.
+        unfold FV'. apply in_or_app. auto.
+      + eapply rhoPhiHelper''; eauto. 
+        intros. specialize (H3 x0).
+        apply H3.
+        unfold FV'. apply in_or_app. auto.
+      + tauto.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+  - destruct p'; simpl in H6; inversionx H6; try constructor.
+    * econstructor.
+      + eapply rhoPhiHelper''; eauto. 
+        intros. specialize (H3 x0).
+        apply H3.
+        unfold FV'. apply in_or_app. auto.
+      + eapply rhoPhiHelper''; eauto. 
+        intros. specialize (H3 x0).
+        apply H3.
+        unfold FV'. apply in_or_app. auto.
+      + tauto.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+    * destruct (x_decb x0 xthis); inversionx H5.
+      destruct (x_decb x0 (xUserDef z)); inversionx H6.
+  - destruct p'; simpl in H6; inversionx H6; try constructor.
+    unfold x_decb, dec2decb in *.
+    destruct (x_dec x3 xthis); inversionx H5.
+    * econstructor; eauto.
+      unfold rhoFrom3.
+      unfold x_decb, dec2decb in *.
+      destruct (x_dec xthis xresult); try inversion e0.
+      destruct (x_dec xthis xthis); try (contradict n; tauto).
+      rewrite H1 in H7.
+      assumption.
+    * destruct (x_dec x3 (xUserDef z)); inversionx H6.
+      + econstructor; eauto.
+        unfold rhoFrom3.
+        unfold x_decb, dec2decb in *.
+        destruct (x_dec (xUserDef z) xresult); try inversion e0.
+        destruct (x_dec (xUserDef z) xthis); try inversion e0.
+        destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n2; tauto).
+        rewrite H2 in H7.
+        assumption.
+      + specialize (H3 x3).
+        simpl in H3.
+        intuition.
+    * destruct (x_decb x3 xthis); inversionx H5.
+      destruct (x_decb x3 (xUserDef z)); inversionx H6.
+  - destruct p'; simpl in H6; inversionx H6.
+    * destruct (x_decb x3 xthis); inversionx H5.
+      destruct (x_decb x3 (xUserDef z)); inversionx H6.
+    * specialize (H3 x3).
+      simpl in H3.
+      unfold rhoFrom3, x_decb, dec2decb in *.
+      destruct (x_dec x3 xthis).
+      + econstructor. eauto.
+      + econstructor. eauto.
+Qed.
+
+Lemma rhoPhiHelper : forall phi x1 x2 v0 o0 a z rt r H,
+  (∀ x : x, In x (FV phi) → (xUserDef z) = x ∨ xthis = x) ->
+  r x1 = Some (vo o0) ->
+  r x2 = Some v0 ->
+  evalphi H r a (phiSubsts2 xthis (ex x1) (xUserDef z) (ex x2) phi) ->
+  evalphi H (rhoFrom3 xresult (defaultValue rt) xthis (vo o0) (xUserDef z) v0) a phi.
+Proof.
+  induction phi0; intros; inversionx H4; try constructor.
+  econstructor; eauto.
+  - unfold incl in *.
+    intros.
+    apply H9.
+    destruct a; simpl in *; try inversion H4.
+    unfold rhoFrom3 in *.
+    unfold x_decb, dec2decb in *.
+    specialize (H1 x0).
+    intuition; subst.
+    * destruct (x_dec (xUserDef z) xresult); try inversion e0.
+      destruct (x_dec (xUserDef z) xthis); try inversion e0.
+      destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n; tauto).
+      unfold footprint'.
+      rewrite H3.
+      assumption.
+    * destruct (x_dec xthis xresult); try inversion e0.
+      destruct (x_dec xthis xthis); try (contradict n; tauto).
+      unfold footprint'.
+      rewrite H2.
+      assumption.
+  - eapply rhoPhiHelper'; eauto.
+    * intros.
+      apply H1.
+      unfold FV.
+      apply in_flat_map.
+      eexists; intuition.
+    * inversionx H14;
+      try econstructor; eauto.
+      unfold rhoFrom3.
+      clear H11.
+      destruct a; simpl in *; try inversionx H5.
+      + specialize (H1 x3).
+        unfold x_decb, dec2decb in *.
+        intuition; subst; clear H5.
+          destruct (x_dec (xUserDef z) xthis); try inversion e0.
+          destruct (x_dec (xUserDef z) (xUserDef z)); try (contradict n; tauto).
+          destruct (x_dec (xUserDef z) xresult); try inversion e1.
+          inversionx H7.
+          rewrite H3 in H6.
+          inversionx H6. constructor. tauto.
+        destruct (x_dec xthis xthis); try (contradict n; tauto).
+        destruct (x_dec xthis xresult); try inversion e1.
+        inversionx H7.
+        rewrite H2 in H6.
+        inversionx H6. constructor. tauto.
+      + destruct (x_decb x3 xthis); try inversion H7.
+        destruct (x_decb x3 (xUserDef z)); try inversion H7.
+  - 
+Admitted.*)

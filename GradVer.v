@@ -155,6 +155,22 @@ Hint Resolve list_eq_dec v_dec.
 
 Definition A_s'_decb (a b : x * f) : bool := x_decb (fst a) (fst b) && string_decb (snd a) (snd b).
 Definition A_d'_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+
+Ltac undecb :=
+  unfold
+    A_s'_decb,
+    A_d'_decb,
+    v_decb,
+    T_decb,
+    x_decb,
+    o_decb,
+    m_decb,
+    f_decb,
+    C_decb,
+    string_decb,
+    dec2decb
+      in *.
+
 Definition A_sexcept := except A_s'_decb.
 (*coq2latex: Aexcept #A1 #A2 := #A1 \backslash #A2 *)
 Definition Aexcept := except A_d'_decb.
@@ -515,13 +531,14 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
        phiAcc x f ::
        phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi')
-| HVarAssign : forall T phi_1(*\*) phi_2(*\*) (x : x) (e : e),
-    hasStaticType phi_1 (ex x) T ->
-    hasStaticType phi_1 e T ->
-    phi_1 = phiSubst x e phi_2 ->
-    sfrmphi [] phi_1 ->
-    sfrme (staticFootprint phi_1) e ->
-    hoareSingle phi_1 (sAssign x e) phi_2
+| HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
+    phiImplies phi phi' ->
+    sfrmphi [] phi' ->
+    NotIn x (FV phi') ->
+    hasStaticType phi (ex x) T ->
+    hasStaticType phi e T ->
+    sfrme (staticFootprint phi') e ->
+    hoareSingle phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
 | HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
     phiImplies phi phi' ->
     sfrmphi [] phi' ->

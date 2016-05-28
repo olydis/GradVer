@@ -9,12 +9,8 @@ Require Import Coq.Logic.Eqdep_dec.
 Require Import Classical_Prop.
 
 Load GradVer.
+Load GradVerPreludeLtac.
 Import Semantics.
-
-Ltac inversionE H :=
-  inversion H; clear H.
-Ltac inversionx H :=
-  inversion H; clear H; subst.
 
 Lemma evalphiTrue : forall H r A, True -> evalphi H r A [].
 Proof.
@@ -209,12 +205,6 @@ Qed.
 
 Lemma HnotTotal : forall (H' : H), exists x, H' x = None.
 Admitted.
-
-Ltac app_cons h :=
-  assert (acc := app_comm_cons);
-  symmetry in acc;
-  rewrite acc in h;
-  clear acc.
 
 Lemma evalPhiPrefix : forall p1 h r a p2,
    evalphi h r a (p1 ++ p2) -> evalphi h r a p1.
