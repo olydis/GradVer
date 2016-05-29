@@ -313,7 +313,19 @@ Proof.
     eauto.
 Qed.
 
-Lemma phiImpliesStaticType : forall p1 p2 e T, phiImplies p1 p2 -> hasStaticType p2 e T -> hasStaticType p1 e T.
+Lemma phiImpliesTrans : forall p1 p2 p3,
+  phiImplies p1 p2 ->
+  phiImplies p2 p3 ->
+  phiImplies p1 p3.
+Proof.
+  unfold phiImplies.
+  intuition.
+Qed.
+
+Lemma phiImpliesStaticType : forall p1 p2 e T,
+  phiImplies p1 p2 -> 
+  hasStaticType p2 e T -> 
+  hasStaticType p1 e T.
 Proof.
   induction e0; intros; inversionx H1; try constructor.
   - unfold phiImplies in *.
@@ -322,6 +334,7 @@ Proof.
     apply H0.
     assumption.
   - econstructor; eauto.
+    eapply phiImpliesTrans; eauto.
 Qed.
 
 (*    x : T * y : T   =>  x : T                *)
@@ -583,6 +596,251 @@ Proof.
   destruct t; simpl; constructor.
 Qed.
 
+Definition disjoint {A : Type} (l1 l2 : list A) :=
+  forall x, ~ In x l1 \/ ~ In x l2.
+
+Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
+
+Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
+
+Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
+  evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
+
+
+Lemma disjointSplitB : forall {A} (l1 l2a l2b : list A),
+  disjoint l1 (l2a ++ l2b) ->
+  disjoint l1 l2a /\ disjoint l1 l2b.
+Proof.
+  unfold disjoint.
+  split; intros;
+  specialize (H0 x0);
+  intuition.
+Qed.
+
+(*
+Lemma phiImpliesAlways : forall p1 p2,
+  disjoint (FV p1) (FV p2) ->
+  phiImplies p1 p2 ->
+  phiImplies [] p2.
+Proof.
+  induction p1; 
+*)
+
+
+Lemma phiFVorIsIndependentVar : forall x p,
+  phiIsIndependentVar x p \/ In x (FV p).
+Proof.
+  intros.
+  assert (CL := classic (In x0 (FV p0))).
+  intuition.
+  constructor.
+  unfold phiIsIndependentVar.
+  intros.
+  apply evalphiRemoveRhoSubst;
+  intuition.
+Qed.
+
+Lemma phiOrthogonalityImpliesIndependence : forall p1 p2 x,
+    phiOrthogonal p1 p2 ->
+    In x (FV p1) ->
+    phiIsIndependentVar x p2.
+Proof.
+  intros.
+  unfold phiOrthogonal, disjoint in *.
+  specialize (H0 x0).
+  assert (CL := phiFVorIsIndependentVar x0 p2).
+  intuition.
+Qed.
+
+Ltac unf :=
+  repeat match goal with
+    | [ H : exists _, _ |- _ ] => inversionE H
+    | [ H : _ /\ _ |- _ ] => inversionE H
+    | [ H : _ <-> _ |- _ ] => inversionE H
+  end.
+
+Lemma FVApp : forall p1 p2,
+  FV (p1 ++ p2) = FV p1 ++ FV p2.
+Proof.
+  induction p1;
+  intros;
+  simpl;
+  try tauto.
+  rewrite IHp1.
+  rewrite app_assoc.
+  tauto.
+Qed.
+
+Lemma phiOrthogonalAppA : forall p1a p1b p2,
+  phiOrthogonal (p1a ++ p1b) p2 <->
+  phiOrthogonal p1a p2 /\
+  phiOrthogonal p1b p2.
+Proof.
+  unfold phiOrthogonal, disjoint, phiSatisfiable in *.
+  split; intros;
+  rewrite FVApp in *.
+  - split; intros; specialize (H0 x0); intuition.
+  - intuition.
+    rewrite in_app_iff.
+    specialize (H1 x0).
+    specialize (H2 x0).
+    intuition.
+Qed.
+
+Lemma app2cons : forall {T} (x : T) xs,
+  x :: xs = [x] ++ xs.
+Proof.
+  intuition.
+Qed.
+
+Lemma canMergeHeapCollisionFree : 
+  forall (H1 H2 : H),
+  exists (om : o -> o) (H3 : H),
+  forall o v,
+    H3 o = Some v <-> H1 (om o) = Some v \/ H2 (om o) = Some v.
+Proof.
+  intros.
+Admitted.
+
+Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
+  fun x => option_map
+           (fun v => match v with
+                     | vo o => vo (omap o)
+                     | _ => v
+                     end)
+           (r x).
+
+Fixpoint divmod (x y : nat) q u :=
+  match x with
+    | 0 => (q,u)
+    | Datatypes.S x' => match u with
+                | 0 => divmod x' y (Datatypes.S q) y
+                | Datatypes.S u' => divmod x' y q u'
+              end
+  end.
+Definition div x y :=
+  match y with
+    | 0 => y
+    | Datatypes.S y' => fst (divmod x y' 0 y')
+  end.
+Definition modulo x y :=
+  match y with
+    | 0 => y
+    | Datatypes.S y' => y' - snd (divmod x y' 0 y')
+  end.
+
+Lemma phiSatisfiableApp : forall p0 p1,
+  phiOrthogonal p0 p1 ->
+  phiSatisfiable p0 ->
+  phiSatisfiable p1 ->
+  phiSatisfiable (p0 ++ p1).
+Proof.
+  intros; simpl in *;
+  intuition.
+  unfold phiOrthogonal, disjoint, phiSatisfiable in *.
+  unf.
+  exists (fun o => match modulo o 2 with
+                   | 0 => x0 (div o 2)
+                   | _ => x3 (div (o - 1) 2)
+                   end).
+  exists (fun x => match rhoWithOmap (fun o => 2 * o) x1 x with
+                   | Some v => Some v
+                   | None => rhoWithOmap (fun o => 2 * o + 1) x4 x
+                   end).
+  exists (x2 ++ x5).
+  
+    repeat eexists; econstructor.
+  
+  
+  induction p0; split; intros; simpl in *;
+  intuition.
+  - unfold phiOrthogonal, disjoint, phiSatisfiable in *.
+    repeat eexists; econstructor.
+  - rewrite app2cons in H0.
+    rewrite phiOrthogonalAppA in H0.
+    unf.
+    apply IHp0 in H4. clear IHp0.
+    unf.
+    clear H5.
+    intuition.
+    apply H4 in H3; clear H4.
+    * unfold phiSatisfiable in *.
+      unf.
+      apply evalphiSuffix in H0.
+    repeat eexists; eauto.
+    * unfold phiSatisfiable in *.
+      unf.
+      inversionx H3.
+      repeat eexists; eauto.
+  - unfold phiSatisfiable in *.
+    unf.
+    rewrite app_comm_cons in H2.
+    apply evalphiPrefix in H2.
+    repeat eexists; eauto.
+  - unfold phiSatisfiable in *.
+    unf.
+    rewrite app_comm_cons in H2.
+    apply evalphiSuffix in H2.
+    repeat eexists; eauto.
+Qed.
+
+Lemma phiImpliesNarrowing : forall p0 p1 p2,
+  phiSatisfiable (p0 ++ p1) ->
+  phiOrthogonal p0 p2 ->
+  phiImplies (p0 ++ p1) p2 ->
+  phiImplies p1 p2.
+Proof.
+  induction p1;
+  intros;
+  simpl in *.
+  - admit.
+  - apply disjointSplitB in H0.
+    inversionx H0.
+    apply disjointSplitB in H2.
+    inversionx H2.
+    
+    
+  
+  
+  - rewrite app_nil_r in *.
+  - simpl in *.
+    apply disjointSplitB in H0.
+    inversionx H0.
+    assert (∀ (h : H) (r : ρ) (a : A_d), evalphi h r a (p' :: p1) → evalphi h r a p2).
+    * intros.
+      apply H2 in H0.
+      inversionx H0.
+      apply evalphiAexcept in H16.
+      assumption.
+    * 
+    eapply IHp2 in H3; eauto.
+    
+  
+  
+  
+  eapply phiImpliesTrans.
+  
+  eapply phiImpliesTrans; eauto.
+  
+  
+  induction p2;
+  intros.
+  - constructor.
+  - simpl in *.
+    apply (IHp2 p1) in H3; clear IHp2.
+    * eapply phiImpliesTrans; eauto.
+      clear H3.
+      
+  
+  induction p1;
+  induction p2;
+  intros;
+  try constructor;
+  unfold phiImplies in *;
+  intros.
+  - eca.
+  - apply IHp1 in H0.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -835,6 +1093,29 @@ Proof.
           common.
           erewrite evalphiRemoveRhoSubst; intuition.
     * intros.
+      unfold ehasDynamicType, evale.
+      inversionx H0; simpl in *.
+      + eexists.
+        split; eca.
+      + eexists.
+        split; eca.
+      + unfold rhoSubst.
+        dec (x_dec x1 x0).
+      ++  admit.
+      ++  
+      
+      
+      
+          eexists.
+          split; try eca.
+          apply H2 in INVphi2.
+          unfold phiImplies in H1.
+          assert (t = T0). admit.
+          subst.
+          apply hasDynamicTypeDefault.
+        eexists.
+        split; eca.
+      try (eca; split; try eca; fail).
     
       unfold hasStaticType in *.
 
