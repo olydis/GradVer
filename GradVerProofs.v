@@ -67,7 +67,6 @@ Ltac applyINVphi2 INVphi2 H :=
   assert (evp := INVphi2);
   apply H in evp.
 
-(*
 Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -104,7 +103,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     specialize (H9 (o1,f0)).
 
     emagicProgress.
-  - applyINVtypes INVtypes H3.
+  - applyINVtypes INVtypes H7.
     emagicProgress.
   - assert (HnT := HnotTotal initialHeap). inversionE HnT.
     
@@ -241,7 +240,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     apply evalphiPrefix in evp.
     emagicProgress.
   - emagicProgress.
-Admitted.*)
+Admitted.
 
 
 Lemma sfrmeIncl : forall p a b, incl a b -> sfrme a p -> sfrme b p.
@@ -717,7 +716,7 @@ Proof.
         inversionx H6.
         eexists; split; eauto.
       + inversionx H0.
-        apply IHe1 in H10.
+        apply IHe1 in H8.
         admit.
 
 (*
@@ -834,13 +833,10 @@ Proof.
           rewrite rhoSubstId. tauto.
       ++  simpl.
           common.
-          apply 
-
-
-
-          
-    * assumption.
-Proof.
+          erewrite evalphiRemoveRhoSubst; intuition.
+    * intros.
+    
+      unfold hasStaticType in *.
 
 (*
 Lemma phiTrueSubst : forall a b p, phiTrue = phiSubst a b p -> p = phiTrue.
@@ -890,8 +886,7 @@ Proof.
       assumption.
 Admitted.
 
-Lemma phiImpliesConj : forall a b c, phiImplies a (phiConj b c) -> phiImplies a b.
-Admitted.*)
+*)
 
 Ltac tmp := repeat eexists; econstructor; econstructor; eauto.
 Ltac unfWT := 
