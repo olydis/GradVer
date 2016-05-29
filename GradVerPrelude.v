@@ -1,15 +1,6 @@
-Require Import Coq.Logic.ClassicalFacts.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Structures.Equalities.
-Require Import Coq.Logic.Classical_Pred_Type.
-Require Import Coq.Classes.SetoidClass.
-Require Import Coq.Logic.Eqdep_dec.
 Require Import Classical_Prop.
 
-Load GradVer.
-Load GradVerPreludeLtac.
+Load GradVer2LemmaIndependent.
 Import Semantics.
 
 Lemma AexceptEmpty : forall A, Aexcept A [] = A.
@@ -154,31 +145,6 @@ Proof.
   assumption.
 Qed.
 
-Lemma InSingle : forall {T : Type} (x y : T), In x [y] -> x = y.
-Proof.
-  intros.
-  inversionx H0; intuition.
-Qed.
-
-Lemma inclEmpty : forall {T : Type} (x : list T), incl [] x.
-Proof.
-  unfold incl.
-  intros.
-  inversion H0.
-Qed.
-
-Lemma inclSingle : forall {T : Type} (xs : list T) x, 
-  incl [x] xs <-> In x xs.
-Proof.
-  split; unfold incl; intros.
-  - apply H0.
-    constructor.
-    tauto.
-  - inversionx H1.
-    * assumption.
-    * inversion H2.
-Qed.
-
 Lemma evalphiAexcept : forall p h r a a2,
   evalphi h r (Aexcept a a2) p -> evalphi h r a p.
 Proof.
@@ -204,23 +170,6 @@ Proof.
   rewrite H3.
   rewrite inclSingle.
   assumption.
-Qed.
-
-Lemma inclEmptyFalse : forall {T : Type} (x : T) xs,
-  ~ incl (x :: xs) [].
-Proof.
-  intuition.
-  unfold incl in H0.
-  specialize (H0 x0).
-  assert (In x0 (x0 :: xs)). apply in_eq.
-  intuition.
-Qed.
-
-Lemma incl_cons_reverse : forall {T : Type} (x : T) xs ys,
-  incl (x :: xs) ys -> incl xs ys /\ In x ys.
-Proof.
-  unfold incl.
-  intuition.
 Qed.
 
 Lemma inclAexceptTriple : forall P Q A,
@@ -259,7 +208,8 @@ Proof.
     apply inclAexceptTriple; auto.
 Qed.
 
-Lemma evalphiSymm : forall p1 p2 H r A, evalphi H r A (p1 ++ p2) -> evalphi H r A (p2 ++ p1).
+Lemma evalphiSymm : forall p1 p2 H r A, 
+  evalphi H r A (p1 ++ p2) -> evalphi H r A (p2 ++ p1).
 Proof.
   induction p1.
   - intros.
@@ -390,13 +340,6 @@ Proof.
   eapply H0; eauto.
 Qed.
 
-Lemma lengthId : forall {A : Type} (a b : list A), a = b -> Datatypes.length a = Datatypes.length b.
-Proof.
-  intros.
-  rewrite H0.
-  tauto.
-Qed.
-
 Lemma HeapGetsMoreSpecific' : forall s1 s2 (H1 H2 : H) (C : C) m1 (o : o),
   dynSem (H1, s1) (H2, s2) ->
              H1 o = Some (C, m1) ->
@@ -523,13 +466,6 @@ Proof.
   intuition.
 Qed.
 
-Lemma exists_forall : forall {A : Type} (b : A -> Prop) (c : Prop), ((exists a, b a) -> c) -> (forall a, b a -> c).
-Proof.
-  intros.
-  apply H0.
-  eauto.
-Qed.
-
 Lemma InReorder : forall {T : Type} (a : T) a1 a2 a3 a4,
   In a (a1 ++ a2 ++ a3 ++ a4) ->
   In a (a1 ++ a3 ++ a2 ++ a4).
@@ -580,18 +516,6 @@ Proof.
     apply IHp0.
     assumption.
 Qed.
-
-Ltac rewriteRev R :=
-  assert (temp := R);
-  symmetry in temp;
-  rewrite temp;
-  clear temp.
-
-Ltac rewriteRevIn R H :=
-  assert (temp := R);
-  symmetry in temp;
-  rewrite temp in H;
-  clear temp.
 
 Lemma sfrmphiApp' : forall p1 p2 a,
   sfrmphi a p1 ->
@@ -654,4 +578,97 @@ Lemma hasDynamicTypeId : forall H t,
 Proof.
   intros.
   destruct t; constructor.
+Qed.
+
+
+(* RemoveRhoSubst *)
+Lemma evaleRemoveRhoSubst : forall e H r x v,
+  ~ In x (FVe e) ->
+  evale' H (rhoSubst x v r) e = evale' H r e.
+Proof.
+  induction e0;
+  unfold evale in *;
+  simpl in *;
+  intros.
+  - tauto.
+  - unfold rhoSubst.
+    dec (x_dec x0 x1);
+    intuition.
+  - destruct (evale' H0 (rhoSubst x0 v0 r) e0) eqn: eve;
+    rewrite IHe0 in eve;
+    auto;
+    rewrite eve;
+    tauto.
+Qed.
+
+Lemma evalphi'RemoveRhoSubst : forall p H r A x v,
+  ~ In x (FV' p) ->
+  evalphi' H (rhoSubst x v r) A p <->
+  evalphi' H r A p.
+Proof.
+  intros.
+  destruct p0; simpl;
+  intuition;
+  inversionx H2;
+  simpl in *;
+  eca;
+  unfold evale in *;
+  try erewrite evaleRemoveRhoSubst in *;
+  eauto;
+  intuition;
+  unfold rhoSubst in *;
+  dec (x_dec x1 x0);
+  intuition.
+Qed.
+
+Lemma footprint'RemoveRhoSubst : forall p H r x v,
+  ~ In x (FV' p) ->
+  footprint' H (rhoSubst x v r) p =
+  footprint' H r p.
+Proof.
+  intros.
+  destruct p0;
+  simpl;
+  try tauto.
+  
+  simpl in *.
+  unfold rhoSubst.
+  dec (x_dec x1 x0); intuition.
+Qed.
+
+Lemma footprintRemoveRhoSubst : forall p H r x v,
+  ~ In x (FV p) ->
+  footprint H (rhoSubst x v r) p =
+  footprint H r p.
+Proof.
+  induction p0;
+  intros;
+  simpl in *;
+  try tauto.
+  rewrite footprint'RemoveRhoSubst; intuition.
+  rewrite IHp0; intuition.
+Qed.
+
+Lemma evalphiRemoveRhoSubst : forall p H r A x v,
+  ~ In x (FV p) ->
+  evalphi H (rhoSubst x v r) A p <->
+  evalphi H r A p.
+Proof.
+  induction p0;
+  intros.
+  - split; constructor.
+  - split; intros.
+    * inversionx H2.
+      simpl in *.
+      rewrite footprint'RemoveRhoSubst in *; intuition.
+      apply evalphi'RemoveRhoSubst in H12; intuition.
+      apply IHp0 in H13; intuition.
+      eca.
+    * inversionx H2.
+      simpl in *.
+      eca;
+      rewrite footprint'RemoveRhoSubst;
+      intuition.
+      + rewrite evalphi'RemoveRhoSubst; intuition.
+      + rewrite IHp0; intuition.
 Qed.

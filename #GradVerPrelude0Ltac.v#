@@ -1,3 +1,5 @@
+Require Import Coq.Lists.List.
+
 Ltac inversionE H :=
   inversion H; clear H.
 Ltac inversionx H :=
@@ -16,3 +18,16 @@ Ltac des P :=
     try (rewrite de1 in *);
     try (clear de1).
 Ltac dec P := undecb; des P.
+
+
+Ltac rewriteRev R :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp;
+  clear temp.
+
+Ltac rewriteRevIn R H :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp in H;
+  clear temp.
