@@ -115,6 +115,18 @@ Proof.
   - eapply evalphiSuffix. eauto.
 Qed.
 
+(**)
+Lemma footprint'RemoveRhoSubsts : forall h r r' p,
+  footprint' h (rhoSubsts (FV' p) r' r) p = 
+  footprint' h r' p.
+Proof.
+  intros.
+  destruct p0; simpl; try tauto.
+  destruct (r' x0);
+  simpl;
+  rewrite rhoSubstId;
+  tauto.
+Qed.
 
 Lemma phiImpliesNarrowingSingle : forall p p1 p2,
   phiOrthogonal [p] p2 ->
@@ -128,8 +140,20 @@ Proof.
   simpl in *.
   rewrite app_nil_r in *.
   intros.
-  specialize (H2 h (rhoSubsts (FV' p0) x1 r) (x2 ++ a)).
+  specialize (H2 h (rhoSubsts (FV' p0) x1 r) (footprint' h x1 p0 ++ a)).
   rewrite (evalphiRemoveRhoSubsts p2) in H2; auto.
+  
+  assert (evalphi h r (footprint' h x1 p0 ++ a) p2 = evalphi h r a p2) as xxx. admit.
+  rewrite xxx in *. clear xxx.
+  
+  apply H2.
+  eca.
+  - rewrite footprint'RemoveRhoSubsts.
+    intuition.
+  - 
+  
+
+  assert (disj)
   (*show that x2 is irrelevant for access to p2's expressions*)
 Admitted.
 
