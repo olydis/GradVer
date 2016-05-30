@@ -519,6 +519,12 @@ Fixpoint FVe (e : e) : list x :=
   | ex x => [x]
   | edot e f => FVe e
   end.
+Fixpoint FVeo (e : e) : option x := 
+  match e with
+  | ev _ => None
+  | ex x => Some x
+  | edot e _ => FVeo e
+  end.
 Definition FV' (phi : phi') : list x :=
   match phi with
   | phiTrue => []
@@ -528,6 +534,10 @@ Definition FV' (phi : phi') : list x :=
   | phiType x T => [x]
   end.
 Definition FV (phi : phi) : list x := flat_map FV' phi.
+
+Definition FVA_s (A : A_s) : list x := map fst A.
+(* Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m). *)
+
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=

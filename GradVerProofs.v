@@ -1,16 +1,5 @@
-Load GradVerPrelude.
+Load GradVer20Hook.
 Import Semantics.
-
-
-Ltac common :=
-  repeat rewrite AexceptEmpty in *;
-  unfold neq in *;
-  repeat match goal with
-    | [ H : option_map _ ?T = _ |- _ ] =>
-                        destruct T eqn: ?;
-                        inversionx H
-    | [ H : evale _ _ _ _ |- _ ] => unfold evale in H; simpl in H
-  end.
 
 Definition phiEquiv (p1 p2 : phi) := phiImplies p1 p2 /\ phiImplies p2 p1.
 
@@ -247,70 +236,11 @@ Ltac emagicProgressx :=
   econstructor; econstructor;
   unfold evale; simpl; eauto.
 
-Lemma evalphiTypeUnlift : forall x T H r A p,
-  In (phiType x T) p -> evalphi H r A p -> evalphi' H r A (phiType x T).
-Proof.
-  induction p0; intros; inversionx H1.
-  - inversionx H2.
-    inversionx H11.
-    econstructor; eauto.
-  - apply IHp0; auto.
-    inversionx H2.
-    apply evalphiAexcept in H13.
-    assumption.
-Qed.
-
-Lemma hasDynamicTypeHSubst : forall H v T o f x,
-  hasDynamicType H v T -> hasDynamicType (HSubst o f x H) v T.
-Proof.
-  intros.
-  inversionx H1; try constructor.
-  destruct (o_dec o1 o0) eqn: oo.
-  - subst.
-    econstructor.
-    unfold HSubst.
-    unfold o_decb, dec2decb.
-    rewrite oo.
-    rewrite H3.
-    eauto.
-  - econstructor.
-    unfold HSubst.
-    unfold o_decb, dec2decb.
-    rewrite oo.
-    rewrite H3.
-    eauto.
-Qed.
-
-Lemma phiImpliesStaticType : forall p1 p2 e T,
-  phiImplies p1 p2 -> 
-  hasStaticType p2 e T -> 
-  hasStaticType p1 e T.
-Proof.
-  induction e0; intros; inversionx H1; try constructor.
-  - unfold phiImplies in *.
-    intros.
-    apply H4.
-    apply H0.
-    assumption.
-  - econstructor; eauto.
-    eapply phiImpliesTrans; eauto.
-Qed.
-
 (*    x : T * y : T   =>  x : T                *)
 (*    x : T * y = 3   =>  x : T * y : T        *)
 (*    3 = 4           =>  x : T                *)
 (*    3 = x           =>  x : T                *)
 
-Lemma evalphiImpliesType : forall H r A p x T,
-  evalphi H r A p -> phiImplies p [phiType x T] -> ehasDynamicType H r (ex x) T.
-Proof.
-  intros.
-  apply H2 in H1.
-  inversionx H1.
-  inversionx H12.
-  unfold ehasDynamicType.
-  eexists; eauto.
-Qed.
 
 (*Lemma hasStaticTypePhiSubst : forall x0 e0 e1 p T0 T1,
   hasStaticType (phiSubst x0 e0 p) (ex x0) T0 /\
@@ -320,432 +250,6 @@ Qed.
 Proof.
 Admitted.*)
 
-Definition A_sSubsts m (A : A_s) : A_s := 
-  flat_map (fun p =>
-    match p with
-    | phiAcc x f => [(x, f)]
-    | _ => []
-    end
-  )
-  (phiSubsts m (map (fun a => phiAcc (fst a) (snd a)) A)).
-
-Definition FVA_s (A : A_s) : list x := map fst A.
-
-Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m).
-
-Fixpoint FVeo (e : e) : option x := 
-  match e with
-  | ev _ => None
-  | ex x => Some x
-  | edot e _ => FVeo e
-  end.
-
-Definition mMapsTo (m : list (x * e)) (x' : x) : Prop :=
-  exists m', In m' m /\ FVeo (snd m') = Some x'.
-
-Definition mMapsToUnique (m : list (x * e)) (x' : x) : Prop :=
-  forall f1 f2 e1 e2, 
-      In (f1, e1) m -> 
-      In (f2, e2) m -> 
-      FVeo e1 = Some x' -> 
-      FVeo e2 = Some x' -> 
-      f1 = f2
-.
-
-(* sfrme (A_sSubsts (a => b) (a.f)) (eSubsts (a => b) (b.f)) -> sfrme (a.f) (b.f) *)
-Lemma sfrmeSubst : forall m e a,
-      (forall x, mMapsToUnique m x /\ (mMapsTo m x -> (~ In x (FVe e) /\ ~ In x (FVA_s a)))) ->
-      sfrme (A_sSubsts m a) (eSubsts m e) ->
-      sfrme a e.
-Proof.
-  intros.
-  destruct e0; try constructor.
-  simpl in *;
-  try apply inclEmpty;
-  try constructor.
-  inversionx H1.
-  destruct e0; simpl in H0; inversionx H2.
-  constructor.
-  destruct (find (λ r : x * e, x_decb x1 (fst r)) m0) eqn: ff.
-  - destruct p0.
-    subst.
-    apply find_some in ff.
-    inversionx ff.
-    dec (x_dec x1 (fst (x2, ex x0))); try inversionx H2.
-    simpl in *.
-    unfold A_sSubsts in H4.
-    apply in_flat_map in H4.
-    inversionx H4.
-    inversionx H2.
-    destruct x3; inversionx H4; inversionx H2.
-    unfold phiSubsts, phi'Substs in H3.
-    simpl in *.
-    apply in_map_iff in H3.
-    inversionx H3.
-    inversionx H2.
-    apply in_map_iff in H4.
-    inversionE H4.
-    inversionx H2.
-    destruct x4.
-    simpl in *.
-    destruct (find (λ r : x * e, x_decb x3 (fst r)) m0) eqn: fff1; inversionx H3.
-    * destruct p0. destruct e0; inversionx H4.
-      apply find_some in fff1.
-      inversionx fff1.
-      simpl in *.
-      dec (x_dec x3 x4); inversionx H3.
-      specialize (H0 x0).
-      inversionx H0.
-      unfold mMapsToUnique in H3.
-      eapply H3 in H1; eauto.
-      subst.
-      assumption.
-    * specialize (H0 x0).
-      inversionx H0.
-      assert (mMapsTo m0 x0).
-        eexists; eauto.
-      intuition.
-      unfold FVA_s in H6.
-      rewrite in_map_iff in H6.
-      contradict H6.
-      eexists; split; eauto.
-      auto.
-  - inversionx H3.
-    unfold A_sSubsts in H4.
-    apply in_flat_map in H4.
-    inversionx H4.
-    inversionx H1.
-    destruct x0; inversionx H3; try inversionx H1.
-    unfold phiSubsts in H2.
-    apply in_map_iff in H2.
-    inversionx H2.
-    inversionx H1.
-    unfold phiSubsts, phi'Substs in H2.
-    destruct x0; inversionx H2.
-    * destruct (find (λ r : x * e, x_decb x0 (fst r)) m0) eqn: ff1.
-      + destruct p0.
-        destruct e0; inversionx H4.
-        apply find_some in ff1.
-        inversionx ff1.
-        simpl in H2.
-        dec (x_dec x0 x2); inversionx H2.
-        apply in_map_iff in H3.
-        inversionx H3.
-        inversionx H2.
-        inversionx H3.
-        destruct x3.
-        simpl in *.
-        specialize (H0 x1).
-        inversionx H0.
-        assert (mMapsTo m0 x1).
-          eexists; eauto.
-        intuition.
-      + inversionx H4.
-        apply in_map_iff in H3.
-        inversionx H3.
-        inversionx H1. 
-        inversionx H2.
-        destruct x0.
-        simpl.
-        assumption.
-    * apply in_map_iff in H3.
-      inversionx H3.
-      inversionx H1.
-      inversionx H2.
-Qed.
-
-Lemma sfrmeSubstEmpty : forall m e,
-      sfrme [] (eSubsts m e) -> sfrme [] e.
-Proof.
-  intros.
-  destruct e0; try constructor.
-  simpl in *.
-  inversionx H0.
-  inversion H3.
-Qed.
-
-Lemma sfrmphi'Subst : forall m e a,
-     (forall x, mMapsToUnique m x /\ (mMapsTo m x -> (~ In x (FV' e) /\ ~ In x (FVA_s a)))) ->
-      sfrmphi' (A_sSubsts m a) (phi'Substs m e)
-      ->
-      sfrmphi' a e.
-Proof.
-  intros.
-  destruct e0; constructor;
-  inversionx H1;
-  apply (sfrmeSubst m0); intuition;
-  try apply H0;
-  apply H0 in H1;
-  inversionx H1;
-  intuition;
-  contradict H3;
-  simpl;
-  intuition.
-Qed.
-
-(* counter-examples:
-sfrmphi [] (phiSubsts (a => c, b => c) (acc(b.f) * a.f = 3)) ->
-sfrmphi [] (acc(b.f) * a.f = 3)
-
-sfrmphi [] (phiSubsts (a => b) (acc(b.f) * a.f = 3)) ->
-sfrmphi [] (acc(b.f) * a.f = 3)
-
-sfrmphi [] (phiSubsts (b => a) (acc(b.f) * a.f = 3)) ->
-sfrmphi [] (acc(b.f) * a.f = 3)
-*)
-
-Lemma sfrmphiSubst : forall e m a,
-     (forall x, mMapsToUnique m x /\ (mMapsTo m x -> (~ In x (FV e) /\ ~ In x (FVA_s a)))) ->
-      sfrmphi (A_sSubsts m a) (phiSubsts m e)
-      ->
-      sfrmphi a e.
-Proof.
-  induction e0; intros; constructor.
-  - inversionx H1.
-    eapply sfrmphi'Subst; eauto.
-    intros.
-    split; try apply H0.
-    intros.
-    apply H0 in H1.
-    inversionx H1.
-    intuition.
-    contradict H4.
-    simpl.
-    intuition.
-  - inversionx H1.
-    apply (IHe0 m0); intros.
-    * specialize (H0 x0).
-      inversionx H0.
-      intuition.
-      + contradict H4.
-        simpl.
-        intuition.
-      + destruct a; simpl in *; intuition.
-    * destruct a; simpl in *; intuition.
-      destruct (find (λ r : x * e, x_decb x0 (fst r)) m0); intuition.
-      destruct p0.
-      destruct e1; intuition.
-Qed.
-
-Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
-
-Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
-
-Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
-  evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
-
-
-(*
-Lemma phiImpliesAlways : forall p1 p2,
-  disjoint (FV p1) (FV p2) ->
-  phiImplies p1 p2 ->
-  phiImplies [] p2.
-Proof.
-  induction p1; 
-*)
-
-
-Lemma phiFVorIsIndependentVar : forall x p,
-  phiIsIndependentVar x p \/ In x (FV p).
-Proof.
-  intros.
-  assert (CL := classic (In x0 (FV p0))).
-  intuition.
-  constructor.
-  unfold phiIsIndependentVar.
-  intros.
-  apply evalphiRemoveRhoSubst;
-  intuition.
-Qed.
-
-Lemma phiOrthogonalityImpliesIndependence : forall p1 p2 x,
-    phiOrthogonal p1 p2 ->
-    In x (FV p1) ->
-    phiIsIndependentVar x p2.
-Proof.
-  intros.
-  unfold phiOrthogonal, disjoint in *.
-  specialize (H0 x0).
-  assert (CL := phiFVorIsIndependentVar x0 p2).
-  intuition.
-Qed.
-
-Ltac unf :=
-  repeat match goal with
-    | [ H : exists _, _ |- _ ] => inversionE H
-    | [ H : _ /\ _ |- _ ] => inversionE H
-    | [ H : _ <-> _ |- _ ] => inversionE H
-  end.
-
-Lemma FVApp : forall p1 p2,
-  FV (p1 ++ p2) = FV p1 ++ FV p2.
-Proof.
-  induction p1;
-  intros;
-  simpl;
-  try tauto.
-  rewrite IHp1.
-  rewrite app_assoc.
-  tauto.
-Qed.
-
-Lemma phiOrthogonalAppA : forall p1a p1b p2,
-  phiOrthogonal (p1a ++ p1b) p2 <->
-  phiOrthogonal p1a p2 /\
-  phiOrthogonal p1b p2.
-Proof.
-  unfold phiOrthogonal, disjoint, phiSatisfiable in *.
-  split; intros;
-  rewrite FVApp in *.
-  - split; intros; specialize (H0 x0); intuition.
-  - intuition.
-    rewrite in_app_iff.
-    specialize (H1 x0).
-    specialize (H2 x0).
-    intuition.
-Qed.
-
-Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
-  fun x => option_map
-           (fun v => match v with
-                     | vo o => vo (omap o)
-                     | _ => v
-                     end)
-           (r x).
-
-Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,
-  (∀ x, ¬ In x (FV p0) ∨ ¬ In x (FV p1)) ->
-  evalphi H0 r0 A0 p0 ->
-  evalphi H1 r1 A1 p1 ->
-  evalphi
-    (λ o : nat,
-       match modulo o 2 with
-       | 0 => H0 (div o 2)
-       | Datatypes.S _ => H1 (div (o - 1) 2)
-       end)
-    (λ x,
-       match rhoWithOmap (λ o, 2 * o) r0 x with
-       | Some v => Some v
-       | None => rhoWithOmap (λ o, 2 * o + 1) r1 x
-       end)
-    (A0 ++ A1)
-    (p0 ++ p1).
-Proof.
-Admitted.
-
-Lemma phiSatisfiableApp : forall p0 p1,
-  phiOrthogonal p0 p1 ->
-  phiSatisfiable p0 ->
-  phiSatisfiable p1 ->
-  phiSatisfiable (p0 ++ p1).
-Proof.
-  intros; simpl in *;
-  intuition.
-  unfold phiOrthogonal, disjoint, phiSatisfiable in *.
-  unf.
-  repeat eexists.
-  eapply phiSatisfiableAppHelper; eauto.
-Qed.
-
-Lemma phiSatisfiableAppRev : forall p0 p1,
-  phiSatisfiable (p0 ++ p1) ->
-  phiSatisfiable p0 /\ phiSatisfiable p1.
-Proof.
-  unfold phiSatisfiable.
-  intros.
-  unf.
-  split; repeat eexists.
-  - eapply evalphiPrefix. eauto.
-  - eapply evalphiSuffix. eauto.
-Qed.
-
-Lemma phiImpliesNarrowingSingle : forall p p1 p2,
-  phiOrthogonal [p] p2 ->
-  phiSatisfiable (p :: p1) ->
-  phiImplies (p :: p1) p2 ->
-  phiImplies p1 p2.
-Proof.
-  intros.
-  unfold phiOrthogonal, disjoint, phiSatisfiable, phiImplies in *.
-  unf.
-  simpl in *.
-  intros.
-  specialize (H2 h (rhoSubsts (FV' p0) x1 r) (x2 ++ a)).
-  Check evalphiRemoveRhoSubst.
-  
-Admitted.
-
-Lemma phiImpliesNarrowing : forall p0 p1 p2,
-  phiOrthogonal p0 p2 ->
-  phiSatisfiable (p0 ++ p1) ->
-  phiImplies (p0 ++ p1) p2 ->
-  phiImplies p1 p2.
-Proof.
-  induction p0;
-  intros;
-  simpl in *;
-  try assumption.
-  rewrite cons2app in H0.
-  rewrite cons2app in H1.
-  apply phiOrthogonalAppA in H0.
-  apply phiSatisfiableAppRev in H1.
-  unf.
-  apply IHp0; auto.
-  eapply phiImpliesNarrowingSingle; eauto.
-
-  
-  induction p2; intros; try constructor.
-  admit.
-
-
-  phiSatisfiableApp
-  - constructor.
-  - apply disjointSplitB in H0.
-    inversionx H0.
-    apply disjointSplitB in H2.
-    inversionx H2.
-    
-    
-  
-  
-  - rewrite app_nil_r in *.
-  - simpl in *.
-    apply disjointSplitB in H0.
-    inversionx H0.
-    assert (∀ (h : H) (r : ρ) (a : A_d), evalphi h r a (p' :: p1) → evalphi h r a p2).
-    * intros.
-      apply H2 in H0.
-      inversionx H0.
-      apply evalphiAexcept in H16.
-      assumption.
-    * 
-    eapply IHp2 in H3; eauto.
-    
-  
-  
-  
-  eapply phiImpliesTrans.
-  
-  eapply phiImpliesTrans; eauto.
-  
-  
-  induction p2;
-  intros.
-  - constructor.
-  - simpl in *.
-    apply (IHp2 p1) in H3; clear IHp2.
-    * eapply phiImpliesTrans; eauto.
-      clear H3.
-      
-  
-  induction p1;
-  induction p2;
-  intros;
-  try constructor;
-  unfold phiImplies in *;
-  intros.
-  - eca.
-  - apply IHp1 in H0.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -883,6 +387,8 @@ Proof.
         apply IHe1 in H8.
         admit.
 
+
+
 (*
 (*
 Lemma evalphiSingleton : forall H r A p,
@@ -927,7 +433,7 @@ Check evalphiImpliesType.
       eapply phiImpliesStaticType in H2; eauto.
       + apply INVtypes in H2.
         apply INVtypes in H5.
-        
+        cons2app2
 Lemma ehasDynamicTypeRhoSubst : forall e T T' x v H r,
   hasDynamicType H v T' ->
   ehasDynamicType H r (ex x) T' ->
@@ -1007,10 +513,51 @@ Proof.
         split; eca.
       + unfold rhoSubst.
         dec (x_dec x1 x0).
-      ++  admit.
-      ++  
+      ++  rewrite cons2app2 in H1.
+
+          apply phiImpliesAppCommA in H1.
+          apply phiImpliesNarrowing in H1.
+      ++  rewrite cons2app2 in H1.
+          apply phiImpliesNarrowing in H1.
+      +++ assert (hasStaticType pre (ex x1) T0).
+            eapply phiImpliesStaticType; eauto.
+            constructor.
+            assumption.
+          apply INVtypes in H0.
+          auto.
+      +++ unfold phiOrthogonal, disjoint.
+          simpl.
+          intros.
+          destruct (x_dec x0 x2);
+          subst;
+          intuition.
+      +++ apply phiSatisfiableApp.
+            unfold phiOrthogonal, disjoint.
+            simpl.
+            intros.
+            destruct (x_dec x0 x2);
+            subst;
+            intuition.
+            
+            unfold phiSatisfiable.
+            exists newHeap.
+            exists (fun x => Some (defaultValue t)).
+            exists [].
+            eca; simpl.
+              apply inclEmpty.
+              eca. apply hasDynamicTypeId.
+              eca; simpl.
+                apply inclEmpty.
+                eca; unfold evale; simpl; eauto.
+                constructor.
+            
+            apply H2 in INVphi2.
+            unfold phiSatisfiable.
+            repeat eexists. eauto.
+      + 
+            
       
-      
+      cons2app2
       
           eexists.
           split; try eca.

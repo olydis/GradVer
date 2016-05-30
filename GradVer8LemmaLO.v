@@ -3,6 +3,18 @@ Require Import Classical_Prop.
 Load GradVer2LemmaIndependent.
 Import Semantics.
 
+Lemma FVApp : forall p1 p2,
+  FV (p1 ++ p2) = FV p1 ++ FV p2.
+Proof.
+  induction p1;
+  intros;
+  simpl;
+  try tauto.
+  rewrite IHp1.
+  rewrite app_assoc.
+  tauto.
+Qed.
+
 Lemma AexceptEmpty : forall A, Aexcept A [] = A.
 Proof.
   induction A.
@@ -770,3 +782,75 @@ Proof.
   intros.
   destruct t; simpl; constructor.
 Qed.
+
+
+Lemma phiImpliesAppCommA : forall p1a p1b p2,
+  phiImplies (p1a ++ p1b) p2 ->
+  phiImplies (p1b ++ p1a) p2.
+Proof.
+  unfold phiImplies.
+  intros.
+  apply evalphiSymm in H1.
+  auto.
+Qed.
+
+Lemma evalphiTypeUnlift : forall x T H r A p,
+  In (phiType x T) p -> evalphi H r A p -> evalphi' H r A (phiType x T).
+Proof.
+  induction p0; intros; inversionx H1.
+  - inversionx H2.
+    inversionx H11.
+    econstructor; eauto.
+  - apply IHp0; auto.
+    inversionx H2.
+    apply evalphiAexcept in H13.
+    assumption.
+Qed.
+
+Lemma hasDynamicTypeHSubst : forall H v T o f x,
+  hasDynamicType H v T -> hasDynamicType (HSubst o f x H) v T.
+Proof.
+  intros.
+  inversionx H1; try constructor.
+  destruct (o_dec o1 o0) eqn: oo.
+  - subst.
+    econstructor.
+    unfold HSubst.
+    unfold o_decb, dec2decb.
+    rewrite oo.
+    rewrite H3.
+    eauto.
+  - econstructor.
+    unfold HSubst.
+    unfold o_decb, dec2decb.
+    rewrite oo.
+    rewrite H3.
+    eauto.
+Qed.
+
+Lemma phiImpliesStaticType : forall p1 p2 e T,
+  phiImplies p1 p2 -> 
+  hasStaticType p2 e T -> 
+  hasStaticType p1 e T.
+Proof.
+  induction e0; intros; inversionx H1; try constructor.
+  - unfold phiImplies in *.
+    intros.
+    apply H4.
+    apply H0.
+    assumption.
+  - econstructor; eauto.
+    eapply phiImpliesTrans; eauto.
+Qed.
+
+Lemma evalphiImpliesType : forall H r A p x T,
+  evalphi H r A p -> phiImplies p [phiType x T] -> ehasDynamicType H r (ex x) T.
+Proof.
+  intros.
+  apply H2 in H1.
+  inversionx H1.
+  inversionx H12.
+  unfold ehasDynamicType.
+  eexists; eauto.
+Qed.
+

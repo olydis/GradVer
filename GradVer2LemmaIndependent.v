@@ -5,6 +5,11 @@ Lemma cons2app : forall {T} (x : T) xs,
 Proof.
   intuition.
 Qed.
+Lemma cons2app2 : forall {T} (x1 x2 : T) xs,
+  x1 :: x2 :: xs = [x1 ; x2] ++ xs.
+Proof.
+  intuition.
+Qed.
 
 Lemma disjointSplitA : forall {A} (l1 l2a l2b : list A),
   disjoint (l2a ++ l2b) l1 ->

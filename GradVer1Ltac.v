@@ -7,6 +7,13 @@ Ltac inversionE H :=
 Ltac inversionx H :=
   inversion H; clear H; subst.
 
+Ltac unf :=
+  repeat match goal with
+    | [ H : exists _, _ |- _ ] => inversionE H
+    | [ H : _ /\ _ |- _ ] => inversionE H
+    | [ H : _ <-> _ |- _ ] => inversionE H
+  end.
+
 Ltac app_cons h := (* _ :: _ ++ _ *)
   assert (acc := app_comm_cons);
   symmetry in acc;
