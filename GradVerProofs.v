@@ -272,6 +272,27 @@ Proof.
   constructor.
 Qed.
 
+Lemma phiImpliesSatisfiable : forall p1 p2,
+  phiImplies p1 p2 ->
+  phiSatisfiable p1 ->
+  phiSatisfiable p2.
+Proof.
+  unfold phiImplies, phiSatisfiable.
+  intros.
+  unf.
+  repeat eexists.
+  apply H0.
+  eauto.
+Qed.
+
+Lemma FVeMaxOne : forall e x1 x2,
+  In x1 (FVe e) ->
+  In x2 (FVe e) ->
+  x1 = x2.
+Proof.
+  induction e0; simpl; intros; intuition; subst; auto.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -526,27 +547,49 @@ Proof.
           common.
           erewrite evalphiRemoveRhoSubst; intuition.
     * intros.
+      assert (evalphi initialHeap initialRho initialAccess phi'0) as sat0.
+        apply H2.
+        assumption.
+      (*end assertion*)
+      assert (phiSatisfiable [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]) as sat1.
+        unfold phiSatisfiable.
+          exists newHeap.
+          exists (fun x => Some (defaultValue t)).
+          exists [].
+          eca; simpl.
+            apply inclEmpty.
+            eca. apply hasDynamicTypeId.
+            eca; simpl.
+              apply inclEmpty.
+              eca; unfold evale; simpl; eauto.
+              constructor.
+      (*end assertion*)
+      assert (phiSatisfiable ([phiType x0 t; phiEq (ex x0) (ev (defaultValue t))] ++ phi'0)) as sat2.
+        apply phiSatisfiableApp; auto.
+          unfold phiOrthogonal, disjoint.
+          simpl.
+          intros.
+          destruct (x_dec x0 x1);
+          subst;
+          intuition.
+          
+          repeat eexists. eauto.
+      (*end assertion*)
+      
+      rewrite cons2app2 in H0.
+      assert (CL := classic (In x0 (FVe e0))).
+      inversionx CL.
+      + apply hasStaticTypePhiComm.
+        apply hasStaticTypeNarrowing in H0.
+        
+      
       unfold ehasDynamicType, evale.
       inversionx H0; simpl in *.
       + eexists.
         split; eca.
       + eexists.
         split; eca.
-      + assert (phiSatisfiable [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]).
-          unfold phiSatisfiable.
-            exists newHeap.
-            exists (fun x => Some (defaultValue t)).
-            exists [].
-            eca; simpl.
-              apply inclEmpty.
-              eca. apply hasDynamicTypeId.
-              eca; simpl.
-                apply inclEmpty.
-                eca; unfold evale; simpl; eauto.
-                constructor.
-        assert (phiSatisfiable (phi'0 ++ [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]))
-        (*end assertion*)
-        unfold rhoSubst.
+      + unfold rhoSubst.
         dec (x_dec x1 x0).
       ++  rewrite cons2app2 in H1.
           apply phiImpliesAppCommA in H1.
@@ -560,25 +603,8 @@ Proof.
           destruct (x_dec x0 x2);
           subst;
           intuition.
-      +++ apply phiSatisfiableApp.
-            
-
-
-    
-    * 0
-    
-    
-    assert (CL := classic (T0 = T')).
-    intuition.
-    
-  - 
-      
-      assert (hasStaticType pre (ex x1) T0).
-            eapply phiImpliesStaticType; eauto.
-            constructor.
-            assumption.
-          apply INVtypes in H0.
-          auto.
+      +++ apply phiSatisfiableAppComm.
+          assumption.
       ++  rewrite cons2app2 in H1.
           apply phiImpliesNarrowing in H1.
       +++ assert (hasStaticType pre (ex x1) T0).
@@ -593,46 +619,89 @@ Proof.
           destruct (x_dec x0 x2);
           subst;
           intuition.
-      +++ apply phiSatisfiableApp.
+      +++ assumption.
+      + assert (CL := classic (In x0 (FVe e1))).
+        inversionx CL.
+      ++  rewrite cons2app2 in H3.
+          apply phiImpliesAppCommA in H3.
+          apply phiImpliesNarrowing in H3.
+      +++ unfold phiSatisfiable in sat1.
+          
+        
+      
+      
+      
+      
+        inversionx H1; simpl in *.
+      ++  eapply phiImpliesSatisfiable in sat2; eauto.
+          unfold phiSatisfiable in sat2.
+          unf.
+          inversionx H0.
+          inversionx H15.
+          common.
+          inversionx H8.
+          inversionx H13.
+          contradict H14.
+          tauto.
+      ++  unfold rhoSubst.
+          dec (x_dec x1 x0); simpl in *.
+      +++ (*contradiction: x0 = defaultValue /\ type x0 = Class => x0 != null *)
+          (*EVIDENCE COLLECTION*)
+          unfold phiSatisfiable in sat2.
+          unf.
+          assert (x3 x0 = Some (defaultValue t)) as x0Default.
+            inversionx H1.
+            inversionx H17.
+            simpl in *.
+            inversionx H18.
+            common.
+            inversionx H15.
+            assumption.
+          assert (x3 x0 = Some vnull) as x0Null.
+            apply H0 in H1.
+            inversionx H1.
+            simpl in *.
+            inversionx H16.
+            inversionx H14;
+            intuition.
+            rewrite x0Default in *.
+            destruct t; simpl in *; inversion H13.
+          assert (x3 x0 <> Some vnull) as x0NotNull.
+            apply H3 in H1.
+            inversionx H1.
+            simpl in *.
+            inversionx H16.
+            common.
+            rewrite H9.
+            inversionx H14.
+            intuition.
+            inversionx H1.
+            contradict H15.
+            tauto.
+          rewrite x0Null in *.
+          contradict x0NotNull.
+          tauto.
+      +++ specialize (INVtypes (edot (ex x1) f0) T0).
+          apply INVtypes.
+          eapply phiImpliesStaticType; eauto.
+          
+          assert (phiOrthogonal [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))] [phiType x1 (TClass C0)]).
             unfold phiOrthogonal, disjoint.
-            simpl.
             intros.
+            simpl.
             destruct (x_dec x0 x2);
             subst;
             intuition.
-            
-            unfold phiSatisfiable.
-            exists newHeap.
-            exists (fun x => Some (defaultValue t)).
-            exists [].
-            eca; simpl.
-              apply inclEmpty.
-              eca. apply hasDynamicTypeId.
-              eca; simpl.
-                apply inclEmpty.
-                eca; unfold evale; simpl; eauto.
-                constructor.
-            
-            apply H2 in INVphi2.
-            unfold phiSatisfiable.
-            repeat eexists. eauto.
-      + 
-            
-      
-      cons2app2
-      
-          eexists.
-          split; try eca.
-          apply H2 in INVphi2.
-          unfold phiImplies in H1.
-          assert (t = T0). admit.
-          subst.
-          apply hasDynamicTypeDefault.
-        eexists.
-        split; eca.
-      try (eca; split; try eca; fail).
-    
-      unfold hasStaticType in *.
+          rewrite cons2app2 in H0.
+          rewrite cons2app2 in H3.
+          apply phiImpliesNarrowing in H0; auto.
+          apply phiImpliesNarrowing in H3; auto.
+          
+          eca.
+          eca.
+      ++  
+
+Admitted.
 
 (*
 Lemma phiTrueSubst : forall a b p, phiTrue = phiSubst a b p -> p = phiTrue.

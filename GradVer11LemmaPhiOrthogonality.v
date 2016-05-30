@@ -9,6 +9,17 @@ Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 
+Lemma phiSatisfiableAppComm : forall p1 p2,
+  phiSatisfiable (p1 ++ p2) ->
+  phiSatisfiable (p2 ++ p1).
+Proof.
+  unfold phiSatisfiable; intros.
+  unf.
+  repeat eexists.
+  apply evalphiSymm.
+  eassumption.
+Qed.
+
 Lemma phiFVorIsIndependentVar : forall x p,
   phiIsIndependentVar x p \/ In x (FV p).
 Proof.
@@ -141,3 +152,45 @@ Proof.
   apply IHp0; auto.
   eapply phiImpliesNarrowingSingle; eauto.
 Qed.
+
+Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
+  disjoint (FV p0) (FVe e) ->
+  phiSatisfiable (p0 ++ p1) ->
+  hasStaticType (p0 ++ p1) e T ->
+  hasStaticType p1 e T.
+Proof.
+  induction e0;
+  intros;
+  inversionx H2;
+  try constructor.
+  - eapply phiImpliesNarrowing; eauto.
+  - eca.
+    eapply phiImpliesNarrowing; eauto.
+    unfold phiOrthogonal.
+    simpl in *.
+    repeat rewrite app_nil_r.
+    assumption.
+Qed.
+
+(*extract to other lemmas*)
+Lemma hasStaticTypePhiComm : forall p0 p1 e T,
+  hasStaticType (p0 ++ p1) e T ->
+  hasStaticType (p1 ++ p0) e T.
+Proof.
+  induction e0;
+  intros;
+  inversionx H0;
+  try constructor.
+  - apply phiImpliesAppCommA.
+    assumption.
+  - eca.
+    apply phiImpliesAppCommA.
+    assumption.
+Qed.
+  
+  
+  
+  
+  
+  
+  
