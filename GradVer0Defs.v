@@ -403,7 +403,7 @@ Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = 
 (* dynamic type derivation *)
 Inductive hasDynamicType : H -> v -> T -> Prop :=
 | DTValNum : forall H n, hasDynamicType H (vn n) TPrimitiveInt
-| DTValNull : forall H T, hasDynamicType H vnull T
+| DTValNull : forall H C, hasDynamicType H vnull (TClass C)
 | DTValObj : forall H C m o, H o = Some (C,m) -> hasDynamicType H (vo o) (TClass C)
 .
 Definition hasNoDynamicType (H : H) (rho : rho) (v : v) : Prop :=
@@ -475,8 +475,8 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
 Inductive hasStaticType : phi -> e -> T -> Prop :=
 | STValNum : forall p n, 
   hasStaticType p (ev (vn n)) TPrimitiveInt
-| STValNull : forall p T, 
-  hasStaticType p (ev vnull) T
+| STValNull : forall p C, 
+  hasStaticType p (ev vnull) (TClass C)
 | STVar : forall p T x, 
   phiImplies p [phiType x T] -> 
   hasStaticType p (ex x) T

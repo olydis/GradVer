@@ -250,6 +250,27 @@ Ltac emagicProgressx :=
 Proof.
 Admitted.*)
 
+Lemma phiImpliesType : forall T' p x T H,
+  In (phiType x T') p ->
+  phiSatisfiable p ->
+  phiImplies p [phiType x T] ->
+  hasDynamicType H (defaultValue T') T.
+Proof.
+  intros.
+  unfold phiImplies, phiSatisfiable in *.
+  unf.
+  assert (H4' := H4).
+  apply H3 in H4'. clear H3.
+  eapply evalphiTypeUnlift in H1; eauto.
+  inversionx H4'.
+  simpl in *.
+  inversionx H1.
+  inversionx H12.
+  rewrite H9 in H10. clear H9. inversionx H10.
+  inversionx H11;
+  inversionx H14;
+  constructor.
+Qed.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -511,12 +532,53 @@ Proof.
         split; eca.
       + eexists.
         split; eca.
-      + unfold rhoSubst.
+      + assert (phiSatisfiable [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]).
+          unfold phiSatisfiable.
+            exists newHeap.
+            exists (fun x => Some (defaultValue t)).
+            exists [].
+            eca; simpl.
+              apply inclEmpty.
+              eca. apply hasDynamicTypeId.
+              eca; simpl.
+                apply inclEmpty.
+                eca; unfold evale; simpl; eauto.
+                constructor.
+        assert (phiSatisfiable (phi'0 ++ [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]))
+        (*end assertion*)
+        unfold rhoSubst.
         dec (x_dec x1 x0).
       ++  rewrite cons2app2 in H1.
-
           apply phiImpliesAppCommA in H1.
           apply phiImpliesNarrowing in H1.
+      +++ eapply (phiImpliesType t) in H1; eauto.
+          constructor.
+          tauto.
+      +++ unfold phiOrthogonal, disjoint.
+          simpl.
+          intros.
+          destruct (x_dec x0 x2);
+          subst;
+          intuition.
+      +++ apply phiSatisfiableApp.
+            
+
+
+    
+    * 0
+    
+    
+    assert (CL := classic (T0 = T')).
+    intuition.
+    
+  - 
+      
+      assert (hasStaticType pre (ex x1) T0).
+            eapply phiImpliesStaticType; eauto.
+            constructor.
+            assumption.
+          apply INVtypes in H0.
+          auto.
       ++  rewrite cons2app2 in H1.
           apply phiImpliesNarrowing in H1.
       +++ assert (hasStaticType pre (ex x1) T0).
