@@ -293,6 +293,16 @@ Proof.
   induction e0; simpl; intros; intuition; subst; auto.
 Qed.
 
+Lemma ehasDynamicTypeRemoveRhoSubst : forall H r e x v T,
+  ¬ In x (FVe e) ->
+  ehasDynamicType H r e T ->
+  ehasDynamicType H (rhoSubst x v r) e T.
+Proof.
+  intros.
+  unfold ehasDynamicType, evale in *.
+  rewrite evaleRemoveRhoSubst; eauto.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -579,128 +589,82 @@ Proof.
       rewrite cons2app2 in H0.
       assert (CL := classic (In x0 (FVe e0))).
       inversionx CL.
-      + apply hasStaticTypePhiComm.
+      + apply hasStaticTypePhiComm in H0.
         apply hasStaticTypeNarrowing in H0.
-        
-      
-      unfold ehasDynamicType, evale.
-      inversionx H0; simpl in *.
-      + eexists.
-        split; eca.
-      + eexists.
-        split; eca.
-      + unfold rhoSubst.
-        dec (x_dec x1 x0).
-      ++  rewrite cons2app2 in H1.
-          apply phiImpliesAppCommA in H1.
-          apply phiImpliesNarrowing in H1.
-      +++ eapply (phiImpliesType t) in H1; eauto.
-          constructor.
-          tauto.
-      +++ unfold phiOrthogonal, disjoint.
-          simpl.
-          intros.
-          destruct (x_dec x0 x2);
-          subst;
-          intuition.
-      +++ apply phiSatisfiableAppComm.
-          assumption.
-      ++  rewrite cons2app2 in H1.
-          apply phiImpliesNarrowing in H1.
-      +++ assert (hasStaticType pre (ex x1) T0).
-            eapply phiImpliesStaticType; eauto.
-            constructor.
-            assumption.
-          apply INVtypes in H0.
-          auto.
-      +++ unfold phiOrthogonal, disjoint.
-          simpl.
-          intros.
-          destruct (x_dec x0 x2);
-          subst;
-          intuition.
-      +++ assumption.
-      + assert (CL := classic (In x0 (FVe e1))).
-        inversionx CL.
-      ++  rewrite cons2app2 in H3.
-          apply phiImpliesAppCommA in H3.
-          apply phiImpliesNarrowing in H3.
-      +++ unfold phiSatisfiable in sat1.
-          
-        
-      
-      
-      
-      
-        inversionx H1; simpl in *.
-      ++  eapply phiImpliesSatisfiable in sat2; eauto.
-          unfold phiSatisfiable in sat2.
-          unf.
-          inversionx H0.
-          inversionx H15.
-          common.
-          inversionx H8.
-          inversionx H13.
-          contradict H14.
-          tauto.
-      ++  unfold rhoSubst.
-          dec (x_dec x1 x0); simpl in *.
-      +++ (*contradiction: x0 = defaultValue /\ type x0 = Class => x0 != null *)
-          (*EVIDENCE COLLECTION*)
-          unfold phiSatisfiable in sat2.
-          unf.
-          assert (x3 x0 = Some (defaultValue t)) as x0Default.
-            inversionx H1.
-            inversionx H17.
-            simpl in *.
-            inversionx H18.
-            common.
-            inversionx H15.
-            assumption.
-          assert (x3 x0 = Some vnull) as x0Null.
-            apply H0 in H1.
-            inversionx H1.
-            simpl in *.
-            inversionx H16.
-            inversionx H14;
-            intuition.
-            rewrite x0Default in *.
-            destruct t; simpl in *; inversion H13.
-          assert (x3 x0 <> Some vnull) as x0NotNull.
-            apply H3 in H1.
-            inversionx H1.
-            simpl in *.
-            inversionx H16.
-            common.
-            rewrite H9.
-            inversionx H14.
-            intuition.
-            inversionx H1.
-            contradict H15.
+      ++  assert (forall xx t ee T,
+              phiSatisfiable [phiType xx t; phiEq (ex xx) (ev (defaultValue t))] ->
+              hasStaticType [phiType xx t; phiEq (ex xx) (ev (defaultValue t))] ee T ->
+              In xx (FVe ee) ->
+              ee = ex xx).
+            induction ee;
+            intros; simpl in *; intuition; subst; intuition.
+            inversionx H5.
+            eapply IHee in H7; eauto.
+            subst.
+            inversionx H10.
+            unfold phiSatisfiable in H3.
+            unf.
+            assert (x2 xx <> Some vnull) as xxNotNull.
+              apply H12 in H5.
+              inversionx H5.
+              simpl in *.
+              inversionx H18.
+              common.
+              inversionx H16.
+              rewrite H9.
+              intuition.
+              inversionx H3.
+              contradict H17.
+              tauto.
+            assert (x2 xx = Some (defaultValue t0)) as xxDefault.
+              inversionx H5.
+              inversionx H19.
+              simpl in *.
+              inversionx H20.
+              common.
+              rewrite H9.
+              auto.
+            assert (x2 xx = Some vnull) as xxNull.
+              apply H8 in H5.
+              inversionx H5.
+              simpl in *.
+              inversionx H18.
+              rewrite H15 in *.
+              inversionx H16; auto.
+              destruct t0; inversion xxDefault.
             tauto.
-          rewrite x0Null in *.
-          contradict x0NotNull.
+          eapply H3 in H1; eauto.
+          subst.
+          inversionx H0.
+          eapply (phiImpliesType t) in H7; eauto.
+      +++ eca.
+          unfold evale.
+          simpl.
+          split; eauto.
+          apply rhoSubstId.
+      +++ constructor.
           tauto.
-      +++ specialize (INVtypes (edot (ex x1) f0) T0).
-          apply INVtypes.
-          eapply phiImpliesStaticType; eauto.
-          
-          assert (phiOrthogonal [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))] [phiType x1 (TClass C0)]).
-            unfold phiOrthogonal, disjoint.
-            intros.
-            simpl.
-            destruct (x_dec x0 x2);
-            subst;
-            intuition.
-          rewrite cons2app2 in H0.
-          rewrite cons2app2 in H3.
-          apply phiImpliesNarrowing in H0; auto.
-          apply phiImpliesNarrowing in H3; auto.
-          
-          eca.
-          eca.
-      ++  
-
+      ++  unfold disjoint.
+          intros.
+          des (x_dec x0 x1); intuition.
+          assert (CL := classic (In x1 (FVe e0))).
+          intuition.
+          eapply FVeMaxOne in H1; eauto.
+      ++  apply phiSatisfiableAppComm.
+          assumption.
+      + apply hasStaticTypeNarrowing in H0.
+      ++  eapply phiImpliesStaticType in H0; eauto.
+          apply INVtypes in H0.
+          apply ehasDynamicTypeRemoveRhoSubst; auto.
+      ++  simpl.
+          unfold disjoint.
+          intros.
+          des (x_dec x0 x1); intuition.
+          constructor.
+          intuition.
+          inversionx H3; try tauto.
+          inversionx H5; try tauto.
+      ++  assumption.
 Admitted.
 
 (*
