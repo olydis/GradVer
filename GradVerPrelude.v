@@ -673,5 +673,100 @@ Proof.
       + rewrite IHp0; intuition.
 Qed.
 
+Definition option_alt {T : Type} (a : option T) (b : T) :=
+  match a with
+  | Some x => x
+  | None => b
+  end.
+
+Definition rhoSubsts (x : list x) (rAlt : rho) (r : rho) : rho :=
+  fold_right (fun x r => rhoSubst x (option_alt (rAlt x) vnull) r) r x.
+
+Lemma evalphiRemoveRhoSubsts : forall p H r A v x,
+  disjoint x (FV p) ->
+  evalphi H (rhoSubsts x v r) A p <->
+  evalphi H r A p.
+Proof.
+  induction x0; unfold rhoSubsts; intros; simpl in *.
+  - tauto.
+  - rewrite cons2app in H1.
+    apply disjointSplitA in H1.
+    inversionx H1.
+    apply IHx0 in H3.
+    unfold disjoint in H2.
+    specialize (H2 a).
+    rewrite evalphiRemoveRhoSubst; intuition.
+Qed.
+
+(*end RemoveRhoSubst*)
+
+(* incl and sfrm *)
+Lemma sfrmeIncl : forall p a b, incl a b -> sfrme a p -> sfrme b p.
+Proof.
+  intros.
+  inversionx H1; try constructor.
+  apply H0.
+  assumption.
+Qed.
+
+Lemma sfrm'Incl : forall p a b, incl a b -> sfrmphi' a p -> sfrmphi' b p.
+Proof.
+  intros.
+  inversionx H1; try constructor;
+  eapply sfrmeIncl; eauto.
+Qed.
+
+Lemma sfrmIncl : forall p a b, incl a b -> sfrmphi a p -> sfrmphi b p.
+Proof.
+  induction p0; intros.
+  - constructor.
+  - inversionx H1.
+    eapply sfrm'Incl in H2; eauto.
+    econstructor; eauto.
+    eapply IHp0; eauto.
+    Search incl.
+    apply incl_app.
+    * apply incl_appl.
+      apply incl_refl.
+    * apply incl_appr.
+      assumption.
+Qed.
+(* end incl and sfrm *)
 
 
+Lemma phiImpliesTrans : forall p1 p2 p3,
+  phiImplies p1 p2 ->
+  phiImplies p2 p3 ->
+  phiImplies p1 p3.
+Proof.
+  unfold phiImplies.
+  intuition.
+Qed.
+
+Lemma edotSubst : forall m e f, exists e' f', (eSubsts m (edot e f)) = edot e' f'.
+Proof.
+  intros; simpl; repeat eexists; eauto.
+Qed.
+
+
+Lemma eSubstsEmpty : forall p, eSubsts [] p = p.
+Proof.
+  induction p0; simpl; try tauto.
+  rewrite IHp0. tauto.
+Qed.
+
+Lemma phiSubstsEmpty : forall p, phiSubsts [] p = p.
+Proof.
+  induction p0; simpl; try tauto.
+  rewrite IHp0.
+  unfold phi'Substs.
+  destruct a; repeat rewrite eSubstsEmpty; tauto.
+Qed.
+
+
+Lemma hasDynamicTypeDefault : forall H t,
+  hasDynamicType H (defaultValue t) t.
+Proof.
+  intros.
+  destruct t; simpl; constructor.
+Qed.

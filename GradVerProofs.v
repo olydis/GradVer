@@ -242,38 +242,6 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
   - emagicProgress.
 Admitted.
 
-
-Lemma sfrmeIncl : forall p a b, incl a b -> sfrme a p -> sfrme b p.
-Proof.
-  intros.
-  inversionx H1; try constructor.
-  apply H0.
-  assumption.
-Qed.
-
-Lemma sfrm'Incl : forall p a b, incl a b -> sfrmphi' a p -> sfrmphi' b p.
-Proof.
-  intros.
-  inversionx H1; try constructor;
-  eapply sfrmeIncl; eauto.
-Qed.
-
-Lemma sfrmIncl : forall p a b, incl a b -> sfrmphi a p -> sfrmphi b p.
-Proof.
-  induction p0; intros.
-  - constructor.
-  - inversionx H1.
-    eapply sfrm'Incl in H2; eauto.
-    econstructor; eauto.
-    eapply IHp0; eauto.
-    Search incl.
-    apply incl_app.
-    * apply incl_appl.
-      apply incl_refl.
-    * apply incl_appr.
-      assumption.
-Qed.
-
 Ltac emagicProgressx :=
   repeat eexists;
   econstructor; econstructor;
@@ -313,15 +281,6 @@ Proof.
     eauto.
 Qed.
 
-Lemma phiImpliesTrans : forall p1 p2 p3,
-  phiImplies p1 p2 ->
-  phiImplies p2 p3 ->
-  phiImplies p1 p3.
-Proof.
-  unfold phiImplies.
-  intuition.
-Qed.
-
 Lemma phiImpliesStaticType : forall p1 p2 e T,
   phiImplies p1 p2 -> 
   hasStaticType p2 e T -> 
@@ -353,11 +312,6 @@ Proof.
   eexists; eauto.
 Qed.
 
-Lemma edotSubst : forall m e f, exists e' f', (eSubsts m (edot e f)) = edot e' f'.
-Proof.
-  intros; simpl; repeat eexists; eauto.
-Qed.
-
 (*Lemma hasStaticTypePhiSubst : forall x0 e0 e1 p T0 T1,
   hasStaticType (phiSubst x0 e0 p) (ex x0) T0 /\
   hasStaticType (phiSubst x0 e0 p) e0 T0 ->
@@ -378,8 +332,6 @@ Definition A_sSubsts m (A : A_s) : A_s :=
 Definition FVA_s (A : A_s) : list x := map fst A.
 
 Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m).
-
-Check in_flat_map.
 
 Fixpoint FVeo (e : e) : option x := 
   match e with
@@ -512,20 +464,6 @@ Proof.
   inversion H3.
 Qed.
 
-Lemma eSubstsEmpty : forall p, eSubsts [] p = p.
-Proof.
-  induction p0; simpl; try tauto.
-  rewrite IHp0. tauto.
-Qed.
-
-Lemma phiSubstsEmpty : forall p, phiSubsts [] p = p.
-Proof.
-  induction p0; simpl; try tauto.
-  rewrite IHp0.
-  unfold phi'Substs.
-  destruct a; repeat rewrite eSubstsEmpty; tauto.
-Qed.
-
 Lemma sfrmphi'Subst : forall m e a,
      (forall x, mMapsToUnique m x /\ (mMapsTo m x -> (~ In x (FV' e) /\ ~ In x (FVA_s a)))) ->
       sfrmphi' (A_sSubsts m a) (phi'Substs m e)
@@ -589,16 +527,6 @@ Proof.
       destruct e1; intuition.
 Qed.
 
-Lemma hasDynamicTypeDefault : forall H t,
-  hasDynamicType H (defaultValue t) t.
-Proof.
-  intros.
-  destruct t; simpl; constructor.
-Qed.
-
-Definition disjoint {A : Type} (l1 l2 : list A) :=
-  forall x, ~ In x l1 \/ ~ In x l2.
-
 Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
 
 Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
@@ -606,16 +534,6 @@ Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 
-
-Lemma disjointSplitB : forall {A} (l1 l2a l2b : list A),
-  disjoint l1 (l2a ++ l2b) ->
-  disjoint l1 l2a /\ disjoint l1 l2b.
-Proof.
-  unfold disjoint.
-  split; intros;
-  specialize (H0 x0);
-  intuition.
-Qed.
 
 (*
 Lemma phiImpliesAlways : forall p1 p2,
@@ -687,21 +605,6 @@ Proof.
     intuition.
 Qed.
 
-Lemma app2cons : forall {T} (x : T) xs,
-  x :: xs = [x] ++ xs.
-Proof.
-  intuition.
-Qed.
-
-Lemma canMergeHeapCollisionFree : 
-  forall (H1 H2 : H),
-  exists (om : o -> o) (H3 : H),
-  forall o v,
-    H3 o = Some v <-> H1 (om o) = Some v \/ H2 (om o) = Some v.
-Proof.
-  intros.
-Admitted.
-
 Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
   fun x => option_map
            (fun v => match v with
@@ -710,24 +613,25 @@ Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
                      end)
            (r x).
 
-Fixpoint divmod (x y : nat) q u :=
-  match x with
-    | 0 => (q,u)
-    | Datatypes.S x' => match u with
-                | 0 => divmod x' y (Datatypes.S q) y
-                | Datatypes.S u' => divmod x' y q u'
-              end
-  end.
-Definition div x y :=
-  match y with
-    | 0 => y
-    | Datatypes.S y' => fst (divmod x y' 0 y')
-  end.
-Definition modulo x y :=
-  match y with
-    | 0 => y
-    | Datatypes.S y' => y' - snd (divmod x y' 0 y')
-  end.
+Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,
+  (∀ x, ¬ In x (FV p0) ∨ ¬ In x (FV p1)) ->
+  evalphi H0 r0 A0 p0 ->
+  evalphi H1 r1 A1 p1 ->
+  evalphi
+    (λ o : nat,
+       match modulo o 2 with
+       | 0 => H0 (div o 2)
+       | Datatypes.S _ => H1 (div (o - 1) 2)
+       end)
+    (λ x,
+       match rhoWithOmap (λ o, 2 * o) r0 x with
+       | Some v => Some v
+       | None => rhoWithOmap (λ o, 2 * o + 1) r1 x
+       end)
+    (A0 ++ A1)
+    (p0 ++ p1).
+Proof.
+Admitted.
 
 Lemma phiSatisfiableApp : forall p0 p1,
   phiOrthogonal p0 p1 ->
@@ -739,61 +643,63 @@ Proof.
   intuition.
   unfold phiOrthogonal, disjoint, phiSatisfiable in *.
   unf.
-  exists (fun o => match modulo o 2 with
-                   | 0 => x0 (div o 2)
-                   | _ => x3 (div (o - 1) 2)
-                   end).
-  exists (fun x => match rhoWithOmap (fun o => 2 * o) x1 x with
-                   | Some v => Some v
-                   | None => rhoWithOmap (fun o => 2 * o + 1) x4 x
-                   end).
-  exists (x2 ++ x5).
-  
-    repeat eexists; econstructor.
-  
-  
-  induction p0; split; intros; simpl in *;
-  intuition.
-  - unfold phiOrthogonal, disjoint, phiSatisfiable in *.
-    repeat eexists; econstructor.
-  - rewrite app2cons in H0.
-    rewrite phiOrthogonalAppA in H0.
-    unf.
-    apply IHp0 in H4. clear IHp0.
-    unf.
-    clear H5.
-    intuition.
-    apply H4 in H3; clear H4.
-    * unfold phiSatisfiable in *.
-      unf.
-      apply evalphiSuffix in H0.
-    repeat eexists; eauto.
-    * unfold phiSatisfiable in *.
-      unf.
-      inversionx H3.
-      repeat eexists; eauto.
-  - unfold phiSatisfiable in *.
-    unf.
-    rewrite app_comm_cons in H2.
-    apply evalphiPrefix in H2.
-    repeat eexists; eauto.
-  - unfold phiSatisfiable in *.
-    unf.
-    rewrite app_comm_cons in H2.
-    apply evalphiSuffix in H2.
-    repeat eexists; eauto.
+  repeat eexists.
+  eapply phiSatisfiableAppHelper; eauto.
 Qed.
 
-Lemma phiImpliesNarrowing : forall p0 p1 p2,
+Lemma phiSatisfiableAppRev : forall p0 p1,
   phiSatisfiable (p0 ++ p1) ->
+  phiSatisfiable p0 /\ phiSatisfiable p1.
+Proof.
+  unfold phiSatisfiable.
+  intros.
+  unf.
+  split; repeat eexists.
+  - eapply evalphiPrefix. eauto.
+  - eapply evalphiSuffix. eauto.
+Qed.
+
+Lemma phiImpliesNarrowingSingle : forall p p1 p2,
+  phiOrthogonal [p] p2 ->
+  phiSatisfiable (p :: p1) ->
+  phiImplies (p :: p1) p2 ->
+  phiImplies p1 p2.
+Proof.
+  intros.
+  unfold phiOrthogonal, disjoint, phiSatisfiable, phiImplies in *.
+  unf.
+  simpl in *.
+  intros.
+  specialize (H2 h (rhoSubsts (FV' p0) x1 r) (x2 ++ a)).
+  Check evalphiRemoveRhoSubst.
+  
+Admitted.
+
+Lemma phiImpliesNarrowing : forall p0 p1 p2,
   phiOrthogonal p0 p2 ->
+  phiSatisfiable (p0 ++ p1) ->
   phiImplies (p0 ++ p1) p2 ->
   phiImplies p1 p2.
 Proof.
-  induction p1;
+  induction p0;
   intros;
-  simpl in *.
-  - admit.
+  simpl in *;
+  try assumption.
+  rewrite cons2app in H0.
+  rewrite cons2app in H1.
+  apply phiOrthogonalAppA in H0.
+  apply phiSatisfiableAppRev in H1.
+  unf.
+  apply IHp0; auto.
+  eapply phiImpliesNarrowingSingle; eauto.
+
+  
+  induction p2; intros; try constructor.
+  admit.
+
+
+  phiSatisfiableApp
+  - constructor.
   - apply disjointSplitB in H0.
     inversionx H0.
     apply disjointSplitB in H2.

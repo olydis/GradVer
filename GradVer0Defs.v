@@ -6,10 +6,32 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 (* helpers *)
+Fixpoint divmod (x y : nat) q u :=
+  match x with
+    | 0 => (q,u)
+    | S x' => 
+              match u with
+              | 0 => divmod x' y (S q) y
+              | S u' => divmod x' y q u'
+              end
+  end.
+Definition div x y :=
+  match y with
+    | 0 => y
+    | S y' => fst (divmod x y' 0 y')
+  end.
+Definition modulo x y :=
+  match y with
+    | 0 => y
+    | S y' => y' - snd (divmod x y' 0 y')
+  end.
+
 Definition dec2decb {A : Type} (dec : ∀ a1 a2 : A, {a1 = a2} + {a1 ≠ a2}) : (A -> A -> bool) :=
   fun a b => if dec a b then true else false.
 Definition except {A : Type} (A_decb : A -> A -> bool) (a b : list A) : list A :=
   filter (fun x => negb (existsb (A_decb x) b)) a.
+Definition disjoint {A : Type} (l1 l2 : list A) :=
+  forall x, ~ In x l1 \/ ~ In x l2.
 Definition appEnd {A : Type} (l : list A) (x : A) := l ++ [x].
 
 Definition option_bind {A B : Type} (f : A -> option B) (x : option A) : option B :=

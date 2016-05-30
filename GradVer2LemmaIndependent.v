@@ -1,5 +1,31 @@
 Load GradVer1Ltac.
 
+Lemma cons2app : forall {T} (x : T) xs,
+  x :: xs = [x] ++ xs.
+Proof.
+  intuition.
+Qed.
+
+Lemma disjointSplitA : forall {A} (l1 l2a l2b : list A),
+  disjoint (l2a ++ l2b) l1 ->
+  disjoint l2a l1 /\ disjoint l2b l1.
+Proof.
+  unfold disjoint.
+  split; intros;
+  specialize (H0 x0);
+  intuition.
+Qed.
+
+Lemma disjointSplitB : forall {A} (l1 l2a l2b : list A),
+  disjoint l1 (l2a ++ l2b) ->
+  disjoint l1 l2a /\ disjoint l1 l2b.
+Proof.
+  unfold disjoint.
+  split; intros;
+  specialize (H0 x0);
+  intuition.
+Qed.
+
 Lemma InSingle : forall {T : Type} (x y : T), In x [y] -> x = y.
 Proof.
   intros.
