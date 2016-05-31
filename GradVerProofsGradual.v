@@ -198,6 +198,7 @@ Proof.
 Admitted.
 
 (* meet operation *)
+(*update meet operation*)
 Definition phiEnsureAccess (x : x) (f : f) (p : phi) : list phi :=
   let xs := map fst (filter (fun xf => f_decb f (snd xf)) (staticFootprint p)) in
   (phiAcc x f :: (*(map (fun x' => phiNeq (ex x) (ex x')) xs) ++*) p) :: (map (fun x' => phiEq (ex x) (ex x') :: p) xs).

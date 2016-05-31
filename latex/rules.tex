@@ -159,7 +159,8 @@ FV(\phi_1) \subseteq \{ x, \xthis \} \\
 FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
 \hoare {x : T_x * \xthis : C * \phi_1} {\overline{s}} {x : T_x * \xthis : C * \xresult : T_m * \phi_2} \\
 \emptyset \sfrmphi {\phi_1} \\
-\emptyset \sfrmphi {\phi_2}
+\emptyset \sfrmphi {\phi_2} \\
+\overline{\neg writesTo(s_i, x)}
 }
 {(T_m~m(T_x~x)~\requires \phi_1;~\ensures \phi_2;~\{\overline{s}\}) \OKinC}
 \end{mathpar}
@@ -300,7 +301,7 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
  &\dynamicFP {H} {\rho} {\true}    		&&= \emptyset
 \\ &\dynamicFP {H} {\rho} {e_1 = e_2}     	&&= \emptyset
 \\ &\dynamicFP {H} {\rho} {e_1 \neq e_2}  	&&= \emptyset
-\\ &\dynamicFP {H} {\rho} {\acc(e.f)} 		&&= \{(o,f)\} \text{ where } \evale e o
+\\ &\dynamicFP {H} {\rho} {\acc(x.f)} 		&&= \{(o,f)\} \text{ where } \evale x o
 \\ &\dynamicFP {H} {\rho} {\phi_1 * \phi_2} &&= \dynamicFP {H} {\rho} {\phi_1} \cup \dynamicFP {H} {\rho} {\phi_2}
 \end{align*}
 

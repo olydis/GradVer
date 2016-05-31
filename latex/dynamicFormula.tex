@@ -25,7 +25,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=EAType]
-{{\rho(x)} = {{v}}\\hasDynamicType(H, v, T)}
+{{\rho(x)} = {{v}}\\{H} \vdash {v} : {T}}
 {\evalphix {H} {\rho} {A} {{x} : {T}}}
 \end{mathpar}
 

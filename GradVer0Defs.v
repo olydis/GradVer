@@ -401,6 +401,7 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
 Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = Some v.
 
 (* dynamic type derivation *)
+(*coq2latex: hasDynamicType #H #v #T := #H \vdash #v : #T *)
 Inductive hasDynamicType : H -> v -> T -> Prop :=
 | DTValNum : forall H n, hasDynamicType H (vn n) TPrimitiveInt
 | DTValNull : forall H C, hasDynamicType H vnull (TClass C)
