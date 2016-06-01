@@ -416,7 +416,7 @@ Definition ehasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
 
 (* Figure 8: Definition of footprint meta-function *)
 (*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
-Fixpoint footprint' (h : H) (r : rho) (p : phi') : A_d :=
+Definition footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
   | phiAcc x' f' => 
       match r x' with

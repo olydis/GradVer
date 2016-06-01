@@ -295,8 +295,7 @@ Proof.
       assumption.
 Qed.
 
-Lemma HnotTotal : forall (H' : H), exists x, H' x = None.
-Admitted.
+Axiom HnotTotal : forall (H' : H), exists x, H' x = None.
 
 Lemma evalphiPrefix : forall p1 h r a p2,
    evalphi h r a (p1 ++ p2) -> evalphi h r a p1.
@@ -428,12 +427,11 @@ Proof.
     auto with arith.
 Qed.
 
-Lemma RhoGetsMoreSpecific : forall r1 r2 a1 a2 s1 s2 S (H1 H2 : H) v1 (x : x),
+Axiom RhoGetsMoreSpecific : forall r1 r2 a1 a2 s1 s2 S (H1 H2 : H) v1 (x : x),
   dynSemStar (H1, (r1, a1, s1) :: S) (H2, (r2, a2, s2) :: S) ->
              r1 x = Some v1 ->
   exists v2, r2 x = Some v2.
-Proof.
-Admitted.
+(*TODO*)
 
 Lemma phiImpliesRefl : forall x, phiImplies x x.
 Proof.

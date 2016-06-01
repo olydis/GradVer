@@ -388,6 +388,7 @@ Proof.
   - eca; unfold evale; simpl; eauto.
 Admitted.
 
+(*
 Lemma hasStaticTypeNarrowingSingle : forall p p1 e T,
   disjoint (FV' p) (FVe e) ->
   phiSatisfiable (p :: p1) ->
@@ -415,9 +416,16 @@ Proof.
       inversionx H4.
       inversionx H11.
       tauto.
-    * unfold phiImplies.
+    * simpl in *.
+    
+    (* x = 3 * x = y => y = 3 *)
+    (* BUT NOT x = y => y = 3 *)
+    
+    (* x = 3 * x = y => y : int *)
+    (* BUT NOT x = y => y : int *)
+    
+      unfold phiImplies.
       intros.
-      simpl in *.
       unfold phiSatisfiable in H1.
       unf.
       apply H7 in H3.
@@ -455,6 +463,7 @@ Proof.
   apply IHp0; auto.
   eapply phiImpliesNarrowingSingle; eauto.
 Qed.
+*)
 
 Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
   disjoint (FV p0) (FVe e) ->
