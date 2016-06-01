@@ -1,56 +1,7 @@
-Require Import Coq.Unicode.Utf8 Arith Bool Ring Setoid String.
-Require Import Coq.Lists.ListSet.
-Require Import Coq.Sets.Powerset.
-Require Import Coq.Classes.EquivDec.
-Require Import Coq.Lists.List.
-Import ListNotations.
-
-(* helpers *)
-Fixpoint divmod (x y : nat) q u :=
-  match x with
-    | 0 => (q,u)
-    | S x' => 
-              match u with
-              | 0 => divmod x' y (S q) y
-              | S u' => divmod x' y q u'
-              end
-  end.
-Definition div x y :=
-  match y with
-    | 0 => y
-    | S y' => fst (divmod x y' 0 y')
-  end.
-Definition modulo x y :=
-  match y with
-    | 0 => y
-    | S y' => y' - snd (divmod x y' 0 y')
-  end.
-
-Definition dec2decb {A : Type} (dec : ∀ a1 a2 : A, {a1 = a2} + {a1 ≠ a2}) : (A -> A -> bool) :=
-  fun a b => if dec a b then true else false.
-Definition except {A : Type} (A_decb : A -> A -> bool) (a b : list A) : list A :=
-  filter (fun x => negb (existsb (A_decb x) b)) a.
-Definition disjoint {A : Type} (l1 l2 : list A) :=
-  forall x, ~ In x l1 \/ ~ In x l2.
-Definition appEnd {A : Type} (l : list A) (x : A) := l ++ [x].
-
-Definition option_bind {A B : Type} (f : A -> option B) (x : option A) : option B :=
-match x with
-| Some x' => f x'
-| None => None
-end.
+Load GradVer_Imports.
 
 (*coq2latex: @NotIn #_ #x #xs := #x \not \in #xs *)
 Definition NotIn {T : Type} (x : T) (xs : list T) : Prop := ~(In x xs).
-
-Definition nat_decb := dec2decb eq_nat_dec.
-Hint Resolve eq_nat_dec.
-Hint Resolve list_eq_dec eq_nat_dec.
-
-Program Instance string_EqDec : EqDec string eq := string_dec.
-Definition string_decb := dec2decb string_dec.
-Hint Resolve string_dec.
-Hint Resolve list_eq_dec string_dec.
 
 (* Figure 1: Syntax of a Java-like language for core language *)
 Definition C := string.
@@ -749,6 +700,7 @@ Definition CWellDefined (c : cls) :=
     (forall (f : f) T1 T2, In (Field T1 f) fs -> In (Field T2 f) fs -> T1 = T2)
   end.
 Axiom pWellDefined : forall c, In c classes -> CWellDefined c.
+Axiom HnotTotal : forall (H' : H), exists x, H' x = None.
 
 End Semantics.
 

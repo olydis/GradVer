@@ -80,13 +80,71 @@ Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,
        | Datatypes.S _ => H1 (div (o - 1) 2)
        end)
     (λ x,
-       match rhoWithOmap (λ o, 2 * o) r0 x with
-       | Some v => Some v
-       | None => rhoWithOmap (λ o, 2 * o + 1) r1 x
-       end)
-    (A0 ++ A1)
+       if existsb (x_decb x) (FV p0)
+       then rhoWithOmap (λ o, 2 * o) r0 x
+       else rhoWithOmap (λ o, 2 * o + 1) r1 x
+    )
+    (map (fun x => (2 * (fst x)    , snd x)) A0 ++ 
+     map (fun x => (2 * (fst x) + 1, snd x)) A1)
     (p0 ++ p1).
 Proof.
+  induction p0.
+  - induction p1; intros; simpl in *; try constructor.
+    inversionx H4.
+    eca.
+    * apply incl_appr.
+      generalize A1 H2 H9. clear.
+      induction A1; intros; simpl in *.
+      + destruct a; intuition; simpl in *.
+        unfold rhoWithOmap in *.
+        destruct (r1 x0); simpl in *; intuition.
+        destruct v0; intuition.
+        apply inclEmptyFalse in H9.
+        tauto.
+      + destruct a; intuition; simpl in *;
+        try apply inclEmpty.
+        unfold rhoWithOmap in *.
+        destruct (r1 x0); simpl in *; intuition;
+        try apply inclEmpty.
+        destruct v0; try apply inclEmpty.
+        apply inclSingle in H9.
+        inversionx H9.
+      ++  apply inclSingle.
+          constructor.
+          tauto.
+      ++  apply incl_tl.
+          apply H3.
+          apply inclSingle.
+          assumption.
+    * inversionx H14.
+      + constructor.
+      + generalize e_1 v_2 H5 H6. clear.
+        induction e_1, e_2; intros;
+        unfold evale in *;
+        simpl in *.
+      ++  eca.
+      ++  
+      try constructor.
+     (*  + 
+    admit.
+  - intros.
+    rewriteRev app_comm_cons.
+    inversionx H3.
+    eca.
+    * rewrite map_app.
+      apply incl_appl.
+      generalize A0 H2 H9. clear.
+      induction A0; intros; simpl in *.
+      + destruct a; intuition.
+        simpl in *.
+        unfold rhoWithOmap.
+        destruct (r0 x0); simpl in *; intuition.
+      ++  destruct v0; intuition.
+          apply inclEmptyFalse in H9.
+          tauto.
+      ++  
+    destruct a;
+    eca; try eca. *)
 Admitted.
 
 Lemma phiSatisfiableApp : forall p0 p1,
