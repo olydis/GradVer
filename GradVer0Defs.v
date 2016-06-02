@@ -22,25 +22,32 @@ Inductive T :=
 (*coq2latex: TClass #C := #C *)
 | TClass : C -> T.
 
-Inductive v :=
+Inductive vex :=
 (*coq2latex: vn #n := #n *)
-| vn : nat -> v
+| vn : nat -> vex
 (*coq2latex: vnull := \vnull *)
-| vnull : v
+| vnull : vex
+.
+
+Inductive v :=
+(*coq2latex: ve #ve := #ve *)
+| ve : vex -> v
 (*coq2latex: vo #o := #o *)
 | vo : o -> v
 .
 
-(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
-Definition defaultValue (T : T) : v :=
+(*coq2latex: defaultValue' #T := \texttt{defaultValue}(#T) *)
+Definition defaultValue' (T : T) : vex :=
   match T with
   | TPrimitiveInt => vn 0
   | TClass C => vnull
   end.
+(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
+Definition defaultValue (T : T) : v := ve (defaultValue' T).
 
 Inductive e :=
 (*coq2latex: ev #v := #v *)
-| ev : v -> e
+| ev : vex -> e
 (*coq2latex: ex #x := #x *)
 | ex : x -> e
 (*coq2latex: edot #e #f := #e.#f *)
@@ -120,6 +127,12 @@ Definition T_decb := dec2decb T_dec.
 Hint Resolve T_dec.
 Hint Resolve list_eq_dec T_dec.
 
+Definition vex_dec : ∀ n m : vex, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance vex_EqDec : EqDec vex eq := vex_dec.
+Definition vex_decb := dec2decb vex_dec.
+Hint Resolve vex_dec.
+Hint Resolve list_eq_dec vex_dec.
+
 Definition v_dec : ∀ n m : v, {n = m} + {n ≠ m}. decide equality. Defined.
 Program Instance v_EqDec : EqDec v eq := v_dec.
 Definition v_decb := dec2decb v_dec.
@@ -133,6 +146,7 @@ Ltac undecb :=
   unfold
     A_s'_decb,
     A_d'_decb,
+    vex_decb,
     v_decb,
     T_decb,
     x_decb,
@@ -345,7 +359,7 @@ Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
     | Some (vo o') => option_bind (fun x => snd x f') (H o')
     | _ => None
     end
-  | ev v => Some v
+  | ev v => Some (ve v)
   end.
 
 (*coq2latex: evale #H #rho #e #v := \evalex #H #rho #e #v *)
@@ -354,8 +368,8 @@ Definition evale (H : H) (rho : rho) (e : e) (v : v) : Prop := evale' H rho e = 
 (* dynamic type derivation *)
 (*coq2latex: hasDynamicType #H #v #T := #H \vdash #v : #T *)
 Inductive hasDynamicType : H -> v -> T -> Prop :=
-| DTValNum : forall H n, hasDynamicType H (vn n) TPrimitiveInt
-| DTValNull : forall H C, hasDynamicType H vnull (TClass C)
+| DTValNum : forall H n, hasDynamicType H (ve (vn n)) TPrimitiveInt
+| DTValNull : forall H C, hasDynamicType H (ve vnull) (TClass C)
 | DTValObj : forall H C m o, H o = Some (C,m) -> hasDynamicType H (vo o) (TClass C)
 .
 Definition hasNoDynamicType (H : H) (rho : rho) (v : v) : Prop :=
@@ -562,7 +576,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       phi
       (sDeclare T x)
       (phiType x T ::
-       phiEq (ex x) (ev (defaultValue T)) :: phi')
+       phiEq (ex x) (ev (defaultValue' T)) :: phi')
 .
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)

@@ -687,7 +687,7 @@ Definition option_alt {T : Type} (a : option T) (b : T) :=
   end.
 
 Definition rhoSubsts (x : list x) (rAlt : rho) (r : rho) : rho :=
-  fold_right (fun x r => rhoSubst x (option_alt (rAlt x) vnull) r) r x.
+  fold_right (fun x r => rhoSubst x (option_alt (rAlt x) (ve vnull)) r) r x.
 
 Lemma evalphiRemoveRhoSubsts : forall p H r A v x,
   disjoint x (FV p) ->

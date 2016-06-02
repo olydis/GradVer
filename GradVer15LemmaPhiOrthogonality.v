@@ -1,4 +1,4 @@
-Load GradVer10LemmaSfrmSubst.
+Load GradVer14LemmaAliasing.
 Import Semantics.
 
 
@@ -45,14 +45,13 @@ Proof.
   intuition.
 Qed.
 
-Lemma phiOrthogonalAppA : forall p1a p1b p2,
-  phiOrthogonal (p1a ++ p1b) p2 <->
-  phiOrthogonal p1a p2 /\
-  phiOrthogonal p1b p2.
+Lemma disjointAppA : forall {T : Type} (p1a p1b p2 : list T),
+  disjoint (p1a ++ p1b) p2 <->
+  disjoint p1a p2 /\
+  disjoint p1b p2.
 Proof.
-  unfold phiOrthogonal, disjoint, phiSatisfiable in *.
-  split; intros;
-  rewrite FVApp in *.
+  unfold disjoint in *.
+  split; intros.
   - split; intros; specialize (H0 x0); intuition.
   - intuition.
     rewrite in_app_iff.
@@ -61,31 +60,63 @@ Proof.
     intuition.
 Qed.
 
+Lemma phiOrthogonalAppA : forall p1a p1b p2,
+  phiOrthogonal (p1a ++ p1b) p2 <->
+  phiOrthogonal p1a p2 /\
+  phiOrthogonal p1b p2.
+Proof.
+  unfold phiOrthogonal in *.
+  intros;
+  rewrite FVApp in *.
+  apply disjointAppA.
+Qed.
+
+Definition vWithOmap (omap : o -> o) (v' : v) : v :=
+  match v' with
+  | vo o => vo (omap o)
+  | _ => v'
+  end.
 Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
   fun x => option_map
-           (fun v => match v with
-                     | vo o => vo (omap o)
-                     | _ => v
-                     end)
+           (vWithOmap omap)
            (r x).
+
+Definition colocateH (H0 H1 : H) := λ o : nat,
+       match modulo o 2 with
+       | 0 => H0 (div o 2)
+       | Datatypes.S _ => H1 (div (o - 1) 2)
+       end.
+
+Definition colocateRho (xs0 : list x) (r0 r1 : rho) := λ x,
+       if existsb (x_decb x) xs0
+       then rhoWithOmap (λ o, 2 * o) r0 x
+       else rhoWithOmap (λ o, 2 * o + 1) r1 x.
+
+Definition colocateAccess (A0 A1 : A_d) :=
+    map (fun x => (2 * (fst x)    , snd x)) A0 ++ 
+    map (fun x => (2 * (fst x) + 1, snd x)) A1.
+
+
+Require Import Coq.Logic.FunctionalExtensionality.
+
+Lemma colocateRhoEmpty : forall r0 r1,
+  colocateRho [] r0 r1 = rhoWithOmap (λ o, 2 * o + 1) r1.
+Proof.
+  intros.
+  unfold colocateRho.
+  apply functional_extensionality.
+  simpl.
+  tauto.
+Qed.
 
 Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,
   (∀ x, ¬ In x (FV p0) ∨ ¬ In x (FV p1)) ->
   evalphi H0 r0 A0 p0 ->
   evalphi H1 r1 A1 p1 ->
   evalphi
-    (λ o : nat,
-       match modulo o 2 with
-       | 0 => H0 (div o 2)
-       | Datatypes.S _ => H1 (div (o - 1) 2)
-       end)
-    (λ x,
-       if existsb (x_decb x) (FV p0)
-       then rhoWithOmap (λ o, 2 * o) r0 x
-       else rhoWithOmap (λ o, 2 * o + 1) r1 x
-    )
-    (map (fun x => (2 * (fst x)    , snd x)) A0 ++ 
-     map (fun x => (2 * (fst x) + 1, snd x)) A1)
+    (colocateH H0 H1)
+    (colocateRho (FV p0) r0 r1)
+    (colocateAccess A0 A1)
     (p0 ++ p1).
 Proof.
   induction p0.
@@ -96,14 +127,14 @@ Proof.
       generalize A1 H2 H9. clear.
       induction A1; intros; simpl in *.
       + destruct a; intuition; simpl in *.
-        unfold rhoWithOmap in *.
+        unfold colocateRho, rhoWithOmap in *.
         destruct (r1 x0); simpl in *; intuition.
         destruct v0; intuition.
         apply inclEmptyFalse in H9.
         tauto.
       + destruct a; intuition; simpl in *;
         try apply inclEmpty.
-        unfold rhoWithOmap in *.
+        unfold colocateRho, rhoWithOmap in *.
         destruct (r1 x0); simpl in *; intuition;
         try apply inclEmpty.
         destruct v0; try apply inclEmpty.
@@ -116,15 +147,6 @@ Proof.
           apply H3.
           apply inclSingle.
           assumption.
-    * inversionx H14.
-      + constructor.
-      + generalize e_1 v_2 H5 H6. clear.
-        induction e_1, e_2; intros;
-        unfold evale in *;
-        simpl in *.
-      ++  eca.
-      ++  
-      try constructor.
      (*  + 
     admit.
   - intros.
@@ -367,7 +389,17 @@ Definition invNoAlias
         In (x1, f) sfp ->
         In (x2, f) sfp ->
         rho x1 <> rho x2.
+        
+(* x = 3 * x = y => y = 3 *)
+(* BUT NOT x = y => y = 3 *)
 
+(* x = 3 * y = 3 => y = 3 *)
+(* BUT NOT x = y => y = 3 *)
+
+(* x = 3 * x = y => y : int *)
+(* BUT NOT x = y => y : int *)
+
+ (* 
 Lemma phiImpliesNarrowingSingle : forall p p1 p2,
   phiOrthogonal [p] p2 ->
   phiSatisfiable (p :: p1) ->
@@ -385,7 +417,6 @@ Proof.
   eapply evalphiAccessIncl; eauto.
 
 
-      (* 
       
   eauto.
   
@@ -404,10 +435,12 @@ Proof.
     eauto.
   - rewrite footprint'RemoveRhoSubsts2.
 
-  assert (disj) *)
+  assert (disj) 
   (*show that x2 is irrelevant for access to p2's expressions*)
 Admitted.
 
+
+    
 Lemma phiImpliesNarrowing : forall p0 p1 p2,
   phiOrthogonal p0 p2 ->
   phiSatisfiable (p0 ++ p1) ->
@@ -444,9 +477,9 @@ Proof.
   simpl.
   - apply inclEmpty.
   - eca; unfold evale; simpl; eauto.
-Admitted.
+Admitted.*)
 
-(*
+
 Lemma hasStaticTypeNarrowingSingle : forall p p1 e T,
   disjoint (FV' p) (FVe e) ->
   phiSatisfiable (p :: p1) ->
@@ -476,35 +509,18 @@ Proof.
       tauto.
     * simpl in *.
     
-    (* x = 3 * x = y => y = 3 *)
-    (* BUT NOT x = y => y = 3 *)
-    
-    (* x = 3 * x = y => y : int *)
-    (* BUT NOT x = y => y : int *)
-    
-      unfold phiImplies.
-      intros.
-      unfold phiSatisfiable in H1.
-      unf.
-      apply H7 in H3.
-    
-    
-    Check phiI.
-  unf.
-  
-  inversionx H2;
-  eca.
-  
-  simpl in *.
-  
-  specialize (H2 h (rhoSubsts (FV' p0) x1 r) (footprint' h x1 p0 ++ a)).
-  rewrite (evalphiRemoveRhoSubsts p2) in H2; auto.
-  eapply evalphiAccessIncl; eauto.
 Admitted.
 
+(* x = 3 * x = y => y = 3 *)
+(* BUT NOT x = y => y = 3 *)
+
+(* x = 3 * x = y => y : int *)
+(* BUT NOT x = y => y : int *)
 Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
   disjoint (FV p0) (FVe e) ->
-  phiSatisfiable (p0 ++ p1) ->
+  phiOrthogonal p0 p1 ->
+  phiSatisfiable p0 ->
+  phiSatisfiable p1 ->
   hasStaticType (p0 ++ p1) e T ->
   hasStaticType p1 e T.
 Proof.
@@ -513,15 +529,14 @@ Proof.
   simpl in *;
   try assumption.
   assert (Hsat := H1).
-  rewrite cons2app in H0.
   rewrite cons2app in H1.
-  apply phiOrthogonalAppA in H0.
+  apply disjointAppA in H0.
   apply phiSatisfiableAppRev in H1.
   unf.
   apply IHp0; auto.
-  eapply phiImpliesNarrowingSingle; eauto.
+  eapply hasStaticTypeNarrowingSingle; eauto.
 Qed.
-*)
+
 
 Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
   disjoint (FV p0) (FVe e) ->

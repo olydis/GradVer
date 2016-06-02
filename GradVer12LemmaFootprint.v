@@ -1,4 +1,4 @@
-Load GradVer11LemmaPhiOrthogonality.
+Load GradVer10LemmaSfrmSubst.
 Import Semantics.
 
 Lemma dynamicASstaticFP : forall H r p,

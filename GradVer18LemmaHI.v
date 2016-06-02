@@ -1,3 +1,3 @@
-Load GradVer14LemmaAliasing.
+Load GradVer15LemmaPhiOrthogonality.
 Import Semantics.
 
