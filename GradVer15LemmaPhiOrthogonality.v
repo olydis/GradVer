@@ -479,36 +479,95 @@ Proof.
   - eca; unfold evale; simpl; eauto.
 Admitted.*)
 
+Definition envIdenticalAt
+  (xs : list x)
+  (H0 : H) (r0 : rho) (A0 : A_d)
+  (H1 : H) (r1 : rho) (A1 : A_d) : Prop :=
+  (forall x, In x xs -> r0 x = r1 x) /\
+  (forall o, (exists x, r0 x = Some (vo o)) ->
+    H0 o = H1 o /\
+    forall f, In (o, f) A0 <-> In (o, f) A1).
+Definition envEqualsAt
+  (xs : list x)
+  (H0 : H) (r0 : rho) (A0 : A_d)
+  (H1 : H) (r1 : rho) (A1 : A_d) : Prop :=
+  forall (p : phi),
+    incl (FV p) xs ->
+    (evalphi H0 r0 A0 p <-> evalphi H1 r1 A1 p).
 
-Lemma hasStaticTypeNarrowingSingle : forall p p1 e T,
-  disjoint (FV' p) (FVe e) ->
-  phiSatisfiable (p :: p1) ->
-  hasStaticType (p :: p1) e T ->
-  hasStaticType p1 e T.
+(* Lemma envIdenticalEquals : forall xs H0 r0 A0 H1 r1 A1,
+  envIdenticalAt xs H0 r0 A0 H1 r1 A1 ->
+  envEqualsAt    xs H0 r0 A0 H1 r1 A1.
 Proof.
-  induction e0;
+  unfold envIdenticalAt, envEqualsAt.
+  induction xs;
   intros;
-  inversionx H2.
-  - eca.
-  - eca.
-  - eca.
-    admit.
-  - simpl in *.
-    eca.
-    eapply IHe0 in H5; eauto.
-    inversionx H5.
-    * unfold phiSatisfiable in H1.
-      unf.
-      apply H7 in H2.
-      inversionx H2.
-      simpl in *.
-      inversionx H13.
-      common.
-      inversionx H4.
-      inversionx H11.
-      tauto.
-    * simpl in *.
+  simpl in *.
+  - generalize p0 H3. clear.
+    induction p0; intros; try (split; intros; constructor).
+    simpl in *.
+    assert (incl (FV p0) []). unfold incl in *. intuition.
+    assert (incl (FV' a) []). unfold incl in *. intuition.
+    intuition.
+    * .
+    destruct p0; try (split; intros; constructor).
+    simpl in *.
     
+    rewrite inclEmptyFalse in H3.
+  unfold  *)
+
+(*colocate H r A without touching , so that p still holds, *)
+Lemma evalphiRelocate : forall xs H1 r1 A1 H0 r0 A0 p,
+  disjoint xs (FV p) ->
+  evalphi H0 r0 A0 p ->
+  exists Hx rx Ax,
+    evalphi Hx rx Ax p /\
+    envEqualsAt xs H1 r1 A1 Hx rx Ax.
+Proof.
+  induction xs; intros; simpl in *.
+  - repeat eexists; eauto.
+Admitted.
+
+Lemma evalphiAppRev : ∀ (p1 p2 : list phi') (H : H) (r : rho) (A : A_d),
+      evalphi H r A p1 ∧ evalphi H r (Aexcept A (footprint H r p1)) p2
+      -> evalphi H r A (p1 ++ p2).
+Proof.
+  induction p1; intros; simpl in *; unf.
+  - common.
+    assumption.
+  - inversionx H2.
+    eca.
+    apply IHp1.
+    rewrite AexceptApp.
+    intuition.
+Qed.
+
+
+Lemma phiImpliesNarrowing : forall p0 p1 p2,
+  phiOrthogonal p1 p0 ->
+  phiOrthogonal p2 p0 ->
+  phiSatisfiable p0 ->
+  phiSatisfiable p1 ->
+  phiImplies (p0 ++ p1) p2 ->
+  phiImplies p1 p2.
+Proof.
+  unfold phiImplies. intros.
+  unfold phiSatisfiable in H2.
+  unf.
+  assert (disjoint (FV p1 ++ FV p2) (FV p0)).
+    unfold phiOrthogonal in *.
+    rewrite disjointAppA.
+    auto.
+  eapply (evalphiRelocate (FV p1 ++ FV p2) h r a) in H6; auto.
+  unf.
+  specialize (H4 x3 x4 x5).
+  assert (incl (FV p1) (FV p1 ++ FV p2)). intuition.
+  assert (incl (FV p2) (FV p1 ++ FV p2)). intuition.
+  assert (evalphi x3 x4 x5 (p0 ++ p1)).
+    apply evalphiAppRev.
+    intuition.
+    specialize (H8 p1).
+    intuition.
 Admitted.
 
 (* x = 3 * x = y => y = 3 *)
@@ -516,37 +575,18 @@ Admitted.
 
 (* x = 3 * x = y => y : int *)
 (* BUT NOT x = y => y : int *)
+
 Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
-  disjoint (FV p0) (FVe e) ->
-  phiOrthogonal p0 p1 ->
+  disjoint (FV p1) (FV p0) ->
+  disjoint (FVe e) (FV p0) ->
   phiSatisfiable p0 ->
   phiSatisfiable p1 ->
   hasStaticType (p0 ++ p1) e T ->
   hasStaticType p1 e T.
 Proof.
-  induction p0;
-  intros;
-  simpl in *;
-  try assumption.
-  assert (Hsat := H1).
-  rewrite cons2app in H1.
-  apply disjointAppA in H0.
-  apply phiSatisfiableAppRev in H1.
-  unf.
-  apply IHp0; auto.
-  eapply hasStaticTypeNarrowingSingle; eauto.
-Qed.
-
-
-Lemma hasStaticTypeNarrowing : forall p0 p1 e T,
-  disjoint (FV p0) (FVe e) ->
-  phiSatisfiable (p0 ++ p1) ->
-  hasStaticType (p0 ++ p1) e T ->
-  hasStaticType p1 e T.
-Proof.
   induction e0;
   intros;
-  inversionx H2;
+  inversionx H4;
   try constructor.
   - eapply phiImpliesNarrowing; eauto.
   - eca.

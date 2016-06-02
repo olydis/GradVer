@@ -521,7 +521,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     phiImplies phi (phiAcc x f :: 
                     phiNeq (ex x) (ev vnull) :: phi') ->
     sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+    (* NotIn x (FV phi') -> *)
     hasStaticType phi (ex x) (TClass C) ->
     hasStaticType phi (ex y) T ->
     fieldHasType C f T ->
@@ -556,8 +556,8 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
-    NotIn y (FV phi_r) ->
-    NotIn z' (FV phi_r) ->
+    (* NotIn y (FV phi_r) ->
+    NotIn z' (FV phi_r) -> *)
     phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
     phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)

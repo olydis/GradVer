@@ -72,24 +72,23 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
 
   inversion INV as [INVphi INVtypes]; clear INV;
   inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
-  - applyINVtypes INVtypes H9.
-    applyINVtypes INVtypes H7.
+  - applyINVtypes INVtypes H8.
+    applyINVtypes INVtypes H6.
     applyINVphi2 INVphi2 H3.
     
     inversionx evp.
-    inversionx H16.
-    simpl in *.
-    clear H11.
-    inversionx H18.
-    common.
     inversionx H15.
-    rewrite H8 in *.
+    simpl in *.
+    clear H10.
     inversionx H17.
+    common.
+    inversionx H14.
+    rewrite H7 in *.
+    inversionx H16.
     
     inversionx xd0; try (inversionx H2).
 
-    unfold incl in H9.
-    specialize (H9 (o1,f0)).
+    apply inclSingle in H8.
 
     emagicProgress.
   - applyINVtypes INVtypes H7.
@@ -108,12 +107,12 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     rename evp into H8.
     inversionx H8.
     simpl in *.
-    clear H11.
-    inversionx H18.
+    clear H9.
+    inversionx H16.
     common.
-    inversionx H15.
+    inversionx H13.
     rewrite H7 in *. inversionx H1.
-    inversionx xd; try (contradict H16; tauto).
+    inversionx xd; try tauto.
 
     (*well def*)
     remember (Method T_r m0 T_p z (Contract phi_pre phi_post) underscore) as mm.
@@ -128,9 +127,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
       destruct (string_dec c C0); inversionx H1.
       apply find_some in H5. inversionx H5.
       repeat eexists; eauto.
-    inversionE H0.
-    inversionE H1.
-    inversionE H0.
+    unf.
     assert (mWellDefined C0 mm).
       assert (CWellDefined (Cls C0 x3 x6)).
         apply pWellDefined.
@@ -143,7 +140,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
       assumption.
     unfold mWellDefined in H0.
     rewrite Heqmm in H0.
-    intuition.
+    unf.
     rename H6 into varsPre.
     rename H0 into varsPost.
     
@@ -166,7 +163,7 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
            ).
       subst.
       econstructor; unfold evale; simpl; eauto.
-      apply evalphiPrefix in H19.
+      apply evalphiPrefix in H17.
       admit. (*TODO: helper?*)
     rename H0 into step1.
 
@@ -175,12 +172,9 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     unfold soundness in sdn.
     remember ((initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S') as S''.
     specialize (sdn phi_pre' underscore phi_post' initialHeap r' fp S'').
-    apply sdn in H11. Focus 2. admit. (*that follows from preservation proof of Part 1!*)
+    apply sdn in H9. Focus 2. admit. (*that follows from preservation proof of Part 1!*)
     clear sdn.
-    inversion H11; clear H11.
-    inversion H0; clear H0.
-    inversion H6; clear H6.
-    inversion H0; clear H0.
+    unf.
     rename H6 into step2.
 
     (*Part 3: call finish*)
@@ -207,15 +201,15 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
         unfold mpost, mcontract.
         rewrite H5, Heqmm. simpl. tauto.
 
-        uninv. inversionE H11. inversionE H17.
+        uninv. unf.
         subst.
-        inversionx H21.
+        inversionx H19.
+        inversionx H29.
         inversionx H31.
-        inversionx H33.
-        simpl in H35.
+        simpl in H33.
         repeat common.
         assumption.
-    inversionE H0.
+    unf.
     rename H6 into step3.
     
     (*marriage*)
@@ -303,6 +297,8 @@ Proof.
   rewrite evaleRemoveRhoSubst; eauto.
 Qed.
 
+Ltac eapp H := eapply H; try split; eauto.
+Ltac eappIn H t := eapply H in t; try split; eauto.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -321,85 +317,102 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
 
   inversion INV as [INVphi INVtypes]; clear INV;
   inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
-  - assert (HH9 := H9).
-    assert (HH7 := H7).
-    assert (HH3 := H3).
-    applyINVtypes INVtypes H9.
-    applyINVtypes INVtypes H7.
-    applyINVphi2 INVphi2 H3.
+  - rename H6 into hstX0.
+    rename H8 into hstX1.
+    rename H3 into im.
+    rename H9 into fht.
+    rename H4 into sf.
+    assert (temp := hstX0). 
+      applyINVtypes INVtypes temp.
+      rename x2 into v0.
+      rename xd into hdtV0.
+      rename H1 into irX0.
+    assert (temp := hstX1).
+      applyINVtypes INVtypes temp.
+      rename x2 into v1.
+      rename xd into hdtV1.
+      rename H1 into irX1.
+    applyINVphi2 INVphi2 im.
     
     inversionx evp.
-    inversionx H16.
+    inversionx H10.
     simpl in *.
-    clear H11.
-    inversionx H18.
+    clear H5.
+    inversionx H12.
     common.
+    rewrite H3 in *.
+    inversionx H8.
+    inversionx irX0.
+    inversionx H9.
     rewrite H8 in *.
-    inversionx H2.
-    inversionx H14.
-    inversionx H15.
-    rewrite H8 in *.
-    inversionx H13.
-    clear H14 H16.
-    inversionx xd0.
+    inversionx H3.
+    clear H10 H11.
+    inversionx hdtV0.
 
-    unfold incl in H9.
-    specialize (H9 (o0,f0)). assert (In (o0, f0) [(o0, f0)]). constructor. tauto. intuition.
+    apply inclSingle in H4.
 
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
-    * eapply sfrmIncl; eauto. intuition.
-    * econstructor; eauto; simpl.
+    * eapply sfrmIncl; eauto. apply inclEmpty.
+    * eca; simpl.
         apply inclEmpty.
-        econstructor; eauto. econstructor.
+        eca. econstructor.
           unfold HSubst.
           unfold o_decb, f_decb, string_decb, dec2decb.
           des (o_dec o0 o0).
-          rewrite H11.
+          rewrite H5.
           eauto.
       common.
-      econstructor; eauto; simpl; rewrite H8.
-        unfold incl. intros. inversionx H6; try inversion H7. assumption.
-        econstructor; eauto.
-      econstructor; eauto; simpl.
+      eca; simpl; rewrite H8.
+        apply inclSingle. assumption.
+        eca. constructor. tauto.
+      eca; simpl.
         apply inclEmpty.
-        econstructor; eauto. unfold evale. simpl. eauto. common. intuition. inversion H6.
+        eca. unfold evale. simpl. eauto. discriminate.
       common.
-      econstructor; eauto; simpl.
+      eca; simpl.
         apply inclEmpty.
-        econstructor; eauto. unfold evale; simpl. rewrite H8.
+        eca. unfold evale; simpl. rewrite H8.
           unfold HSubst.
-          unfold o_decb, f_decb, string_decb, dec2decb.
-          des (o_dec o0 o0).
-          rewrite H11.
+          dec (o_dec o0 o0).
+          rewrite H5.
           simpl.
-          des (string_dec f0 f0).
+          dec (string_dec f0 f0).
           tauto.
       common.
 
+Lemma evalphiImpliesAccess : forall H r p A,
+  evalphi H r A p ->
+  incl (footprint H r p) A.
+Proof.
+  induction p0; intros; simpl in *.
+  - apply inclEmpty.
+  - inversionx H1.
+    apply IHp0 in H12.
+    apply inclAexcept in H12.
+    apply incl_app; auto.
+Qed.
 
-
-
-  
-  assert (In (x3, f0) (footprint H0 r p0)).
-    apply staticVSdynamicFP.
-    eexists; split; eauto.
-  assert (In (x0, f0) (footprint H0 r p0)).
-    apply staticVSdynamicFP.
-    eexists; split; eauto.
-  
-  rewrite H3, H4 in H5.
-  inversionx H5.
-    
-  apply staticVSdynamicFP in H
+Lemma AexceptNOTodotInPhi : forall H r o f p A,
+  sfrmphi [] p ->
+  evalphi H r (Aexcept A [(o, f)]) p ->
+  ~ odotInPhi r p o f.
+Proof.
+  intros.
+  intuition.
+  unfold odotInPhi in *.
   unf.
-  rewriteRevIn staticVSdynamicFP H6.
-  rewriteRevIn staticVSdynamicFP H4.
-  unf.
-  SearchAbout staticFootprint.
-  
-  
-  
+  eappIn xdotphiStaticFootprint H5.
+  assert (In (o0, f0) (footprint H0 r p0)).
+    eapp staticVSdynamicFP.
+  apply evalphiImpliesAccess in H2.
+  apply H2 in H4.
+  apply InAexceptNot in H4.
+  contradict H4.
+  constructor.
+  tauto.
+Qed.
+
 Lemma evalphiHSubstAexcept : forall p H r A o f x v,
   sfrmphi [] p ->
   r x = Some (vo o) ->
@@ -407,7 +420,27 @@ Lemma evalphiHSubstAexcept : forall p H r A o f x v,
   evalphi (HSubst o f v H) r (Aexcept A [(o, f)]) p.
 Proof.
   intros.
-  apply phiContainsAccessNot in H3.
+  assert (~ odotInPhi r p0 o0 f0).
+    eapp AexceptNOTodotInPhi.
+
+Lemma HSubstNOTodotInPhi : forall H r o v f p A,
+  ¬ odotInPhi r p o f ->
+  evalphi H r A p <->
+  evalphi (HSubst o f v H) r A p.
+Proof.
+  induction p0; intros; simpl in *.
+  - split; intros; constructor.
+  - assert (¬ odotInPhi r p0 o0 f0).
+      unfold odotInPhi in *.
+      intuition.
+      contradict H1.
+      unf.
+      eexists; split; eauto.
+      
+  
+  unfold phiNotAliasedInR in H4.
+  
+  apply xdotInPhi in H3.
   rewriteRevIn phiContainsAccessBridge H3.
   assert (~ In (x0, f0) (staticFootprint p0)).
     intuition.
