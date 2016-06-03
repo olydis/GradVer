@@ -12,15 +12,15 @@ Definition A_sSubsts m (A : A_s) : A_s :=
   (phiSubsts m (map (fun a => phiAcc (fst a) (snd a)) A)).
 
 
-Definition mMapsTo (m : list (x * e)) (x' : x) : Prop :=
-  exists m', In m' m /\ FVeo (snd m') = Some x'.
+Definition mMapsTo (m : list (x * x)) (x' : x) : Prop :=
+  exists m', In m' m /\ snd m' = x'.
 
-Definition mMapsToUnique (m : list (x * e)) (x' : x) : Prop :=
-  forall f1 f2 e1 e2, 
-      In (f1, e1) m -> 
-      In (f2, e2) m -> 
-      FVeo e1 = Some x' -> 
-      FVeo e2 = Some x' -> 
+Definition mMapsToUnique (m : list (x * x)) (x' : x) : Prop :=
+  forall f1 f2 x1 x2, 
+      In (f1, x1) m -> 
+      In (f2, x2) m -> 
+      x1 = x' -> 
+      x2 = x' -> 
       f1 = f2
 .
 
@@ -30,110 +30,75 @@ Lemma sfrmeSubst : forall m e a,
       sfrme (A_sSubsts m a) (eSubsts m e) ->
       sfrme a e.
 Proof.
-  intros.
-  destruct e0; try constructor.
-  simpl in *;
-  try apply inclEmpty;
-  try constructor.
+  induction e0; intros; try (constructor; fail).
   inversionx H1.
-  destruct e0; simpl in H0; inversionx H2.
-  constructor.
-  destruct (find (λ r : x * e, x_decb x1 (fst r)) m0) eqn: ff.
-  - destruct p0.
-    subst.
-    apply find_some in ff.
-    inversionx ff.
-    dec (x_dec x1 (fst (x2, ex x0))); try inversionx H2.
-    simpl in *.
-    unfold A_sSubsts in H4.
-    apply in_flat_map in H4.
-    inversionx H4.
-    inversionx H2.
-    destruct x3; inversionx H4; inversionx H2.
-    unfold phiSubsts, phi'Substs in H3.
-    simpl in *.
-    apply in_map_iff in H3.
-    inversionx H3.
-    inversionx H2.
-    apply in_map_iff in H4.
-    inversionE H4.
-    inversionx H2.
-    destruct x4.
-    simpl in *.
-    destruct (find (λ r : x * e, x_decb x3 (fst r)) m0) eqn: fff1; inversionx H3.
-    * destruct p0. destruct e0; inversionx H4.
-      apply find_some in fff1.
-      inversionx fff1.
-      simpl in *.
-      dec (x_dec x3 x4); inversionx H3.
-      specialize (H0 x0).
-      inversionx H0.
-      unfold mMapsToUnique in H3.
-      eapply H3 in H1; eauto.
-      subst.
-      assumption.
-    * specialize (H0 x0).
-      inversionx H0.
-      assert (mMapsTo m0 x0).
-        eexists; eauto.
-      intuition.
-      unfold FVA_s in H6.
-      rewrite in_map_iff in H6.
-      contradict H6.
-      eexists; split; eauto.
-      auto.
-  - inversionx H3.
-    unfold A_sSubsts in H4.
-    apply in_flat_map in H4.
-    inversionx H4.
+  constructor; try (apply IHe0; auto).
+  generalize a H0 H5. clear.
+
+  induction a; intros; simpl in *; try tauto.
+  inversionx H5.
+  - destruct a. simpl in *.
     inversionx H1.
-    destruct x0; inversionx H3; try inversionx H1.
-    unfold phiSubsts in H2.
-    apply in_map_iff in H2.
-    inversionx H2.
-    inversionx H1.
-    unfold phiSubsts, phi'Substs in H2.
-    destruct x0; inversionx H2.
-    * destruct (find (λ r : x * e, x_decb x0 (fst r)) m0) eqn: ff1.
-      + destruct p0.
-        destruct e0; inversionx H4.
-        apply find_some in ff1.
-        inversionx ff1.
-        simpl in H2.
-        dec (x_dec x0 x2); inversionx H2.
-        apply in_map_iff in H3.
-        inversionx H3.
-        inversionx H2.
-        inversionx H3.
-        destruct x3.
+    assert (CL := classic (e0 = e1)).
+    inversionx CL; subst; eauto.
+    contradict H1.
+    generalize e0 e1 H3 H0. clear.
+    induction e0; intros; simpl in *;
+    destruct e1; simpl in *; inversionx H3; try tauto.
+    * unfold mMapsToUnique in *.
+      unfold xSubsts in *.
+      destruct (find (λ r : x * x, x_decb x0 (fst r)) m0) eqn: ff0;
+      destruct (find (λ r : x * x, x_decb x1 (fst r)) m0) eqn: ff1.
+      + destruct p0, p1.
+        subst.
+        apply find_some in ff0. unf.
+        apply find_some in ff1. unf.
         simpl in *.
-        specialize (H0 x1).
-        inversionx H0.
-        assert (mMapsTo m0 x1).
-          eexists; eauto.
-        intuition.
-      + inversionx H4.
-        apply in_map_iff in H3.
-        inversionx H3.
-        inversionx H1. 
-        inversionx H2.
-        destruct x0.
-        simpl.
-        assumption.
-    * apply in_map_iff in H3.
-      inversionx H3.
-      inversionx H1.
-      inversionx H2.
+        dec (x_dec x1 x4); inversionx H4.
+        dec (x_dec x0 x2); inversionx H2.
+        specialize (H0 x3).
+        unf.
+        eapply H2 in H1; eauto.
+        subst.
+        tauto.
+      + destruct p0.
+        subst.
+        apply find_some in ff0. unf.
+        eapply find_none in ff1; eauto.
+        simpl in *.
+        dec (x_dec x3 x2); inversionx ff1. rename de2 into asd.
+        dec (x_dec x0 x2); inversionx H2.
+        specialize (H0 x3).
+        unf. assert (mMapsTo m0 x3). eexists; eauto. intuition.
+      + destruct p0.
+        subst.
+        apply find_some in ff1. unf.
+        eapply find_none in ff0; eauto.
+        simpl in *.
+        dec (x_dec x0 x2); inversionx ff0. rename de2 into asd.
+        dec (x_dec x1 x2); inversionx H2.
+        specialize (H0 x0).
+        unf. assert (mMapsTo m0 x0). eexists; eauto. intuition.
+      + subst.
+        tauto.
+    * apply IHe0 in H2; subst; intuition.
+  - apply or_intror.
+    eapply IHa; auto.
+    intros.
+    specialize (H0 x0).
+    unfold FVA_s in *.
+    simpl in *.
+    intuition.
 Qed.
 
 Lemma sfrmeSubstEmpty : forall m e,
       sfrme [] (eSubsts m e) -> sfrme [] e.
 Proof.
   intros.
-  destruct e0; try constructor.
-  simpl in *.
-  inversionx H0.
-  inversion H3.
+  induction e0; try constructor;
+  simpl in *;
+  inversionx H0;
+  inversion H4.
 Qed.
 
 Lemma sfrmphi'Subst : forall m e a,
@@ -187,14 +152,23 @@ Proof.
   - inversionx H1.
     apply (IHe0 m0); intros.
     * specialize (H0 x0).
-      inversionx H0.
+      unf.
       intuition.
       + contradict H4.
         simpl.
         intuition.
       + destruct a; simpl in *; intuition.
+        unfold FVA_s in *.
+        apply in_flat_map in H5.
+        unf.
+        apply in_map_iff in H5.
+        unf.
+        subst.
+        inversionx H9; simpl in *; intuition.
+        contradict H6.
+        apply in_flat_map.
+        eexists; split; eauto.
+        apply in_map_iff.
+        eexists; split; eauto.
     * destruct a; simpl in *; intuition.
-      destruct (find (λ r : x * e, x_decb x0 (fst r)) m0); intuition.
-      destruct p0.
-      destruct e1; intuition.
 Qed.

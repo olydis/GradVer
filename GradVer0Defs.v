@@ -59,8 +59,8 @@ Inductive phi' :=
 | phiEq : e -> e -> phi'
 (*coq2latex: phiNeq #a #b := (#a \neq #b) *)
 | phiNeq : e -> e -> phi'
-(*coq2latex: phiAcc #x #f := \acc(#x.#f) *)
-| phiAcc : x -> f -> phi'
+(*coq2latex: phiAcc #e #f := \acc(#e.#f) *)
+| phiAcc : e -> f -> phi'
 (*coq2latex: phiType #x #T := #x : #T *)
 | phiType : x -> T -> phi'.
 Definition phi := list phi'.
@@ -96,7 +96,7 @@ Inductive program :=
 
 Definition H := o -> option (C * (f -> option v)).
 Definition rho := x -> option v.
-Definition A_s := list (x * f).
+Definition A_s := list (e * f).
 Definition A_d := list (o * f).
 Definition S := list (rho * A_d * list s).
 
@@ -242,49 +242,42 @@ Definition getMain : list s := match p with Program _ main => main end.
 
 (* substitution *)
 
-Fixpoint eSubsts (r : list (x * e)) (ee : e) : e :=
+Definition xSubsts (r : list (x * x)) (x' : x) : x :=
+  match find (fun r => x_decb x' (fst r)) r with
+  | Some (_, x') => x'
+  | None => x'
+  end.
+Fixpoint eSubsts (r : list (x * x)) (ee : e) : e :=
   match ee with
-  | ex x'' => 
-    match find (fun r => x_decb x'' (fst r)) r with
-    | Some (_, e') => e'
-    | None => ee
-    end
+  | ex x'' => ex (xSubsts r x'')
   | edot e'' f' => edot (eSubsts r e'') f'
   | _ => ee
   end.
-Definition eSubst (x' : x) (e' : e) (ee : e) : e :=
-  eSubsts [(x', e')] ee.
+Definition eSubst (x' x'' : x) (ee : e) : e :=
+  eSubsts [(x', x'')] ee.
 
-Definition phi'Substs (r : list (x * e)) (p : phi') : phi' :=
+Definition phi'Substs (r : list (x * x)) (p : phi') : phi' :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubsts r e1) (eSubsts r e2)
 | phiNeq e1 e2 => phiNeq (eSubsts r e1) (eSubsts r e2)
-| phiAcc x f'' => 
-  match eSubsts r (ex x) with
-  | ex x' => phiAcc x' f''
-  | _ => phiTrue
-  end
-| phiType x T => 
-  match eSubsts r (ex x) with
-  | ex x' => phiType x' T
-  | _ => phiTrue
-  end
+| phiAcc e f'' => phiAcc (eSubsts r e) f''
+| phiType x T => phiType (xSubsts r x) T
 | phiTrue => p
 end.
 
 (*coq2latex: phiSubsts #m #phi := #phi[#m] *)
-Definition phiSubsts (r : list (x * e)) (p : phi) : phi :=
+Definition phiSubsts (r : list (x * x)) (p : phi) : phi :=
   map (phi'Substs r) p.
 
 (*coq2latex: phiSubst #x #e #phi := #phi[#e / #x] *)
-Definition phiSubst (x' : x) (e' : e) (p : phi) : phi :=
-  phiSubsts [(x', e')] p.
+Definition phiSubst (x' : x) (x'' : x) (p : phi) : phi :=
+  phiSubsts [(x', x'')] p.
 (*coq2latex: phiSubsts2 #x1 #e1 #x2 #e2 #phi := #phi[#e1, #e2 / #x1, #x2] *)
-Definition phiSubsts2 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (p : phi) : phi :=
-  phiSubsts [(x1, e1) ; (x2, e2)] p.
+Definition phiSubsts2 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (p : phi) : phi :=
+  phiSubsts [(x1, x1') ; (x2, x2')] p.
 (*coq2latex: phiSubsts3 #x1 #e1 #x2 #e2 #x3 #e3 #phi := #phi[#e1, #e2, #e3 / #x1, #x2, #x3] *)
-Definition phiSubsts3 (x1 : x) (e1 : e) (x2 : x) (e2 : e) (x3 : x) (e3 : e) (p : phi) : phi :=
-  phiSubsts [(x1, e1) ; (x2, e2) ; (x3, e3)] p.
+Definition phiSubsts3 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (x3 : x) (x3' : x) (p : phi) : phi :=
+  phiSubsts [(x1, x1') ; (x2, x2') ; (x3, x3')] p.
 
 (*coq2latex: HSubst #o #f #v #H := #H[#o \mapsto [#f \mapsto #v]] *)
 Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
@@ -304,8 +297,14 @@ Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
 Definition HSubsts (o' : o) (r : list (f * v)) (h : H) : H :=
   fold_left (fun a b => HSubst o' (fst b) (snd b) a) r h.
 
-Definition Halloc (o : o) (fs : list (T * f)) (h : H) : H :=
-  HSubsts o (map (fun x => (snd x, defaultValue (fst x))) fs) h.
+Definition Halloc (o : o) (C : C) (h : H) : H :=
+  match fields C with
+  | Some fs =>
+      (fun o' => if o_decb o o' 
+        then Some (C, (fun f => option_map (fun fs' => defaultValue (fst fs')) (find (fun fs' => f_decb f (snd fs')) fs)))
+        else h o')
+  | None => h
+  end.
 
 (*coq2latex: rhoSubst #x #v #rho := #rho[#x \mapsto #v] *)
 Definition rhoSubst (x' : x) (v' : v) (r : rho) : rho :=
@@ -318,9 +317,10 @@ Inductive sfrme : A_s -> e -> Prop :=
     sfrme A (ex x)
 | WFValue : forall A v,
     sfrme A (ev v)
-| WFField : forall A x f,
-    In (x, f) A ->
-    sfrme A (edot (ex x) f)
+| WFField : forall A e f,
+    In (e, f) A ->
+    sfrme A e ->
+    sfrme A (edot e f)
 .
 
 
@@ -340,7 +340,7 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFTrue : forall A, sfrmphi' A phiTrue
 | WFEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiEq e_1 e_2)
 | WFNEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiNeq e_1 e_2)
-| WFAcc : forall A x f, sfrmphi' A (phiAcc x f)
+| WFAcc : forall A e f, sfrme A e -> sfrmphi' A (phiAcc e f)
 | WFType : forall A x T, sfrmphi' A (phiType x T)
 .
 (*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
@@ -383,8 +383,8 @@ Definition ehasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
 (*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
 Definition footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
-  | phiAcc x' f' => 
-      match r x' with
+  | phiAcc e' f' => 
+      match evale' h r e' with
       | Some (vo o) => [(o, f')]
       | _ => []
       end
@@ -409,10 +409,10 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     evale H rho e_2 v_2 ->
     neq v_1 v_2 ->
     evalphi' H rho A (phiNeq e_1 e_2)
-| EAAcc : forall H rho(*\*) (A : A_d) x (o : o) f,
-    rho x = Some (vo o) ->
+| EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f,
+    evale H rho e (vo o) ->
     In (o, f) A ->
-    evalphi' H rho A (phiAcc x f)
+    evalphi' H rho A (phiAcc e f)
 | EAType : forall H rho(*\*) (A : A_d) x T v,
     rho x = Some v ->
     hasDynamicType H v T ->
@@ -462,10 +462,10 @@ Definition fieldHasType C f T := fieldType C f = Some T.
 
 (* Figure 5: Hoare-based proof rules for core language *)
 (*coq2latex: accListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
-Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_left 
-        (fun arg1 arg2 => phiAcc x arg2 :: arg1)
-        f_bar
-        p.
+Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
+        (fun arg1 arg2 => phiAcc (ex x) arg1 :: arg2)
+        p
+        f_bar.
 
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
@@ -477,7 +477,7 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_left
 
 (*hacky: *)
 (*coq2latex: snd cf' := f_i *)
-(*coq2latex: Halloc #o Tfs #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+(*coq2latex: Halloc #o #C #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
 
 Fixpoint FVe (e : e) : list x :=
   match e with
@@ -496,12 +496,12 @@ Definition FV' (phi : phi') : list x :=
   | phiTrue => []
   | phiEq e1 e2 => FVe e1 ++ FVe e2
   | phiNeq e1 e2 => FVe e1 ++ FVe e2
-  | phiAcc x f => [x]
+  | phiAcc e f => FVe e
   | phiType x T => [x]
   end.
 Definition FV (phi : phi) : list x := flat_map FV' phi.
 
-Definition FVA_s (A : A_s) : list x := map fst A.
+Definition FVA_s (A : A_s) : list x := flat_map FVe (map fst A).
 (* Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m). *)
 
 
@@ -518,7 +518,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
 | HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc x f :: 
+    phiImplies phi (phiAcc (ex x) f :: 
                     phiNeq (ex x) (ev vnull) :: phi') ->
     sfrmphi [] phi' ->
     (* NotIn x (FV phi') -> *)
@@ -527,7 +527,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     fieldHasType C f T ->
     hoareSingle phi (sMemberSet x f y) 
       (phiType x (TClass C) ::
-       phiAcc x f ::
+       phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi')
 | HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
@@ -558,8 +558,8 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     NotIn x (FV phi_r) ->
     (* NotIn y (FV phi_r) ->
     NotIn z' (FV phi_r) -> *)
-    phi_p = phiSubsts2 xthis (ex y) (xUserDef z) (ex z') phi_pre ->
-    phi_q = phiSubsts3 xthis (ex y) (xUserDef z) (ex z') xresult (ex x) phi_post ->
+    phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
+    phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
@@ -621,7 +621,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     fields C = Some Tfs ->
     rho' = rhoSubst x (vo o) rho ->
     A' = A ++ map (fun cf' => (o, snd cf')) Tfs ->
-    H' = Halloc o Tfs H ->
+    H' = Halloc o C H ->
     dynSem (H, (rho, A, sAlloc x C :: s_bar) :: S) (H', (rho', A', s_bar) :: S)
 | ESReturn : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (v_x : v),
     evale H rho (ex x) v_x ->

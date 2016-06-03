@@ -1,5 +1,9 @@
 Load GradVer0Defs.
 
+Ltac eax := repeat split; eauto.
+Ltac eapp H := eapply H; eax.
+Ltac eappIn H t := eapply H in t; eax.
+Ltac eex := eexists; eax.
 Ltac eca := econstructor; eauto.
 
 Ltac inversionE H :=

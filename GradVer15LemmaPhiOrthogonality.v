@@ -1,5 +1,7 @@
 Load GradVer14LemmaAliasing.
+(* Load GradVer12LemmaFootprint. *)
 Import Semantics.
+
 
 
 Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
@@ -126,47 +128,6 @@ Proof.
     * apply incl_appr.
       generalize A1 H2 H9. clear.
       induction A1; intros; simpl in *.
-      + destruct a; intuition; simpl in *.
-        unfold colocateRho, rhoWithOmap in *.
-        destruct (r1 x0); simpl in *; intuition.
-        destruct v0; intuition.
-        apply inclEmptyFalse in H9.
-        tauto.
-      + destruct a; intuition; simpl in *;
-        try apply inclEmpty.
-        unfold colocateRho, rhoWithOmap in *.
-        destruct (r1 x0); simpl in *; intuition;
-        try apply inclEmpty.
-        destruct v0; try apply inclEmpty.
-        apply inclSingle in H9.
-        inversionx H9.
-      ++  apply inclSingle.
-          constructor.
-          tauto.
-      ++  apply incl_tl.
-          apply H3.
-          apply inclSingle.
-          assumption.
-     (*  + 
-    admit.
-  - intros.
-    rewriteRev app_comm_cons.
-    inversionx H3.
-    eca.
-    * rewrite map_app.
-      apply incl_appl.
-      generalize A0 H2 H9. clear.
-      induction A0; intros; simpl in *.
-      + destruct a; intuition.
-        simpl in *.
-        unfold rhoWithOmap.
-        destruct (r0 x0); simpl in *; intuition.
-      ++  destruct v0; intuition.
-          apply inclEmptyFalse in H9.
-          tauto.
-      ++  
-    destruct a;
-    eca; try eca. *)
 Admitted.
 
 Lemma phiSatisfiableApp : forall p0 p1,
@@ -196,15 +157,40 @@ Proof.
 Qed.
 
 (**)
+Lemma evale'RemoveRhoSubstsVo : forall h r r' e o,
+  evale' h (rhoSubsts (FVe e) r' r) e = Some (vo o) <->
+  evale' h r' e = Some (vo o).
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - unfold rhoSubst.
+    dec (x_dec x0 x0).
+    destruct (r' x0); simpl; split; intros; try tauto; inversion H0.
+  - destruct (evale' h r' e0);
+    destruct (evale' h (rhoSubsts (FVe e0) r' r) e0);
+    try destruct v0;
+    try destruct v1;
+    try tauto;
+    specialize (IHe0 o1); unf; intuition;
+    inversionx H2;
+    assumption.
+Qed.
+  
 Lemma footprint'RemoveRhoSubsts2 : forall h r r' p,
   footprint' h (rhoSubsts (FV' p) r' r) p = 
   footprint' h r' p.
 Proof.
   intros.
   destruct p0; simpl; try tauto.
-  destruct (r' x0);
-  simpl;
-  rewrite rhoSubstId;
+  assert (ee := evale'RemoveRhoSubstsVo h r r' e0).
+  destruct (evale' h r' e0);
+  destruct (evale' h (rhoSubsts (FVe e0) r' r) e0);
+  try destruct v0;
+  try destruct v1;
+  try tauto;
+  specialize (ee o0);
+  intuition;
+  inversionx H2.
   tauto.
 Qed.
 
@@ -253,10 +239,8 @@ Proof.
     specialize (H5 x0).
     apply in_app_iff in H2.
     intuition.
-  - intuition.
-    subst.
-    eexists.
-    eauto.
+  - apply evaleRhoDefinedAt in H4.
+    intuition.
   - intuition.
     subst.
     eexists.
@@ -340,9 +324,8 @@ Proof.
   * erewrite evale'RemoveRhoSubsts2 in H4; eauto.
     simpl.
     intuition.
-  * erewrite rhoSubstsId in H3; eauto.
-    simpl.
-    intuition.
+  * apply evale'RemoveRhoSubstsVo in H3.
+    assumption.
   * erewrite rhoSubstsId in H3; eauto.
     simpl.
     intuition.
@@ -382,13 +365,13 @@ Proof.
     assumption.
 Qed.
 
-Definition invNoAlias
+(* Definition invNoAlias
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     let sfp := staticFootprint phi in
       forall f x1 x2, 
-        In (x1, f) sfp ->
-        In (x2, f) sfp ->
-        rho x1 <> rho x2.
+        In (e1, f) sfp ->
+        In (e2, f) sfp ->
+        evale H rho e1 <> rho x2. *)
         
 (* x = 3 * x = y => y = 3 *)
 (* BUT NOT x = y => y = 3 *)

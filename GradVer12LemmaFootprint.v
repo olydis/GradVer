@@ -4,7 +4,7 @@ Import Semantics.
 Lemma dynamicASstaticFP : forall H r p,
   footprint H r p = fold_right (
     fun x xs =>
-      match r (fst x) with
+      match evale' H r (fst x) with
       | Some (vo o) => (o, snd x) :: xs
       | _ => xs
       end) [] (staticFootprint p).
@@ -13,12 +13,12 @@ Proof.
   destruct a; try tauto.
   simpl.
   rewrite IHp0.
-  destruct (r x0); try tauto.
+  destruct (evale' H0 r e0); try tauto.
   destruct v0; try tauto.
 Qed.
 
 Lemma staticVSdynamicFP : forall p H r o f,
-  (exists x, r x = Some (vo o) /\ In (x, f) (staticFootprint p))
+  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint p))
   <->
   In (o, f) (footprint H r p).
 Proof.
@@ -30,9 +30,9 @@ Proof.
     rewrite H1.
     intuition.
   - destruct x0; try inversionx H3.
-    exists x0.
+    exists e0.
     rewrite in_flat_map.
-    destruct (r x0); try inversionx H3.
+    destruct (evale' H0 r e0); try inversionx H3.
     destruct v0; try inversionx H3; inversionx H2; try tauto.
     split; intuition.
     eexists; split; eauto.
@@ -66,7 +66,7 @@ Proof.
   induction p0; intros; simpl in *; try tauto.
   inversionx H1.
   destruct a; simpl in *; try (eapply IHp0; eassumption).
-  destruct (r x0); simpl in *; try (eapply IHp0; eassumption).
+  destruct (evale' H0 r e0); simpl in *; try (eapply IHp0; eassumption).
   destruct v0; simpl in *; try (eapply IHp0; eassumption).
   split.
   - eapply footprintContainsNot.

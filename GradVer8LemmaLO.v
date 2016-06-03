@@ -362,12 +362,13 @@ Proof.
     eauto.
     rewrite H3.
     eauto.
-  - exists m1.
+  - unfold HeapNotSetAt in H9.
+    exists m1.
     unfold Halloc.
-    apply HSubstsLeavesUntouched; auto.
-    destruct (o_dec o0 o1); auto.
-    subst. rewrite H9 in H3.
-    inversion H3.
+    rewrite H10.
+    dec (o_dec o1 o0); auto.
+    rewrite H9 in *.
+    discriminate.
 Qed.
 
 Lemma HeapGetsMoreSpecific : forall (C : C) (o : o) m1 s1 s2 (H1 H2 : H),
@@ -487,13 +488,15 @@ Lemma sfrmeAccessReorder : forall p a1 a2 a3 a4,
   sfrme (a1 ++ a2 ++ a3 ++ a4) p ->
   sfrme (a1 ++ a3 ++ a2 ++ a4) p.
 Proof.
-  destruct p0;
+  induction p0;
   intros;
   try constructor.
-  inversionx H0.
-  constructor.
-  apply InReorder.
-  assumption.
+  - inversionx H0.
+    apply InReorder.
+    assumption.
+  - inversionx H0.
+    apply IHp0.
+    assumption.
 Qed.
 
 Lemma sfrmphi'AccessReorder : forall p a1 a2 a3 a4,
@@ -633,14 +636,13 @@ Lemma footprint'RemoveRhoSubst : forall p H r x v,
   footprint' H (rhoSubst x v r) p =
   footprint' H r p.
 Proof.
-  intros.
   destruct p0;
+  intros;
   simpl;
   try tauto.
   
   simpl in *.
-  unfold rhoSubst.
-  dec (x_dec x1 x0); intuition.
+  rewrite evaleRemoveRhoSubst; auto.
 Qed.
 
 Lemma footprintRemoveRhoSubst : forall p H r x v,
@@ -710,10 +712,12 @@ Qed.
 (* incl and sfrm *)
 Lemma sfrmeIncl : forall p a b, incl a b -> sfrme a p -> sfrme b p.
 Proof.
-  intros.
+  induction p0;
+  intros;
   inversionx H1; try constructor.
-  apply H0.
-  assumption.
+  - apply H0.
+    assumption.
+  - eapply IHp0; eauto.
 Qed.
 
 Lemma sfrm'Incl : forall p a b, incl a b -> sfrmphi' a p -> sfrmphi' b p.

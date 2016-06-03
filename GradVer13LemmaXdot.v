@@ -2,47 +2,48 @@ Load GradVer12LemmaFootprint.
 Import Semantics.
 
 
-Fixpoint xdotInE (e : e) (x : x) (f : f) :=
-  match e with
-  | edot (ex x') f' => x = x' /\ f = f'
-  | edot e' _ => xdotInE e' x f
+Fixpoint edotInE (e' : e) (ee : e) (f : f) :=
+  match e' with
+  | edot e' f' => f = f' /\ ee = e'
+               \/ edotInE e' ee f
   | _ => False
   end.
 
-Definition xdotInPhi' (p : phi') (x : x) (f : f) :=
+Definition edotInPhi' (p : phi') (ee : e) (f : f) :=
   match p with
-  | phiEq  e1 e2 => xdotInE e1 x f \/ xdotInE e2 x f
-  | phiNeq e1 e2 => xdotInE e1 x f \/ xdotInE e2 x f
+  | phiEq  e1 e2 => edotInE e1 ee f \/ edotInE e2 ee f
+  | phiNeq e1 e2 => edotInE e1 ee f \/ edotInE e2 ee f
+  | phiAcc e _ => edotInE e ee f
   | _ => False
   end.
 
-Fixpoint xdotInPhi (p : phi) (x : x) (f : f) :=
+Fixpoint edotInPhi (p : phi) (ee : e) (f : f) :=
   match p with
   | [] => False
-  | (p' :: p) => xdotInPhi' p' x f \/ xdotInPhi p x f
+  | (p' :: p) => edotInPhi' p' ee f \/ edotInPhi p ee f
   end.
 
-Lemma xdotphiStaticFootprintHelperSfrme : forall x f A e,
-  ¬ In (x, f) A ->
-  xdotInE e x f ->
+Lemma edotphiStaticFootprintHelperSfrme : forall e' f A e,
+  ¬ In (e', f) A ->
+  edotInE e e' f ->
   sfrme A e ->
   False.
 Proof.
-  destruct e0;
+  induction e0;
   simpl in *;
   intros;
-  try inversion H1.
+  inversionx H1;
   inversionx H2.
-  unf.
-  subst.
-  tauto.
+  - unf. subst.
+    tauto.
+  - apply IHe0; auto.
 Qed.
 
-Lemma xdotphiStaticFootprintHelper : forall p x f A,
+Lemma edotphiStaticFootprintHelper : forall p e f A,
   sfrmphi A p ->
-  ~ In (x, f) A ->
-  xdotInPhi p x f ->
-  In (x, f) (staticFootprint p).
+  ~ In (e, f) A ->
+  edotInPhi p e f ->
+  In (e, f) (staticFootprint p).
 Proof.
   induction p0;
   simpl;
@@ -50,11 +51,14 @@ Proof.
   inversionx H0;
   inversionx H2.
   - (*contradiction!*)
-    destruct a; simpl in *; inversionx H0; inversionx H3;
-    eapply xdotphiStaticFootprintHelperSfrme in H1; eauto;
-    tauto.
+    destruct a;
+    simpl in *;
+    try inversionx H0;
+    inversionx H3;
+    eapply edotphiStaticFootprintHelperSfrme in H1; eauto;
+    try tauto.
   - apply in_app_iff.
-    assert (CL := classic (In (x0, f0) (staticFootprint' a))).
+    assert (CL := classic (In (e0, f0) (staticFootprint' a))).
     intuition.
     eapply IHp0 in H0; eauto.
     intro.
@@ -62,69 +66,139 @@ Proof.
     intuition.
 Qed.
 
-Lemma xdotphiStaticFootprint : forall p x f,
+Lemma edotphiStaticFootprint : forall p e f,
   sfrmphi [] p ->
-  xdotInPhi p x f ->
-  In (x, f) (staticFootprint p).
+  edotInPhi p e f ->
+  In (e, f) (staticFootprint p).
 Proof.
   intros.
-  eapply xdotphiStaticFootprintHelper; eauto.
+  eapply edotphiStaticFootprintHelper; eauto.
 Qed.
 
-Lemma xdoteEvaluates : forall H r x f e v,
+Lemma edoteEvaluates : forall H r e' f e v,
   evale H r e v ->
-  xdotInE e x f ->
-  exists o, r x = Some (vo o).
+  edotInE e e' f ->
+  exists o, evale' H r e' = Some (vo o).
 Proof.
-  induction e0; intros; try inversionx H2.
-  simpl in *.
-  destruct e0.
-  - eapply IHe0; eauto.
-    eca.
-  - unf.
-    subst.
-    inversionx H1.
-    destruct (r x1); try inversionx H3.
+  induction e0; intros;
+  inversionx H2;
+  inversionx H1.
+  - unf. subst.
+    destruct (evale' H0 r e0); inversionx H4.
     destruct v1; inversionx H2.
     eexists; eauto.
-  - unfold evale in *.
-    simpl in *.
-    destruct (evale' H0 r e0); try inversionx H1.
-    destruct v1; try inversionx H4.
-    destruct (option_bind (λ x : C * (f → option v), snd x f2) (H0 o0)); eauto.
+  - unfold evale in IHe0.
+    destruct (evale' H0 r e0); inversionx H4.
+    eapply IHe0; eauto.
 Qed.
 
-Lemma xdotphiEvaluates : forall p A H r x f,
+Lemma edotphiEvaluates : forall p A H r e f,
   evalphi H r A p ->
-  xdotInPhi p x f ->
-  exists o, r x = Some (vo o).
+  edotInPhi p e f ->
+  exists o, evale' H r e = Some (vo o).
 Proof.
   induction p0; intros; simpl in *;
   inversionx H2;
   inversionx H1.
   - inversionx H12;
     simpl in *;
-    inversionx H3;
-    eapply xdoteEvaluates in H1; eauto.
+    try inversionx H3;
+    try eapply edoteEvaluates in H1; eauto;
+    try eapply edoteEvaluates in H2; eauto.
   - eapply IHp0; eauto.
 Qed.
 
-Lemma xdotphiFootprint : forall p A H r x f,
+Lemma edotphiFootprint : forall p A H r e f,
   sfrmphi [] p ->
   evalphi H r A p ->
-  xdotInPhi p x f ->
+  edotInPhi p e f ->
   exists o, In (o, f) (footprint H r p).
 Proof.
   intros.
-  eapply xdotphiStaticFootprint in H1; eauto.
-  eapply xdotphiEvaluates in H2; eauto.
+  eapply edotphiStaticFootprint in H1; eauto.
+  eapply edotphiEvaluates in H2; eauto.
   unf.
-  exists x1.
+  eexists.
   apply staticVSdynamicFP.
   eexists; split; eauto.
 Qed.
 
 (*odot*)
 
-Definition odotInPhi (H : H) (r : rho) (p : phi) (o : o) (f : f) :=
-  exists x, r x = Some (vo o) /\ xdotInPhi p x f.
+
+Fixpoint odotInE (H : H) (r : rho) (e : e) (o : o) (f : f) :=
+  match e with
+  | edot e' f' => f = f' /\ evale H r e' (vo o)
+               \/ odotInE H r e' o f
+  | _ => False
+  end.
+
+Definition odotInPhi' (H : H) (r : rho) (p : phi') (o : o) (f : f) :=
+  match p with
+  | phiEq  e1 e2 => odotInE H r e1 o f \/ odotInE H r e2 o f
+  | phiNeq e1 e2 => odotInE H r e1 o f \/ odotInE H r e2 o f
+  | phiAcc e _ => odotInE H r e o f
+  | _ => False
+  end.
+
+Fixpoint odotInPhi (H : H) (r : rho) (p : phi) (o : o) (f : f) :=
+  match p with
+  | [] => False
+  | (p' :: p) => odotInPhi' H r p' o f \/ odotInPhi H r p o f
+  end.
+
+
+Lemma odotedotE : forall H r e' f o,
+  odotInE H r e' o f <->
+  exists e, evale' H r e = Some (vo o) /\ edotInE e' e f.
+Proof.
+  induction e'; split; intros; simpl in *; unf; try tauto.
+  - inversionx H1.
+    * unf. subst.
+      eexists; split; eauto.
+    * apply IHe' in H2.
+      unf.
+      eauto.
+  - inversionx H3.
+    * unf. subst.
+      auto.
+    * apply or_intror.
+      apply IHe'.
+      eauto.
+Qed.
+
+Lemma odotedotPhi' : forall H r p f o,
+  odotInPhi' H r p o f <->
+  exists e, evale' H r e = Some (vo o) /\ edotInPhi' p e f.
+Proof.
+  split; intros.
+  - destruct p0; simpl in *;
+    try inversionx H1;
+    try apply odotedotE in H1;
+    try apply odotedotE in H2;
+    unf;
+    simpl;
+    eauto.
+  - unf.
+    destruct p0; simpl in *;
+    try inversionx H3; simpl;
+    repeat rewrite odotedotE;
+    eauto.
+Qed.
+
+Lemma odotedotPhi : forall H r p f o,
+  odotInPhi H r p o f <->
+  exists e, evale' H r e = Some (vo o) /\ edotInPhi p e f.
+Proof.
+  induction p0; split; intros; simpl in *; unf; try tauto.
+  - inversionx H1.
+    * apply odotedotPhi' in H2. unf. eauto.
+    * apply IHp0 in H2. unf. eauto.
+  - inversionx H3.
+    * rewrite odotedotPhi'. eauto.
+    * apply or_intror.
+      apply IHp0. 
+      eauto.
+Qed.
+
+

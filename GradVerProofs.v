@@ -72,7 +72,8 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
 
   inversion INV as [INVphi INVtypes]; clear INV;
   inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
-  - applyINVtypes INVtypes H8.
+  - (*sMemberSet*)
+    applyINVtypes INVtypes H8.
     applyINVtypes INVtypes H6.
     applyINVphi2 INVphi2 H3.
     
@@ -86,20 +87,23 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     rewrite H7 in *.
     inversionx H16.
     
-    inversionx xd0; try (inversionx H2).
+    inversionx xd0; inversionx H2; inversionx H17; inversionx H0.
 
     apply inclSingle in H8.
 
     emagicProgress.
-  - applyINVtypes INVtypes H7.
+  - (*sAssign*)
+    applyINVtypes INVtypes H7.
     emagicProgress.
-  - assert (HnT := HnotTotal initialHeap). inversionE HnT.
+  - (*sAlloc*)
+    assert (HnT := HnotTotal initialHeap). inversionE HnT.
     
     unfold fieldsNames in *.
     common.
     
     emagicProgress.
-  - applyINVtypes INVtypes H4.
+  - (*sCall*)
+    applyINVtypes INVtypes H4.
     applyINVtypes INVtypes H6.
     applyINVtypes INVtypes H7.
     applyINVphi2 INVphi2 H8.
@@ -216,13 +220,17 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
     subst.
     repeat eexists.
     eapply strat; eauto.
-  - applyINVtypes INVtypes H4.
+  - (*sReturn*)
+    applyINVtypes INVtypes H4.
     emagicProgress.
-  - emagicProgress.
-  - applyINVphi2 INVphi2 H1.
+  - (*sAssert*)
+    emagicProgress.
+  - (*sRelease*)
+    applyINVphi2 INVphi2 H1.
     apply evalphiPrefix in evp.
     emagicProgress.
-  - emagicProgress.
+  - (*sDeclare*)
+    emagicProgress.
 Admitted.
 
 Ltac emagicProgressx :=
@@ -297,8 +305,380 @@ Proof.
   rewrite evaleRemoveRhoSubst; eauto.
 Qed.
 
-Ltac eapp H := eapply H; try split; eauto.
-Ltac eappIn H t := eapply H in t; try split; eauto.
+Lemma evalphiImpliesAccess : forall H r p A,
+  evalphi H r A p ->
+  incl (footprint H r p) A.
+Proof.
+  induction p0; intros; simpl in *.
+  - apply inclEmpty.
+  - inversionx H1.
+    apply IHp0 in H12.
+    apply inclAexcept in H12.
+    apply incl_app; auto.
+Qed.
+
+Lemma odotInPhiStaticFootprint : forall p e f,
+  sfrmphi [] p ->
+  edotInPhi p e f ->
+  In (e, f) (staticFootprint p).
+Proof.
+  intros.
+  eapply edotphiStaticFootprintHelper; eauto.
+Qed.
+
+Lemma AexceptNOTodotInPhi : forall H r o f p A,
+  sfrmphi [] p ->
+  evalphi H r (Aexcept A [(o, f)]) p ->
+  ~ odotInPhi H r p o f.
+Proof.
+  intros.
+  intuition.
+  apply odotedotPhi in H3.
+  unf.
+  eappIn edotphiStaticFootprint H5.
+  assert (In (o0, f0) (footprint H0 r p0)).
+    eapp staticVSdynamicFP.
+  apply evalphiImpliesAccess in H2.
+  apply H2 in H4.
+  apply InAexceptNot in H4.
+  contradict H4.
+  constructor.
+  tauto.
+Qed.
+
+Lemma HSubst'NOTodotInE : forall H r o v f e,
+  ¬ odotInE H r e o f ->
+  evale' H r e =
+  evale' (HSubst o f v H) r e.
+Proof.
+  induction e0; intros; simpl in *; auto.
+  apply not_or_and in H1.
+  unf.
+  apply IHe0 in H3. clear IHe0.
+  rewriteRev H3. clear H3.
+  apply not_and_or in H2.
+  destruct (evale' H0 r e0) eqn: ee; try tauto.
+  destruct v1; try tauto.
+  unfold HSubst.
+  dec (o_dec o1 o0); try tauto.
+  inversionx H2; try tauto.
+  destruct (H0 o0); try tauto.
+  destruct p0. simpl in *.
+  dec (string_dec f1 f0); try tauto.
+Qed.
+
+Lemma HSubstHasDynamicType : forall H v v' t o f,
+  hasDynamicType H v t <->
+  hasDynamicType (HSubst o f v' H) v t.
+Proof.
+  split; intros;
+  inversionx H1;
+  try (eca; fail);
+  unfold HSubst in *.
+  - dec (o_dec o1 o0); eca.
+    * dec (o_dec o0 o0).
+      rewrite H3.
+      eauto.
+    * rename de2 into dex.
+      dec (o_dec o1 o0); try tauto.
+      rewrite H3.
+      eauto.
+  - dec (o_dec o1 o0); try (eca; fail).
+    destruct (H0 o0) eqn: Hx.
+    * destruct p0.
+      inversionx H3.
+      eca.
+    * inversionx H3.
+Qed.
+
+Lemma HSubst'NOTodotInPhi : forall H r o v f p,
+  ¬ odotInPhi' H r p o f ->
+  evalphi' H r (footprint' H r p) p <->
+  evalphi' (HSubst o f v H) r (footprint' (HSubst o f v H) r p) p.
+Proof.
+  intros.
+  rename H1 into H2.
+  destruct p0; simpl in H2; try apply not_or_and in H2; unf;
+  split; intros;
+  try constructor;
+  try inversionx H2;
+  simpl in *.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE in H7; eauto.
+    erewrite HSubst'NOTodotInE in H11; eauto.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE; eauto.
+    erewrite HSubst'NOTodotInE; eauto.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE in H7; eauto.
+    erewrite HSubst'NOTodotInE in H11; eauto.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE; eauto.
+    erewrite HSubst'NOTodotInE; eauto.
+  - inversionx H1.
+    erewrite HSubst'NOTodotInE in H10; eauto.
+    eca. unfold evale.
+    destruct (evale' (HSubst o0 f0 v0 H0) r e0); try tauto.
+    destruct v1; try tauto.
+    inversionx H10; try tauto.
+    inversionx H1; try tauto.
+  - inversionx H1.
+    erewrite HSubst'NOTodotInE; eauto.
+    eca.
+    unfold evale in *.
+    erewrite HSubst'NOTodotInE; eauto.
+  - inversionx H1.
+    eca.
+    rewriteRev HSubstHasDynamicType.
+    assumption.
+  - inversionx H1.
+    eca.
+    rewrite HSubstHasDynamicType.
+    eauto.
+Qed.
+
+(* 
+Lemma HSubstNOTodotInE : forall H r v' o f e,
+  (forall x, r x = Some (vo o) -> ~ xdotInE e x f) ->
+  evale' H r e = evale' (HSubst o f v' H) r e.
+Proof.
+  induction e0; intros; unfold evale in *; try tauto.
+  destruct e0.
+  - simpl. 
+    tauto.
+  - simpl.
+    specialize (H1 x0).
+    destruct (r x0); try tauto.
+    destruct v0; try tauto.
+    unfold HSubst.
+    dec (o_dec o1 o0); try tauto.
+    intuition.
+    destruct (H0 o0); try tauto.
+    destruct p0.
+    simpl.
+    dec (string_dec f1 f0); try tauto.
+    contradict H2.
+    simpl.
+    tauto.
+  - apply IHe0 in H1.
+    simpl in *.
+    tauto.
+  
+  
+  split;
+  intros;
+  inversionx H1;
+  try constructor;
+  simpl in *.
+  inversionx H2.
+  
+  auto.
+Admitted. *)
+
+Lemma footprint'HSubst : forall H r p o f v,
+  ¬ odotInPhi' H r p o f ->
+  footprint' (HSubst o f v H) r p = footprint' H r p.
+Proof.
+  intros.
+  destruct p0; simpl in *; try tauto.
+  rewriteRev HSubst'NOTodotInE; eauto.
+Qed.
+
+Lemma HSubstNOTodotInPhi : forall H r o v f p A,
+  ¬ odotInPhi H r p o f ->
+  evalphi H r A p <->
+  evalphi (HSubst o f v H) r A p.
+Proof.
+  induction p0; intros; simpl in *.
+  - split; intros; constructor.
+  - apply not_or_and in H1.
+    unf.
+    rename H3 into od1.
+    rename H2 into od2.
+    apply (IHp0 (Aexcept A (footprint' H0 r a))) in od1.
+    split; intros.
+    * inversionx H1.
+      rewrite od1 in H12.
+      eca.
+      + rewrite footprint'HSubst; auto.
+      + rewriteRev HSubst'NOTodotInPhi; auto.
+      + rewrite footprint'HSubst; auto.
+    * inversionx H1.
+      rewrite footprint'HSubst in *; auto.
+      rewriteRevIn od1 H12.
+      eca.
+      rewrite HSubst'NOTodotInPhi; eauto.
+      rewrite footprint'HSubst in *; eauto.
+Qed.
+
+Lemma evalphiHSubstAexcept : forall p H r A o f x v,
+  sfrmphi [] p ->
+  r x = Some (vo o) ->
+  evalphi H r (Aexcept A [(o, f)]) p ->
+  evalphi (HSubst o f v H) r (Aexcept A [(o, f)]) p.
+Proof.
+  intros.
+  assert (~ odotInPhi H0 r p0 o0 f0).
+    eapp AexceptNOTodotInPhi.
+  apply HSubstNOTodotInPhi; auto.
+Qed.
+
+Lemma evale'Halloc : forall H r o C e o',
+  H o = None ->
+  evale' H r e = Some (vo o') <->
+  evale' (Halloc o C H) r e = Some (vo o').
+Proof.
+  induction e0; intros; simpl in *; try tauto.
+  destruct (evale' H0 r e0) eqn: ee1;
+  destruct (evale' (Halloc o0 C0 H0) r e0) eqn: ee2;
+  try destruct v0;
+  try destruct v1;
+  try tauto;
+  specialize (IHe0 o1);
+  intuition;
+  try discriminate.
+  - inversionx H2.
+    unfold Halloc.
+    destruct (fields C0); auto.
+    dec (o_dec o0 o1); auto.
+    rewrite H1 in *.
+    simpl in *.
+    discriminate.
+  - inversionx H2.
+    unfold Halloc in H4.
+    destruct (fields C0); auto.
+    dec (o_dec o0 o1); auto.
+    simpl in *.
+    destruct (find
+          (λ fs' : T * string,
+           if string_dec f0 (snd fs') then true else false) l); try discriminate.
+Qed.
+
+Lemma footprint'Halloc : forall H r o C p,
+  H o = None ->
+  footprint' H r p = footprint' (Halloc o C H) r p.
+Proof.
+  intros.
+  destruct p0; simpl; try tauto.
+  destruct (evale' H0 r e0) eqn: ee1;
+  destruct (evale' (Halloc o0 C0 H0) r e0) eqn: ee2;
+  try destruct v0;
+  try destruct v1;
+  try tauto;
+  eapply evale'Halloc in H1.
+  - apply H1 in ee2.
+    rewrite ee2 in *.
+    discriminate.
+  - apply H1 in ee1.
+    rewrite ee2 in *.
+    discriminate.
+  - apply H1 in ee2.
+    rewrite ee2 in *.
+    inversionx ee1.
+    tauto.
+  - apply H1 in ee1.
+    rewrite ee2 in *.
+    discriminate.
+  - apply H1 in ee2.
+    rewrite ee2 in *.
+    discriminate.
+Qed.
+
+Lemma evaleRemoveHalloc : forall H r o C e v,
+  H o = None ->
+  evale H r e v ->
+  evale (Halloc o C H) r e v.
+Proof.
+  induction e0; intros; unfold evale; simpl in *; try tauto.
+  inversionx H2.
+  unfold evale in *.
+  destruct (evale' H0 r e0); try discriminate.
+  destruct v1; try discriminate.
+  specialize (IHe0 (vo o1)).
+  intuition.
+  rewrite H3.
+  unfold Halloc.
+  destruct (fields C0); try tauto.
+  dec (o_dec o0 o1); try tauto.
+  rewrite H1 in *.
+  discriminate.
+Qed.
+
+Lemma evalphiRemoveHalloc : forall H r o C p A,
+  H o = None ->
+  evalphi H r A p ->
+  evalphi (Halloc o C H) r A p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H2.
+  eca.
+  - rewriteRev footprint'Halloc; auto.
+  - rewriteRev footprint'Halloc; auto.
+    inversionx H12;
+    eca;
+    try eapp evaleRemoveHalloc.
+    unfold Halloc.
+    destruct (fields C0); auto.
+    inversionx H4; eca.
+    dec (o_dec o0 o1); eauto.
+    rewrite H1 in *.
+    discriminate.
+  - rewriteRev footprint'Halloc; auto.
+Qed.
+
+Lemma hasDynamicTypeHalloc : forall o C H fs,
+  fields C = Some fs ->
+  hasDynamicType (Halloc o C H) (vo o) (TClass C).
+Proof.
+  intros.
+  eca.
+  unfold Halloc.
+  rewrite H1.
+  dec (o_dec o0 o0).
+  eauto.
+Qed.
+
+Lemma accListAppExtract : forall x A l,
+  accListApp x l A = accListApp x l [] ++ A.
+Proof.
+  induction l; simpl; try tauto.
+  rewrite IHl. tauto.
+Qed.
+
+Lemma ehasDynamicTypeRemoveHalloc : forall H r e T o C,
+  H o = None ->
+  ehasDynamicType H r e T ->
+  ehasDynamicType (Halloc o C H) r e T.
+Proof.
+  unfold ehasDynamicType.
+  intros.
+  unf.
+  eapply evaleRemoveHalloc in H2; eauto.
+  eexists; eax.
+  inversionx H4; eca.
+  inversionx H1.
+  unfold Halloc.
+  destruct (fields C0); eauto.
+  dec (o_dec o0 o1); eauto.
+  rewrite H4 in H5.
+  discriminate.
+Qed.
+
+Lemma FVapp : forall p1 p2,
+  FV (p1 ++ p2) = FV p1 ++ FV p2.
+Proof.
+  induction p1; intros; simpl; try tauto.
+  rewrite IHp1.
+  intuition.
+Qed.
+
+Lemma FVaccListApp : forall x p l,
+  FV (accListApp x l p) = map (fun asd => x) l ++ FV p.
+Proof.
+  induction l; simpl; try tauto.
+  rewrite IHl.
+  tauto.
+Qed.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -317,7 +697,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
 
   inversion INV as [INVphi INVtypes]; clear INV;
   inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
-  - rename H6 into hstX0.
+  - (*sMemberSet*)
+    rename H6 into hstX0.
     rename H8 into hstX1.
     rename H3 into im.
     rename H9 into fht.
@@ -380,188 +761,11 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
           dec (string_dec f0 f0).
           tauto.
       common.
-
-Lemma evalphiImpliesAccess : forall H r p A,
-  evalphi H r A p ->
-  incl (footprint H r p) A.
-Proof.
-  induction p0; intros; simpl in *.
-  - apply inclEmpty.
-  - inversionx H1.
-    apply IHp0 in H12.
-    apply inclAexcept in H12.
-    apply incl_app; auto.
-Qed.
-
-Lemma AexceptNOTodotInPhi : forall H r o f p A,
-  sfrmphi [] p ->
-  evalphi H r (Aexcept A [(o, f)]) p ->
-  ~ odotInPhi r p o f.
-Proof.
-  intros.
-  intuition.
-  unfold odotInPhi in *.
-  unf.
-  eappIn xdotphiStaticFootprint H5.
-  assert (In (o0, f0) (footprint H0 r p0)).
-    eapp staticVSdynamicFP.
-  apply evalphiImpliesAccess in H2.
-  apply H2 in H4.
-  apply InAexceptNot in H4.
-  contradict H4.
-  constructor.
-  tauto.
-Qed.
-
-
-Lemma HSubst'NOTodotInPhi : forall H r o v f p,
-  ¬ odotInPhi r [p] o f ->
-  evalphi' H r (footprint' H r p) p <->
-  evalphi' (HSubst o f v H) r (footprint' (HSubst o f v H) r p) p.
-Proof.
-  intros.
-  unfold odotInPhi in H1.
-  assert (forall x, r x = Some (vo o0) -> ~ xdotInPhi [p0] x f0) as xd.
-    intuition.
-    contradict H1.
-    eexists; eauto.
-  clear H1.
-  destruct p0; simpl in xd.
-  - split; intros; constructor.
-  - assert (∀ x : x, r x = Some (vo o0) → ¬ xdotInE e0 x f0).
-      intros; apply xd in H1; auto.
-    assert (∀ x : x, r x = Some (vo o0) → ¬ xdotInE e1 x f0).
-      intros; apply xd in H2; auto.
-    split; intros; inversionx H3; eca.
-
-Lemma HSubstNOTodotInE : forall H r v' o f e,
-  (forall x, r x = Some (vo o) -> ~ xdotInE e x f) ->
-  evale' H r e = evale' (HSubst o f v' H) r e.
-Proof.
-  induction e0; intros; unfold evale in *; try tauto.
-  destruct e0.
-  - simpl. 
-    tauto.
-  - simpl.
-    specialize (H1 x0).
-    destruct (r x0); try tauto.
-    destruct v0; try tauto.
-    unfold HSubst.
-    dec (o_dec o1 o0); try tauto.
-    intuition.
-    destruct (H0 o0); try tauto.
-    destruct p0.
-    simpl.
-    dec (string_dec f1 f0); try tauto.
-    contradict H2.
-    simpl.
-    tauto.
-  - apply IHe0 in H1.
-    simpl in *.
-    tauto.
-  
-  
-  split;
-  intros;
-  inversionx H1;
-  try constructor;
-  simpl in *.
-  inversionx H2.
-  
-  auto.
-Admitted.
-
-Lemma HSubstNOTodotInPhi : forall H r o v f p A,
-  ¬ odotInPhi r p o f ->
-  evalphi H r A p <->
-  evalphi (HSubst o f v H) r A p.
-Proof.
-  induction p0; intros; simpl in *.
-  - split; intros; constructor.
-  - assert (¬ odotInPhi r p0 o0 f0) as od1.
-      unfold odotInPhi in *.
-      intuition.
-      contradict H1.
-      unf.
-      eexists; split; eauto.
-      simpl.
-      auto.
-    assert (¬ odotInPhi r [a] o0 f0) as od2.
-      unfold odotInPhi in *.
-      intuition.
-      contradict H1.
-      unf.
-      eexists; split; eauto.
-      simpl in *.
-      intuition.
-    apply (IHp0 (Aexcept A (footprint' H0 r a))) in od1.
-    split; intros.
-    * inversionx H2.
-      rewrite od1 in H13.
-      eca.
-      rewriteRev HSubst'NOTodotInPhi; eauto.
-    * inversionx H2.
-      rewriteRevIn od1 H13.
-      eca.
-      rewrite HSubst'NOTodotInPhi; eauto.
-Qed.
-
-Lemma evalphiHSubstAexcept : forall p H r A o f x v,
-  sfrmphi [] p ->
-  r x = Some (vo o) ->
-  evalphi H r (Aexcept A [(o, f)]) p ->
-  evalphi (HSubst o f v H) r (Aexcept A [(o, f)]) p.
-Proof.
-  intros.
-  assert (~ odotInPhi r p0 o0 f0).
-    eapp AexceptNOTodotInPhi.
-  apply HSubstNOTodotInPhi; auto.
-Qed.
-  
-  unfold phiNotAliasedInR in H4.
-  
-  apply xdotInPhi in H3.
-  rewriteRevIn phiContainsAccessBridge H3.
-  assert (~ In (x0, f0) (staticFootprint p0)).
-    intuition.
-    contradict H3.
-    eexists; eauto.
-  assert (~ xdotInPhi p0 x0 f0).
-    intuition.
-    contradict H4.
-    apply phiContainsAccess; auto.
-  
-  Check phiContainsAccess.
-  
-  Check phiContainsAccess.
-  apply phiContainsAccess in H3.
-  induction p0; intros; try constructor.
-  inversionx H1.
-  inversionx H2.
-  rewrite app_nil_r in *.
-        apply phiContainsAccess in H9; auto.
-
-
-
-
-
-
-  
-  
-  inversionx H1.
-  rewrite AexceptComm in H12.
-  eapply IHp0 in H12.
-  econstructor; eauto.
-  - admit.
-  - inversionx H11; simpl in *; try constructor.
-    * 
-    
-
-      admit.
+      eapp evalphiHSubstAexcept.
     * intros.
-      assert (hasStaticType pre e0 T1). admit.
-      apply INVtypes in H7. admit.
-  - assert (HH3 := H3).
+      admit.
+  - (*sAssign*)
+    assert (HH3 := H3).
     applyINVtypes INVtypes H7.
     applyINVphi2 INVphi2 H2.
     do 4 eexists; try emagicProgress. (*progress*)
@@ -584,6 +788,98 @@ Qed.
       + inversionx H0.
         apply IHe1 in H8.
         admit.
+  - (*sAlloc*)
+    assert (HnT := HnotTotal initialHeap). unf.
+    
+    unfold fieldsNames in *.
+    common.
+    
+    do 4 eexists; try emagicProgress. (*progress*)
+    repeat split; repeat constructor.
+    * generalize l H3. clear.
+      induction l; intros; simpl in *.
+      + repeat constructor.
+        assumption.
+      + repeat constructor.
+        eapply sfrmIncl; eauto.
+        apply inclEmpty.
+    * assert (evalphi 
+            (Halloc x1 c initialHeap) 
+            (rhoSubst x0 (vo x1) initialRho)
+            initialAccess
+            phi'0) as ep.
+        apply H2 in INVphi2.
+        apply evalphiRemoveRhoSubst; auto.
+        apply evalphiRemoveHalloc; auto.
+      assert (exists l, fields c = Some l) as Heq0. eauto.
+      assert (forall l,
+          (evalphi
+            (Halloc x1 c initialHeap)
+            (rhoSubst x0 (vo x1) initialRho)
+            (initialAccess)
+            (phiType x0 (TClass c) :: phiNeq (ex x0) (ev vnull) :: phi'0))
+          ->
+          (evalphi
+            (Halloc x1 c initialHeap)
+            (rhoSubst x0 (vo x1) initialRho)
+            (initialAccess ++ map (λ cf' : T * f, (x1, snd cf')) l)
+            (accListApp x0 (map snd l)
+               (phiType x0 (TClass c) :: phiNeq (ex x0) (ev vnull) :: phi'0)))
+         ) as remAccList.
+        clear.
+        induction l; intros; simpl in *.
+          rewrite app_nil_r. assumption.
+        apply IHl in H0.
+        eca; simpl; rewrite rhoSubstId.
+          apply inclSingle. intuition.
+          eca; unfold evale; simpl; try rewrite rhoSubstId; eauto.
+        admit.
+      apply remAccList.
+      eca; simpl; try apply inclEmpty. eca; try rewrite rhoSubstId; eauto. eapply hasDynamicTypeHalloc; eauto.
+      common.
+      eca; simpl; try apply inclEmpty. eca; unfold evale; simpl; try rewrite rhoSubstId; eauto. discriminate.
+      common.
+      assumption.
+    * intros.
+      rewrite accListAppExtract in H1.
+      assert (CL := classic (In x0 (FVe e0))).
+      inversionx CL.
+      + admit.
+      + rewrite cons2app2 in H1.
+        rewrite app_assoc in H1.
+        apply hasStaticTypeNarrowing in H1; simpl.
+      ++  eapply phiImpliesStaticType in H1; eauto.
+          apply INVtypes in H1.
+          apply ehasDynamicTypeRemoveRhoSubst; auto.
+          apply ehasDynamicTypeRemoveHalloc; auto.
+      ++  unfold disjoint. intros.
+          dec (x_dec x0 x2); auto.
+          apply or_intror.
+          rewrite FVapp.
+          rewrite in_app_iff.
+          rewrite FVaccListApp.
+          simpl.
+          intuition.
+          rewrite app_nil_r in H8.
+          apply in_map_iff in H8.
+          unf.
+          tauto.
+      ++  unfold disjoint. intros.
+          dec (x_dec x0 x2); auto.
+          apply or_intror.
+          rewrite FVapp.
+          rewrite in_app_iff.
+          rewrite FVaccListApp.
+          simpl.
+          intuition.
+          rewrite app_nil_r in H8.
+          apply in_map_iff in H8.
+          unf.
+          tauto.
+      ++  admit.
+      ++  eex.
+  - (*sCall*)
+    admit.
 
 
 
@@ -653,29 +949,23 @@ Proof.
       eapply hasStaticTypePhiSubst in H0.
       + apply INVtypes in H0. apply INVtypes in HH3. apply INVtypes in H2. admit.
       + split; eauto.*)
-  - assert (HnT := HnotTotal initialHeap). inversionE HnT.
-    
-    unfold fieldsNames in *.
-    common.
-    do 4 eexists; try emagicProgress. (*progress*)
-    repeat split; repeat constructor.
-    * admit.
-    * admit.
-    * admit.
-  - admit.
-  - applyINVtypes INVtypes H4.
+      
+  - (*sReturn*)
+    applyINVtypes INVtypes H4.
     
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
     * simpl. assumption.
     * admit.
     * admit.
-  - do 4 eexists; try emagicProgress. (*progress*)
+  - (*sAssert*)
+    do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
     * assumption.
     * assumption.
     * assumption.
-  - applyINVphi2 INVphi2 H1.
+  - (*sRelease*)
+    applyINVphi2 INVphi2 H1.
     do 4 eexists; try emagicProgress; 
     try (apply evalphiPrefix in evp; assumption). (*progress*)
     repeat split; repeat constructor.
@@ -684,7 +974,8 @@ Proof.
     * intros.
       apply phiImpliesSuffix in H1.
       eapply phiImpliesStaticType in H1; eauto.
-  - do 4 eexists; try emagicProgress. (*progress*)
+  - (*sDeclare*)
+    do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
     * assumption.
     * apply H2 in INVphi2.
@@ -707,7 +998,7 @@ Proof.
         apply H2.
         assumption.
       (*end assertion*)
-      assert (phiSatisfiable [phiType x0 t; phiEq (ex x0) (ev (defaultValue t))]) as sat1.
+      assert (phiSatisfiable [phiType x0 t; phiEq (ex x0) (ev (defaultValue' t))]) as sat1.
         unfold phiSatisfiable.
           exists newHeap.
           exists (fun x => Some (defaultValue t)).
@@ -720,7 +1011,7 @@ Proof.
               eca; unfold evale; simpl; eauto.
               constructor.
       (*end assertion*)
-      assert (phiSatisfiable ([phiType x0 t; phiEq (ex x0) (ev (defaultValue t))] ++ phi'0)) as sat2.
+      assert (phiSatisfiable ([phiType x0 t; phiEq (ex x0) (ev (defaultValue' t))] ++ phi'0)) as sat2.
         apply phiSatisfiableApp; auto.
           unfold phiOrthogonal, disjoint.
           simpl.
@@ -729,7 +1020,7 @@ Proof.
           subst;
           intuition.
           
-          repeat eexists. eauto.
+          eex.
       (*end assertion*)
       
       rewrite cons2app2 in H0.
@@ -738,8 +1029,8 @@ Proof.
       + apply hasStaticTypePhiComm in H0.
         apply hasStaticTypeNarrowing in H0.
       ++  assert (forall xx t ee T,
-              phiSatisfiable [phiType xx t; phiEq (ex xx) (ev (defaultValue t))] ->
-              hasStaticType [phiType xx t; phiEq (ex xx) (ev (defaultValue t))] ee T ->
+              phiSatisfiable [phiType xx t; phiEq (ex xx) (ev (defaultValue' t))] ->
+              hasStaticType [phiType xx t; phiEq (ex xx) (ev (defaultValue' t))] ee T ->
               In xx (FVe ee) ->
               ee = ex xx).
             induction ee;
@@ -750,7 +1041,7 @@ Proof.
             inversionx H10.
             unfold phiSatisfiable in H3.
             unf.
-            assert (x2 xx <> Some vnull) as xxNotNull.
+            assert (x2 xx <> Some (ve vnull)) as xxNotNull.
               apply H12 in H5.
               inversionx H5.
               simpl in *.
@@ -770,7 +1061,7 @@ Proof.
               common.
               rewrite H9.
               auto.
-            assert (x2 xx = Some vnull) as xxNull.
+            assert (x2 xx = Some (ve vnull)) as xxNull.
               apply H8 in H5.
               inversionx H5.
               simpl in *.
@@ -790,18 +1081,6 @@ Proof.
           apply rhoSubstId.
       +++ constructor.
           tauto.
-      ++  unfold disjoint.
-          intros.
-          des (x_dec x0 x1); intuition.
-          assert (CL := classic (In x1 (FVe e0))).
-          intuition.
-          eapply FVeMaxOne in H1; eauto.
-      ++  apply phiSatisfiableAppComm.
-          assumption.
-      + apply hasStaticTypeNarrowing in H0.
-      ++  eapply phiImpliesStaticType in H0; eauto.
-          apply INVtypes in H0.
-          apply ehasDynamicTypeRemoveRhoSubst; auto.
       ++  simpl.
           unfold disjoint.
           intros.
@@ -810,7 +1089,36 @@ Proof.
           intuition.
           inversionx H3; try tauto.
           inversionx H5; try tauto.
+      ++  unfold disjoint.
+          intros.
+          des (x_dec x0 x1); intuition.
+          constructor.
+          intros.
+          eapply FVeMaxOne in H1; eauto.
+      ++  eex.
       ++  assumption.
+      + apply hasStaticTypeNarrowing in H0.
+      ++  eapply phiImpliesStaticType in H0; eauto.
+          apply INVtypes in H0.
+          apply ehasDynamicTypeRemoveRhoSubst; auto.
+      ++  simpl.
+          unfold disjoint.
+          intros.
+          des (x_dec x0 x1); intuition.
+          apply or_intror.
+          intuition.
+          inversionx H3; try tauto.
+          inversionx H5; try tauto.
+      ++  simpl.
+          unfold disjoint.
+          intros.
+          des (x_dec x0 x1); intuition.
+          apply or_intror.
+          intuition.
+          inversionx H3; try tauto.
+          inversionx H5; try tauto.
+      ++  assumption.
+      ++  eex.
 Admitted.
 
 (*
