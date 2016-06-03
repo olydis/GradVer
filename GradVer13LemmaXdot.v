@@ -126,5 +126,5 @@ Qed.
 
 (*odot*)
 
-Definition odotInPhi (r : rho) (p : phi) (o : o) (f : f) :=
+Definition odotInPhi (H : H) (r : rho) (p : phi) (o : o) (f : f) :=
   exists x, r x = Some (vo o) /\ xdotInPhi p x f.

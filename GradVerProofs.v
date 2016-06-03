@@ -413,6 +413,99 @@ Proof.
   tauto.
 Qed.
 
+
+Lemma HSubst'NOTodotInPhi : forall H r o v f p,
+  ¬ odotInPhi r [p] o f ->
+  evalphi' H r (footprint' H r p) p <->
+  evalphi' (HSubst o f v H) r (footprint' (HSubst o f v H) r p) p.
+Proof.
+  intros.
+  unfold odotInPhi in H1.
+  assert (forall x, r x = Some (vo o0) -> ~ xdotInPhi [p0] x f0) as xd.
+    intuition.
+    contradict H1.
+    eexists; eauto.
+  clear H1.
+  destruct p0; simpl in xd.
+  - split; intros; constructor.
+  - assert (∀ x : x, r x = Some (vo o0) → ¬ xdotInE e0 x f0).
+      intros; apply xd in H1; auto.
+    assert (∀ x : x, r x = Some (vo o0) → ¬ xdotInE e1 x f0).
+      intros; apply xd in H2; auto.
+    split; intros; inversionx H3; eca.
+
+Lemma HSubstNOTodotInE : forall H r v' o f e,
+  (forall x, r x = Some (vo o) -> ~ xdotInE e x f) ->
+  evale' H r e = evale' (HSubst o f v' H) r e.
+Proof.
+  induction e0; intros; unfold evale in *; try tauto.
+  destruct e0.
+  - simpl. 
+    tauto.
+  - simpl.
+    specialize (H1 x0).
+    destruct (r x0); try tauto.
+    destruct v0; try tauto.
+    unfold HSubst.
+    dec (o_dec o1 o0); try tauto.
+    intuition.
+    destruct (H0 o0); try tauto.
+    destruct p0.
+    simpl.
+    dec (string_dec f1 f0); try tauto.
+    contradict H2.
+    simpl.
+    tauto.
+  - apply IHe0 in H1.
+    simpl in *.
+    tauto.
+  
+  
+  split;
+  intros;
+  inversionx H1;
+  try constructor;
+  simpl in *.
+  inversionx H2.
+  
+  auto.
+Admitted.
+
+Lemma HSubstNOTodotInPhi : forall H r o v f p A,
+  ¬ odotInPhi r p o f ->
+  evalphi H r A p <->
+  evalphi (HSubst o f v H) r A p.
+Proof.
+  induction p0; intros; simpl in *.
+  - split; intros; constructor.
+  - assert (¬ odotInPhi r p0 o0 f0) as od1.
+      unfold odotInPhi in *.
+      intuition.
+      contradict H1.
+      unf.
+      eexists; split; eauto.
+      simpl.
+      auto.
+    assert (¬ odotInPhi r [a] o0 f0) as od2.
+      unfold odotInPhi in *.
+      intuition.
+      contradict H1.
+      unf.
+      eexists; split; eauto.
+      simpl in *.
+      intuition.
+    apply (IHp0 (Aexcept A (footprint' H0 r a))) in od1.
+    split; intros.
+    * inversionx H2.
+      rewrite od1 in H13.
+      eca.
+      rewriteRev HSubst'NOTodotInPhi; eauto.
+    * inversionx H2.
+      rewriteRevIn od1 H13.
+      eca.
+      rewrite HSubst'NOTodotInPhi; eauto.
+Qed.
+
 Lemma evalphiHSubstAexcept : forall p H r A o f x v,
   sfrmphi [] p ->
   r x = Some (vo o) ->
@@ -422,21 +515,8 @@ Proof.
   intros.
   assert (~ odotInPhi r p0 o0 f0).
     eapp AexceptNOTodotInPhi.
-
-Lemma HSubstNOTodotInPhi : forall H r o v f p A,
-  ¬ odotInPhi r p o f ->
-  evalphi H r A p <->
-  evalphi (HSubst o f v H) r A p.
-Proof.
-  induction p0; intros; simpl in *.
-  - split; intros; constructor.
-  - assert (¬ odotInPhi r p0 o0 f0).
-      unfold odotInPhi in *.
-      intuition.
-      contradict H1.
-      unf.
-      eexists; split; eauto.
-      
+  apply HSubstNOTodotInPhi; auto.
+Qed.
   
   unfold phiNotAliasedInR in H4.
   
