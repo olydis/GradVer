@@ -16,15 +16,24 @@ Definition invPhiHolds
 Definition invTypesHold
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall e T, hasStaticType phi e T -> ehasDynamicType Heap rho e T.
-(* Definition invNoAlias
+Definition invHELPER
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
-    sfrmphi [] phi /\ evalphi Heap rho A phi. *)
+    forall o C m f T,
+      Heap o = Some (C, m) ->
+      fieldType C f = Some T ->
+      exists v, m f = Some v /\ hasDynamicType Heap v T.
+
+Definition invNoAlias
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    sfrmphi [] phi /\ evalphi Heap rho A phi.
 
 Definition invAll
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     invPhiHolds
       Heap rho A phi /\
     invTypesHold
+      Heap rho A phi /\
+    invHELPER
       Heap rho A phi.
 
 Ltac emagicProgress :=
@@ -43,7 +52,8 @@ Definition soundness : Prop :=
 Ltac uninv :=
   unfold invAll in *;
   unfold invPhiHolds in *;
-  unfold invTypesHold in *.
+  unfold invTypesHold in *;
+  unfold invHELPER in *.
 
 Ltac applyINVtypes INVtypes H :=
   apply INVtypes in H;
@@ -70,8 +80,9 @@ Theorem staSemProgress : forall (s'' : s) (s' : list s) (pre post : phi) initial
   uninv;
   inversion HO; clear HO; subst;
 
-  inversion INV as [INVphi INVtypes]; clear INV;
-  inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
+  inversion INV as [INVphi INVtypesHELPER]; clear INV;
+  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
+  inversion INVtypesHELPER as [INVtypes INVHELPER]; clear INVtypesHELPER.
   - (*sMemberSet*)
     applyINVtypes INVtypes H8.
     applyINVtypes INVtypes H6.
@@ -680,6 +691,18 @@ Proof.
   tauto.
 Qed.
 
+Lemma hasStaticTypeTransfer : forall p1 p2 e T,
+  (forall x T', phiImplies p1 [phiType x T'] -> phiImplies p2 [phiType x T']) ->
+  (forall e, phiImplies p1 [phiNeq e (ev vnull)] -> phiImplies p2 [phiNeq e (ev vnull)]) ->
+  hasStaticType p1 e T ->
+  hasStaticType p2 e T.
+Proof.
+  induction e0;
+  intros;
+  inversionx H2; eca.
+Qed.
+
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -695,8 +718,9 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
   uninv;
   inversion HO; clear HO; subst;
 
-  inversion INV as [INVphi INVtypes]; clear INV;
-  inversion INVphi as [INVphi1 INVphi2]; clear INVphi.
+  inversion INV as [INVphi INVtypesHELPER]; clear INV;
+  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
+  inversion INVtypesHELPER as [INVtypes INVHELPER]; clear INVtypesHELPER.
   - (*sMemberSet*)
     rename H6 into hstX0.
     rename H8 into hstX1.
@@ -733,9 +757,14 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     apply inclSingle in H4.
 
     do 4 eexists; try emagicProgress. (*progress*)
-    repeat split; repeat constructor.
-    * eapply sfrmIncl; eauto. apply inclEmpty.
-    * eca; simpl.
+    assert (evalphi
+              (HSubst o0 f0 v1 initialHeap)
+              initialRho
+              initialAccess
+              (phiType x0 (TClass C0) :: phiAcc (ex x0) f0 :: 
+                phiNeq (ex x0) (ev vnull) :: phiEq (edot (ex x0) f0) (ex x1) :: 
+                phi'0)) as eph.
+      eca; simpl.
         apply inclEmpty.
         eca. econstructor.
           unfold HSubst.
@@ -762,8 +791,54 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
           tauto.
       common.
       eapp evalphiHSubstAexcept.
-    * intros.
-      admit.
+    assert (∀ (o1 : o) (C1 : C) (m1 : f → option v) (f1 : f) (T1 : T),
+        HSubst o0 f0 v1 initialHeap o1 = Some (C1, m1)
+        → fieldType C1 f1 = Some T1
+          → ∃ v0 : v,
+            m1 f1 = Some v0 ∧ hasDynamicType (HSubst o0 f0 v1 initialHeap) v0 T1
+        ) as hlp.
+      intros.
+      unfold HSubst in H0.
+      dec (o_dec o1 o0).
+        rewrite H5 in *.
+        inversionx H0.
+        dec (string_dec f1 f0).
+          unfold fieldHasType in *.
+          rewrite fht in H1. inversionx H1.
+          eex.
+          apply hasDynamicTypeHSubst.
+          assumption.
+          
+          eapply INVHELPER in H1; eauto.
+          unf.
+          eex.
+          apply hasDynamicTypeHSubst.
+          assumption.
+        eapply INVHELPER in H1; eauto.
+        unf.
+        eex.
+        apply hasDynamicTypeHSubst.
+        assumption.
+    repeat split; repeat constructor.
+    * eapply sfrmIncl; eauto. apply inclEmpty.
+    * apply eph.
+    * induction e0; intros; inversionx H0; simpl in *.
+      + eex. eca.
+      + eex. eca.
+      + apply H3 in eph.
+        inversionx eph. inversionx H14.
+        eex.
+      + apply H7 in eph.
+        inversionx eph. inversionx H16. common. inversionx H15.
+        unfold ehasDynamicType, evale. simpl.
+        apply IHe0 in H3.
+        inversionx H3. unf. common.
+        rewrite H1 in *. inversionx H6.
+        inversionx H2; try tauto.
+        rewrite H12.
+        simpl.
+        eapp hlp.
+    * apply hlp.
   - (*sAssign*)
     assert (HH3 := H3).
     applyINVtypes INVtypes H7.
@@ -954,10 +1029,98 @@ Proof.
     applyINVtypes INVtypes H4.
     
     do 4 eexists; try emagicProgress. (*progress*)
+    assert (evalphi 
+        initialHeap 
+        (rhoSubst xresult x1 initialRho) 
+        initialAccess
+        (phiType xresult T0 :: phiEq (ex xresult) (ex x0) :: phi'0))
+          as eph.
+      eca; simpl.
+        apply inclEmpty.
+        eca. rewrite rhoSubstId. tauto.
+      eca; simpl.
+        apply inclEmpty.
+        eca; unfold evale; simpl.
+          rewrite rhoSubstId. eauto.
+          unfold rhoSubst. dec (x_dec x0 xresult); tauto.
+      common.
+      apply H1 in INVphi2.
+      eapp evalphiRemoveRhoSubst.
     repeat split; repeat constructor.
     * simpl. assumption.
-    * admit.
-    * admit.
+    * apply eph.
+    * (* intros.
+      (*destruct (classic (In xresult (FVe e0))).
+      + admit.
+      + *)
+      
+      assert (hasStaticType pre e0 T1) as hst.
+        eapply hasStaticTypeTransfer in H0; eauto; intros.
+          admit.
+          
+
+      
+       *)
+      induction e0; intros.
+      + inversionx H0; eex; eca.
+      + inversionx H0.
+        apply H8 in eph.
+        inversionx eph.
+        inversionx H15.
+        eca.
+      + inversionx H0.
+        apply H10 in eph. clear H10.
+        apply IHe0 in H8. clear IHe0.
+        inversionx H8.
+        unf.
+        inversionx eph. simpl in *. clear H11 H18.
+        inversionx H17.
+        common.
+        inversionx H15.
+        rewrite H10 in H5. inversionx H5.
+        inversionx H7; try tauto. clear H16.
+        eex.
+      ++  unfold evale.
+          simpl.
+          rewrite H10.
+          rewrite H11.
+          simpl.
+          admit.
+      ++  eca.
+ *)
+Lemma phiImliesType2 : forall x T1 T2 p,
+  phiSatisfiable p ->
+  In (phiType x T1) p ->
+  phiImplies p [phiType x T2] ->
+  T1 = T2.
+Proof.
+  intros.
+  unfold phiSatisfiable in *. unf.
+  assert (H3' := H3).
+  eapply evalphiTypeUnlift in H3'; eauto.
+  apply H2 in H3.
+  eapply evalphiTypeUnlift in H3; eauto; try (constructor; eauto; fail).
+  inversionx H3.
+  inversionx H3'.
+  rewrite H9 in H8. clear H9. inversionx H8.
+  inversionx H10;
+  inversionx H11.
+  - tauto.
+  - admit.
+  - 
+  
+          eapply phiImpliesType in H8; eauto.
+      +++ eex.
+      
+      
+      destruct (classic (In xresult (FVe e0))).
+      + inversionx H0; simpl in *; try tauto.
+      ++  inversionx H5; try tauto.
+          eapply phiImpliesType in H7; eauto.
+          eex.
+        admit.
+      assert (CL := classic (In xresult (FVe e0))).
+      
   - (*sAssert*)
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
