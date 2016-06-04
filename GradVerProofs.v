@@ -13,7 +13,7 @@ Definition invPhiHolds
 Definition invTypesHold
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall e T, hasStaticType phi e T -> ehasDynamicType Heap rho e T.
-Definition invHELPER
+Definition invHeapConsistent
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall o C m f T,
       Heap o = Some (C, m) ->
@@ -21,9 +21,9 @@ Definition invHELPER
       exists v, m f = Some v /\ hasDynamicType Heap v T.
 Definition invHeapNotTotal
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
-    ∃ omin : o, 
-    forall o : o, 
-      (omin <= o) -> Heap o = None /\ (forall f, ~ In (o, f) A).
+    ∃ omin : o,
+    forall o' : o,
+      (omin <= o') -> Heap o' = None /\ (forall f, ~ In (o', f) A).
 
 Definition invAll
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
@@ -31,7 +31,7 @@ Definition invAll
       Heap rho A phi /\
     invTypesHold
       Heap rho A phi /\
-    invHELPER
+    invHeapConsistent
       Heap rho A phi /\
     invHeapNotTotal
       Heap rho A phi.
@@ -53,7 +53,7 @@ Ltac uninv :=
   unfold invAll in *;
   unfold invPhiHolds in *;
   unfold invTypesHold in *;
-  unfold invHELPER in *;
+  unfold invHeapConsistent in *;
   unfold invHeapNotTotal in *.
 
 Ltac applyINVtypes INVtypes H :=
@@ -72,54 +72,13 @@ Ltac applyINVphi2 INVphi2 H :=
 (*    3 = 4           =>  x : T                *)
 (*    3 = x           =>  x : T                *)
 
-
-Lemma AexceptAppFirst : forall B A2 A1,
-  Aexcept (A1 ++ A2) B = Aexcept A1 B ++ Aexcept A2 B.
-Proof.
-  induction A1; intros; simpl in *; try tauto.
-  rewrite IHA1.
-  destruct (existsb (A_d'_decb a) B); simpl; tauto.
-Qed.
-
-Lemma AexceptReduceSecond : forall a aa A,
-  ~ In a A ->
-  Aexcept A (a :: aa) = Aexcept A aa.
-Proof.
-  induction A; intros; simpl in *; try tauto.
-  apply not_or_and in H0. unf.
-  apply IHA in H2.
-  rewrite H2.
-  undecb.
-  destruct a0, a. simpl.
-  dec (o_dec o0 o1); try tauto.
-  dec (string_dec f0 f1); try tauto.
-Qed.
-
-Lemma fieldsDistinct : forall c l,
-      fields c = Some l ->
-      listDistinct (map snd l).
-  intros.
-  assert (fi := H0).
-  unfold fields in H0.
-  destruct (class c) eqn: cc; try discriminate.
-  destruct c0.
-  apply IsClassWellDefined in cc.
-  unfold CWellDefined in cc. unf.
-  inversionx H0.
-  generalize l0 H1. clear.
-  induction l0; intros; simpl in *; auto.
-  unf. apply IHl0 in H2. intuition.
-  contradict H0.
-  destruct a. simpl in *.
-  apply in_map_iff in H1. unf.
-  apply in_map_iff in H3. unf.
-  destruct x0. simpl in *. subst.
-  destruct x1. inversionx H3.
-  apply in_map_iff.
-  eex.
-  simpl.
-  tauto.
-Qed.
+Ltac unfoldINV INV :=
+  uninv;
+  inversion INV as [INVphi INVcarry1]; clear INV;
+  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
+  inversion INVcarry1 as [INVtypes INVcarry2]; clear INVcarry1;
+  inversion INVcarry2 as [INVHELPER INVheapNT']; clear INVcarry2;
+  inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
@@ -128,20 +87,14 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     dynSemStar (initialHeap, (initialRho, initialAccess, s'' :: s') :: S') (finalHeap, (finalRho, finalAccess, s') :: S') /\
     invAll finalHeap finalRho finalAccess post
 .
+Proof.
   destruct s'';
   do 7 intro;
   intro HO;
   intro INV;
-
-  uninv;
-  inversion HO; clear HO; subst;
-
-  inversion INV as [INVphi INVcarry1]; clear INV;
-  inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
-  inversion INVcarry1 as [INVtypes INVcarry2]; clear INVcarry1;
-  inversion INVcarry2 as [INVHELPER INVheapNT']; clear INVcarry2;
-  inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
-  - (*sMemberSet*)
+  inversionx HO.
+  - unfoldINV INV.
+    (*sMemberSet*)
     rename H6 into hstX0.
     rename H8 into hstX1.
     rename H3 into im.
@@ -262,8 +215,9 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     * eexists. intros. apply INVheapNT in H0. unf.
       unfold HSubst.
       rewrite H1.
-      dec (o_dec o1 o0); tauto.
-  - (*sAssign*)
+      dec (o_dec o' o0); tauto.
+  - unfoldINV INV.
+    (*sAssign*)
     assert (HH3 := H3).
     applyINVtypes INVtypes H8.
     applyINVphi2 INVphi2 H2.
@@ -311,7 +265,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
         eapp INVHELPER.
     * apply INVHELPER.
     * eax.
-  - (*sAlloc*)
+  - unfoldINV INV.
+    (*sAlloc*)
     pose proof (INVheapNT omin) as newHeap.
     assert (omin ≤ omin). auto.
     apply newHeap in H0. unf.
@@ -456,14 +411,14 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     * apply hlp.
     * exists (Datatypes.S x1).
       intros.
-      assert (omin <= o0).
+      assert (omin <= o').
         apply le_S_n.
         eapp le_trans.
       apply INVheapNT in H7. unf.
       split.
       + unfold Halloc.
         rewrite Heqo0.
-        dec (o_dec x1 o0). contradict H0. auto with arith.
+        dec (o_dec x1 o'). contradict H0. auto with arith.
         assumption.
       + intros.
         specialize (H9 f0).
@@ -477,7 +432,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
         contradict H0. auto with arith.
   - (*sCall*)
     admit.
-  - (*sReturn*)
+  - unfoldINV INV.
+    (*sReturn*)
     applyINVtypes INVtypes H4.
     
     do 4 eexists; try emagicProgress. (*progress*)
@@ -529,7 +485,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
         assumption.
     * apply INVHELPER.
     * eax.
-  - (*sAssert*)
+  - unfoldINV INV.
+    (*sAssert*)
     do 4 eexists; try emagicProgress. (*progress*)
     repeat split; repeat constructor.
     * assumption.
@@ -537,7 +494,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     * assumption.
     * assumption.
     * eax.
-  - (*sRelease*)
+  - unfoldINV INV.
+    (*sRelease*)
     applyINVphi2 INVphi2 H1.
     do 4 eexists; try emagicProgress; 
     try (apply evalphiPrefix in evp; assumption). (*progress*)
@@ -559,7 +517,8 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
       contradict H4.
       apply InAexcept in H0.
       assumption.
-  - (*sDeclare*)
+  - unfoldINV INV.
+    (*sDeclare*)
     do 4 eexists; try emagicProgress. (*progress*)
     assert (evalphi
         initialHeap
@@ -610,14 +569,6 @@ Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initia
     * eax.
 Admitted.
 
-Lemma phiImpliesTauto : forall H r A p,
-  phiImplies [] p ->
-  evalphi H r A p.
-Proof.
-  intros.
-  apply H1.
-  constructor.
-Qed.
 
 Theorem initialINV : 
   invAll newHeap newRho newAccess [].

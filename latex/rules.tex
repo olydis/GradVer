@@ -406,17 +406,8 @@ The question is, whether such $\phi_c$ always exists.
 
 \section{Theorems}
 \subsection{Invariant $invariant(H, \rho, A_d, \phi)$}
-\subsubsection{Heap consistent}
-\begin{align*}
-\forall x, o, C : 
-	\rho(x) = o_C &\implies\\
-      \exists f_C, m :&~ 
-        \texttt{fields}(C) = f_C \\
-      \wedge&~ H(o_C) = (C, m) \\
-      \wedge&~(\forall (T, f) \in f_C : \dType {H} {\rho} {m(f)} {T})
-\end{align*}
 
-\subsubsection{Phi self-framed}
+\subsubsection{Phi valid}
 \begin{align*}
     \sfrmphi {\phi}
 \end{align*}
@@ -430,6 +421,23 @@ The question is, whether such $\phi_c$ always exists.
 \begin{align*}
     \forall e, T : \sType {\phi} {e} {T}& \\
     \implies \dType {H} {\rho} {e} {T}&
+\end{align*}
+
+\subsubsection{Heap consistent}
+\begin{align*}
+\forall o, C, \mu, f, T :&~ 
+H(o) = (C, \mu) \\
+\implies&~ 
+\texttt{fieldType}(C,f) = T \\
+\implies&~
+\dType {H} {\rho} {\mu(f)} {T}
+\end{align*}
+
+\subsubsection{Heap not total}
+\begin{align*}
+\exists o_{min} :&\\
+\forall o \ge o_{min} :&~ o \not \in \texttt{dom}(H) \\
+\wedge&~ \forall f, (o, f) \not \in A
 \end{align*}
 
 \subsection{Soundness}

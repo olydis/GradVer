@@ -1,6 +1,16 @@
 Load GradVer3Defs.
 Import Semantics.
 
+
+Lemma phiImpliesTauto : forall H r A p,
+  phiImplies [] p ->
+  evalphi H r A p.
+Proof.
+  intros.
+  apply H1.
+  constructor.
+Qed.
+
 Lemma FVApp : forall p1 p2,
   FV (p1 ++ p2) = FV p1 ++ FV p2.
 Proof.
@@ -901,4 +911,55 @@ Proof.
     apply IHp0 in H12.
     apply inclAexcept in H12.
     apply incl_app; auto.
+Qed.
+
+
+
+Lemma AexceptAppFirst : forall B A2 A1,
+  Aexcept (A1 ++ A2) B = Aexcept A1 B ++ Aexcept A2 B.
+Proof.
+  induction A1; intros; simpl in *; try tauto.
+  rewrite IHA1.
+  destruct (existsb (A_d'_decb a) B); simpl; tauto.
+Qed.
+
+Lemma AexceptReduceSecond : forall a aa A,
+  ~ In a A ->
+  Aexcept A (a :: aa) = Aexcept A aa.
+Proof.
+  induction A; intros; simpl in *; try tauto.
+  apply not_or_and in H0. unf.
+  apply IHA in H2.
+  rewrite H2.
+  undecb.
+  destruct a0, a. simpl.
+  dec (o_dec o0 o1); try tauto.
+  dec (string_dec f0 f1); try tauto.
+Qed.
+
+Lemma fieldsDistinct : forall c l,
+      fields c = Some l ->
+      listDistinct (map snd l).
+Proof.
+  intros.
+  assert (fi := H0).
+  unfold fields in H0.
+  destruct (class c) eqn: cc; try discriminate.
+  destruct c0.
+  apply IsClassWellDefined in cc.
+  unfold CWellDefined in cc. unf.
+  inversionx H0.
+  generalize l0 H1. clear.
+  induction l0; intros; simpl in *; auto.
+  unf. apply IHl0 in H2. intuition.
+  contradict H0.
+  destruct a. simpl in *.
+  apply in_map_iff in H1. unf.
+  apply in_map_iff in H3. unf.
+  destruct x0. simpl in *. subst.
+  destruct x1. inversionx H3.
+  apply in_map_iff.
+  eex.
+  simpl.
+  tauto.
 Qed.
