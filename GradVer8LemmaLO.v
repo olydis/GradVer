@@ -13,6 +13,24 @@ Proof.
   tauto.
 Qed.
 
+Lemma evale'RemoveRhoSubst : forall H r x v e,
+  ~ In x (FVe e) ->
+  evale' H (rhoSubst x v r) e = evale' H r e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - unfold rhoSubst. dec (x_dec x1 x0); tauto.
+  - apply IHe0 in H1. rewrite H1. tauto.
+Qed.
+
+Lemma FVaccListApp : forall x p l,
+  FV (accListApp x l p) = map (fun asd => x) l ++ FV p.
+Proof.
+  induction l; simpl; try tauto.
+  rewrite IHl.
+  tauto.
+Qed.
+
 Lemma AexceptEmpty : forall A, Aexcept A [] = A.
 Proof.
   induction A.
@@ -853,3 +871,34 @@ Proof.
   eexists; eauto.
 Qed.
 
+
+
+Lemma FVeMaxOne : forall e x1 x2,
+  In x1 (FVe e) ->
+  In x2 (FVe e) ->
+  x1 = x2.
+Proof.
+  induction e0; simpl; intros; intuition; subst; auto.
+Qed.
+
+Lemma ehasDynamicTypeRemoveRhoSubst : forall H r e x v T,
+  ¬ In x (FVe e) ->
+  ehasDynamicType H r e T ->
+  ehasDynamicType H (rhoSubst x v r) e T.
+Proof.
+  intros.
+  unfold ehasDynamicType, evale in *.
+  rewrite evaleRemoveRhoSubst; eauto.
+Qed.
+
+Lemma evalphiImpliesAccess : forall H r p A,
+  evalphi H r A p ->
+  incl (footprint H r p) A.
+Proof.
+  induction p0; intros; simpl in *.
+  - apply inclEmpty.
+  - inversionx H1.
+    apply IHp0 in H12.
+    apply inclAexcept in H12.
+    apply incl_app; auto.
+Qed.

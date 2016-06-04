@@ -534,6 +534,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
+    NotIn x (FVe e) ->
     hasStaticType phi (ex x) T ->
     hasStaticType phi e T ->
     sfrme (staticFootprint phi') e ->
@@ -710,11 +711,49 @@ Definition mWellDefined (C : C) (m : method) :=
   end.
 Definition CWellDefined (c : cls) :=
   match c with Cls c fs ms =>
-    (forall m, In m ms -> mWellDefined c m) /\
-    (forall (f : f) T1 T2, In (Field T1 f) fs -> In (Field T2 f) fs -> T1 = T2)
+    (listDistinct (map (fun f => match f with Field _ x => x end) fs)) /\
+    (listDistinct (map (fun m => match m with Method _ x _ _ _ _ => x end) ms)) /\
+    (forall m, In m ms -> mWellDefined c m)
   end.
+  
 Axiom pWellDefined : forall c, In c classes -> CWellDefined c.
-Axiom HnotTotal : forall (H' : H), exists x, H' x = None.
+
+Lemma IsClassWellDefined : forall c c',
+  class c = Some c' ->
+  CWellDefined c'.
+Proof.
+  intros.
+  unfold class in H0.
+  apply find_some in H0.
+  inversion H0.
+  apply (pWellDefined c').
+  assumption.
+Qed.
+
+Lemma IsMethodWellDefined : forall c m m',
+  mmethod c m = Some m' ->
+  mWellDefined c m'.
+Proof.
+  intros.
+  unfold mmethod in H0.
+  destruct (class c) eqn: cc; try discriminate.
+  destruct c0.
+  assert (c0 = c).
+    unfold class in cc.
+    apply find_some in cc.
+    inversion cc.
+    undecb.
+    destruct (string_dec c0 c); try discriminate.
+    assumption.
+  subst.
+  apply IsClassWellDefined in cc.
+  unfold CWellDefined in cc.
+  apply find_some in H0.
+  inversion H0.
+  apply cc in H1.
+  assumption.
+Qed.
+
 
 End Semantics.
 

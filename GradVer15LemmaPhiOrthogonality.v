@@ -11,6 +11,42 @@ Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 
+
+Lemma phiImpliesType : forall T' p x T H,
+  In (phiType x T') p ->
+  phiSatisfiable p ->
+  phiImplies p [phiType x T] ->
+  hasDynamicType H (defaultValue T') T.
+Proof.
+  intros.
+  unfold phiImplies, phiSatisfiable in *.
+  unf.
+  assert (H4' := H4).
+  apply H3 in H4'. clear H3.
+  eapply evalphiTypeUnlift in H1; eauto.
+  inversionx H4'.
+  simpl in *.
+  inversionx H1.
+  inversionx H12.
+  rewrite H9 in H10. clear H9. inversionx H10.
+  inversionx H11;
+  inversionx H14;
+  constructor.
+Qed.
+
+Lemma phiImpliesSatisfiable : forall p1 p2,
+  phiImplies p1 p2 ->
+  phiSatisfiable p1 ->
+  phiSatisfiable p2.
+Proof.
+  unfold phiImplies, phiSatisfiable.
+  intros.
+  unf.
+  repeat eexists.
+  apply H0.
+  eauto.
+Qed.
+
 Lemma phiSatisfiableAppComm : forall p1 p2,
   phiSatisfiable (p1 ++ p2) ->
   phiSatisfiable (p2 ++ p1).
@@ -111,6 +147,7 @@ Proof.
   tauto.
 Qed.
 
+(*
 Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,
   (∀ x, ¬ In x (FV p0) ∨ ¬ In x (FV p1)) ->
   evalphi H0 r0 A0 p0 ->
@@ -596,9 +633,4 @@ Proof.
     assumption.
 Qed.
   
-  
-  
-  
-  
-  
-  
+*)
