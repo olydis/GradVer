@@ -512,7 +512,50 @@ Proof.
         inversionx hdtX2. eauto.
         tauto.
         
-Lemma evalphiPhiSubsts2RhoFrom3
+Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
+  incl (FV p) [xUserDef z; xthis] ->
+  evalphi
+    H
+    r
+    A
+    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
+  evalphi
+    H
+    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    A 
+    p.
+Proof.
+  induction p0; intros; simpl; try constructor.
+  inversionx H2.
+  simpl in *.
+  eca.
+  
+Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV' a) [xUserDef z; xthis] ->
+  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
+  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+Proof.
+  intros.
+  destruct a; simpl in *; try tauto.
+
+Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+  incl (FVe e) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
+  evale' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - apply inclSingle in H1.
+    unfold xSubsts, rhoFrom3.
+    inversionx H1; simpl.
+    * dec (x_dec (xUserDef z) (xUserDef z)).
+      assumption.
+    * inversionx H4; tauto.
+  - rewrite IHe0; auto.
+Qed.
+
         Check evalphi
         
         inversionx hdtX1. inversionx H1. apply H6.
