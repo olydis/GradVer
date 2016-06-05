@@ -82,6 +82,139 @@ Ltac unfoldINV INV :=
 
 Ltac invE H v := inversion H as [v temp]; clear H; rename temp into H.
 
+
+Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+  incl (FVe e) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
+  evale' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - apply inclSingle in H1.
+    unfold xSubsts, rhoFrom3.
+    inversionx H1; simpl.
+    * dec (x_dec (xUserDef z) (xUserDef z)).
+      assumption.
+    * inversionx H4; tauto.
+  - rewrite IHe0; auto.
+Qed.
+
+Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV' a) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
+  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+Proof.
+  intros.
+  destruct a; simpl in *; try tauto.
+  erewrite evale'eSubsts2RhoFrom3; auto.
+Qed.
+
+Lemma evale'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+  incl (FVe e) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evale' H
+    r
+    (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
+  evale' H
+    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - unfold xSubsts, rhoFrom3.
+    apply inclSingle in H1.
+    inversionx H1; simpl.
+    * dec (x_dec (xUserDef z) (xUserDef z)).
+      assumption.
+    * inversionx H4; try tauto.
+  - rewrite IHe0; auto.
+Qed.
+
+Lemma inclApp : forall {T : Type} (A1 A2 B : list T),
+  incl (A1 ++ A2) B ->
+  incl A1 B /\ incl A2 B.
+Proof.
+  unfold incl.
+  intros.
+  intuition.
+Qed.
+
+Lemma evalphi'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV' a) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evalphi' H
+    r
+    (footprint' H
+      (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+      a) 
+    (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) ->
+  evalphi' H
+    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    (footprint' H
+      (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+      a)
+    a.
+Proof.
+  intros.
+  destruct a; inversionx H4; common; simpl in *.
+  - constructor.
+  - apply inclApp in H1. unf.
+    eca; unfold evale;
+    erewrite evale'eSubsts2RhoFrom3 in *; eauto.
+  - apply inclApp in H1. unf.
+    eca; unfold evale;
+    erewrite evale'eSubsts2RhoFrom3 in *; eauto.
+  - eca; unfold evale;
+    erewrite evale'eSubsts2RhoFrom3 in *; eauto.
+  - apply inclSingle in H1.
+    unfold xSubsts, rhoFrom3 in *.
+    inversionx H1; simpl in *; eca.
+    * dec (x_dec (xUserDef z) xresult). clear de2.
+      dec (x_dec (xUserDef z) xthis). clear de2.
+      dec (x_dec (xUserDef z) (xUserDef z)).
+      rewrite H2 in *. assumption.
+    * inversionx H4; try tauto.
+      dec (x_dec xthis xresult). clear de2.
+      dec (x_dec xthis xthis).
+      rewrite H3 in *. assumption.
+Admitted.
+
+Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
+  incl (FV p) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evalphi
+    H
+    r
+    A
+    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
+  evalphi
+    H
+    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    A 
+    p.
+Proof.
+  induction p0; intros; simpl; try constructor.
+  inversionx H2.
+  simpl in *.
+  inversionx H4.
+  eca.
+  - erewrite footprint'PhiSubsts2RhoFrom3 in H9; eauto.
+    unfold incl. intros.
+    intuition.
+  - apply inclApp in H1. unf.
+    erewrite (footprint'PhiSubsts2RhoFrom3 _ _ _ _ _ _ T_r) in H14; eauto.
+    eapp evalphi'PhiSubsts2RhoFrom3.
+  - apply inclApp in H1. unf.
+    erewrite (footprint'PhiSubsts2RhoFrom3 _ _ _ _ _ _ T_r) in H15; eauto.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -506,69 +639,13 @@ Proof.
               (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') :: S')
               (initialHeap, (r', fp, underscore) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
            )
-    as part.
+    as part1.
       eca; unfold evale; simpl.
         inversionx hdtX1. eauto.
         inversionx hdtX2. eauto.
         tauto.
-
-Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
-  incl (FVe e) [xUserDef z; xthis] ->
-  r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
-  evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
-  evale' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) e.
-Proof.
-  induction e0; intros; simpl in *.
-  - tauto.
-  - apply inclSingle in H1.
-    unfold xSubsts, rhoFrom3.
-    inversionx H1; simpl.
-    * dec (x_dec (xUserDef z) (xUserDef z)).
-      assumption.
-    * inversionx H4; tauto.
-  - rewrite IHe0; auto.
-Qed.
-
-Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
-  incl (FV' a) [xUserDef z; xthis] ->
-  r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
-  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
-  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
-Proof.
-  intros.
-  destruct a; simpl in *; try tauto.
-  erewrite evale'eSubsts2RhoFrom3; auto.
-Qed.
-
-Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
-  incl (FV p) [xUserDef z; xthis] ->
-  r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
-  evalphi
-    H
-    r
-    A
-    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
-  evalphi
-    H
-    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
-    A 
-    p.
-Proof.
-  induction p0; intros; simpl; try constructor.
-  inversionx H2.
-  simpl in *.
-  inversionx H4.
-  eca.
-  - erewrite footprint'PhiSubsts2RhoFrom3 in H9; eauto.
-    unfold incl. intros.
-    intuition.
-  - erewrite footprint'PhiSubsts2RhoFrom3 in H14; eauto.
-    * 
+        unf. eapp evalphiPhiSubsts2RhoFrom3.
     
-
 
         Check evalphi
         
