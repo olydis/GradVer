@@ -511,32 +511,6 @@ Proof.
         inversionx hdtX1. eauto.
         inversionx hdtX2. eauto.
         tauto.
-        
-Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
-  incl (FV p) [xUserDef z; xthis] ->
-  evalphi
-    H
-    r
-    A
-    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
-  evalphi
-    H
-    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
-    A 
-    p.
-Proof.
-  induction p0; intros; simpl; try constructor.
-  inversionx H2.
-  simpl in *.
-  eca.
-  
-Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
-  incl (FV' a) [xUserDef z; xthis] ->
-  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
-  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
-Proof.
-  intros.
-  destruct a; simpl in *; try tauto.
 
 Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
   incl (FVe e) [xUserDef z; xthis] ->
@@ -555,6 +529,46 @@ Proof.
     * inversionx H4; tauto.
   - rewrite IHe0; auto.
 Qed.
+
+Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV' a) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
+  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+Proof.
+  intros.
+  destruct a; simpl in *; try tauto.
+  erewrite evale'eSubsts2RhoFrom3; auto.
+Qed.
+
+Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
+  incl (FV p) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evalphi
+    H
+    r
+    A
+    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
+  evalphi
+    H
+    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    A 
+    p.
+Proof.
+  induction p0; intros; simpl; try constructor.
+  inversionx H2.
+  simpl in *.
+  inversionx H4.
+  eca.
+  - erewrite footprint'PhiSubsts2RhoFrom3 in H9; eauto.
+    unfold incl. intros.
+    intuition.
+  - erewrite footprint'PhiSubsts2RhoFrom3 in H14; eauto.
+    * 
+    
+
 
         Check evalphi
         
