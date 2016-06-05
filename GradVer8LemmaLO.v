@@ -946,7 +946,7 @@ Proof.
   unfold fields in H0.
   destruct (class c) eqn: cc; try discriminate.
   destruct c0.
-  apply IsClassWellDefined in cc.
+  apply IsClassWellDef in cc.
   unfold CWellDefined in cc. unf.
   inversionx H0.
   generalize l0 H1. clear.

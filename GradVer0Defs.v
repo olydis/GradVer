@@ -718,7 +718,7 @@ Definition CWellDefined (c : cls) :=
   
 Axiom pWellDefined : forall c, In c classes -> CWellDefined c.
 
-Lemma IsClassWellDefined : forall c c',
+Lemma IsClassWellDef : forall c c',
   class c = Some c' ->
   CWellDefined c'.
 Proof.
@@ -730,7 +730,7 @@ Proof.
   assumption.
 Qed.
 
-Lemma IsMethodWellDefined : forall c m m',
+Lemma IsMethodWellDef : forall c m m',
   mmethod c m = Some m' ->
   mWellDefined c m'.
 Proof.
@@ -746,7 +746,7 @@ Proof.
     destruct (string_dec c0 c); try discriminate.
     assumption.
   subst.
-  apply IsClassWellDefined in cc.
+  apply IsClassWellDef in cc.
   unfold CWellDefined in cc.
   apply find_some in H0.
   inversion H0.

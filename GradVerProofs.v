@@ -80,6 +80,8 @@ Ltac unfoldINV INV :=
   inversion INVcarry2 as [INVHELPER INVheapNT']; clear INVcarry2;
   inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
 
+Ltac invE H v := inversion H as [v temp]; clear H; rename temp into H.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -431,7 +433,93 @@ Proof.
         subst.
         contradict H0. auto with arith.
   - (*sCall*)
-    admit.
+    rename INV into INV0.
+    rename H6 into hstX0.
+    rename H4 into hstX1.
+    rename H7 into hstX2.
+    rename H10 into phi_r_sf.
+    rename H12 into phi_r_x0.
+    rename H8 into impl.
+    rename H5 into mme.
+    set (mm := Method T_r m0 T_p z (Contract phi_pre phi_post) underscore) in *.
+    set (preI := (phiNeq (ex x1) (ev vnull) :: phiSubsts2 xthis x1 (xUserDef z) x2 phi_pre ++ phi_r)) in *.
+    
+    assert (evalphi initialHeap initialRho initialAccess preI)
+    as ep_preI.
+      unfoldINV INV0. eapp impl.
+    
+    assert (evalphi initialHeap initialRho initialAccess (phiSubsts2 xthis x1 (xUserDef z) x2 phi_pre))
+    as ep_phi_pre.
+      subst preI.
+      rewrite cons2app in ep_preI.
+      apply evalphiSuffix in ep_preI.
+      apply evalphiPrefix in ep_preI.
+      assumption.
+    
+    assert (mWellDefined C0 mm)
+    as mmwd.
+      eapp IsMethodWellDef.
+    
+    (*dyn. behavior of involved vars*)
+    assert (ehasDynamicType initialHeap initialRho (ex x0) T_r)
+    as hdtX0.
+      unfoldINV INV0. eapp INVtypes.
+    invE hdtX0 v0.
+    
+    assert (ehasDynamicType initialHeap initialRho (ex x1) (TClass C0))
+    as hdtX1.
+      unfoldINV INV0. eapp INVtypes.
+    invE hdtX1 v1.
+    
+    assert (ehasDynamicType initialHeap initialRho (ex x2) T_p)
+    as hdtX2.
+      unfoldINV INV0. eapp INVtypes.
+    invE hdtX2 v2.
+    
+    assert (exists vo1, v1 = vo vo1) as tmp.
+      inversionx ep_preI.
+      inversionx H9.
+      inversionx hdtX1.
+      common.
+      rewrite H0 in *. inversionx H3. inversionx H8.
+      inversionx H1; try tauto.
+      eex.
+    invE tmp vo1. subst.
+    
+    assert (exists m1, initialHeap vo1 = Some (C0, m1))
+    as Hvo1.
+      inversionx hdtX1.
+      inversionx H1.
+      eex.
+    invE Hvo1 m1.
+    
+    unfold evale in *. simpl in *.
+    
+    (*aliases*)
+    set (r' := rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2).
+    set (fp := footprint initialHeap r' phi_pre).
+    set (phi_pre' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre).
+    set (phi_post' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post).
+    
+    (*Part 1: make the call*)
+    assert (dynSem 
+              (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') :: S')
+              (initialHeap, (r', fp, underscore) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
+           )
+    as part.
+      eca; unfold evale; simpl.
+        inversionx hdtX1. eauto.
+        inversionx hdtX2. eauto.
+        tauto.
+        
+Lemma evalphiPhiSubsts2RhoFrom3
+        Check evalphi
+        
+        inversionx hdtX1. inversionx H1. apply H6.
+      econstructor; unfold evale; simpl; eauto.
+      apply evalphiPrefix in H17.
+      admit. (*TODO: helper?*)
+
   - unfoldINV INV.
     (*sReturn*)
     applyINVtypes INVtypes H4.
