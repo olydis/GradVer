@@ -215,6 +215,56 @@ Proof.
     erewrite (footprint'PhiSubsts2RhoFrom3 _ _ _ _ _ _ T_r) in H15; eauto.
 Qed.
 
+Lemma disjointAexcept : forall A B,
+  disjoint A B ->
+  Aexcept A B = A.
+Proof.
+  induction A;
+  intros;
+  simpl;
+  try tauto.
+  rewrite cons2app in H0.
+  apply disjointSplitA in H0. unf.
+  apply IHA in H2. rewrite H2.
+  destruct (negb (existsb (A_d'_decb a) B)) eqn: cl; try tauto.
+  apply negb_false_iff in cl.
+  apply existsb_exists in cl. unf.
+  specialize (H1 x0).
+  intuition.
+  contradict H0.
+  constructor.
+  undecb.
+  destruct a, x0. simpl in *.
+  dec (o_dec o0 o1); simpl in *; try discriminate.
+  dec (string_dec f0 f1); simpl in *; try discriminate.
+  tauto.
+Qed.
+
+Lemma evalphiFootprintAccess : ∀ p H r A,
+       evalphi H r A p ->
+       evalphi H r (footprint H r p) p.
+Proof.
+  induction p0; intros; simpl in *; eca.
+  - intuition.
+  - inversionx H1.
+    assumption.
+  - inversionx H1.
+    rewrite AexceptAppFirst.
+    rewrite AexceptSame.
+    simpl.
+    assert (disjoint (footprint H0 r p0) (footprint' H0 r a)).
+      apply evalphiImpliesAccess in H12.
+      unfold incl, disjoint in *.
+      intros.
+      specialize (H12 x0).
+      destruct (classic (In x0 (footprint H0 r p0)));
+      intuition.
+      apply InAexceptNot in H2.
+      intuition.
+    rewrite disjointAexcept; auto.
+    eapp IHp0.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -631,29 +681,151 @@ Proof.
     (*aliases*)
     set (r' := rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2).
     set (fp := footprint initialHeap r' phi_pre).
-    set (phi_pre' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre).
-    set (phi_post' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post).
+    set (phi_pre' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre) in *.
+    set (phi_post' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post) in *.
+    set (S'' := (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S').
     
     (*Part 1: make the call*)
+    assert (evalphi initialHeap r' initialAccess phi_pre)
+    as ep_phi_pre_rho.
+      unf. eapp evalphiPhiSubsts2RhoFrom3.
+    
+    assert (evalphi initialHeap r' fp phi_pre')
+    as ep_phi_pre'.
+      eca; simpl.
+        apply inclEmpty.
+        eca; try apply hdtX2.
+        subst r'.
+        unfold rhoFrom3.
+        dec (x_dec (xUserDef z) xresult). clear de2.
+        dec (x_dec (xUserDef z) xthis). clear de2.
+        dec (x_dec (xUserDef z) (xUserDef z)).
+        eauto.
+      common.
+      eca; simpl.
+        apply inclEmpty.
+        eca; try apply hdtX1.
+        subst r'.
+        unfold rhoFrom3. simpl.
+        eauto.
+      common.
+      eapp evalphiFootprintAccess.
+    
+    assert (incl fp initialAccess)
+    as fp_incl_ia.
+      eapp evalphiImpliesAccess.
+    
     assert (dynSem 
-              (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') :: S')
-              (initialHeap, (r', fp, underscore) :: (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S')
+              (initialHeap, (initialRho, initialAccess, sCall x0 x1 m0 x2 :: s') 
+                            :: S')
+              (initialHeap, (r', fp, underscore) 
+                            :: S'')
            )
     as part1.
-      eca; unfold evale; simpl.
+      eca; unfold evale; simpl. (*3*)
         inversionx hdtX1. eauto.
         inversionx hdtX2. eauto.
         tauto.
-        unf. eapp evalphiPhiSubsts2RhoFrom3.
     
-
-        Check evalphi
-        
-        inversionx hdtX1. inversionx H1. apply H6.
-      econstructor; unfold evale; simpl; eauto.
-      apply evalphiPrefix in H17.
-      admit. (*TODO: helper?*)
-
+    assert (invAll initialHeap r' fp phi_pre')
+    as INV1.
+      uninv. repeat split; simpl; try constructor. (*5*)
+        unf. assumption.
+        apply ep_phi_pre'.
+        induction e0; intros; inversionx H0; simpl in *. (*4*)
+          eex. eca.
+          eex. eca.
+          apply H3 in ep_phi_pre'.
+            inversionx ep_phi_pre'.
+            inversionx H10.
+            eex.
+          apply IHe0 in H3.
+            inversionE H3. inversionx H0.
+            apply H5 in ep_phi_pre'. inversionx ep_phi_pre'. inversionx H13.
+            common. inversionx H12. rewrite H1 in *. inversionx H6. inversionx H2; try tauto.
+            eapply INV0 in H7; eauto. inversionE H7. inversionx H0.
+            eex. unfold evale. simpl. rewrite H1. rewrite H9. simpl. assumption.
+        unf. assumption.
+        unf. exists x3. intros. apply H15 in H11. intuition. apply fp_incl_ia in H11. apply H19 in H11. tauto.
+    
+    (*Part 2: method body*)
+    assert (∃ finalHeap finalRho finalAccess,
+          dynSemStar 
+            (initialHeap, (r', fp, underscore) :: S'')
+            (finalHeap, (finalRho, finalAccess, []) :: S'') ∧
+          invAll finalHeap finalRho finalAccess phi_post')
+    as call_finished.
+      assert soundness as sdn. admit. (*assume that for method body*)
+      specialize (sdn phi_pre' underscore phi_post' initialHeap r' fp S'').
+      intuition.
+    
+    invE call_finished finalHeap'.
+    invE call_finished finalRho'.
+    invE call_finished finalAccess'.
+    inversion call_finished as [part2 INV2]. clear call_finished.
+    
+    (*Part 3: call finished*)
+    assert (exists vresult, finalRho' xresult = Some vresult)
+    as vres.
+      eapp RhoGetsMoreSpecific.
+      subst r'. unfold rhoFrom3. simpl. eauto.
+    invE vres vresult.
+    
+    set (finalRho := rhoSubst x0 vresult initialRho).
+    
+    assert (evalphi finalHeap' finalRho' finalAccess' phi_post')
+    as eph_phi_post'.
+      apply INV2.
+    
+    assert (evalphi finalHeap' finalRho' finalAccess' phi_post)
+    as eph_phi_post.
+      inversionx eph_phi_post'.
+      inversionx H10.
+      inversionx H13.
+      simpl in H15. common.
+      apply H15.
+    
+    assert (dynSem
+              (finalHeap', (finalRho', finalAccess', []) 
+                          :: (initialRho, Aexcept initialAccess fp , sCall x0 x1 m0 x2 :: s') 
+                          :: S')
+              (finalHeap',   (finalRho  , Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post, s') 
+                          :: S')
+           )
+    as part3.
+      eapply HeapGetsMoreSpecific in part2; eauto. inversionE part2.
+      eca; unfold evale; simpl. (*2*)
+        apply hdtX1.
+        unfold mpost, mcontract. rewrite mme. tauto.
+    
+    assert (invAll
+        finalHeap'
+        finalRho
+        (Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post)
+        (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post ++ phi_r))
+    as INV3.
+      assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
+      uninv. repeat split. (*5*)
+        admit.
+      (*inversionx tmp_sfrm. inversionx H1. inversionx H3. apply H4. *)
+        admit.
+        admit.
+        apply INV2.
+        decompose [and] INV2.
+          invE H5 omin. exists omin.
+          intros. apply H5 in H4.
+          split; try apply H4.
+          intros. inversionx H4. specialize (H7 f0).
+          unfold not in *. intro. contradict H7.
+          
+    
+    (*MERGE*)
+    assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)
+    as strat.
+      intros. eca. eapp dynSemStarBack.
+    
+    eex.
+    
   - unfoldINV INV.
     (*sReturn*)
     applyINVtypes INVtypes H4.
