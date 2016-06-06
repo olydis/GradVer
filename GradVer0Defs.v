@@ -706,6 +706,7 @@ Definition mWellDefined (C : C) (m : method) :=
         hoare pre' s post' /\
         sfrmphi [] pre /\
         sfrmphi [] post /\
+        (forall s', In s' s -> ~ writesTo xthis s') /\
         (forall s', In s' s -> ~ writesTo (xUserDef px) s')
     end
   end.

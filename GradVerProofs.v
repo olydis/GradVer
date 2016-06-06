@@ -684,6 +684,7 @@ Proof.
     set (phi_pre' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre) in *.
     set (phi_post' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post) in *.
     set (S'' := (initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s') :: S').
+    set (phi_end := phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post ++ phi_r).
     
     (*Part 1: make the call*)
     assert (evalphi initialHeap r' initialAccess phi_pre)
@@ -746,7 +747,7 @@ Proof.
             eapply INV0 in H7; eauto. inversionE H7. inversionx H0.
             eex. unfold evale. simpl. rewrite H1. rewrite H9. simpl. assumption.
         unf. assumption.
-        unf. exists x3. intros. apply H15 in H11. intuition. apply fp_incl_ia in H11. apply H19 in H11. tauto.
+        unf. exists x3. intros. apply H16 in H12. intuition. apply fp_incl_ia in H12. apply H20 in H12. tauto.
     
     (*Part 2: method body*)
     assert (∃ finalHeap finalRho finalAccess,
@@ -798,26 +799,84 @@ Proof.
         apply hdtX1.
         unfold mpost, mcontract. rewrite mme. tauto.
     
+    assert (evalphi
+        finalHeap'
+        finalRho
+        (Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post)
+        phi_end)
+    as eph_phi_end.
+      subst phi_end.
+      apply evalphiAppRev.
+        subst fp finalRho r'.
+        
+Lemma evalphi2PhiSubsts3 : 
+  forall iH fH' iR fR' iA x0 x1 x2 vo1 v2 vresult z T_r ppre ppost,
+  evalphi
+    fH'
+    (rhoSubst x0 vresult iR)
+    (Aexcept iA
+      (footprint 
+        iH
+        (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+        ppre) ++ 
+      footprint fH' fR' ppost)
+    (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 ppost).
+  induction ppost; intros; simpl in *; try constructor.
+  eca.
+  - (*LHS: xthis, xresult, xUDz
+       --> x1, x0, x2 
+       --> iR x1, vresult, iR x2
+       --> vo1, vresult, v2 *)
+    (*RHS: xthis, xresult, xUDz
+       --> fR' xthis, fR' xresult, fR' xUDz
+       --> r' xthis, vresult, r' xUDz
+       --> vo1, vresult, v2 *)
+    destruct a; simpl; try apply inclEmpty.
+
+Lemma incl2PhiSubst3 : 
+  forall iH fH' iR fR' iA x0 x1 x2 vo1 v2 vresult z T_r ppre ppost,
+        
+        
+        
+        
+      Check evalphi.
+      apply evalphiApp.
+    
+    
+    
+    
+    
+    (*CONT...*)
     assert (invAll
         finalHeap'
         finalRho
         (Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post)
-        (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post ++ phi_r))
+        phi_end)
     as INV3.
       assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
       uninv. repeat split. (*5*)
-        admit.
+   (**) admit.
       (*inversionx tmp_sfrm. inversionx H1. inversionx H3. apply H4. *)
-        admit.
-        admit.
-        apply INV2.
-        decompose [and] INV2.
-          invE H5 omin. exists omin.
-          intros. apply H5 in H4.
-          split; try apply H4.
-          intros. inversionx H4. specialize (H7 f0).
-          unfold not in *. intro. contradict H7.
-          
+   (**) admit.
+   (**) induction e0; intros; inversionx H0; simpl in *. (*4*)
+          eex. eca.
+          eex. eca.
+          admit.
+          admit.
+   (**) apply INV2.
+   (**) decompose [and] INV0. invE H5 omin0.
+        decompose [and] INV1. invE H10 omin1.
+        decompose [and] INV2. invE H15 omin2.
+        exists (max omin0 omin2). intro o'. intro o'max.
+        assert (omin0 <= o') as om0. eapply le_trans. eapp Nat.le_max_l. eauto.
+        assert (omin2 <= o') as om2. eapply le_trans. eapp Nat.le_max_r. eauto.
+        apply H5  in om0.
+        apply H15 in om2.
+        split. apply om2.
+        intros. unfold not in *. intro inn. apply in_app_iff in inn.
+        inversionx inn.
+          apply InAexcept in H14. apply om0 in H14. tauto.
+          apply evalphiImpliesAccess in eph_phi_post. apply eph_phi_post in H14. apply om2 in H14. tauto.
     
     (*MERGE*)
     assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)

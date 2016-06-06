@@ -125,6 +125,17 @@ Proof.
   simpl; rewrite IHA; tauto.
 Qed.
 
+Lemma AexceptComm : forall A1 A2 A3,
+  Aexcept (Aexcept A1 A2) A3 = Aexcept (Aexcept A1 A3) A2.
+Proof.
+  induction A1; simpl; intros; try tauto.
+  destruct (existsb (A_d'_decb a) A2) eqn: a2;
+  destruct (existsb (A_d'_decb a) A3) eqn: a3;
+  simpl; repeat rewrite a2;
+  simpl; repeat rewrite a3;
+  simpl; rewrite IHA1; tauto.
+Qed.
+
 Lemma evalphiApp : forall p1 p2 H r A,
   evalphi H r A (p1 ++ p2) ->
   evalphi H r A p1 /\
@@ -139,6 +150,19 @@ Proof.
     split; try econstructor; intuition.
     rewrite AexceptApp in H2.
     auto.
+Qed.
+
+Lemma evalphiAppRev : forall p1 p2 H r A,
+  evalphi H r A p1 ->
+  evalphi H r (Aexcept A (footprint H r p1)) p2 ->
+  evalphi H r A (p1 ++ p2).
+Proof.
+  induction p1; intros; simpl in *.
+  - rewrite AexceptEmpty in *.
+    assumption.
+  - inversionx H1.
+    rewriteRevIn AexceptApp H2.
+    eca.
 Qed.
 
 Lemma AexceptIncl : forall A' A,
@@ -157,17 +181,6 @@ Proof.
   intros.
   eapply incl_tran; eauto.
   apply AexceptIncl.
-Qed.
-
-Lemma AexceptComm : forall A1 A2 A3,
-  Aexcept (Aexcept A1 A2) A3 = Aexcept (Aexcept A1 A3) A2.
-Proof.
-  induction A1; simpl; intros; try tauto.
-  destruct (existsb (A_d'_decb a) A2) eqn: a2;
-  destruct (existsb (A_d'_decb a) A3) eqn: a3;
-  simpl; repeat rewrite a2;
-  simpl; repeat rewrite a3;
-  simpl; rewrite IHA1; tauto.
 Qed.
 
 Lemma evalphiFootprint : forall p p' H r A,
