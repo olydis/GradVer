@@ -40,6 +40,17 @@ Proof.
     auto.
 Qed.
 
+Lemma staticVSdynamicFP' : forall p H r o f,
+  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint' p))
+  <->
+  In (o, f) (footprint' H r p).
+Proof.
+  intros.
+  assert (sdFP := staticVSdynamicFP [p0] H0 r o0 f0).
+  simpl in sdFP. repeat rewrite app_nil_r in sdFP.
+  assumption.
+Qed.
+
 Lemma footprintContainsNot : forall p H r A o f,
   evalphi H r (Aexcept A [(o, f)]) p ->
   ~ In (o, f) (footprint H r p).

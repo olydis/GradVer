@@ -976,3 +976,28 @@ Proof.
   simpl.
   tauto.
 Qed.
+
+
+Lemma inclAexcept2 : forall A1 A2 B,
+  incl A1 A2 ->
+  incl (Aexcept A1 B) (Aexcept A2 B).
+Proof.
+  unfold incl, Aexcept, except.
+  intros.
+  apply filter_In.
+  apply filter_In in H1.
+  intuition.
+Qed.
+
+Lemma evalphiIncl : forall H r p A1 A2,
+  incl A1 A2 ->
+  evalphi H r A1 p ->
+  evalphi H r A2 p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H2.
+  eca.
+  - eapp incl_tran.
+  - eapp IHp0.
+    eapp inclAexcept2.
+Qed.

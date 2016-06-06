@@ -265,6 +265,123 @@ Proof.
     eapp IHp0.
 Qed.
 
+
+Lemma inclAexceptDisjoint : forall A B C,
+  incl A (Aexcept B C) ->
+  disjoint A C.
+Proof.
+  unfold incl, disjoint.
+  intros.
+  specialize (H0 x0).
+  destruct (classic (In x0 A)); intuition.
+  apply InAexceptNot in H2.
+  auto.
+Qed.
+
+Lemma evalphiRemoveAexcept : forall H r p A1 A2,
+  disjoint (footprint H r p) A2 ->
+  evalphi H r A1 p ->
+  evalphi H r (Aexcept A1 A2) p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H2.
+  apply disjointSplitA in H1. unf.
+  eca.
+  - unfold incl, disjoint in *.
+    intros.
+    eapp InAexceptConstr.
+    specialize (H2 a0).
+    intuition.
+  - rewrite AexceptComm.
+    eapp IHp0.
+Qed.
+
+Lemma evalphiElemWise : forall H r A1 A2 p,
+  (forall p', In p' p ->
+  (evalphi' H r A1 p' -> evalphi' H r A2 p')
+  ) ->
+  (evalphi  H r A1 p  -> evalphi  H r A2 p ).
+Proof.
+  induction p0;
+  intros; try constructor.
+  inversionx H2.
+  eca.
+  - eapply evalphi'incl in H12; eauto.
+    eapply H1 in H12.
+    * eapp evalphi'ImpliesIncl.
+    * constructor.
+      tauto.
+  - assert (evalphi H0 r A2 p0) as ep.
+    * eapp IHp0.
+      + intros.
+        apply H1 in H3; auto.
+        apply in_cons.
+        auto.
+      + eapp evalphiAexcept.
+    * eapply evalphiImpliesAccess in H13.
+      apply inclAexceptDisjoint in H13.
+      eapp evalphiRemoveAexcept.
+Qed.
+  
+
+Lemma inclxSubsts : forall x0 x1 x2 z x,
+  let xUDz := xUserDef z in
+  In x [xUDz; xthis; xresult] ->
+  In (xSubsts [(xthis, x1); (xUDz, x2); (xresult, x0)] x) [x2; x1; x0].
+Proof.
+    intros.
+    assert (x_decb xUDz xthis = false) as xd1. dec (x_dec xUDz xthis). tauto.
+    assert (x_decb xUDz xresult = false) as xd2. dec (x_dec xUDz xresult). tauto.
+    assert (x_decb xUDz xUDz = true) as xd3. dec (x_dec xUDz xUDz). tauto.
+    unfold xSubsts.
+    inversionx H0; subst; simpl;
+    try rewrite xd3;
+    try tauto.
+    inversionx H1; subst; simpl;
+    try rewrite xd3;
+    try tauto.
+    inversionx H0; subst; simpl;
+    try rewrite xd3;
+    try tauto.
+Qed.
+
+Lemma incleSubsts : forall x0 x1 x2 z e0,
+  let xUDz := xUserDef z in
+  incl (FVe e0) [xUDz; xthis; xresult] ->
+  incl (FVe (eSubsts [(xthis, x1); (xUDz, x2); (xresult, x0)] e0)) [x2; x1; x0].
+Proof.
+  induction e0; intros; simpl in *.
+  - apply inclEmpty.
+  - apply inclSingle.
+    apply inclSingle in H0.
+    eapp inclxSubsts.
+  - eapp IHe0.
+Qed.
+
+Lemma inclPhiSubsts3 : forall x0 x1 x2 z p p',
+  let xUDz := xUserDef z in
+  incl (FV p) [xUDz; xthis; xresult] ->
+  In p' (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 p) ->
+  incl (FV' p') [x2; x1; x0].
+Proof.
+  induction p0; intros; simpl in *; inversionx H1;
+  apply inclApp in H0;
+  unf.
+  - destruct a; simpl in *.
+    * apply inclEmpty.
+    * apply inclApp in H1. unf.
+      apply incl_app;
+      eapp incleSubsts.
+    * apply inclApp in H1. unf.
+      apply incl_app;
+      eapp incleSubsts.
+    * eapp incleSubsts.
+    * apply inclSingle.
+      apply inclSingle in H1.
+      eapp inclxSubsts.
+  - eapp IHp0.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -872,7 +989,7 @@ Lemma evalphi2PhiSubsts3 :
   evalphi
     fH'
     fR
-    (Aexcept iA fp ++ footprint fH' fR' ppost)
+   (*  (Aexcept iA fp ++ footprint fH' fR' ppost) *)
     (phiSubsts3 xthis x1 xUDz x2 xresult x0 ppost).
   induction ppost; intros; simpl in *; try constructor.
   eca.
@@ -937,6 +1054,162 @@ Lemma evalphi2PhiSubsts3 :
     inversion ep as [? | ? ? ? ? ? ? ? ? invc ? inva invb]. subst. clear ep inva invc.
     apply inclApp in H0. unf.
     eapply IHppost in invb; eauto.
+    eapply evalphiElemWise in invb; eauto.
+    intros. rename H10 into ep'.
+    assert (incl (FV' p') [x2; x1; x0]) as inclX.
+      eapp inclPhiSubsts3.
+    destruct p'; inversionx ep'; eca.
+    simpl in *.
+
+Lemma evale_portAccess : forall iH fH' iR fR' iA x0 x1 x2 vo1 v2 vresult z T_r ppre ppost a e0 o0 f0,
+  let xUDz := xUserDef z in
+  let r' := rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) xUDz v2 in
+  let fp := footprint iH r' ppre in
+  let fR := rhoSubst x0 vresult iR in
+  incl (FVe e0) [x2; x1; x0] ->
+  evale fH' (rhoSubst x0 vresult iR) e0 (vo o0) ->
+  In (o0, f0) (Aexcept iA fp ++ footprint fH' fR' ppost) ->
+  In (o0, f0)
+    (Aexcept
+     (Aexcept iA fp ++ footprint' fH' fR' a ++ footprint fH' fR' ppost)
+     (footprint' fH' fR
+        (phi'Substs [(xthis, x1); (xUDz, x2); (xresult, x0)] a))).
+Proof.
+  induction e0; intros; common; simpl in *; inversionx H1.
+  - apply inclSingle in H0.
+    inversionx H0.
+      
+
+      
+
+    
+    * eauto.
+    * 
+      
+      eapp evalphiIncl; auto.
+  
+   eapply IHp0 in H13; eauto.
+    intros.
+    assert (evalphi' H0 r A2 p') as ep.
+    * eapply H1.
+      + apply in_cons.
+        assumption.
+      + eapp evalphi'Aexcept.
+    * eapply evalphiFootprintAccess in ep.
+      eapply evalphiImpliesAccess in H3.
+    
+    assert (evalphi H0 r A2 p0) as ep.
+    * eapp IHp0.
+      + intros.
+        apply H1 in H3; auto.
+        apply in_cons.
+        auto.
+      + eapp evalphiAexcept.
+    * eapply evalphiImpliesAccess in H13.
+      eapply evalphiFootprintAccess in ep.
+      eapp evalphiIncl; auto.
+      
+      
+      eapply evalphiFootprint in ep.
+    eapply (IHp0 (Aexcept A1 (footprint' H0 r a))).
+    * 
+    * eauto.
+    
+    
+    eapply evalphiFootprintAccess in invb.
+    eapp evalphiIncl.
+    
+    unfold incl.
+    intros. destruct a0.
+    rewriteRevIn staticVSdynamicFP H0. unf.
+    apply InAexceptConstr.
+    rewriteRevIn staticVSdynamicFP' H0.
+    unf.
+    
+      
+      
+    (* eapply evalphiFootprintAccess in invb. *)
+    eapp evalphiIncl.
+    
+    unfold incl.
+    intros.
+    apply in_app_iff in H0. inversionx H0.
+    * admit.
+    * apply InAexceptConstr; intuition.
+      destruct a0.
+      rewriteRevIn staticVSdynamicFP H10.
+      rewriteRevIn staticVSdynamicFP' H0.
+      unf.
+      
+      
+      
+      Check staticVSdynamicFP.
+Lemma InFootprintFV : forall
+  incl (FV p) xs ->
+  In (ao, af) (footprint H r p) ->
+  
+      
+    apply InAexcept
+    apply InAexceptConstr.
+    
+    rewrite AexceptAppFirst. apply incl_appr.
+    rewrite AexceptAppFirst. apply incl_appr.
+    rewrite AexceptApp.
+    
+    generalize ppost H9.
+    
+    Check footprint'PhiSubsts2RhoFrom3.
+
+Lemma footprint'PhiSubsts3RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV' a) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  r x0 = Some vresult ->
+  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2); (xresult, x0)] a) =
+  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+Proof.
+  intros.
+  destruct a; simpl in *; try tauto.
+  erewrite evale'eSubsts2RhoFrom3; auto.
+Qed.
+
+Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+  incl (FVe e) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
+  evale' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - apply inclSingle in H1.
+    unfold xSubsts, rhoFrom3.
+    inversionx H1; simpl.
+    * dec (x_dec (xUserDef z) (xUserDef z)).
+      assumption.
+    * inversionx H4; tauto.
+  - rewrite IHe0; auto.
+Qed.
+
+
+    
+    assert (incl 
+        (footprint
+          fH'
+          (rhoSubst x0 vresult iR)
+          (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 ppost))
+        (Aexcept iA
+            (footprint iH
+               (rhoFrom3 xresult (defaultValue T_r) xthis
+                  (vo vo1) (xUserDef z) v2) ppre) ++
+          footprint fH' fR' ppost)
+      ) as inclfp.
+      eapp evalphiImpliesAccess.
+
+    
+    rewrite AexceptAppFirst.
+    rewrite AexceptAppFirst.
+    rewrite AexceptApp.
     
     (Aexcept 
       iA
@@ -955,6 +1228,10 @@ Lemma evalphi2PhiSubsts3 :
 
       Check evalphi.
       apply evalphiApp.
+    
+    
+    
+    
     
     
     
