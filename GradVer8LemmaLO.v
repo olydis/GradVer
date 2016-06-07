@@ -1,6 +1,24 @@
 Load GradVer3Defs.
 Import Semantics.
 
+Lemma dynSemLift : forall a b S,
+  dynSem a b ->
+  dynSem (fst a, snd a ++ S) (fst b, snd b ++ S).
+Proof.
+  intros.
+  destruct a, b. simpl.
+  inversionx H0; eca.
+Qed.
+
+Lemma dynSemStarLift : forall a b S,
+  dynSemStar a b ->
+  dynSemStar (fst a, snd a ++ S) (fst b, snd b ++ S).
+Proof.
+  intros.
+  induction H0; try constructor.
+  eca.
+  eapp dynSemLift.
+Qed.
 
 Lemma phiImpliesTauto : forall H r A p,
   phiImplies [] p ->
