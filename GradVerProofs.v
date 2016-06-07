@@ -752,29 +752,6 @@ Proof.
   destruct v0; auto with arith.
 Qed.
 
-Lemma evalphiChangeHeap : forall H1 H2 r A p,
-  sfrmphi [] p ->
-  footprint H1 r p = footprint H2 r p ->
-  evalphi H1 r A p ->
-  evalphi H2 r A p.
-Proof.
-  intros.
-  assert (forall e f, edotInPhi p0 e f -> In (e, f) (staticFootprint p0))
-  as sfp.
-    intros. eapp edotphiStaticFootprint.
-  
-  assert (forall e f, edotInPhi p0 e f -> exists o, evale' H1 r e = Some (vo o) /\ In (o, f) (footprint H1 r p0))
-  as dfp.
-    intros. eapp edotphiFootprintX.
-  
-  assert (forall e f, edotInPhi p0 e f -> evale' H1 r e = evale' H2 r e).
-    intros.
-    assert (In (e0, f0) (staticFootprint p0)).
-      eapp sfp.
-    apply dfp in H5. unf.
-    
-  
-
 Lemma eq_le_ge : forall a1 a2 b1 b2,
   a1 + a2 = b1 + b2 ->
   a2 >= b2 ->
@@ -791,69 +768,116 @@ Proof.
   eapp plus_le_reg_l.
 Qed.
 
+Lemma appEqFootprint : forall H1 H2 r a p A,
+  evalphi H1 r A (a :: p) ->
+  footprint H1 r (a :: p) = footprint H2 r (a :: p) ->
+  footprint' H1 r a = footprint' H2 r a /\
+  footprint H1 r p = footprint H2 r p.
+Proof.
+  destruct a; try (simpl in *; tauto).
+  intros.
+  inversionx H0.
+  apply (footprintLength H1 H2) in H14.
+  assert (length (footprint' H1 r (phiAcc e0 f0)) 
+       <= length (footprint' H2 r (phiAcc e0 f0))).
+    apply lengthId in H3. simpl in H3.
+    repeat rewrite app_length in H3.
+    eapp eq_le_ge.
+  
+  inversionx H13. common.
+  
+  simpl in *.
+  rewrite H11 in *.
+  simpl in *.
+  destruct (evale' H2 r e0); try (contradict H0; auto with arith; fail).
+  destruct (v0); try (contradict H0; auto with arith; fail).
+  simpl in *.
+  inversionx H3.
+  auto.
+Qed.
+
 Lemma evale'ChangeHeap : forall H1 H2 r e f o A p,
   evalphi H1 r A p ->
   footprint H1 r p = footprint H2 r p ->
   In (e, f) (staticFootprint p) ->
-(*   In (o, f) (footprint H1 r p) -> *)
   evale' H1 r e = Some (vo o) ->
   evale' H2 r e = Some (vo o).
 Proof.
   induction p0; intros; simpl in *; try tauto.
   
-  assert (footprint' H1 r a = footprint' H2 r a /\
-          footprint H1 r p0 = footprint H2 r p0).
-    destruct a; try (simpl in *; tauto).
-    inversionx H0.
-    apply (footprintLength H1 H2) in H16.
-    assert (length (footprint' H1 r (phiAcc e0 f0)) 
-         <= length (footprint' H2 r (phiAcc e0 f0))).
-      apply lengthId in H3.
-      repeat rewrite app_length in H3.
-      eapp eq_le_ge.
-    
-    simpl in *.
-    rewrite H5 in *.
-    simpl in *.
-    destruct (evale' H2 r e0); try (contradict H0; auto with arith; fail).
-    destruct (v0); try (contradict H0; auto with arith; fail).
-  
+  eapply appEqFootprint in H3; eauto. unf.
   
   apply in_app_iff in H4.
   inversionx H4.
   - destruct a; try (simpl in *; tauto).
-    simpl in H6. intuition. inversionx H4.
-    
-    inversionx H0.
-    apply (footprintLength H1 H2) in H15.
-    assert (length (footprint' H1 r (phiAcc e0 f0)) 
-         <= length (footprint' H2 r (phiAcc e0 f0))).
-      apply lengthId in H3.
-      repeat rewrite app_length in H3.
-      eapp eq_le_ge.
-    
-    simpl in *.
+    simpl in H3. intuition. inversionx H4.
+    simpl in H6. 
     rewrite H5 in *.
-    simpl in *.
-    destruct (evale' H2 r e0); try (contradict H0; auto with arith; fail).
-    destruct (v0); try (contradict H0; auto with arith; fail).
-    simpl in H3.
-    inversionx H3.
+    destruct (evale' H2 r e0); try discriminate.
+    destruct v0; try discriminate.
+    inversionx H6.
     tauto.
-  - 
-    
-    
-    Check staticVSdynamicFP'.
+  - eapp IHp0.
+    inversionx H0.
+    eapp evalphiAexcept.
+Qed.
+
+Lemma evalphiChangeHeap : forall H1 H2 r A p,
+  sfrmphi [] p ->
+  footprint H1 r p = footprint H2 r p ->
+  evalphi H1 r A p ->
+  evalphi H2 r A p.
+Proof.
+  intros.
+  assert (forall e f, edotInPhi p0 e f -> In (e, f) (staticFootprint p0))
+  as sfp.
+    intros. eapp edotphiStaticFootprint.
   
-    
-    generalize p0 H3 H6 H5 H8.
-    
-    apply staticVSdynamicFP in H5.
- 
+  assert (forall e f, edotInPhi p0 e f -> exists o, evale' H1 r e = Some (vo o) /\ In (o, f) (footprint H1 r p0))
+  as dfp.
+    intros. eapp edotphiFootprintX.
+  
+  assert (forall e f, edotInPhi p0 e f -> evale' H1 r e = evale' H2 r e)
+  as evt.
+    intros.
+    assert (In (e0, f0) (staticFootprint p0)).
+      eapp sfp.
+    apply dfp in H5. unf.
+    rewrite H5.
+    eapply evale'ChangeHeap in H5; eauto.
   
   
-  clear H0.
-  induction H4; try constructor.
+  
+Lemma evalphiChangeHeapEdotInPhi : forall H1 H2 r p A,
+  footprint H1 r p = footprint H2 r p ->
+  (∀ (e : e) (f : f), edotInPhi p e f → evale' H1 r e = evale' H2 r e) ->
+  evalphi H1 r A p -> evalphi H2 r A p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  eapply appEqFootprint in H0; eauto. unf.
+  inversionx H4.
+  eca.
+  inversionx H15.
+  - constructor.
+  - simpl in H3, H5.
+    
+  
+Lemma edotInEevale'irrelevance : forall H1 H2 r e,
+  (∀ e' f', edotInE e e' f' → evale' H1 r e' = evale' H2 r e') ->
+  evale' H1 r e = evale' H2 r e.
+Proof.
+  intros.
+  destruct e0; try tauto.
+  simpl.
+  erewrite H0; eauto.
+  
+  induction e0 eqn: et; intros; simpl in *; try tauto.
+  erewrite H0; eauto.
+  destruct ()
+
+    eca; unfold evale in *.
+    simpl 
+  destruct a.
   
   
   
