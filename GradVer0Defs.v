@@ -559,6 +559,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     NotIn x (FV phi_r) ->
     (* NotIn y (FV phi_r) ->
     NotIn z' (FV phi_r) -> *)
+    listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)

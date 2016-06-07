@@ -628,6 +628,64 @@ Proof.
     rewrite AexceptDisjoint; auto.
 Qed.
 
+
+Lemma A_sSubstsApp : forall m A1 A2,
+  A_sSubsts m (A1 ++ A2) =
+  A_sSubsts m A1 ++ A_sSubsts m A2.
+Proof.
+  induction A1; intros; try tauto.
+  destruct a.
+  unfold A_sSubsts in *. simpl.
+  rewrite IHA1.
+  tauto.
+Qed.
+
+Lemma A_sSubstsFP' : forall m p,
+  A_sSubsts m (staticFootprint' p) =
+  staticFootprint' (phi'Substs m p).
+Proof.
+  unfold A_sSubsts;
+  destruct p0;
+  tauto.
+Qed.
+
+Lemma sfrmeSubsts : forall x0 x1 x2 z e A,
+  sfrme A e ->
+  sfrme (A_sSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] A) (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] e).
+Proof.
+  induction e0; intros; simpl in *; try (constructor; fail).
+  inversionx H0.
+  eapply IHe0 in H5; eauto.
+  eca.
+  unfold A_sSubsts.
+  apply in_flat_map.
+  exists (phiAcc (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] e0) f0).
+  split.
+  - unfold phiSubsts, phi'Substs.
+    apply in_map_iff.
+    exists (phiAcc e0 f0).
+    intuition.
+    apply in_map_iff.
+    eex. tauto.
+  - constructor.
+    tauto.
+Qed.
+
+Lemma sfrmphiPhiSubsts3 : forall x0 x1 x2 z p A,
+  sfrmphi A p ->
+  sfrmphi (A_sSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] A) (phiSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] p).
+Proof.
+  induction p0; intros; try tauto.
+  inversionx H0.
+  eapply IHp0 in H2; eauto.
+  eca.
+  - inversionx H1; simpl; eca;
+    eapp sfrmeSubsts.
+  - rewrite A_sSubstsApp in H2.
+    rewrite A_sSubstsFP' in H2.
+    assumption.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess S',
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -983,8 +1041,9 @@ Proof.
     rename H6 into hstX0.
     rename H4 into hstX1.
     rename H7 into hstX2.
-    rename H10 into phi_r_sf.
-    rename H12 into phi_r_x0.
+    rename H13 into xDist.
+    rename H9 into phi_r_sf.
+    rename H11 into phi_r_x0.
     rename H8 into impl.
     rename H5 into mme.
     set (mm := Method T_r m0 T_p z (Contract phi_pre phi_post) underscore) in *.
@@ -1110,7 +1169,7 @@ Proof.
             eapply INV0 in H7; eauto. inversionE H7. inversionx H0.
             eex. unfold evale. simpl. rewrite H1. rewrite H9. simpl. assumption.
         unf. assumption.
-        unf. exists x3. intros. apply H16 in H12. intuition. apply fp_incl_ia in H12. apply H20 in H12. tauto.
+        unf. exists x3. intros. apply H20 in H16. intuition. apply fp_incl_ia in H25. apply H24 in H25. tauto.
     
     (*Part 2: method body*)
     assert (∃ finalHeap finalRho finalAccess,
@@ -1162,8 +1221,6 @@ Proof.
         apply hdtX1.
         unfold mpost, mcontract. rewrite mme. tauto.
     
-    assert (listDistinct [x0 ; x1 ; x2]) as xDist. admit.
-    
     assert (incl
       (footprint finalHeap' finalRho (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post))
       (Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post))
@@ -1189,6 +1246,17 @@ Proof.
           apply mmwd.
           apply hdtX1.
           apply hdtX2.
+
+Lemma dynSemStarNotModifies : forall x S ss H1 H2 r1 r2 A1 A2,
+  (∀ s', In s' ss → ¬ writesTo x s') ->
+  dynSemStar
+    (H1, (r1, A1, ss) :: S)
+    (H2, (r2, A2, []) :: S) ->
+  r1 x = r2 x.
+Proof.
+  induction ss; intros; simpl in *.
+  - inversionx H3; try tauto.
+
           admit.
           admit.
           simpl in xDist. intuition.
@@ -1255,7 +1323,11 @@ Qed. *)
     as INV3.
       assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
       uninv. repeat split. (*5*)
-   (**) admit.
+   (**) subst phi_end.
+        apply sfrmphiApp.
+        unfold phiSubsts3.
+          assert (sfrmphi [] phi_post) as sfp. apply INV2. eapply sfrmphiPhiSubsts3 in sfp. apply sfp.
+          eapp sfrmIncl. apply inclEmpty.
       (*inversionx tmp_sfrm. inversionx H1. inversionx H3. apply H4. *)
    (**) apply eph_phi_end.
    (**) induction e0; intros; inversionx H0; simpl in *. (*4*)
@@ -1265,7 +1337,17 @@ Qed. *)
             inversionx eph_phi_end.
             inversionx H10.
             eex.
-          admit.
+          apply H5 in eph_phi_end.
+            inversionx eph_phi_end.
+            inversionx H12.
+            apply IHe0 in H3.
+            inversionE H3. inversionx H0.
+            common.
+            rewrite H1 in *. inversionx H4. inversionx H11.
+            inversionx H2; try tauto.
+            eapply INV2 in H7; eauto. inversionx H7. inversionx H0.
+            eex.
+            unfold evale. simpl. rewrite H1, H9. simpl. assumption.
    (**) apply INV2.
    (**) decompose [and] INV0. invE H5 omin0.
         decompose [and] INV1. invE H10 omin1.
