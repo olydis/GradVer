@@ -2,16 +2,6 @@ Load GradVer16LemmaHalloc.
 Import Semantics.
 
 
-
-Lemma odotInPhiStaticFootprint : forall p e f,
-  sfrmphi [] p ->
-  edotInPhi p e f ->
-  In (e, f) (staticFootprint p).
-Proof.
-  intros.
-  eapply edotphiStaticFootprintHelper; eauto.
-Qed.
-
 Lemma AexceptNOTodotInPhi : forall H r o f p A,
   sfrmphi [] p ->
   evalphi H r (Aexcept A [(o, f)]) p ->

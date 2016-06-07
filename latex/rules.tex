@@ -109,7 +109,7 @@
 \\ &\phi		&&::= \true
 				  ~|~ e = e
 				  ~|~ e \neq e
-				  ~|~ \acc(x.f)
+				  ~|~ \acc(e.f)
 				  ~|~ x : T
 				  ~|~ \phi * \phi
 \\ &e			&&::= v
@@ -259,8 +259,8 @@ Note: issue with HApp and $z'$ in the post-condition: the substitution reflects 
 
 \begin{mathpar}
 \inferrule* [Right=EEAcc]
-{\evale {x} {o}}
-{\evale {x.f} {H(o)(f)}}
+{\evale {e} {o}}
+{\evale {e.f} {H(o)(f)}}
 \end{mathpar}
 
 \newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}

@@ -7,13 +7,13 @@
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{{\phi} \implies {{\acc({x}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {{C}}\\{\phi} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
-{\hoare {\phi} {{x}.{f} := {y}} {{{x} : {{C}}} * {{\acc({x}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi'}}}}}}
+{{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{\phi} \vdash {{x}} : {{C}}\\{\phi} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{\hoare {\phi} {{x}.{f} := {y}} {{{x} : {{C}}} * {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi'}}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FVe(e)}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
 {\hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})} * {\emptyset}}}}
 \end{mathpar}
 
@@ -25,7 +25,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\{y} \not \in {FV(\phi_r)}\\{z'} \not \in {FV(\phi_r)}\\{\phi_p} = {{\phi_{pre}}[{{y}}, {{z'}} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{{y}}, {{z'}}, {{x}} / {\xthis}, {{z}}, {\xresult}]}}
+{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\@listDistinct(x, {x} \cdot {{y} \cdot {{z'} \cdot {\emptyset}}})\\{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
 {\hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 

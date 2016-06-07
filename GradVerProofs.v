@@ -731,16 +731,188 @@ Proof.
         eapp evalphiIncl.
         apply evalphiImpliesAccess in H1.
         apply inclAexceptDisjoint in H1.
+  
+  
 
-Lemma 
-  dynSemStar (H1, [(r1, A1, s)]) (H2, [(r2, A2, [])]) ->
-  evale' H1 r1 o = evale H2 r1 o
-        
-Lemma 
+Lemma footprintLength : forall H1 H2 r A p,
   evalphi H1 r A p ->
-  evalphi H2 r A p ->
-        
-        
+  length (footprint H1 r p) >= length (footprint H2 r p).
+Proof.
+  induction p0; intros; simpl in *; try auto.
+  inversionx H0.
+  apply evalphiAexcept in H13.
+  apply IHp0 in H13.
+  destruct a; simpl in *; auto.
+  inversionx H12.
+  destruct (evale' H1 r e0); try tauto.
+  destruct v0; try tauto.
+  repeat rewrite app_length.
+  simpl.
+  destruct (evale' H2 r e0); auto with arith.
+  destruct v0; auto with arith.
+Qed.
+
+Lemma evalphiChangeHeap : forall H1 H2 r A p,
+  sfrmphi [] p ->
+  footprint H1 r p = footprint H2 r p ->
+  evalphi H1 r A p ->
+  evalphi H2 r A p.
+Proof.
+  intros.
+  assert (forall e f, edotInPhi p0 e f -> In (e, f) (staticFootprint p0))
+  as sfp.
+    intros. eapp edotphiStaticFootprint.
+  
+  assert (forall e f, edotInPhi p0 e f -> exists o, evale' H1 r e = Some (vo o) /\ In (o, f) (footprint H1 r p0))
+  as dfp.
+    intros. eapp edotphiFootprintX.
+  
+  assert (forall e f, edotInPhi p0 e f -> evale' H1 r e = evale' H2 r e).
+    intros.
+    assert (In (e0, f0) (staticFootprint p0)).
+      eapp sfp.
+    apply dfp in H5. unf.
+    
+  
+
+Lemma eq_le_ge : forall a1 a2 b1 b2,
+  a1 + a2 = b1 + b2 ->
+  a2 >= b2 ->
+  a1 <= b1.
+Proof.
+  intros.
+  assert (a1 + a2 ≥ a1 + b2).
+    auto with arith.
+  rewrite H0 in H2.
+  unfold ge in *.
+  SearchAbout le.
+  rewrite (plus_comm a1 b2) in H2.
+  rewrite (plus_comm b1 b2) in H2.
+  eapp plus_le_reg_l.
+Qed.
+
+Lemma evale'ChangeHeap : forall H1 H2 r e f o A p,
+  evalphi H1 r A p ->
+  footprint H1 r p = footprint H2 r p ->
+  In (e, f) (staticFootprint p) ->
+(*   In (o, f) (footprint H1 r p) -> *)
+  evale' H1 r e = Some (vo o) ->
+  evale' H2 r e = Some (vo o).
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  
+  assert (footprint' H1 r a = footprint' H2 r a /\
+          footprint H1 r p0 = footprint H2 r p0).
+    destruct a; try (simpl in *; tauto).
+    inversionx H0.
+    apply (footprintLength H1 H2) in H16.
+    assert (length (footprint' H1 r (phiAcc e0 f0)) 
+         <= length (footprint' H2 r (phiAcc e0 f0))).
+      apply lengthId in H3.
+      repeat rewrite app_length in H3.
+      eapp eq_le_ge.
+    
+    simpl in *.
+    rewrite H5 in *.
+    simpl in *.
+    destruct (evale' H2 r e0); try (contradict H0; auto with arith; fail).
+    destruct (v0); try (contradict H0; auto with arith; fail).
+  
+  
+  apply in_app_iff in H4.
+  inversionx H4.
+  - destruct a; try (simpl in *; tauto).
+    simpl in H6. intuition. inversionx H4.
+    
+    inversionx H0.
+    apply (footprintLength H1 H2) in H15.
+    assert (length (footprint' H1 r (phiAcc e0 f0)) 
+         <= length (footprint' H2 r (phiAcc e0 f0))).
+      apply lengthId in H3.
+      repeat rewrite app_length in H3.
+      eapp eq_le_ge.
+    
+    simpl in *.
+    rewrite H5 in *.
+    simpl in *.
+    destruct (evale' H2 r e0); try (contradict H0; auto with arith; fail).
+    destruct (v0); try (contradict H0; auto with arith; fail).
+    simpl in H3.
+    inversionx H3.
+    tauto.
+  - 
+    
+    
+    Check staticVSdynamicFP'.
+  
+    
+    generalize p0 H3 H6 H5 H8.
+    
+    apply staticVSdynamicFP in H5.
+ 
+  
+  
+  clear H0.
+  induction H4; try constructor.
+  
+  
+  
+  intro p0.
+  intro sfr.
+  assert (∀ (e0 : e) (f0 : f), edotInPhi p0 e0 f0 → In (e0, f0) (staticFootprint p0)).
+    intros. eapp edotphiStaticFootprint.
+  
+  Check staticVSdynamicFP.
+  
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H4.
+  destruct a.
+  
+  inversionx H3.
+  rewrite H0 in H8; try tauto.
+  rewrite H0 in H13; try tauto.
+  rewrite H0 in H14; try tauto.
+  apply IHp0 in H14; try (intros; apply H0; tauto).
+  
+  eca.
+
+
+
+
+(* Lemma sfrmphiEvalphi'ChangeHeap : forallH1 H2 r p,
+  footprint' H1 r p = footprint' H2 r p ->
+  evalphi' H1 r (footprint' H1 r p) p ->
+  evalphi' H2 r (footprint' H2 r p) p.
+
+  inversionx H13.
+  - constructor.
+  - eca. *)
+
+(* Lemma footprint'EqLength : forall H1 H2 r p,
+  length (footprint' H1 r p) =
+  length (footprint' H2 r p).
+Proof.
+  intros.
+  destruct p0; simpl; try tauto. *)
+
+Lemma app_eq_split : forall {T : Type} (B2 B1 A2 A1 : list T),
+  length A1 = length A2 ->
+  A1 ++ B1 = A2 ++ B2 ->
+  A1 = A2 /\
+  B1 = B2.
+Proof.
+  induction A2; intros; simpl in *.
+  - rewrite length_zero_iff_nil in H0.
+    subst.
+    tauto.
+  - destruct A1; simpl in *; try discriminate.
+    inversionx H0.
+    inversionx H1.
+    apply IHA2 in H3; auto.
+    unf.
+    subst.
+    tauto.
+Qed.
 
 (* Lemma InFootprintFV : forall
   incl (FV p) xs ->

@@ -123,6 +123,21 @@ Proof.
   eexists; split; eauto.
 Qed.
 
+Lemma edotphiFootprintX : forall p A H r e f,
+  sfrmphi [] p ->
+  evalphi H r A p ->
+  edotInPhi p e f ->
+  exists o, evale' H r e = Some (vo o) /\ In (o, f) (footprint H r p).
+Proof.
+  intros.
+  eapply edotphiStaticFootprint in H1; eauto.
+  eapply edotphiEvaluates in H2; eauto.
+  unf.
+  eex.
+  apply staticVSdynamicFP.
+  eexists; split; eauto.
+Qed.
+
 (*odot*)
 
 
