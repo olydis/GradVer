@@ -1,13 +1,25 @@
 Load GradVer12LemmaFootprint.
 Import Semantics.
 
+(*staticFootprintX = the stuff that DEFINITELY evaluates if in evalphi's arg*)
 
-Fixpoint edotInE (e' : e) (ee : e) (f : f) :=
+Fixpoint staticFootprintXe (e' : e) : A_s :=
   match e' with
-  | edot e' f' => f = f' /\ ee = e'
-               \/ edotInE e' ee f
-  | _ => False
+  | edot e f => (e, f) :: staticFootprintXe e
+  | _ => []
   end.
+
+Definition staticFootprintX' (p : phi') : A_s :=
+  match p with
+  | phiTrue => []
+  | phiEq  e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
+  | phiNeq e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
+  | phiAcc e _ => staticFootprintXe e
+  | phiType _ _ => []
+  end.
+
+Definition staticFootprintX (p : phi) : A_s :=
+  flat_map staticFootprint' p.
 
 Definition edotInPhi' (p : phi') (ee : e) (f : f) :=
   match p with
@@ -78,12 +90,13 @@ Qed.
 Lemma edoteEvaluates : forall H r e' f e v,
   evale H r e v ->
   edotInE e e' f ->
-  exists o, evale' H r e' = Some (vo o).
+  exists v', evale' H r (edot e' f) = Some v'.
 Proof.
   induction e0; intros;
   inversionx H2;
   inversionx H1.
   - unf. subst.
+    simpl.
     destruct (evale' H0 r e0); inversionx H4.
     destruct v1; inversionx H2.
     eexists; eauto.
@@ -95,16 +108,20 @@ Qed.
 Lemma edotphiEvaluates : forall p A H r e f,
   evalphi H r A p ->
   edotInPhi p e f ->
-  exists o, evale' H r e = Some (vo o).
+  exists v, evale' H r (edot e f) = Some v.
 Proof.
   induction p0; intros; simpl in *;
   inversionx H2;
   inversionx H1.
   - inversionx H12;
-    simpl in *;
-    try inversionx H3;
-    try eapply edoteEvaluates in H1; eauto;
-    try eapply edoteEvaluates in H2; eauto.
+    simpl in *.
+    * tauto.
+    * inversionx H3;
+      eapply edoteEvaluates in H1; eauto.
+    * inversionx H3;
+      eapply edoteEvaluates in H1; eauto.
+    * eapply edoteEvaluates in H3; eauto.
+    * tauto.
   - eapply IHp0; eauto.
 Qed.
 

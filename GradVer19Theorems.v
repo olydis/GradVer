@@ -1,6 +1,57 @@
 Load GradVer18LemmaHI.
 Import Semantics.
 
+Lemma evalphiComposeDisjointFP : forall H r A1 A2 p1 p2,
+    disjoint A1 A2 ->
+    evalphi H r A1 p1 ->
+    evalphi H r A2 p2 ->
+    evalphi H r (A1 ++ A2) (p1 ++ p2).
+Proof.
+  intros.
+  eapp evalphiAppRev.
+  - eapp evalphiIncl.
+    intuition.
+  - eapp evalphiIncl.
+    rewrite AexceptAppFirst.
+    rewrite (AexceptDisjoint A2).
+    * intuition.
+    * apply evalphiImpliesAccess in H2.
+      unfold disjoint, incl in *.
+      intros.
+      specialize (H1 x0).
+      specialize (H2 x0).
+      intuition.
+Qed.
+
+Definition goodFP H r p := 
+  map Some (footprint' H r p) = 
+  map (A'_s2A'_d H r) (staticFootprint' p).
+
+Lemma evalphiImpliesGoodFP2 : forall H r A p,
+  evalphi' H r A p ->
+  goodFP H r p.
+Proof.
+  unfold goodFP.
+  intros.
+  inversionx H1; simpl in *; try tauto.
+  unfold A'_s2A'_d. simpl.
+  common. rewrite H3.
+  tauto.
+Qed.
+
+Lemma evalphiImpliesGoodFP : forall H r A p,
+  evalphi' H r A p ->
+  (forall A', In A' (footprint' H r p) ->
+              exists v, evalA'_d H A' = Some v).
+Proof.
+  intros.
+  inversionx H1; simpl in *; try tauto.
+  unfold evalA'_d. 
+  common. rewrite H4 in *.
+  apply InSingle in H2. subst.
+  simpl.
+  Check odotInPhi.
+Qed.
 
 Lemma dynSemStarNotModifies : forall x ss H1 H2 r1 r2 A1 A2,
   (∀ s', In s' ss → ¬ writesTo x s') ->
@@ -94,7 +145,5 @@ Proof.
       assumption.
     * eapply IHss in dss; eauto.
 Admitted.
-
-
 
 

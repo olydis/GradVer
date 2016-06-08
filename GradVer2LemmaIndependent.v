@@ -97,3 +97,13 @@ Proof.
   apply H0.
   eauto.
 Qed.
+
+
+Lemma inclApp : forall {T : Type} (A1 A2 B : list T),
+  incl (A1 ++ A2) B ->
+  incl A1 B /\ incl A2 B.
+Proof.
+  unfold incl.
+  intros.
+  intuition.
+Qed.

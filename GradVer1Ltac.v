@@ -6,6 +6,22 @@ Ltac eappIn H t := eapply H in t; eax.
 Ltac eex := eexists; eax.
 Ltac eca := econstructor; eauto.
 
+
+Ltac invE H v := inversion H as [v temp]; clear H; rename temp into H.
+
+Ltac rewriteRev R :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp;
+  clear temp.
+
+Ltac rewriteRevIn R H :=
+  assert (temp := R);
+  symmetry in temp;
+  rewrite temp in H;
+  clear temp.
+
+
 Ltac inversionE H :=
   inversion H; clear H.
 Ltac inversionx H :=
@@ -32,15 +48,3 @@ Ltac des P :=
     try (clear de1).
 Ltac dec P := undecb; des P.
 
-
-Ltac rewriteRev R :=
-  assert (temp := R);
-  symmetry in temp;
-  rewrite temp;
-  clear temp.
-
-Ltac rewriteRevIn R H :=
-  assert (temp := R);
-  symmetry in temp;
-  rewrite temp in H;
-  clear temp.

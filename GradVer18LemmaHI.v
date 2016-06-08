@@ -192,6 +192,21 @@ Proof.
   erewrite evale'eSubsts2RhoFrom3; auto.
 Qed.
 
+Lemma footprintPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+  incl (FV a) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some (vo vo1) ->
+  footprint H r (phiSubsts [(xthis, x1); (xUserDef z, x2)] a) =
+  footprint H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+Proof.
+  induction a;
+  intros;
+  simpl in *; try tauto.
+  apply inclApp in H1. unf.
+  erewrite footprint'PhiSubsts2RhoFrom3; eauto.
+  erewrite IHa; eauto.
+Qed.
+
 Lemma evale'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
   incl (FVe e) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
@@ -212,15 +227,6 @@ Proof.
       assumption.
     * inversionx H4; try tauto.
   - rewrite IHe0; auto.
-Qed.
-
-Lemma inclApp : forall {T : Type} (A1 A2 B : list T),
-  incl (A1 ++ A2) B ->
-  incl A1 B /\ incl A2 B.
-Proof.
-  unfold incl.
-  intros.
-  intuition.
 Qed.
 
 Lemma evalphi'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
