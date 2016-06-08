@@ -96,8 +96,10 @@ Inductive program :=
 
 Definition H := o -> option (C * (f -> option v)).
 Definition rho := x -> option v.
-Definition A_s := list (e * f).
-Definition A_d := list (o * f).
+Definition A'_s := prod e f.
+Definition A_s := list A'_s.
+Definition A'_d := prod o f.
+Definition A_d := list A'_d.
 Definition S := list (rho * A_d * list s).
 
 (* equality *)
@@ -139,13 +141,19 @@ Definition v_decb := dec2decb v_dec.
 Hint Resolve v_dec.
 Hint Resolve list_eq_dec v_dec.
 
-Definition A_s'_decb (a b : x * f) : bool := x_decb (fst a) (fst b) && string_decb (snd a) (snd b).
-Definition A_d'_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition e_dec : ∀ n m : e, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance e_EqDec : EqDec e eq := e_dec.
+Definition e_decb := dec2decb e_dec.
+Hint Resolve e_dec.
+Hint Resolve list_eq_dec e_dec.
+
+Definition A'_s_decb (a b : e * f) : bool := e_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition A'_d_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
 
 Ltac undecb :=
   unfold
-    A_s'_decb,
-    A_d'_decb,
+    A'_s_decb,
+    A'_d_decb,
     vex_decb,
     v_decb,
     T_decb,
@@ -158,9 +166,9 @@ Ltac undecb :=
     dec2decb
       in *.
 
-Definition A_sexcept := except A_s'_decb.
+Definition A_sexcept := except A'_s_decb.
 (*coq2latex: Aexcept #A1 #A2 := #A1 \backslash #A2 *)
-Definition Aexcept := except A_d'_decb.
+Definition Aexcept := except A'_d_decb.
 
 (*coq2latex: neq #a #b := #a \neq #b *)
 Definition neq (a b : v) : Prop := a <> b.
@@ -755,6 +763,18 @@ Proof.
   apply cc in H1.
   assumption.
 Qed.
+
+Definition A'_s2A'_d (H : H) (r : rho) (A : A'_s) : option A'_d :=
+  option_bind (fun v =>
+    match v with
+    | vo o => Some (o, snd A)
+    | _ => None
+    end) (evale' H r (fst A)).
+Definition evalA'_d (H : H) (A : A'_d) : option v :=
+  option_bind (fun h => snd h (snd A)) (H (fst A)).
+Definition evalA'_s (H : H) (r : rho) (A : A'_s) : option v :=
+  option_bind (evalA'_d H) (A'_s2A'_d H r A).
+
 
 
 End Semantics.

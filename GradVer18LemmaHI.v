@@ -305,7 +305,7 @@ Proof.
   rewrite cons2app in H0.
   apply disjointSplitA in H0. unf.
   apply IHA in H2. rewrite H2.
-  destruct (negb (existsb (A_d'_decb a) B)) eqn: cl; try tauto.
+  destruct (negb (existsb (A'_d_decb a) B)) eqn: cl; try tauto.
   apply negb_false_iff in cl.
   apply existsb_exists in cl. unf.
   specialize (H1 x0).
@@ -599,7 +599,7 @@ Lemma AexceptDisjoint : forall A1 A2,
 Proof.
   unfold disjoint, Aexcept, except.
   induction A1; intros; simpl in *; try tauto.
-  assert (~ (existsb (A_d'_decb a) A2) = true).
+  assert (~ (existsb (A'_d_decb a) A2) = true).
     intuition.
     apply existsb_exists in H1.
     unf.

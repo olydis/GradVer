@@ -1,3 +1,3 @@
-Load GradVer18LemmaHI.
+Load GradVer19Theorems.
 Import Semantics.
 

@@ -40,15 +40,7 @@ Ltac emagicProgress :=
   repeat eexists;
   econstructor; econstructor;
   unfold evale; simpl; eauto.
-(* 
-Definition soundness : Prop :=
-  forall pre s post initialHeap initialRho initialAccess,
-  hoare pre s post ->
-  invAll initialHeap initialRho initialAccess pre ->
-  exists finalHeap finalRho finalAccess,
-    dynSemStar (initialHeap, [(initialRho, initialAccess, s)]) (finalHeap, [(finalRho, finalAccess, [])]) /\
-    invAll finalHeap finalRho finalAccess post.
- *)
+
 Definition soundness pre s post initialHeap initialRho initialAccess S : Prop :=
   hoare pre s post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -89,49 +81,6 @@ Ltac unfoldINV INV :=
 
 Ltac invE H v := inversion H as [v temp]; clear H; rename temp into H.
 
-Lemma dynSemStarNotModifies : forall x ss H1 H2 r1 r2 A1 A2,
-  (∀ s', In s' ss → ¬ writesTo x s') ->
-  dynSemStar
-    (H1, [(r1, A1, ss)])
-    (H2, [(r2, A2, [])]) ->
-  r1 x = r2 x.
-Proof.
-  induction ss; intros; simpl in *.
-  - inversionx H3; try tauto.
-    inversionx H4.
-  - inversionx H3.
-    rename H4 into ds.
-    rename H5 into dss.
-    assert (¬ writesTo x0 a) as wt1. apply H0. tauto.
-    assert (∀ s' : s, In s' ss → ¬ writesTo x0 s') as wt2. intros. apply H0. tauto.
-    inversionx ds; simpl in wt1.
-    * apply IHss in dss; auto.
-    * apply IHss in dss; auto.
-      unfold rhoSubst in dss.
-      dec (x_dec x0 x1); try tauto.
-      contradict wt1.
-      constructor.
-    * apply IHss in dss; auto.
-      unfold rhoSubst in dss.
-      dec (x_dec x0 x1); try tauto.
-      contradict wt1.
-      constructor.
-    * apply IHss in dss; auto.
-      unfold rhoSubst in dss.
-      dec (x_dec x0 xresult); try tauto.
-      contradict wt1.
-      constructor.
-    * admit.
-    * apply IHss in dss; auto.
-    * apply IHss in dss; auto.
-    * apply IHss in dss; auto.
-      unfold rhoSubst in dss.
-      dec (x_dec x0 x1); try tauto.
-      contradict wt1.
-      constructor.
-Admitted.
-
-Print soundness.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->

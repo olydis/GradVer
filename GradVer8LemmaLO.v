@@ -79,7 +79,7 @@ Proof.
     inversion H0.
   - simpl.
     simpl filter in H0.
-    destruct (existsb (A_d'_decb a) a'); simpl in H0.
+    destruct (existsb (A'_d_decb a) a'); simpl in H0.
     * apply IHa in H0.
       auto.
     * inversion H0; auto.
@@ -139,7 +139,7 @@ Lemma AexceptApp : forall A B1 B2,
 Proof.
   induction A; intros; simpl; try tauto.
   rewrite existsb_app.
-  destruct (existsb (A_d'_decb a) B1) eqn: exb;
+  destruct (existsb (A'_d_decb a) B1) eqn: exb;
   simpl; rewrite IHA; tauto.
 Qed.
 
@@ -147,8 +147,8 @@ Lemma AexceptComm : forall A1 A2 A3,
   Aexcept (Aexcept A1 A2) A3 = Aexcept (Aexcept A1 A3) A2.
 Proof.
   induction A1; simpl; intros; try tauto.
-  destruct (existsb (A_d'_decb a) A2) eqn: a2;
-  destruct (existsb (A_d'_decb a) A3) eqn: a3;
+  destruct (existsb (A'_d_decb a) A2) eqn: a2;
+  destruct (existsb (A'_d_decb a) A3) eqn: a3;
   simpl; repeat rewrite a2;
   simpl; repeat rewrite a3;
   simpl; rewrite IHA1; tauto.
@@ -319,7 +319,7 @@ Proof.
     apply not_true_iff_false.
     apply negb_false_iff.
     simpl.
-    unfold A_d'_decb, o_decb, string_decb, dec2decb.
+    unfold A'_d_decb, o_decb, string_decb, dec2decb.
     destruct (o_dec (fst (o0, f0)) (fst (o0, f0))); try (contradict n; tauto).
     destruct (string_dec (snd (o0, f0)) (snd (o0, f0))); try (contradict n; tauto).
     auto.
@@ -502,7 +502,7 @@ Lemma AexceptEmptier : forall a b b',
 Proof.
   induction a; intros; simpl; try tauto.
   simpl in *.
-  destruct (existsb (A_d'_decb a) b).
+  destruct (existsb (A'_d_decb a) b).
   - rewrite orb_true_r.
     simpl in *.
     apply IHa.
@@ -951,7 +951,7 @@ Lemma AexceptAppFirst : forall B A2 A1,
 Proof.
   induction A1; intros; simpl in *; try tauto.
   rewrite IHA1.
-  destruct (existsb (A_d'_decb a) B); simpl; tauto.
+  destruct (existsb (A'_d_decb a) B); simpl; tauto.
 Qed.
 
 Lemma AexceptReduceSecond : forall a aa A,
