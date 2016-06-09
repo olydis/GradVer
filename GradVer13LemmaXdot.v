@@ -19,116 +19,130 @@ Definition staticFootprintX' (p : phi') : A_s :=
   end.
 
 Definition staticFootprintX (p : phi) : A_s :=
-  flat_map staticFootprint' p.
+  flat_map staticFootprintX' p.
 
-Definition edotInPhi' (p : phi') (ee : e) (f : f) :=
-  match p with
-  | phiEq  e1 e2 => edotInE e1 ee f \/ edotInE e2 ee f
-  | phiNeq e1 e2 => edotInE e1 ee f \/ edotInE e2 ee f
-  | phiAcc e _ => edotInE e ee f
-  | _ => False
-  end.
-
-Fixpoint edotInPhi (p : phi) (ee : e) (f : f) :=
-  match p with
-  | [] => False
-  | (p' :: p) => edotInPhi' p' ee f \/ edotInPhi p ee f
-  end.
-
-Lemma edotphiStaticFootprintHelperSfrme : forall e' f A e,
-  ¬ In (e', f) A ->
-  edotInE e e' f ->
-  sfrme A e ->
-  False.
+Lemma sfrmeVSsfpX : forall A e,
+  sfrme A e <->
+  incl (staticFootprintXe e) A.
 Proof.
   induction e0;
   simpl in *;
-  intros;
-  inversionx H1;
-  inversionx H2.
-  - unf. subst.
-    tauto.
-  - apply IHe0; auto.
+  split;
+  intros.
+  - apply inclEmpty.
+  - constructor.
+  - apply inclEmpty.
+  - constructor.
+  - inversionx H0.
+    eapp incl_cons.
+    eapp IHe0.
+  - apply incl_cons_reverse in H0. unf.
+    eca.
 Qed.
 
-Lemma edotphiStaticFootprintHelper : forall p e f A,
+Lemma sfrmphi'VSsfpX : forall A p,
+  sfrmphi' A p <->
+  incl (staticFootprintX' p) A.
+Proof.
+  intros.
+  destruct p0;
+  simpl;
+  split;
+  intros.
+  - apply inclEmpty.
+  - constructor.
+  - inversionx H0.
+    apply incl_app;
+    eapp sfrmeVSsfpX.
+  - apply inclApp in H0. unf.
+    constructor;
+    eapp sfrmeVSsfpX.
+  - inversionx H0.
+    apply incl_app;
+    eapp sfrmeVSsfpX.
+  - apply inclApp in H0. unf.
+    constructor;
+    eapp sfrmeVSsfpX.
+  - inversionx H0.
+    eapp sfrmeVSsfpX.
+  - constructor.
+    eapp sfrmeVSsfpX.
+  - apply inclEmpty.
+  - constructor.
+Qed.
+
+
+Lemma sfrmphiVSsfpX : forall p A,
   sfrmphi A p ->
-  ~ In (e, f) A ->
-  edotInPhi p e f ->
-  In (e, f) (staticFootprint p).
+  incl (staticFootprintX p) (A ++ staticFootprint p).
 Proof.
   induction p0;
   simpl;
-  intros;
-  inversionx H0;
-  inversionx H2.
-  - (*contradiction!*)
-    destruct a;
-    simpl in *;
-    try inversionx H0;
-    inversionx H3;
-    eapply edotphiStaticFootprintHelperSfrme in H1; eauto;
-    try tauto.
-  - apply in_app_iff.
-    assert (CL := classic (In (e0, f0) (staticFootprint' a))).
-    intuition.
-    eapply IHp0 in H0; eauto.
-    intro.
-    apply in_app_or in H5.
-    intuition.
-Qed.
-
-Lemma edotphiStaticFootprint : forall p e f,
-  sfrmphi [] p ->
-  edotInPhi p e f ->
-  In (e, f) (staticFootprint p).
-Proof.
   intros.
-  eapply edotphiStaticFootprintHelper; eauto.
+  - apply inclEmpty.
+  - unf.
+    rewrite sfrmphi'VSsfpX in H1.
+    apply IHp0 in H2.
+    unfold incl in *. intros.
+    apply in_app_iff in H0. intuition.
+    apply H2 in H3.
+    apply in_app_iff in H3. intuition.
+    apply in_app_iff in H0. intuition.
 Qed.
 
-Lemma edoteEvaluates : forall H r e' f e v,
+Lemma evaleVSsfpX : forall H r e v A,
   evale H r e v ->
-  edotInE e e' f ->
-  exists v', evale' H r (edot e' f) = Some v'.
+  In A (staticFootprintXe e) ->
+  exists v', evalA'_s H r A = Some v'.
 Proof.
+  unfold evalA'_s, evalA'_d, A'_s2A'_d.
   induction e0; intros;
   inversionx H2;
-  inversionx H1.
-  - unf. subst.
-    simpl.
-    destruct (evale' H0 r e0); inversionx H4.
+  inversionx H1;
+  simpl in *.
+  - destruct (evale' H0 r e0); inversionx H3.
     destruct v1; inversionx H2.
-    eexists; eauto.
+    eex.
   - unfold evale in IHe0.
     destruct (evale' H0 r e0); inversionx H4.
     eapply IHe0; eauto.
 Qed.
 
-Lemma edotphiEvaluates : forall p A H r e f,
-  evalphi H r A p ->
-  edotInPhi p e f ->
-  exists v, evale' H r (edot e f) = Some v.
+Lemma evalphi'VSsfpX : forall p A H r A',
+  evalphi' H r A p ->
+  In A' (staticFootprintX' p) ->
+  exists v, evalA'_s H r A' = Some v.
 Proof.
-  induction p0; intros; simpl in *;
-  inversionx H2;
-  inversionx H1.
-  - inversionx H12;
-    simpl in *.
-    * tauto.
-    * inversionx H3;
-      eapply edoteEvaluates in H1; eauto.
-    * inversionx H3;
-      eapply edoteEvaluates in H1; eauto.
-    * eapply edoteEvaluates in H3; eauto.
-    * tauto.
-  - eapply IHp0; eauto.
+  intros.
+  inversionx H1; try inversionx H2;
+  simpl in *.
+  - apply in_app_iff in H2.
+    inversionx H2;
+    eappIn evaleVSsfpX H1.
+  - apply in_app_iff in H2.
+    inversionx H2;
+    eappIn evaleVSsfpX H1.
+  - eapp evaleVSsfpX.
 Qed.
 
-Lemma edotphiFootprint : forall p A H r e f,
+Lemma evalphiVSsfpX : forall p A H r A',
+  evalphi H r A p ->
+  In A' (staticFootprintX p) ->
+  exists v, evalA'_s H r A' = Some v.
+Proof.
+  induction p0; intros; simpl in *.
+  - tauto.
+  - apply in_app_iff in H2.
+    inversionx H1.
+    inversionx H2.
+    * eapp evalphi'VSsfpX.
+    * eapp IHp0.
+Qed.
+
+Lemma edotphiFootprint : forall p A H r A',
   sfrmphi [] p ->
   evalphi H r A p ->
-  edotInPhi p e f ->
+  In A' (staticFootprintX p) ->
   exists o, In (o, f) (footprint H r p).
 Proof.
   intros.
