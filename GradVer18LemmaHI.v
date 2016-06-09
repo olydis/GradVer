@@ -2,42 +2,49 @@ Load GradVer16LemmaHalloc.
 Import Semantics.
 
 
-Lemma AexceptNOTodotInPhi : forall H r o f p A,
+Lemma AexceptNOTodotInPhi : forall H r p A A',
   sfrmphi [] p ->
-  evalphi H r (Aexcept A [(o, f)]) p ->
-  ~ odotInPhi H r p o f.
+  evalphi H r (Aexcept A [A']) p ->
+  ~ In A' (footprintX H r p).
 Proof.
   intros.
   intuition.
-  apply odotedotPhi in H3.
+  unfold footprintX, A'_s2A'_d in H3.
+  eapply sfrmphiVSsfpX in H1.
+  apply InOflatten in H3.
+  apply in_map_iff in H3.
   unf.
-  eappIn edotphiStaticFootprint H5.
+  apply H1 in H5.
+  apply evalphiImpliesAccess in H2.
+  destruct x0.
+  simpl in *.
+  destruct (evale' H0 r e0) eqn: ee; try discriminate.
+  simpl in *.
+  destruct v0; try discriminate.
+  inversionx H3.
   assert (In (o0, f0) (footprint H0 r p0)).
     eapp staticVSdynamicFP.
-  apply evalphiImpliesAccess in H2.
-  apply H2 in H4.
-  apply InAexceptNot in H4.
-  contradict H4.
+  apply H2 in H3.
+  apply InAexceptNot in H3.
+  contradict H3.
   constructor.
   tauto.
 Qed.
 
 Lemma HSubst'NOTodotInE : forall H r o v f e,
-  ¬ odotInE H r e o f ->
+  ¬ In (o, f) (footprintXe H r e) ->
   evale' H r e =
   evale' (HSubst o f v H) r e.
 Proof.
+  unfold footprintXe, A'_s2A'_d.
   induction e0; intros; simpl in *; auto.
-  apply not_or_and in H1.
-  unf.
-  apply IHe0 in H3. clear IHe0.
-  rewriteRev H3. clear H3.
-  apply not_and_or in H2.
+  rewrite in_app_iff in H1.
+  apply not_or_and in H1. unf.
+  rewriteRev IHe0; auto.
   destruct (evale' H0 r e0) eqn: ee; try tauto.
   destruct v1; try tauto.
   unfold HSubst.
   dec (o_dec o1 o0); try tauto.
-  inversionx H2; try tauto.
   destruct (H0 o0); try tauto.
   destruct p0. simpl in *.
   dec (string_dec f1 f0); try tauto.
@@ -68,53 +75,53 @@ Proof.
 Qed.
 
 Lemma HSubst'NOTodotInPhi : forall H r o v f p,
-  ¬ odotInPhi' H r p o f ->
+  ¬ In (o, f) (footprintX' H r p) ->
   evalphi' H r (footprint' H r p) p <->
   evalphi' (HSubst o f v H) r (footprint' (HSubst o f v H) r p) p.
 Proof.
   intros.
+  unfold footprintX' in *.
   rename H1 into H2.
   destruct p0; simpl in H2; try apply not_or_and in H2; unf;
   split; intros;
   try constructor;
-  try inversionx H2;
-  simpl in *.
+  try inversionx H1;
+  simpl in *;
+  repeat rewrite map_app in H2;
+  repeat rewrite oflattenApp in H2;
+  try rewrite in_app_iff in H2;
+  try apply not_or_and in H2; unf.
   - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE in H7; eauto.
-    erewrite HSubst'NOTodotInE in H11; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE; eauto.
-    erewrite HSubst'NOTodotInE; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE in H7; eauto.
-    erewrite HSubst'NOTodotInE in H11; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE; eauto.
-    erewrite HSubst'NOTodotInE; eauto.
-  - inversionx H1.
+    erewrite HSubst'NOTodotInE in H6; eauto.
     erewrite HSubst'NOTodotInE in H10; eauto.
-    eca. unfold evale.
-    destruct (evale' (HSubst o0 f0 v0 H0) r e0); try tauto.
-    destruct v1; try tauto.
-    inversionx H10; try tauto.
-    inversionx H1; try tauto.
-  - inversionx H1.
+  - eca; unfold evale in *.
     erewrite HSubst'NOTodotInE; eauto.
-    eca.
-    unfold evale in *.
     erewrite HSubst'NOTodotInE; eauto.
-  - inversionx H1.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE in H6; eauto.
+    erewrite HSubst'NOTodotInE in H10; eauto.
+  - eca; unfold evale in *.
+    erewrite HSubst'NOTodotInE; eauto.
+    erewrite HSubst'NOTodotInE; eauto.
+  - unfold evale in *.
+    erewrite HSubst'NOTodotInE in H9; eauto.
     eca.
+    rewrite H9.
+    eca.
+  - unfold evale in *.
+    rewriteRevIn HSubst'NOTodotInE H9; eauto.
+    rewrite H9.
+    eca.
+    eca.
+  - eca.
     rewriteRev HSubstHasDynamicType.
     assumption.
-  - inversionx H1.
-    eca.
-    rewrite HSubstHasDynamicType.
-    eauto.
+  - eca.
+    eapp HSubstHasDynamicType.
 Qed.
 
 Lemma footprint'HSubst : forall H r p o f v,
-  ¬ odotInPhi' H r p o f ->
+  ¬ In (o, f) (footprintX' H r p) ->
   footprint' (HSubst o f v H) r p = footprint' H r p.
 Proof.
   intros.
@@ -123,13 +130,17 @@ Proof.
 Qed.
 
 Lemma HSubstNOTodotInPhi : forall H r o v f p A,
-  ¬ odotInPhi H r p o f ->
+  ¬ In (o, f) (footprintX H r p) ->
   evalphi H r A p <->
   evalphi (HSubst o f v H) r A p.
 Proof.
   induction p0; intros; simpl in *.
   - split; intros; constructor.
-  - apply not_or_and in H1.
+  - unfold footprintX in *.
+    simpl in *.
+    repeat rewrite map_app, oflattenApp in H1.
+    rewrite in_app_iff in H1.
+    apply not_or_and in H1.
     unf.
     rename H3 into od1.
     rename H2 into od2.
@@ -156,18 +167,18 @@ Lemma evalphiHSubstAexcept : forall p H r A o f x v,
   evalphi (HSubst o f v H) r (Aexcept A [(o, f)]) p.
 Proof.
   intros.
-  assert (~ odotInPhi H0 r p0 o0 f0).
+  assert (~ In (o0, f0) (footprintX H0 r p0)).
     eapp AexceptNOTodotInPhi.
   apply HSubstNOTodotInPhi; auto.
 Qed.
 
 
-Lemma evale'eSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+Lemma evale'eSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 e,
   incl (FVe e) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
-  evale' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) e.
+  evale' H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) e.
 Proof.
   induction e0; intros; simpl in *.
   - tauto.
@@ -180,24 +191,24 @@ Proof.
   - rewrite IHe0; auto.
 Qed.
 
-Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
   incl (FV' a) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) =
-  footprint' H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+  footprint' H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) a.
 Proof.
   intros.
   destruct a; simpl in *; try tauto.
   erewrite evale'eSubsts2RhoFrom3; auto.
 Qed.
 
-Lemma footprintPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+Lemma footprintPhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
   incl (FV a) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   footprint H r (phiSubsts [(xthis, x1); (xUserDef z, x2)] a) =
-  footprint H (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2) a.
+  footprint H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) a.
 Proof.
   induction a;
   intros;
@@ -207,15 +218,15 @@ Proof.
   erewrite IHa; eauto.
 Qed.
 
-Lemma evale'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 e,
+Lemma evale'PhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 e,
   incl (FVe e) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   evale' H
     r
     (eSubsts [(xthis, x1); (xUserDef z, x2)] e) =
   evale' H
-    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
     e.
 Proof.
   induction e0; intros; simpl in *.
@@ -229,20 +240,20 @@ Proof.
   - rewrite IHe0; auto.
 Qed.
 
-Lemma evalphi'PhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 a,
+Lemma evalphi'PhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
   incl (FV' a) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   evalphi' H
     r
     (footprint' H
-      (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+      (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
       a) 
     (phi'Substs [(xthis, x1); (xUserDef z, x2)] a) ->
   evalphi' H
-    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
     (footprint' H
-      (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+      (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
       a)
     a.
 Proof.
@@ -270,10 +281,10 @@ Proof.
       rewrite H3 in *. assumption.
 Admitted.
 
-Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
+Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 p A,
   incl (FV p) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
-  r x1 = Some (vo vo1) ->
+  r x1 = Some v1 ->
   evalphi
     H
     r
@@ -281,7 +292,7 @@ Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z v2 x1 x2 T_r vo1 p A,
     (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
   evalphi
     H
-    (rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2)
+    (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
     A 
     p.
 Proof.
@@ -294,10 +305,10 @@ Proof.
     unfold incl. intros.
     intuition.
   - apply inclApp in H1. unf.
-    erewrite (footprint'PhiSubsts2RhoFrom3 _ _ _ _ _ _ T_r) in H14; eauto.
+    erewrite footprint'PhiSubsts2RhoFrom3 in H14; eauto.
     eapp evalphi'PhiSubsts2RhoFrom3.
   - apply inclApp in H1. unf.
-    erewrite (footprint'PhiSubsts2RhoFrom3 _ _ _ _ _ _ T_r) in H15; eauto.
+    erewrite footprint'PhiSubsts2RhoFrom3 in H15; eauto.
 Qed.
 
 Lemma disjointAexcept : forall A B,

@@ -2,17 +2,13 @@ Load GradVer10LemmaSfrmSubst.
 Import Semantics.
 
 Lemma dynamicASstaticFP : forall H r p,
-  footprint H r p = fold_right (
-    fun x xs =>
-      match evale' H r (fst x) with
-      | Some (vo o) => (o, snd x) :: xs
-      | _ => xs
-      end) [] (staticFootprint p).
+  footprint H r p = oflatten (map (A'_s2A'_d H r) (staticFootprint p)).
 Proof.
   induction p0; try tauto.
   destruct a; try tauto.
   simpl.
   rewrite IHp0.
+  unfold A'_s2A'_d. simpl.
   destruct (evale' H0 r e0); try tauto.
   destruct v0; try tauto.
 Qed.

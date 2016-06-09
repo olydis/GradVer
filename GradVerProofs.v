@@ -148,6 +148,24 @@ Proof.
     * intros. intuition.
 Qed.
 
+Lemma evalsInIn : forall H r As Ad As',
+  evalsIn H r As Ad ->
+  In As' As ->
+  exists Ad', A'_s2A'_d H r As' = Some Ad' /\ In Ad' Ad.
+Proof.
+  induction As; intros; simpl in *; try tauto.
+  unfold evalsIn in *.
+  destruct Ad; try discriminate.
+  repeat rewrite map_cons in H1.
+  inversionx H1.
+  inversionx H2.
+  - eex.
+    eca.
+  - eappIn IHAs H5.
+    unf.
+    eex.
+    eapp in_cons.
+Qed.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->
@@ -516,6 +534,16 @@ Proof.
     as ep_preI.
       unfoldINV INV0. eapp impl.
     
+    assert (evalphi initialHeap initialRho 
+      (Aexcept initialAccess
+                 (footprint initialHeap initialRho (phiSubsts2 xthis x1 (xUserDef z) x2 phi_pre))) phi_r)
+    as ep_phi_r.
+      subst preI.
+      rewrite app_comm_cons in ep_preI.
+      apply evalphiApp in ep_preI.
+      simpl in ep_preI.
+      apply ep_preI.
+    
     assert (evalphi initialHeap initialRho initialAccess (phiSubsts2 xthis x1 (xUserDef z) x2 phi_pre))
     as ep_phi_pre.
       subst preI.
@@ -667,6 +695,57 @@ Proof.
     as Hinv.
       intros.
       eapp dynSemStarNotModifiesH.
+   
+    assert (∀ (e : e) (v0 : v),
+      disjoint (footprintXe initialHeap initialRho e) fp 
+                -> evale' initialHeap initialRho e = Some v0 → 
+                   evale' finalHeap'  initialRho e = Some v0)
+    as Hinve.
+      unfold footprintXe, A'_s2A'_d.
+      induction e0; intros; simpl in *; try tauto.
+      apply disjointSplitA in H0. inversionx H0.
+      destruct (evale' initialHeap initialRho e0); try discriminate.
+      destruct v3; try discriminate.
+      simpl in *.
+      unfold disjoint in H2. specialize (H2 (o0, f0)). inversionx H2. contradict H0. intuition.
+      eappIn IHe0 H3. rewrite H3.
+      apply (Hinv _ v1) in H0.
+        unfold evalA'_d in H0.
+        simpl in H0.
+        assumption.
+      unfold evalA'_d. simpl.
+      assumption.
+    
+    assert (∀ (A : A'_s),
+      In A (staticFootprintX phi_r) 
+                  -> evalA'_s initialHeap initialRho A =
+                     evalA'_s finalHeap' initialRho A)
+    as phi_r_inv.
+      intros.
+      assert (evalsIn initialHeap initialRho 
+                (staticFootprintX phi_r)
+                (footprintX initialHeap initialRho phi_r)).
+        eapp evalphiVSfpX.
+      eappIn evalsInIn H1. inversionE H1. inversionx H2.
+      eappIn evalphiVSsfpX H0. inversionE H0.
+      rewrite H2.
+      unfold evalA'_s, A'_s2A'_d in *.
+      destruct A. simpl in *.
+      destruct (evale' initialHeap initialRho e0) eqn: ee; try discriminate.
+      simpl in *.
+      destruct v1; try discriminate.
+      simpl in *.
+      assert (disjoint (footprintXe initialHeap initialRho e0) fp).
+        admit.
+      eappIn Hinve ee.
+      rewrite ee. simpl.
+      eappIn Hinv H2.
+      specialize (H0 (o0, f0)).
+      inversionx H0; try auto.
+      contradict H4.
+      admit.
+
+    
     (* 
     assert (∀
       footprint initialHeap r p = footprint finalHeap' r p)
@@ -746,6 +825,7 @@ Proof.
         unfold rhoSubst.
         dec (x_dec x3 x0); try tauto.
         apply phi_r_x0 in H0. tauto.
+      
       
       Check Hinv.
       

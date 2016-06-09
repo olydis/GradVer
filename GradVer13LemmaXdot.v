@@ -1,6 +1,8 @@
 Load GradVer12LemmaFootprint.
 Import Semantics.
 
+Definition evalsIn H r A_s A_d := map (A'_s2A'_d H r) A_s = map Some A_d.
+
 (*staticFootprintX = the stuff that DEFINITELY evaluates if in evalphi's arg*)
 
 Fixpoint staticFootprintXe (e' : e) : A_s :=
@@ -20,7 +22,7 @@ Definition staticFootprintX' (p : phi') : A_s :=
 
 Definition staticFootprintX (p : phi) : A_s :=
   flat_map staticFootprintX' p.
-
+  
 Lemma sfrmeVSsfpX : forall A e,
   sfrme A e <->
   incl (staticFootprintXe e) A.
@@ -90,6 +92,91 @@ Proof.
     apply in_app_iff in H0. intuition.
 Qed.
 
+(*footprintX = stuff that DEFINITELY evaluates if in evalphi's arg*)
+
+Definition footprintXe H r (e' : e) : A_d :=
+  oflatten (map (A'_s2A'_d H r) (staticFootprintXe e')).
+
+Definition footprintX' H r p : A_d :=
+  oflatten (map (A'_s2A'_d H r) (staticFootprintX' p)).
+
+Definition footprintX H r p : A_d :=
+  oflatten (map (A'_s2A'_d H r) (staticFootprintX p)).
+
+Lemma evaleVSfpX : forall H r e v,
+  evale H r e v ->
+  evalsIn H r (staticFootprintXe e) (footprintXe H r e).
+Proof.
+  unfold evalsIn, footprintXe, A'_s2A'_d.
+  induction e0; intros; simpl in *; try tauto.
+  inversionx H1.
+  destruct (evale' H0 r e0) eqn: ee; try discriminate.
+  erewrite IHe0; eauto.
+  simpl.
+  destruct v1; try discriminate.
+  simpl.
+  rewrite oflattenMapSome.
+  tauto.
+Qed.
+
+Lemma evalphi'VSfpX : forall H r p A,
+  evalphi' H r A p ->
+  evalsIn H r (staticFootprintX' p) (footprintX' H r p).
+Proof.
+  unfold footprintX', evalsIn.
+  intros.
+  inversionx H1; simpl;
+  try rewrite map_app;
+  repeat (erewrite evaleVSfpX; eauto);
+  repeat rewrite oflattenApp;
+  repeat rewrite oflattenMapSome;
+  try rewrite map_app;
+  tauto.
+Qed.
+
+Lemma evalphiVSfpX : forall H r p A,
+  evalphi H r A p ->
+  evalsIn H r (staticFootprintX p) (footprintX H r p).
+Proof.
+  unfold footprintX, evalsIn.
+  induction p0; intros; simpl in *; try tauto.
+  repeat rewrite map_app.
+  inversionx H1.
+  erewrite IHp0; eauto.
+  erewrite evalphi'VSfpX; eauto.
+  rewrite oflattenApp.
+  rewrite map_app.
+  repeat rewrite oflattenMapSome.
+  tauto.
+Qed.
+
+
+Lemma evalphi'VSfp : forall H r p A,
+  evalphi' H r A p ->
+  evalsIn H r (staticFootprint' p) (footprint' H r p).
+Proof.
+  unfold evalsIn, A'_s2A'_d.
+  intros.
+  inversionx H1; simpl; try tauto.
+  rewrite H3.
+  tauto.
+Qed.
+
+Lemma evalphiVSfp : forall H r p A,
+  evalphi H r A p ->
+  evalsIn H r (staticFootprint p) (footprint H r p).
+Proof.
+  unfold evalsIn.
+  induction p0; intros; simpl in *; try tauto.
+  repeat rewrite map_app.
+  inversionx H1.
+  erewrite IHp0; eauto.
+  erewrite evalphi'VSfp; eauto.
+Qed.
+
+
+(*evaluation*)
+
 Lemma evaleVSsfpX : forall H r e v A,
   evale H r e v ->
   In A (staticFootprintXe e) ->
@@ -139,112 +226,23 @@ Proof.
     * eapp IHp0.
 Qed.
 
-Lemma edotphiFootprint : forall p A H r A',
-  sfrmphi [] p ->
-  evalphi H r A p ->
-  In A' (staticFootprintX p) ->
-  exists o, In (o, f) (footprint H r p).
-Proof.
-  intros.
-  eapply edotphiStaticFootprint in H1; eauto.
-  eapply edotphiEvaluates in H2; eauto.
-  unf.
-  eexists.
-  apply staticVSdynamicFP.
-  eexists; split; eauto.
-Qed.
 
-Lemma edotphiFootprintX : forall p A H r e f,
+(* Lemma jointFootprint : forall p A H r,
   sfrmphi [] p ->
   evalphi H r A p ->
-  edotInPhi p e f ->
-  exists o, evale' H r e = Some (vo o) /\ In (o, f) (footprint H r p).
+  incl (map (A'_s2A'_d H r) (staticFootprintX p)) (map Some (footprint H r p)).
 Proof.
   intros.
-  eapply edotphiStaticFootprint in H1; eauto.
-  eapply edotphiEvaluates in H2; eauto.
-  unf.
+  eapply sfrmphiVSsfpX in H1; eauto. simpl in *.
+  eapply evalphiVSfpX in H2; eauto. unfold evalsIn in *.
+  apply H1 in H3.
+  unfold evalA'_s, A'_s2A'_d, evalA'_d in *.
+  destruct A's; simpl in *.
+  destruct (evale' H0 r e0) eqn: ee; try discriminate.
+  simpl in *.
+  destruct v0; try discriminate.
+  simpl in *.
   eex.
   apply staticVSdynamicFP.
-  eexists; split; eauto.
-Qed.
-
-(*odot*)
-
-
-Fixpoint odotInE (H : H) (r : rho) (e : e) (o : o) (f : f) :=
-  match e with
-  | edot e' f' => f = f' /\ evale H r e' (vo o)
-               \/ odotInE H r e' o f
-  | _ => False
-  end.
-
-Definition odotInPhi' (H : H) (r : rho) (p : phi') (o : o) (f : f) :=
-  match p with
-  | phiEq  e1 e2 => odotInE H r e1 o f \/ odotInE H r e2 o f
-  | phiNeq e1 e2 => odotInE H r e1 o f \/ odotInE H r e2 o f
-  | phiAcc e _ => odotInE H r e o f
-  | _ => False
-  end.
-
-Fixpoint odotInPhi (H : H) (r : rho) (p : phi) (o : o) (f : f) :=
-  match p with
-  | [] => False
-  | (p' :: p) => odotInPhi' H r p' o f \/ odotInPhi H r p o f
-  end.
-
-
-Lemma odotedotE : forall H r e' f o,
-  odotInE H r e' o f <->
-  exists e, evale' H r e = Some (vo o) /\ edotInE e' e f.
-Proof.
-  induction e'; split; intros; simpl in *; unf; try tauto.
-  - inversionx H1.
-    * unf. subst.
-      eexists; split; eauto.
-    * apply IHe' in H2.
-      unf.
-      eauto.
-  - inversionx H3.
-    * unf. subst.
-      auto.
-    * apply or_intror.
-      apply IHe'.
-      eauto.
-Qed.
-
-Lemma odotedotPhi' : forall H r p f o,
-  odotInPhi' H r p o f <->
-  exists e, evale' H r e = Some (vo o) /\ edotInPhi' p e f.
-Proof.
-  split; intros.
-  - destruct p0; simpl in *;
-    try inversionx H1;
-    try apply odotedotE in H1;
-    try apply odotedotE in H2;
-    unf;
-    simpl;
-    eauto.
-  - unf.
-    destruct p0; simpl in *;
-    try inversionx H3; simpl;
-    repeat rewrite odotedotE;
-    eauto.
-Qed.
-
-Lemma odotedotPhi : forall H r p f o,
-  odotInPhi H r p o f <->
-  exists e, evale' H r e = Some (vo o) /\ edotInPhi p e f.
-Proof.
-  induction p0; split; intros; simpl in *; unf; try tauto.
-  - inversionx H1.
-    * apply odotedotPhi' in H2. unf. eauto.
-    * apply IHp0 in H2. unf. eauto.
-  - inversionx H3.
-    * rewrite odotedotPhi'. eauto.
-    * apply or_intror.
-      apply IHp0. 
-      eauto.
-Qed.
-
-
+  eex.
+Qed. *)

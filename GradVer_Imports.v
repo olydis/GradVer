@@ -46,6 +46,51 @@ match x with
 | None => None
 end.
 
+Definition olist {T : Type} (x : option T) : list T :=
+  match x with
+  | Some x => [x]
+  | None => []
+  end.
+Definition oflatten {T : Type} (xs : list (option T)) : list T :=
+  flat_map olist xs.
+  
+Lemma oflattenMapSome : forall {T : Type} (x : list T),
+  oflatten (map Some x) = x.
+Proof.
+  induction x; simpl in *; try tauto.
+  rewrite IHx.
+  tauto.
+Qed.
+
+Lemma oflattenApp : forall {T : Type} (A1 A2 : list (option T)),
+  oflatten (A1 ++ A2) = oflatten A1 ++ oflatten A2.
+Proof.
+  intros.
+  unfold oflatten.
+  repeat rewrite flat_map_concat_map.
+  rewrite map_app.
+  rewrite concat_app.
+  tauto.
+Qed.
+
+Lemma InOflatten : forall {T : Type} (x : T) xs,
+  In x (oflatten xs) <->
+  In (Some x) xs.
+Proof.
+  unfold oflatten, olist.
+  split; intros.
+  - apply in_flat_map in H.
+    inversion H; clear H.
+    inversion H0; clear H0.
+    destruct (x0); try tauto.
+    inversion H1; try tauto.
+    subst. tauto.
+  - apply in_flat_map.
+    eexists; split; eauto.
+    constructor.
+    tauto.
+Qed.
+
 
 (*decidability*)
 Definition dec2decb {A : Type} (dec : ∀ a1 a2 : A, {a1 = a2} + {a1 ≠ a2}) : (A -> A -> bool) :=

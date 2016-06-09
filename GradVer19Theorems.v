@@ -23,36 +23,6 @@ Proof.
       intuition.
 Qed.
 
-Definition goodFP H r p := 
-  map Some (footprint' H r p) = 
-  map (A'_s2A'_d H r) (staticFootprint' p).
-
-Lemma evalphiImpliesGoodFP2 : forall H r A p,
-  evalphi' H r A p ->
-  goodFP H r p.
-Proof.
-  unfold goodFP.
-  intros.
-  inversionx H1; simpl in *; try tauto.
-  unfold A'_s2A'_d. simpl.
-  common. rewrite H3.
-  tauto.
-Qed.
-
-Lemma evalphiImpliesGoodFP : forall H r A p,
-  evalphi' H r A p ->
-  (forall A', In A' (footprint' H r p) ->
-              exists v, evalA'_d H A' = Some v).
-Proof.
-  intros.
-  inversionx H1; simpl in *; try tauto.
-  unfold evalA'_d. 
-  common. rewrite H4 in *.
-  apply InSingle in H2. subst.
-  simpl.
-  Check odotInPhi.
-Qed.
-
 Lemma dynSemStarNotModifies : forall x ss H1 H2 r1 r2 A1 A2,
   (∀ s', In s' ss → ¬ writesTo x s') ->
   dynSemStar
@@ -94,8 +64,6 @@ Proof.
       contradict wt1.
       constructor.
 Admitted.
-
-
 
 Lemma dynSemStarNotModifiesH : forall ss H1 H2 r1 r2 A1 A2 A v,
   ~ In A A1 ->
@@ -145,5 +113,123 @@ Proof.
       assumption.
     * eapply IHss in dss; eauto.
 Admitted.
+(* 
+Lemma dynSemStarNotModifiesHX' : forall ss H1 H2 r1 r2 r A1 A2 A p,
+  disjoint (footprint H1 r1 p) A1 ->
+  dynSemStar
+    (H1, [(r1, A1, ss)])
+    (H2, [(r2, A2, [])]) ->
+  sfrmphi [] p ->
+  evalphi' H1 r A p ->
+  evalphi' H2 r A p.
+Proof.
+   *)
+
+Lemma evale'ChangeHeap : forall H1 H2 r e,
+  (forall A', In A' (staticFootprintXe e) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  evale' H1 r e = evale' H2 r e.
+Proof.
+  induction e0; intros; unfold evale in *; simpl in *; try tauto.
+  assert (evalA'_s H1 r (e0, f0) = evalA'_s H2 r (e0, f0))
+  as tracker.
+    eapp H0.
+  unfold evalA'_s, evalA'_d, A'_s2A'_d in tracker.
+  simpl in *.
+  destruct (evale' H1 r e0);
+  try destruct v0;
+  destruct (evale' H2 r e0);
+  try destruct v0;
+  try discriminate;
+  try tauto;
+  destruct v1;
+  try tauto.
+Qed.
+
+Lemma footprint'ChangeHeap : forall H1 H2 r p,
+  (forall A', In A' (staticFootprintX' p) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  footprint' H1 r p = footprint' H2 r p.
+Proof.
+  intros.
+  destruct p0; try tauto.
+  simpl in *.
+  erewrite evale'ChangeHeap; eauto.
+Qed.
+
+Lemma evalphi'ChangeHeap : forall H1 H2 S1 S2 r A p,
+  dynSemStar (H1, S1) (H2, S2) ->
+  (forall A', In A' (staticFootprintX' p) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  evalphi' H1 r A p ->
+  evalphi' H2 r A p.
+Proof.
+  intros;
+  inversionx H4;
+  simpl in *;
+  eca;
+  try rewrite in_app_iff in H3;
+  unfold evale in *;
+  try (rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition).
+  
+  inversionx H7; try constructor.
+  eappIn HeapGetsMoreSpecific H5.
+  unf.
+  eca.
+Qed.
+
+Lemma evalphiChangeHeap : forall H1 H2 S1 S2 r p A,
+  dynSemStar (H1, S1) (H2, S2) ->
+  (forall A', In A' (staticFootprintX p) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  evalphi H1 r A p ->
+  evalphi H2 r A p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H4.
+  rewrite (footprint'ChangeHeap H1 H2) in *; intuition.
+  eappIn IHp0 H15; intuition.
+  eappIn (evalphi'ChangeHeap H1 H2) H14; intuition.
+  eca.
+Qed.
+
+(* 
+Lemma dynSemStarSustainsHelper : forall ss H1 H2 r1 r2 A1 A2 r A,
+  ~ In (A'_s2A'_d H1 r1 A) (map Some A1) ->
+  dynSemStar
+    (H1, [(r1, A1, ss)])
+    (H2, [(r2, A2, [])]) ->
+  evalA'_s H1 r A = evalA'_s H2 r A.
+Proof.
+  unfold evalA'_s, A'_s2A'_d.
+  induction ss; intros; simpl in *.
+  - inversionx H3; try tauto.
+    inversionx H4.
+  - inversionx H3.
+    inversionx H4.
+    * 
+  intros.
+  
+  Check dynSemStarNotModifiesH.
+  eapp (evalphiChangeHeap H1 H2).
+  
 
 
+
+
+
+
+Lemma dynSemStarSustains : forall ss H1 H2 r1 r2 A1 A2 r p A,
+  disjoint A A1 ->
+  dynSemStar
+    (H1, [(r1, A1, ss)])
+    (H2, [(r2, A2, [])]) ->
+  evalphi H1 r A p ->
+  evalphi H2 r A p.
+Proof.
+  intros.
+  eapp (evalphiChangeHeap H1 H2).
+  
+
+
+ *)
