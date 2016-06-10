@@ -1,6 +1,60 @@
 Load GradVer18LemmaHI.
 Import Semantics.
 
+Lemma dynSemStarNotModifiesHx : forall ss H1 H2 r1 r2 A1 A2 A,
+  ~ In A A1 ->
+  H1 (fst A) <> None ->
+  dynSemStar
+    (H1, [(r1, A1, ss)])
+    (H2, [(r2, A2, [])]) ->
+  evalA'_d H1 A = evalA'_d H2 A.
+Proof.
+  induction ss; intros; simpl in *.
+  - inversionx H4; try tauto.
+    inversionx H5.
+  - inversionx H4.
+    rename H5 into ds.
+    rename H6 into dss.
+    destruct A.
+    inversionx ds.
+    * eapply IHss in dss; eauto.
+      + unfold evalA'_d in *. simpl in *.
+        unfold HSubst in dss.
+        dec (o_dec o0 o1); try tauto.
+        destruct (H1 o1); try tauto.
+        destruct p0. simpl in *.
+        dec (string_dec f0 f1); try tauto.
+      + unfold HSubst. simpl in *.
+        dec (o_dec o0 o1); try tauto.
+        destruct (H1 o1); try tauto.
+        destruct p0.
+        discriminate.
+    * eapply IHss in dss; eauto.
+    * eapply IHss in dss; eauto.
+      + rewriteRev dss. clear dss.
+        unfold evalA'_d in *. simpl in *.
+        unfold Halloc.
+        rewrite H13.
+        dec (o_dec o1 o0); tauto.
+      + simpl in *. unfold not in *.
+        intros. contradict H0.
+        apply in_app_iff in H4.
+        intuition.
+        apply in_map_iff in H0. unf. inversionx H0.
+        tauto.
+      + unfold Halloc.
+        rewrite H13. simpl in *.
+        dec (o_dec o1 o0); tauto.
+    * eapply IHss in dss; eauto.
+    * admit.
+    * eapply IHss in dss; eauto.
+    * eapply IHss in dss; eauto.
+      unfold not in *. intros. contradict H0.
+      apply InAexcept in H4.
+      assumption.
+    * eapply IHss in dss; eauto.
+Admitted.
+
 Lemma evalphiComposeDisjointFP : forall H r A1 A2 p1 p2,
     disjoint A1 A2 ->
     evalphi H r A1 p1 ->

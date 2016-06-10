@@ -728,34 +728,112 @@ Proof.
       unfold evalA'_d. simpl.
       assumption.
     
-(*     assert (∀ (A : A'_s),
+    assert (disjoint (footprint initialHeap initialRho phi_r) fp)
+    as disj_fp.
+      admit.
+    
+    assert (∀ (A : A'_s),
       In A (staticFootprintX phi_r) 
                   -> evalA'_s initialHeap initialRho A =
                      evalA'_s finalHeap' initialRho A)
     as phi_r_inv.
       intros.
-      assert (evalsIn initialHeap initialRho 
-                (staticFootprintX phi_r)
-                (footprintX initialHeap initialRho phi_r)).
-        eapp evalphiVSfpX.
-      eappIn evalsInIn H1. inversionE H1. inversionx H2.
-      eappIn evalphiVSsfpX H0. inversionE H0.
-      rewrite H2.
-      unfold evalA'_s, A'_s2A'_d in *.
-      destruct A. simpl in *.
-      destruct (evale' initialHeap initialRho e0) eqn: ee; try discriminate.
-      simpl in *.
-      destruct v1; try discriminate.
-      simpl in *.
-      assert (disjoint (footprintXe initialHeap initialRho e0) fp).
-        admit.
-      eappIn Hinve ee.
-      rewrite ee. simpl.
-      eappIn Hinv H2.
-      specialize (H0 (o0, f0)).
-      inversionx H0; try auto.
-      contradict H4.
-      admit. *)
+      assert (incl (footprint initialHeap initialRho phi_r) initialAccess)
+      as fp_incl_iA.
+        eappIn evalphiImpliesAccess ep_phi_r.
+        eappIn inclAexcept ep_phi_r.
+      eappIn evalphiVSfpX ep_phi_r.
+      eappIn evalsInIn ep_phi_r. inversionE ep_phi_r. inversionx H1.
+      assert (evalA'_d initialHeap x3 = evalA'_d finalHeap' x3).
+        eappIn sfrmphiVSdfpX phi_r_sf.
+        apply phi_r_sf in H3. clear phi_r_sf.
+        eapp dynSemStarNotModifiesHx.
+          unfold not. intro.
+          specialize (disj_fp x3). tauto.
+        apply fp_incl_iA in H3.
+        apply INV0 in H3.
+        inversionE H3. rewrite H1. discriminate.
+      unfold evalA'_s.
+      assert (A'_s2A'_d finalHeap' initialRho A = Some x3).
+        unfold A'_s2A'_d in *. destruct A. simpl in *.
+        destruct (evale' initialHeap initialRho e0) eqn: ee; try discriminate.
+        apply Hinve in ee.
+          rewrite ee. assumption.
+        simpl in *.
+        destruct v1; try discriminate.
+        inversionx H2.
+        assert (incl (footprintXe initialHeap initialRho e0) (footprint initialHeap initialRho phi_r)).
+          eappIn sfrmphiVSdfpX phi_r_sf.
+          eapp incl_tran.
+
+Lemma inclFPXe : forall e f H r e',
+  In (e, f) (staticFootprintXe e') ->
+  incl (footprintXe H r e) (footprintXe H r e').
+Proof.
+  induction e'; intros; simpl in *; try tauto.
+  inversionx H1.
+  - inversionx H2.
+    unfold footprintXe.
+    simpl.
+    intuition.
+  - intuition.
+    eapp incl_tran.
+    unfold footprintXe.
+    simpl.
+    intuition.
+Qed.
+
+Lemma inclFPX' : forall e f H r p,
+  In (e, f) (staticFootprintX' p) ->
+  incl (footprintXe H r e) (footprintX' H r p).
+Proof.
+  intros.
+  destruct p0;
+  try tauto;
+  unfold footprintXe, footprintX';
+  simpl in *;
+  try apply in_app_iff in H1;
+  repeat rewrite map_app, oflattenApp;
+  fold footprintXe;
+  try inversionx H1;
+  try eappIn inclFPXe H1;
+  try eappIn inclFPXe H2;
+  unfold footprintXe, footprintX' in *;
+  unfold incl; intros; intuition.
+Qed.
+
+Lemma inclFPX : forall e f H r p,
+  In (e, f) (staticFootprintX p) ->
+  incl (footprintXe H r e) (footprintX H r p).
+Proof.
+  induction p0; simpl; try tauto.
+  intros.
+  apply in_app_iff in H1.
+  inversionx H1.
+  - eappIn inclFPX' H2.
+    eapp incl_tran.
+    unfold footprintX', footprintX.
+    simpl.
+    rewrite map_app.
+    rewrite oflattenApp.
+    intuition.
+  - apply IHp0 in H2.
+    unfold footprintX', footprintX.
+    simpl.
+    rewrite map_app.
+    rewrite oflattenApp.
+    intuition.
+Qed.    
+  
+  
+
+          Check ep_phi_r.
+        unfold disjoint. intro AA.
+        specialize (H2 AA).
+        specialize (disj_fp AA).
+        inversionx disj_fp; try auto.
+      rewrite H2, H4.
+      assumption.
     
     (* 
     assert (∀
