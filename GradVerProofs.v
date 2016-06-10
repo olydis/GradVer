@@ -148,6 +148,65 @@ Proof.
     * eappIn IHss H8.
 Admitted.
 
+Lemma inclFPXe : forall e f H r e',
+  In (e, f) (staticFootprintXe e') ->
+  incl (footprintXe H r e) (footprintXe H r e').
+Proof.
+  induction e'; intros; simpl in *; try tauto.
+  inversionx H1.
+  - inversionx H2.
+    unfold footprintXe.
+    simpl.
+    intuition.
+  - intuition.
+    eapp incl_tran.
+    unfold footprintXe.
+    simpl.
+    intuition.
+Qed.
+
+Lemma inclFPX' : forall e f H r p,
+  In (e, f) (staticFootprintX' p) ->
+  incl (footprintXe H r e) (footprintX' H r p).
+Proof.
+  intros.
+  destruct p0;
+  try tauto;
+  unfold footprintXe, footprintX';
+  simpl in *;
+  try apply in_app_iff in H1;
+  repeat rewrite map_app, oflattenApp;
+  fold footprintXe;
+  try inversionx H1;
+  try eappIn inclFPXe H1;
+  try eappIn inclFPXe H2;
+  unfold footprintXe, footprintX' in *;
+  unfold incl; intros; intuition.
+Qed.
+
+Lemma inclFPX : forall e f H r p,
+  In (e, f) (staticFootprintX p) ->
+  incl (footprintXe H r e) (footprintX H r p).
+Proof.
+  induction p0; simpl; try tauto.
+  intros.
+  apply in_app_iff in H1.
+  inversionx H1.
+  - eappIn inclFPX' H2.
+    eapp incl_tran.
+    unfold footprintX', footprintX.
+    simpl.
+    rewrite map_app.
+    rewrite oflattenApp.
+    intuition.
+  - apply IHp0 in H2.
+    unfold footprintX', footprintX.
+    simpl.
+    rewrite map_app.
+    rewrite oflattenApp.
+    intuition.
+Qed.
+
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -765,69 +824,7 @@ Proof.
         assert (incl (footprintXe initialHeap initialRho e0) (footprint initialHeap initialRho phi_r)).
           eappIn sfrmphiVSdfpX phi_r_sf.
           eapp incl_tran.
-
-Lemma inclFPXe : forall e f H r e',
-  In (e, f) (staticFootprintXe e') ->
-  incl (footprintXe H r e) (footprintXe H r e').
-Proof.
-  induction e'; intros; simpl in *; try tauto.
-  inversionx H1.
-  - inversionx H2.
-    unfold footprintXe.
-    simpl.
-    intuition.
-  - intuition.
-    eapp incl_tran.
-    unfold footprintXe.
-    simpl.
-    intuition.
-Qed.
-
-Lemma inclFPX' : forall e f H r p,
-  In (e, f) (staticFootprintX' p) ->
-  incl (footprintXe H r e) (footprintX' H r p).
-Proof.
-  intros.
-  destruct p0;
-  try tauto;
-  unfold footprintXe, footprintX';
-  simpl in *;
-  try apply in_app_iff in H1;
-  repeat rewrite map_app, oflattenApp;
-  fold footprintXe;
-  try inversionx H1;
-  try eappIn inclFPXe H1;
-  try eappIn inclFPXe H2;
-  unfold footprintXe, footprintX' in *;
-  unfold incl; intros; intuition.
-Qed.
-
-Lemma inclFPX : forall e f H r p,
-  In (e, f) (staticFootprintX p) ->
-  incl (footprintXe H r e) (footprintX H r p).
-Proof.
-  induction p0; simpl; try tauto.
-  intros.
-  apply in_app_iff in H1.
-  inversionx H1.
-  - eappIn inclFPX' H2.
-    eapp incl_tran.
-    unfold footprintX', footprintX.
-    simpl.
-    rewrite map_app.
-    rewrite oflattenApp.
-    intuition.
-  - apply IHp0 in H2.
-    unfold footprintX', footprintX.
-    simpl.
-    rewrite map_app.
-    rewrite oflattenApp.
-    intuition.
-Qed.    
-  
-  
-
-          Check ep_phi_r.
+          eapp inclFPX.
         unfold disjoint. intro AA.
         specialize (H2 AA).
         specialize (disj_fp AA).
