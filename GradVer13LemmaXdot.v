@@ -103,6 +103,31 @@ Definition footprintX' H r p : A_d :=
 Definition footprintX H r p : A_d :=
   oflatten (map (A'_s2A'_d H r) (staticFootprintX p)).
 
+Lemma sfrmphiVSdfpX : forall p H r,
+  sfrmphi [] p ->
+  incl (footprintX H r p) (footprint H r p).
+Proof.
+  intros.
+  apply sfrmphiVSsfpX in H1.
+  simpl in *.
+  unfold incl in *. intros.
+  unfold footprintX in *.
+  apply InOflatten in H2.
+  apply in_map_iff in H2.
+  unf.
+  apply H1 in H4.
+  destruct x0, a.
+  unfold A'_s2A'_d in *.
+  simpl in *.
+  rewriteRev staticVSdynamicFP.
+  eexists e0.
+  destruct (evale' H0 r e0); try discriminate.
+  simpl in *.
+  destruct v0; try discriminate.
+  inversionx H2.
+  auto.
+Qed.
+
 Lemma evaleVSfpX : forall H r e v,
   evale H r e v ->
   evalsIn H r (staticFootprintXe e) (footprintXe H r e).

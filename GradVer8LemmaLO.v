@@ -866,24 +866,28 @@ Proof.
 Qed.
 
 Lemma hasDynamicTypeHSubst : forall H v T o f x,
-  hasDynamicType H v T -> hasDynamicType (HSubst o f x H) v T.
+  hasDynamicType H v T <-> hasDynamicType (HSubst o f x H) v T.
 Proof.
-  intros.
-  inversionx H1; try constructor.
-  destruct (o_dec o1 o0) eqn: oo.
-  - subst.
-    econstructor.
-    unfold HSubst.
-    unfold o_decb, dec2decb.
-    rewrite oo.
-    rewrite H3.
-    eauto.
-  - econstructor.
-    unfold HSubst.
-    unfold o_decb, dec2decb.
-    rewrite oo.
-    rewrite H3.
-    eauto.
+  split; intros.
+  * inversionx H1; try constructor.
+    dec (o_dec o1 o0).
+    - eca.
+      unfold HSubst.
+      dec (o_dec o0 o0).
+      rewrite H3.
+      eauto.
+    - eca.
+      unfold HSubst.
+      rename de2 into des.
+      dec (o_dec o1 o0); try tauto.
+      eauto.
+  * inversionx H1; try constructor.
+    unfold HSubst in *.
+    dec (o_dec o1 o0).
+    - destruct (H0 o0) eqn: H0e; try discriminate.
+      destruct p0. inversionx H3.
+      eca.
+    - eca.
 Qed.
 
 Lemma phiImpliesStaticType : forall p1 p2 e T,

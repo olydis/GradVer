@@ -193,7 +193,7 @@ Proof.
   eca.
 Qed.
 
-(* 
+(*
 Lemma dynSemStarSustainsHelper : forall ss H1 H2 r1 r2 A1 A2 r A,
   ~ In (A'_s2A'_d H1 r1 A) (map Some A1) ->
   dynSemStar
@@ -207,7 +207,14 @@ Proof.
     inversionx H4.
   - inversionx H3.
     inversionx H4.
-    * 
+    * eapply IHss in H5; eauto.
+      + rewriteRev H5. clear H5.
+        
+      rewrite H0.
+      eauto.
+      destruct A. simpl in *.
+      destruct (evale' H1 r1 e0) eqn: ee.
+      
   intros.
   
   Check dynSemStarNotModifiesH.
