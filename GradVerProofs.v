@@ -24,6 +24,9 @@ Definition invHeapNotTotal
     ∃ omin : o,
     forall o' : o,
       (omin <= o') -> Heap o' = None /\ (forall f, ~ In (o', f) A).
+Definition invAevals
+  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+    forall A', In A' A -> exists v, Heap (fst A') = Some v.
 
 Definition invAll
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
@@ -34,6 +37,8 @@ Definition invAll
     invHeapConsistent
       Heap rho A phi /\
     invHeapNotTotal
+      Heap rho A phi /\
+    invAevals
       Heap rho A phi.
 
 Ltac emagicProgress :=
@@ -53,7 +58,8 @@ Ltac uninv :=
   unfold invPhiHolds in *;
   unfold invTypesHold in *;
   unfold invHeapConsistent in *;
-  unfold invHeapNotTotal in *.
+  unfold invHeapNotTotal in *;
+  unfold invAevals in *.
 
 Ltac applyINVtypes INVtypes H :=
   apply INVtypes in H;
@@ -76,7 +82,8 @@ Ltac unfoldINV INV :=
   inversion INV as [INVphi INVcarry1]; clear INV;
   inversion INVphi as [INVphi1 INVphi2]; clear INVphi;
   inversion INVcarry1 as [INVtypes INVcarry2]; clear INVcarry1;
-  inversion INVcarry2 as [INVHELPER INVheapNT']; clear INVcarry2;
+  inversion INVcarry2 as [INVHELPER INVcarry3]; clear INVcarry2;
+  inversion INVcarry3 as [INVheapNT' INVAevals]; clear INVcarry3;
   inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
 
 
@@ -165,6 +172,19 @@ Proof.
     unf.
     eex.
     eapp in_cons.
+Qed.
+
+Lemma evalsInInRev : forall H r As Ad Ad',
+  evalsIn H r As Ad ->
+  In Ad' Ad ->
+  exists As', A'_s2A'_d H r As' = Some Ad' /\ In As' As.
+Proof.
+  intros.
+  unfold evalsIn in H1.
+  assert (In (Some Ad') (map Some Ad)).
+    apply in_map_iff. eex.
+  rewriteRevIn H1 H3.
+  eapp in_map_iff.
 Qed.
 
 Lemma evale'RemoveHSubst : forall o f v H r e,
@@ -271,46 +291,64 @@ Qed.
 
 Theorem framedOff : forall ss H1 H2 r1 r2 A1 A2 r A p,
   dynSemStar (H1, [(r1, A1, ss)]) (H2, [(r2, A2, [])]) ->
+  (forall A', In A' A -> exists v, H1 (fst A') = Some v) ->
   disjoint A A1 ->
   sfrmphi [] p ->
   evalphi H1 r A p ->
   evalphi H2 r (A ++ A2) p.
 Proof.
   induction ss; intros; simpl in *.
-  - inversionx H0; try inversionx H6.
+  - inversionx H0; try inversionx H7.
     eapp evalphiIncl.
     intuition.
   - inversionx H0.
-    inversionx H6.
-    * eappIn IHss H7.
+    inversionx H7.
+    * eappIn IHss H8.
+        intros.
+        apply H3 in H0. unf.
+        destruct A'. simpl in *.
+        unfold HSubst.
+        dec (o_dec o1 o0); try (eex; fail).
+        rewrite H7. destruct x1. eex.
       apply evalphiRemoveHSubst; auto.
-      unfold disjoint in H3. specialize (H3 (o0, f0)).
+      specialize (H4 (o0, f0)).
       intuition.
-      eapply sfrmphiVSdfpX in H4. apply H4 in H0.
-      apply evalphiImpliesAccess in H5. apply H5 in H0.
+      eapply sfrmphiVSdfpX in H5. apply H5 in H0.
+      apply evalphiImpliesAccess in H6. apply H6 in H0.
       tauto.
-    * eappIn IHss H7.
+    * eappIn IHss H8.
     * assert (evalphi (Halloc o0 C0 H1) r A p0).
         eapp evalphiRemoveHalloc.
-      eappIn IHss H7.
+      eappIn IHss H8.
+        intros.
+        apply H3 in H7. unf.
+        destruct A'. simpl in *.
+        unfold Halloc.
+        rewrite H17.
+        dec (o_dec o0 o1); eex.
       assert (disjoint A (map (λ cf' : T * f, (o0, snd cf')) Tfs)).
-        apply evalphiVSfp in H5.
-        unfold HeapNotSetAt in H15.
         unfold disjoint. intros.
         apply imply_to_or. intro.
-        intuition.
-        destruct x1.
-        dec (o_dec o0 o1).
-      unfold disjoint in *.
-      intros.
-      specialize (H3 x1).
+        unfold not. intro.
+        apply in_map_iff in H9. unf. subst.
+        apply H3 in H7. unf. simpl in *.
+        rewrite H16 in H9. discriminate.
+      unfold disjoint. intros.
+      specialize (H4 x1).
+      specialize (H7 x1).
+      rewrite in_app_iff. intuition.
+    * eappIn IHss H8.
+    * admit.
+    * eappIn IHss H8.
+    * eappIn IHss H8.
+      unfold disjoint. intros.
+      specialize (H4 x0).
       intuition.
       apply or_intror.
-      intro. contradict H6.
-      apply in_app_iff in H3.
-      intuition.
-      apply disjointSplitB.
-      
+      intro. contradict H0.
+      eapp InAexcept.
+    * eappIn IHss H8.
+Admitted.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->
@@ -448,6 +486,10 @@ Proof.
       unfold HSubst.
       rewrite H1.
       dec (o_dec o' o0); tauto.
+    * intros. apply INVAevals in H0. unf. destruct A'.
+      unfold evalA'_d, HSubst in *. simpl in *.
+      dec (o_dec o1 o0); try (eex; fail).
+      rewrite H1. destruct x2. eex.
   - unfoldINV INV.
     (*sAssign*)
     assert (HH3 := H3).
@@ -497,6 +539,7 @@ Proof.
         eapp INVHELPER.
     * apply INVHELPER.
     * eax.
+    * apply INVAevals.
   - unfoldINV INV.
     (*sAlloc*)
     pose proof (INVheapNT omin) as newHeap.
@@ -662,6 +705,22 @@ Proof.
         inversionx H10.
         subst.
         contradict H0. auto with arith.
+    * intros. destruct A'.
+      apply in_app_iff in H0. inversionx H0.
+      + apply INVAevals in H7.
+        unf.
+        eex.
+        simpl in *.
+        unfold Halloc.
+        rewrite Heqo0.
+        dec (o_dec x1 o0). rewrite H1 in H0. discriminate.
+        eauto.
+      + apply in_map_iff in H7.
+        unf.
+        inversionx H7. subst.
+        unfold Halloc.
+        rewrite Heqo0. simpl.
+        dec (o_dec o0 o0). eex.
   - (*sCall*)
     rename INV into INV0.
     rename H6 into hstX0.
@@ -793,7 +852,7 @@ Proof.
     
     assert (invAll initialHeap r' fp phi_pre')
     as INV1.
-      uninv. repeat split; simpl; try constructor. (*5*)
+      uninv. repeat split; simpl; try constructor. (*6*)
         unf. assumption.
         apply ep_phi_pre'.
         induction e0; intros; inversionx H0; simpl in *. (*4*)
@@ -810,7 +869,8 @@ Proof.
             eapply INV0 in H7; eauto. inversionE H7. inversionx H0.
             eex. unfold evale. simpl. rewrite H1. rewrite H9. simpl. assumption.
         unf. assumption.
-        unf. exists x3. intros. apply H20 in H16. intuition. apply fp_incl_ia in H25. apply H24 in H25. tauto.
+        unf. exists x3. intros. apply H21 in H16. split; try apply H16. unfold not. intro f0. intro ifp. apply fp_incl_ia in ifp. apply H16 in ifp. tauto.
+        intros. eapp INV0.
     
     (*Part 2: method body*)
     assert (∃ finalHeap finalRho finalAccess,
@@ -1076,7 +1136,7 @@ Proof.
         phi_end)
     as INV3.
       assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
-      uninv. repeat split. (*5*)
+      uninv. repeat split. (*6*)
    (**) subst phi_end.
         apply sfrmphiApp.
         unfold phiSubsts3.
@@ -1103,20 +1163,32 @@ Proof.
             eex.
             unfold evale. simpl. rewrite H1, H9. simpl. assumption.
    (**) apply INV2.
-   (**) decompose [and] INV0. invE H5 omin0.
+   (**) decompose [and] INV0. invE H4 omin0.
         decompose [and] INV1. invE H10 omin1.
-        decompose [and] INV2. invE H15 omin2.
+        decompose [and] INV2. invE H16 omin2.
         exists (max omin0 omin2). intro o'. intro o'max.
         assert (omin0 <= o') as om0. eapply le_trans. eapp Nat.le_max_l. eauto.
         assert (omin2 <= o') as om2. eapply le_trans. eapp Nat.le_max_r. eauto.
-        apply H5  in om0.
-        apply H15 in om2.
+        apply H4  in om0.
+        apply H16 in om2.
         split. apply om2.
         intros. unfold not in *. intro inn. apply in_app_iff in inn.
         inversionx inn.
-          apply InAexcept in H14. apply om0 in H14. tauto.
-          apply evalphiImpliesAccess in eph_phi_post. apply eph_phi_post in H14. apply om2 in H14. tauto.
-    
+          apply InAexcept in H17. apply om0 in H17. tauto.
+          apply evalphiImpliesAccess in eph_phi_post. apply eph_phi_post in H17. apply om2 in H17. tauto.
+   (**) intros.
+        destruct A'. simpl.
+        apply in_app_iff in H0. inversionx H0.
+          apply InAexcept in H1.
+          apply INV0 in H1.
+          inversionE H1. inversionx H0.
+          destruct x3.
+          eappIn HeapGetsMoreSpecific H2. inversionE H2.
+          eex.
+        apply evalphiImpliesAccess in eph_phi_post.
+        apply eph_phi_post in H1.
+        apply INV2 in H1.
+        eauto.
     (*MERGE*)
     assert (forall a b c d, dynSem a b -> dynSemStar b c -> dynSem c d -> dynSemStar a d)
     as strat.
@@ -1177,6 +1249,7 @@ Proof.
         assumption.
     * apply INVHELPER.
     * eax.
+    * apply INVAevals.
   - unfoldINV INV.
     (*sAssert*)
     do 4 eexists; try emagicProgress. (*progress*)
@@ -1186,6 +1259,7 @@ Proof.
     * assumption.
     * assumption.
     * eax.
+    * apply INVAevals.
   - unfoldINV INV.
     (*sRelease*)
     applyINVphi2 INVphi2 H1.
@@ -1209,6 +1283,9 @@ Proof.
       contradict H4.
       apply InAexcept in H0.
       assumption.
+    * intros.
+      apply InAexcept in H0.
+      eapp INVAevals.
   - unfoldINV INV.
     (*sDeclare*)
     do 4 eexists; try emagicProgress. (*progress*)
@@ -1259,6 +1336,7 @@ Proof.
         auto.
     * apply INVHELPER.
     * eax.
+    * apply INVAevals.
 Admitted.
 
 
