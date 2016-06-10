@@ -311,6 +311,59 @@ Proof.
     erewrite footprint'PhiSubsts2RhoFrom3 in H15; eauto.
 Qed.
 
+
+
+
+Lemma evale'eSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 e,
+  incl (FVe e) [xUserDef z; xthis; xresult] ->
+  r x2 = Some v2 ->
+  r x1 = Some v1 ->
+  r x0 = Some v0 ->
+  evale' H r (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] e) =
+  evale' H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) e.
+Proof.
+  induction e0; intros; simpl in *.
+  - tauto.
+  - apply inclSingle in H1.
+    unfold xSubsts, rhoFrom3.
+    inversionx H1; simpl.
+    * dec (x_dec (xUserDef z) (xUserDef z)).
+      assumption.
+    * inversionx H5; try tauto.
+      inversionx H1; try tauto.
+  - rewrite IHe0; auto.
+Qed.
+
+Lemma footprint'PhiSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 a,
+  incl (FV' a) [xUserDef z; xthis; xresult] ->
+  r x2 = Some v2 ->
+  r x1 = Some v1 ->
+  r x0 = Some v0 ->
+  footprint' H r (phi'Substs [(xthis, x1); (xUserDef z, x2); (xresult, x0)] a) =
+  footprint' H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) a.
+Proof.
+  intros.
+  destruct a; simpl in *; try tauto.
+  erewrite evale'eSubsts3RhoFrom3; auto.
+Qed.
+
+Lemma footprintPhiSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 a,
+  incl (FV a) [xUserDef z; xthis; xresult] ->
+  r x2 = Some v2 ->
+  r x1 = Some v1 ->
+  r x0 = Some v0 ->
+  footprint H r (phiSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] a) =
+  footprint H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) a.
+Proof.
+  induction a;
+  intros;
+  simpl in *; try tauto.
+  apply inclApp in H1. unf.
+  erewrite footprint'PhiSubsts3RhoFrom3; eauto.
+  erewrite IHa; eauto.
+Qed.
+
+
 Lemma disjointAexcept : forall A B,
   disjoint A B ->
   Aexcept A B = A.

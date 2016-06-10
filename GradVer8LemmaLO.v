@@ -1023,3 +1023,35 @@ Proof.
   - eapp IHp0.
     eapp inclAexcept2.
 Qed.
+
+Lemma evalphiNarrowAccess : forall H r p A,
+  evalphi H r A p ->
+  evalphi H r (footprint H r p) p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H1.
+  destruct a; eca; simpl in *;
+  try apply inclEmpty;
+  try rewrite AexceptEmpty;
+  intuition;
+  try eapp IHp0.
+  
+  inversionx H11.
+  destruct (evale' H0 r e0); try tauto.
+  destruct v0; try tauto.
+  simpl.
+  undecb.
+  simpl.
+  dec (o_dec o1 o1).
+  dec (string_dec f0 f0).
+  simpl.
+  rewrite AexceptReduceSecond.
+    rewrite AexceptEmpty.
+    eapp IHp0.
+  apply evalphiImpliesAccess in H12.
+  specialize (H12 (o1, f0)).
+  intuition.
+  apply InAexceptNot in H2.
+  intuition.
+Qed.
+  

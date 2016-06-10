@@ -3,6 +3,38 @@ Import Semantics.
 
 Definition evalsIn H r A_s A_d := map (A'_s2A'_d H r) A_s = map Some A_d.
 
+Lemma evalsInIn : forall H r As Ad As',
+  evalsIn H r As Ad ->
+  In As' As ->
+  exists Ad', A'_s2A'_d H r As' = Some Ad' /\ In Ad' Ad.
+Proof.
+  induction As; intros; simpl in *; try tauto.
+  unfold evalsIn in *.
+  destruct Ad; try discriminate.
+  repeat rewrite map_cons in H1.
+  inversionx H1.
+  inversionx H2.
+  - eex.
+    eca.
+  - eappIn IHAs H5.
+    unf.
+    eex.
+    eapp in_cons.
+Qed.
+
+Lemma evalsInInRev : forall H r As Ad Ad',
+  evalsIn H r As Ad ->
+  In Ad' Ad ->
+  exists As', A'_s2A'_d H r As' = Some Ad' /\ In As' As.
+Proof.
+  intros.
+  unfold evalsIn in H1.
+  assert (In (Some Ad') (map Some Ad)).
+    apply in_map_iff. eex.
+  rewriteRevIn H1 H3.
+  eapp in_map_iff.
+Qed.
+
 (*staticFootprintX = the stuff that DEFINITELY evaluates if in evalphi's arg*)
 
 Fixpoint staticFootprintXe (e' : e) : A_s :=

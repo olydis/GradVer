@@ -87,208 +87,6 @@ Ltac unfoldINV INV :=
   inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
 
 
-Lemma evale'ChangeRho : forall r1 r2 H e,
-  (forall x, In x (FVe e) -> r1 x = r2 x) ->
-  evale' H r1 e = evale' H r2 e.
-Proof.
-  induction e0; intros; simpl in *.
-  - tauto.
-  - apply H1.
-    tauto.
-  - rewrite IHe0;
-    tauto.
-Qed.
-
-Lemma footprint'ChangeRho : forall r1 r2 H p,
-  (forall x, In x (FV' p) -> r1 x = r2 x) ->
-  footprint' H r1 p = footprint' H r2 p.
-Proof.
-  intros.
-  destruct p0; try tauto.
-  simpl in *.
-  erewrite evale'ChangeRho; tauto.
-Qed.
-  
-Lemma evalphi'ChangeRho : forall r1 r2 H p A,
-  (forall x, In x (FV' p) -> r1 x = r2 x) ->
-  evalphi' H r1 A p ->
-  evalphi' H r2 A p.
-Proof.
-  intros; simpl in *.
-  inversionx H2.
-  - constructor.
-  - simpl in *.
-    eca; unfold evale in *;
-    erewrite evale'ChangeRho in H4, H5; eauto;
-    intros; intuition.
-  - simpl in *.
-    eca; unfold evale in *;
-    erewrite evale'ChangeRho in H4, H5; eauto;
-    intros; intuition.
-  - simpl in *.
-    eca; unfold evale in *;
-    erewrite evale'ChangeRho in H4; eauto;
-    intros; intuition.
-  - simpl in *.
-    eca.
-    rewrite H1 in H4; auto.
-Qed.
-
-Lemma evalphiChangeRho : forall r1 r2 H p A,
-  (forall x, In x (FV p) -> r1 x = r2 x) ->
-  evalphi H r1 A p ->
-  evalphi H r2 A p.
-Proof.
-  induction p0; intros; simpl in *; try constructor.
-  inversionx H2.
-  eca.
-  - rewrite (footprint'ChangeRho r1 r2) in H7; auto.
-    intros.
-    intuition.
-  - rewrite (footprint'ChangeRho r1 r2) in H12; auto.
-    * eapp (evalphi'ChangeRho r1 r2).
-      intros. intuition.
-    * intros. intuition.
-  - rewrite (footprint'ChangeRho r1 r2) in H13; auto.
-    * eapp IHp0.
-      intros. intuition.
-    * intros. intuition.
-Qed.
-
-Lemma evalsInIn : forall H r As Ad As',
-  evalsIn H r As Ad ->
-  In As' As ->
-  exists Ad', A'_s2A'_d H r As' = Some Ad' /\ In Ad' Ad.
-Proof.
-  induction As; intros; simpl in *; try tauto.
-  unfold evalsIn in *.
-  destruct Ad; try discriminate.
-  repeat rewrite map_cons in H1.
-  inversionx H1.
-  inversionx H2.
-  - eex.
-    eca.
-  - eappIn IHAs H5.
-    unf.
-    eex.
-    eapp in_cons.
-Qed.
-
-Lemma evalsInInRev : forall H r As Ad Ad',
-  evalsIn H r As Ad ->
-  In Ad' Ad ->
-  exists As', A'_s2A'_d H r As' = Some Ad' /\ In As' As.
-Proof.
-  intros.
-  unfold evalsIn in H1.
-  assert (In (Some Ad') (map Some Ad)).
-    apply in_map_iff. eex.
-  rewriteRevIn H1 H3.
-  eapp in_map_iff.
-Qed.
-
-Lemma evale'RemoveHSubst : forall o f v H r e,
-  ~ In (o, f) (footprintXe H r e) ->
-  evale' H r e = evale' (HSubst o f v H) r e.
-Proof.
-  induction e0; intros; simpl in *; try tauto.
-  unfold footprintXe in *. simpl in *.
-  rewrite in_app_iff in H1.
-  apply not_or_and in H1. unf.
-  rewriteRev IHe0; auto.
-  unfold A'_s2A'_d in *. simpl in *.
-  destruct (evale' H0 r e0); try tauto.
-  destruct v1; try tauto.
-  simpl in *.
-  unfold HSubst.
-  dec (o_dec o1 o0); try tauto.
-  destruct (H0 o0); try tauto. destruct p0. simpl.
-  dec (string_dec f1 f0); try tauto.
-Qed.
-
-Lemma footprint'RemoveHSubst : forall o f v H r p,
-  ~ In (o, f) (footprintX' H r p) ->
-  footprint' H r p = footprint' (HSubst o f v H) r p.
-Proof.
-  intros.
-  destruct p0; try tauto.
-  unfold footprintX' in *.
-  simpl in *.
-  eappIn evale'RemoveHSubst H1.
-  rewriteRev H1.
-  tauto.
-Qed.
-
-Lemma evalphi'RemoveHSubst : forall o f v H r p A,
-  ~ In (o, f) (footprintX' H r p) ->
-  evalphi' H r A p <->
-  evalphi' (HSubst o f v H) r A p.
-Proof.
-  intros.
-  unfold footprintX' in H1.
-  destruct p0; simpl in *;
-  try rewrite map_app in H1;
-  try rewrite oflattenApp in H1;
-  try rewrite in_app_iff in H1;
-  try apply not_or_and in H1;
-  unf.
-  - split; constructor.
-  - split; intros;
-    inversionx H1; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H1; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca.
-    * rewriteRev hasDynamicTypeHSubst. eauto.
-    * eapp hasDynamicTypeHSubst.
-Qed.
-
-Lemma evalphiRemoveHSubst : forall o f v H r p A,
-  ~ In (o, f) (footprintX H r p) ->
-  evalphi H r A p <->
-  evalphi (HSubst o f v H) r A p.
-Proof.
-  induction p0; intros; simpl in *; split; try constructor; intros.
-  - inversionx H2.
-    unfold footprintX in H1.
-    simpl in H1.
-    rewrite map_app in H1.
-    rewrite oflattenApp in H1.
-    rewrite in_app_iff in H1.
-    apply not_or_and in H1.
-    eca.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-      rewriteRev evalphi'RemoveHSubst; try apply H1.
-      eauto.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-      eapp IHp0.
-      tauto.
-  - inversionx H2.
-    unfold footprintX in H1.
-    simpl in H1.
-    rewrite map_app in H1.
-    rewrite oflattenApp in H1.
-    rewrite in_app_iff in H1.
-    apply not_or_and in H1.
-    eca.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-      erewrite evalphi'RemoveHSubst; try apply H1.
-      eauto.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-      eapp IHp0.
-      tauto.
-Qed.
-
 Theorem framedOff : forall ss H1 H2 r1 r2 A1 A2 r A p,
   dynSemStar (H1, [(r1, A1, ss)]) (H2, [(r2, A2, [])]) ->
   (forall A', In A' A -> exists v, H1 (fst A') = Some v) ->
@@ -879,7 +677,8 @@ Proof.
             (finalHeap, [(finalRho, finalAccess, [])]) ∧
           invAll finalHeap finalRho finalAccess phi_post')
     as call_finished.
-      assert (soundness phi_pre' underscore phi_post' initialHeap r' fp []) as sdn. admit. (*assume that for method body*)
+      assert (soundness phi_pre' underscore phi_post' initialHeap r' fp []) as sdn.
+        admit. (*assume that for method body*)
       intuition.
     
     invE call_finished finalHeap'.
@@ -929,7 +728,7 @@ Proof.
       unfold evalA'_d. simpl.
       assumption.
     
-    assert (∀ (A : A'_s),
+(*     assert (∀ (A : A'_s),
       In A (staticFootprintX phi_r) 
                   -> evalA'_s initialHeap initialRho A =
                      evalA'_s finalHeap' initialRho A)
@@ -956,8 +755,7 @@ Proof.
       specialize (H0 (o0, f0)).
       inversionx H0; try auto.
       contradict H4.
-      admit.
-
+      admit. *)
     
     (* 
     assert (∀
@@ -981,6 +779,18 @@ Proof.
     
     set (finalRho := rhoSubst x0 vresult initialRho).
     
+    assert (finalRho x0 = Some vresult)
+    as frx0.
+      subst finalRho. rewrite rhoSubstId. tauto.
+    
+    assert (finalRho x1 = Some (vo vo1))
+    as frx1.
+      subst finalRho. unfold rhoSubst. dec (x_dec x1 x0); try tauto.
+     
+    assert (finalRho x2 = Some v2)
+    as frx2.
+      subst finalRho. unfold rhoSubst. dec (x_dec x2 x0); try tauto.
+
     assert (evalphi finalHeap' finalRho' finalAccess' phi_post')
     as eph_phi_post'.
       apply INV2.
@@ -1073,6 +883,27 @@ Proof.
       inversionx H1; try tauto. inversionx H5.
       assumption.
 
+
+    assert (footprint finalHeap'  (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post
+          = footprint initialHeap (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_pre)
+    as fp_eq_1.
+      admit.
+      
+    assert (footprint finalHeap'  finalRho   phi_r
+          = footprint initialHeap initialRho phi_r)
+    as fp_eq_2.
+      admit.
+      
+    assert (incl (footprint finalHeap'  (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post)
+                 (footprint initialHeap (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_pre))
+    as fp_incl_1.
+      rewrite fp_eq_1. apply incl_refl. (*wrong!? solution: no access inventing*)
+
+    assert (incl (footprint finalHeap'  finalRho   phi_r)
+                 (footprint initialHeap initialRho phi_r))
+    as fp_incl_2.
+      rewrite fp_eq_2. apply incl_refl.
+    
     assert (evalphi initialHeap initialRho (Aexcept initialAccess fp) phi_r ->
             evalphi finalHeap'  finalRho   (Aexcept initialAccess fp) phi_r)
     as phi_r_changeEnv.
@@ -1093,27 +924,40 @@ Proof.
     as eph_phi_end.
       subst phi_end.
       apply evalphiSymm.
-      apply evalphiComposeDisjointFP.
-        subst fp.
-          unfold disjoint. intros.
-          apply imply_to_or. intros.
-          assert (In x3 initialAccess). eapp InAexcept.
-          apply InAexceptNot in H0. unfold not in *. intros.
-          contradict H0.
-          uninv .
-          SearchAbout or.
-          admit.
-    (**)subst fp preI.
-          rewrite app_comm_cons in ep_preI.
-          apply evalphiApp in ep_preI. inversionx ep_preI.
-          simpl in H1.
-          unfold phiSubsts2 in H1.
-          rewrite (footprintPhiSubsts2RhoFrom3 _ _ _ _ _ (defaultValue T_r) (vo vo1) v2)
-          in H1; auto. (*3*)
-            apply mmwd.
-            apply hdtX2.
-            apply hdtX1.
-    (**)eapp evalphiIncl;
+      apply evalphiComposeDisjointFPx.
+    (**)subst fp.
+        apply evalphiImpliesAccess in ep_phi_r.
+        apply inclAexceptDisjoint in ep_phi_r.
+        unfold phiSubsts2 in ep_phi_r.
+        erewrite footprintPhiSubsts2RhoFrom3 in ep_phi_r; eauto;
+        try apply mmwd;
+        try apply hdtX1;
+        try apply hdtX2.
+        unfold phiSubsts3.
+        erewrite footprintPhiSubsts3RhoFrom3; eauto;
+        try apply mmwd;
+        try apply frx0;
+        try apply frx1;
+        try apply frx2.
+        unfold disjoint in *.
+        intro AA. specialize (ep_phi_r AA).
+        unfold not in *.
+        inversionx ep_phi_r.
+          apply or_introl. intro. contradict H0. eapp fp_incl_2.
+          apply or_intror. intro. contradict H0. eapp fp_incl_1.
+    (**)eapp (evalphiIncl finalHeap' finalRho phi_r (Aexcept initialAccess fp)). intuition.
+        subst fp preI.
+        rewrite app_comm_cons in ep_preI.
+        apply evalphiApp in ep_preI. inversionx ep_preI.
+        simpl in H1.
+        unfold phiSubsts2 in H1.
+        rewrite (footprintPhiSubsts2RhoFrom3 _ _ _ _ _ (defaultValue T_r) (vo vo1) v2)
+        in H1; auto. (*3*)
+          apply mmwd.
+          apply hdtX2.
+          apply hdtX1.
+    (**)eapp (evalphiIncl finalHeap' finalRho (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post) (footprint finalHeap' finalRho' phi_post)). intuition.
+        eapp evalphiIncl;
         try eapp (evalphi2PhiSubsts3
                 finalHeap'
                 initialRho
