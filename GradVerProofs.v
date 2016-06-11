@@ -789,8 +789,14 @@ Proof.
     
     assert (disjoint (footprint initialHeap initialRho phi_r) fp)
     as disj_fp.
-      admit.
-    
+      eappIn evalphiImpliesAccess ep_phi_r.
+      eappIn inclAexceptDisjoint ep_phi_r.
+      unfold phiSubsts2 in ep_phi_r.
+      erewrite footprintPhiSubsts2RhoFrom3 in ep_phi_r; eauto.
+        apply mmwd.
+        apply hdtX2.
+        apply hdtX1.
+
     assert (∀ (A : A'_s),
       In A (staticFootprintX phi_r) 
                   -> evalA'_s initialHeap initialRho A =
@@ -962,6 +968,7 @@ Proof.
     assert (footprint finalHeap'  (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post
           = footprint initialHeap (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_pre)
     as fp_eq_1.
+      Check footprintChangeHeap.
       admit.
       
     assert (footprint finalHeap'  finalRho   phi_r
@@ -989,7 +996,7 @@ Proof.
         unfold rhoSubst.
         dec (x_dec x3 x0); try tauto.
         apply phi_r_x0 in H0. tauto.
-      admit.
+      eapp (evalphiChangeHeap initialHeap finalHeap').
       
     assert (evalphi
         finalHeap'
