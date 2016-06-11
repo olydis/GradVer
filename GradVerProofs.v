@@ -1007,7 +1007,17 @@ Proof.
         destruct (evale' finalHeap' r' e0); try tauto.
         destruct v1; try tauto.
         erewrite ev'tmp; eauto.
+      apply evalphiImpliesAccess in eph_phi_post.
+      apply eph_phi_post in inFP2.
+      assert (finalHeap' (fst AA) <> None) as nn.
+        eappIn INV2 inFP2. inversionE inFP2. rewrite H0. discriminate.
+      eappIn dynSemStarNoAccessInventing inFP2.
+      subst fp.
+      inversionx inFP2; try tauto.
+      (*contradiction*)
+      exfalso.
       admit.
+        
 
     assert (incl (footprint finalHeap'  finalRho   phi_r)
                  (footprint initialHeap initialRho phi_r))
