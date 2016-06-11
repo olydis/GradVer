@@ -274,6 +274,16 @@ Proof.
   erewrite evale'ChangeHeap; eauto.
 Qed.
 
+Lemma footprintChangeHeap : forall H1 H2 r p,
+  (forall A', In A' (staticFootprintX p) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  footprint H1 r p = footprint H2 r p.
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  erewrite IHp0, footprint'ChangeHeap; eauto;
+  intuition.
+Qed.
+
 Lemma evalphi'ChangeHeap : forall H1 H2 S1 S2 r A p,
   dynSemStar (H1, S1) (H2, S2) ->
   (forall A', In A' (staticFootprintX' p) ->
@@ -331,6 +341,15 @@ Proof.
   destruct p0; try tauto.
   simpl in *.
   erewrite evale'ChangeRho; tauto.
+Qed.
+
+Lemma footprintChangeRho : forall r1 r2 H p,
+  (forall x, In x (FV p) -> r1 x = r2 x) ->
+  footprint H r1 p = footprint H r2 p.
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  erewrite IHp0, footprint'ChangeRho; eauto;
+  intuition.
 Qed.
   
 Lemma evalphi'ChangeRho : forall r1 r2 H p A,

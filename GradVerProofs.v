@@ -964,22 +964,50 @@ Proof.
       inversionx H1; try tauto. inversionx H5.
       assumption.
 
-
-    assert (footprint finalHeap'  (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post
-          = footprint initialHeap (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_pre)
-    as fp_eq_1.
-      Check footprintChangeHeap.
-      admit.
+    assert (∀ x, In x (FV phi_r) → finalRho x = initialRho x)
+    as FV_phi_r.
+      intros.
+      unfold finalRho, rhoSubst.
+      dec (x_dec x3 x0); try tauto.
+      apply phi_r_x0 in H0. tauto.
       
     assert (footprint finalHeap'  finalRho   phi_r
           = footprint initialHeap initialRho phi_r)
     as fp_eq_2.
-      admit.
+      erewrite (footprintChangeRho finalRho initialRho); eauto.
+      erewrite (footprintChangeHeap initialHeap finalHeap'); eauto.
       
-    assert (incl (footprint finalHeap'  (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post)
-                 (footprint initialHeap (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_pre))
+    assert (incl (footprint finalHeap'  r' phi_post)
+                 (footprint initialHeap r' phi_pre))
     as fp_incl_1.
-      rewrite fp_eq_1. apply incl_refl. (*wrong!? solution: no access inventing*)
+      unfold incl. intro AA. intro inFP.
+      assert (In AA (footprint finalHeap' finalRho' phi_post))
+      as inFP2.
+        unfold footprint in *.
+        apply in_flat_map in inFP.
+        apply in_flat_map.
+        invE inFP p'. inversionx inFP.
+        eex.
+        destruct p'; try tauto.
+        simpl in *.
+        assert (forall e o, evale' finalHeap' r' e = Some (vo o)
+                         -> evale' finalHeap' finalRho' e = Some (vo o))
+        as ev'tmp.
+          induction e1; intros; simpl in *.
+            tauto.
+            subst r'. unfold rhoFrom3 in H2.
+              dec (x_dec x3 xresult). destruct T_r; discriminate. clear de2.
+              dec (x_dec x3 xthis). inversionx H2. apply fr'xthis. clear de2.
+              dec (x_dec x3 (xUserDef z)). inversionx H2. apply fr'xUDz.
+              discriminate.
+            destruct (evale' finalHeap' r' e1); try discriminate.
+              destruct v1; try discriminate.
+              erewrite IHe1; eauto.
+        specialize (ev'tmp e0).
+        destruct (evale' finalHeap' r' e0); try tauto.
+        destruct v1; try tauto.
+        erewrite ev'tmp; eauto.
+      admit.
 
     assert (incl (footprint finalHeap'  finalRho   phi_r)
                  (footprint initialHeap initialRho phi_r))
@@ -1021,6 +1049,15 @@ Proof.
         try apply frx0;
         try apply frx1;
         try apply frx2.
+        assert (disjoint
+              (footprint finalHeap' finalRho phi_r)
+              (footprint finalHeap' r' phi_post)
+             -> disjoint
+              (footprint finalHeap' finalRho phi_r)
+              (footprint finalHeap' (rhoFrom3 xresult vresult xthis (vo vo1) (xUserDef z) v2) phi_post)
+        ) as narr.
+          admit.
+        eapp narr.
         unfold disjoint in *.
         intro AA. specialize (ep_phi_r AA).
         unfold not in *.
