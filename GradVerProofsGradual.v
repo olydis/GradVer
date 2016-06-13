@@ -455,6 +455,151 @@ Proof.
           eapp meetFPnotContains.
 Qed.
 
+Lemma distinctApp : forall {T : Type} (a b : list T),
+  listDistinct (a ++ b) ->
+  listDistinct a /\
+  listDistinct b.
+Proof.
+  induction a; intros; simpl in *; try tauto.
+  unf.
+  apply IHa in H2.
+  unf.
+  intuition.
+Qed.
+
+Lemma footprintMapAcc : forall H r p,
+  footprint H r (map (λ p, phiAcc (fst p) (snd p)) p) =
+  oflatten (map (A'_s2A'_d H r) p).
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  rewrite IHp0.
+  unfold olist, A'_s2A'_d.
+  destruct a.
+  simpl.
+  destruct (evale' H0 r e0); try tauto.
+  destruct v0; tauto.
+Qed.
+
+Lemma filterApp : forall {T : Type} (f : T -> bool) a b,
+  filter f (a ++ b) = filter f a ++ filter f b.
+Proof.
+  induction a; intros; simpl in *; try tauto.
+  rewrite IHa.
+  destruct (f0 a); tauto.
+Qed.
+
+Lemma maxS1 : forall a b c x,
+  max a b <= c ->
+  max (x + a) b <= x + c.
+Proof.
+  intros.
+  apply Nat.max_lub.
+  - apply Nat.max_lub_l in H0.
+    auto with arith.
+  - apply Nat.max_lub_r in H0.
+    eapp le_trans.
+    auto with arith.
+Qed.
+
+Lemma meetSplitNumFP : forall H r A ps1a ps2a ps1b ps2b p,
+  In p (meetSplit ps1a ps2a ps1b ps2b) ->
+  length (filter (A'_d_decb A) (footprint H r p)) >= 
+  max
+  (length (filter (A'_d_decb A) (oflatten (map (A'_s2A'_d H r) ps1a))))
+  (length (filter (A'_d_decb A) (oflatten (map (A'_s2A'_d H r) ps2a)))).
+Proof.
+  induction ps1a; intros; simpl in *.
+  - intuition.
+    subst.
+    rewrite footprintApp.
+    rewrite footprintMapAcc.
+    rewrite filterApp.
+    rewrite app_length.
+    auto with arith.
+  - destruct a.
+    rewrite filterApp.
+    rewrite app_length.
+    apply in_flat_map in H1. unf.
+    apply IHps1a in H1.
+    unfold ge in *.
+    inversionx H3; simpl in *.
+    * destruct (evale' H0 r e0) eqn: ee;
+      try (unfold A'_s2A'_d; simpl; rewrite ee; auto; fail).
+      destruct v0;
+      try (unfold A'_s2A'_d; simpl; rewrite ee; auto; fail).
+      rewrite filterApp.
+      rewrite app_length.
+      assert (olist (A'_s2A'_d H0 r (e0, f0)) = [(o0, f0)]) as ol.
+        unfold olist, A'_s2A'_d. simpl. rewrite ee. tauto.
+      rewrite ol.
+      simpl.
+      destruct (A'_d_decb A (o0, f0)) eqn: AA; try assumption.
+      eapp maxS1.
+    * 
+      
+      simpl.
+      eappIn le_trans H1.
+      
+      unfold A'_s2A'_d.
+    
+    
+  apply length_zero_iff_nil in H2.
+
+Lemma meetSplitDistinctFP : forall ps1a ps2a ps1b ps2b,
+  forall H r,
+  (exists p, In p (meetSplit ps1a ps2a ps1b ps2b) /\
+             listDistinct (footprint H r p)) ->
+  (listDistinct (oflatten (map (A'_s2A'_d H r) ps1a))) /\ (listDistinct (oflatten (map (A'_s2A'_d H r) ps2a))).
+Proof.
+  induction ps1a; intros; simpl in *.
+  - unf. intuition.
+    subst.
+    repeat rewrite footprintApp in *.
+    apply distinctApp in H3. unf.
+    rewrite footprintMapAcc in H1.
+    assumption.
+  - unf.
+    apply in_flat_map in H1. unf.
+    assert (listDistinct (oflatten (map (A'_s2A'_d H0 r) ps1a))
+           ∧ listDistinct (oflatten (map (A'_s2A'_d H0 r) ps2a)))
+    as IH.
+      eapp IHps1a. eex.
+      inversionx H4. rewrite cons2app, footprintApp in H3. apply distinctApp in H3. apply H3.
+      apply in_map_iff in H2. unf.
+      subst.
+      rewrite cons2app, footprintApp in H3. apply distinctApp in H3. apply H3.
+    intuition.
+    destruct (olist (A'_s2A'_d H0 r a)) eqn: ola; try tauto.
+    unfold A'_s2A'_d, olist in ola.
+    destruct a. simpl in *.
+    destruct (evale' H0 r e0) eqn: ee; try discriminate.
+    destruct v0; try discriminate.
+    inversionx ola. simpl.
+    split; try assumption.
+    inversionx H4.
+    * admit.
+    * apply in_map_iff in H6. unf. subst.
+      simpl in *.
+Admitted.
+
+Lemma evalphiDistinctFP : forall H r p A,
+  evalphi H r A p ->
+  listDistinct (footprint H r p).
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  inversionx H1.
+  assert (disjoint (footprint H0 r p0) (footprint' H0 r a)) as dis.
+    eapp inclAexceptDisjoint.
+    eapp evalphiImpliesAccess.
+  apply IHp0 in H12.
+  destruct a; try apply H12.
+  simpl in *.
+  inversionx H11. rewrite H8 in *. simpl in *.
+  split; auto.
+  specialize (dis (o0, f0)).
+  intuition.
+Qed.
+
 Lemma meetSplitWorksRev : forall p1 p2,
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
@@ -468,60 +613,73 @@ Proof.
     intuition. subst.
     eapp evalphiSplitMergeRev.
   - destruct (classic (exists e f, a = phiAcc e f)).
-    * invE H2 e0. invE H2 f0. subst.
-      simpl in *.
+    * assert (listDistinct (footprint H0 r x0)) as ld_x0.
+        eapp evalphiDistinctFP.
+      assert (listDistinct (map (A'_s2A'_d H0 r) (fst ps1))) as ld_p1.
+        eapp (meetSplitDistinctFP (fst ps1) (fst ps2) (snd ps1) (snd ps2)).
+      invE H2 e0. invE H2 f0. subst.
+      subst ps1 ps2.
+      simpl in H1.
       rewrite in_flat_map in H1. unf.
       assert (evalphi H0 r A p1 ∧ evalphi H0 r A p2) as ev.
         eapp IHp1. eex.
-        inversionx H4.
-          inversionx H3. eapp evalphiAexcept.
+        inversionx H4. inversionx H3. eapp evalphiAexcept.
         apply in_map_iff in H2. unf. subst.
-        inversionx H3. eapp evalphiAexcept.
-      unf. split; auto.
+        inversionx H3.
+        eapp evalphiAexcept.
+      inversion ev as [ev1 ev2]; clear ev.
+      split; auto.
       inversionx H4.
       + inversionx H3.
         eca.
         eapp evalphiRemoveAexcept.
         unfold disjoint. intros. apply or_comm. apply imply_to_or. intros.
         assert (¬ In x0 (footprint H0 r x1)).
-          apply evalphiImpliesAccess in H15.
-          apply inclAexceptDisjoint in H15.
-          specialize (H15 x0).
-          inversionx H15; try tauto.
+          apply evalphiImpliesAccess in H13.
+          apply inclAexceptDisjoint in H13.
+          specialize (H13 x0).
+          inversionx H13; try tauto.
         destruct x0.
-        eappIn meetFPnotContainsRev H15.
+        eappIn meetFPnotContainsRev H13.
         unf.
         assumption.
-      + apply in_map_iff in H6. unf. subst.
-        apply filter_In in H7. unf.
-        destruct x2. simpl in *.
+      + apply in_map_iff in H2. unf. subst.
+        apply filter_In in H5. unf.
+        destruct x2. simpl in H4.
         dec (string_dec f0 s0); try discriminate.
-        subst ps1 ps2. rewrite splitPhiAlt in *. simpl in *.
-        inversionx H3. simpl in *.
-        inversionx H16. common.
-        assert (In (phiAcc e1 s0) p2).
-          unfold staticFootprint in H4.
-          apply in_flat_map in H4. unf.
+        rewrite splitPhiAlt in H2. simpl in H2.
+        inversionx H3. simpl in H9, H14, H15.
+        inversionx H14. common.
+        assert (In (phiAcc e1 s0) p2) as ip.
+          unfold staticFootprint in H2.
+          apply in_flat_map in H2. unf.
           destruct x0; try tauto. simpl in *. intuition.
-          inversionx H3. assumption.
-        eappIn evalphiIn H3. inversionx H3. common.
-        rewrite H16 in *. inversionx H14.
+          inversionx H8. assumption.
+        eappIn evalphiIn ip. inversionx ip. common.
+        rewrite H13 in *. inversionx H12.
         assert (footprint' H0 r (phiAcc e0 s0) = [(o0, s0)]) as fp.
-          simpl. rewrite H9. tauto.
+          simpl. rewrite H7. tauto.
         eca; rewrite fp.
         ++apply inclSingle.
           assumption.
         ++eca.
           apply in_eq.
-        ++assert (In (o0, s0) (footprint H0 r p2)) as fp2.
-            eapp staticVSdynamicFP.
-          assert (In (o0, s0) (footprint H0 r x1)) as fpx.
-            destruct (classic (In (o0, s0) (footprint H0 r x1))); try tauto.
-            eappIn (meetFPnotContainsRev H0 r A p1 p2) H3. tauto.
-            rewrite splitPhiAlt. simpl in *. assumption.
+        ++eapp evalphiRemoveAexcept.
+          unfold disjoint. intros.
+          apply or_comm. apply imply_to_or. intros.
+          apply InSingle in H3. subst.
+          unfold not. intros fp1.
           
-          Check meetFPnotContainsRev.
-    (*cont*)
+          unfold A'_s2A'_d in *.
+          simpl in *.
+          rewrite splitPhiAlt in ld_p1. simpl in *. unf.
+          contradict H3.
+          rewrite H7. simpl.
+          apply in_map_iff.
+          apply staticVSdynamicFP in fp1. unf.
+          eex. simpl.
+          rewrite H6. simpl.
+          tauto.
     * assert (footprint' H0 r a = []) as fp.
         destruct a; try tauto.
         contradict H2. eex.
@@ -538,7 +696,7 @@ Proof.
         assumption.
       + destruct a; simpl in *; eex.
         contradict H2. eex.
-Admitted.
+Qed.
 
 
 
