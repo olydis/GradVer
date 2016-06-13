@@ -78,7 +78,7 @@ Proof.
   repeat rewriteRev flat_map_concat_map.
   tauto.
 Qed.
-        
+
 Lemma evalphiSplitMerge : forall p,
   let ps := splitPhi p in
   forall H r A,
@@ -95,6 +95,27 @@ Proof.
       eca; simpl;
       apply evalphiSymm;
       assumption).
+  eca.
+Qed.
+
+Lemma evalphiSplitMergeRev : forall p,
+  let ps := splitPhi p in
+  forall H r A,
+  evalphi H r A (map (λ p, phiAcc (fst p) (snd p)) (fst ps) ++ snd ps) ->
+  evalphi H r A p
+  .
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  subst ps.
+  destruct a; simpl in *;
+  try (apply evalphiSymm in H1;
+      rewriteRevIn app_comm_cons H1;
+      inversionx H1;
+      eca;
+      common;
+      apply evalphiSymm in H12;
+      eapp IHp0).
+  inversionx H1.
   eca.
 Qed.
 
@@ -129,6 +150,49 @@ Proof.
     * apply in_map_iff in H4. unf. subst.
       inversionx H5. simpl in *. common.
       eappIn IHps1a H1. unf.
+      exists (phiEq (fst a) (fst x2) :: x0).
+      split.
+      + apply in_flat_map.
+        eex.
+        apply in_cons.
+        apply in_map_iff.
+        eex.
+      + eca.
+        simpl.
+        common.
+        assumption.
+Qed.
+
+Lemma meetSplitAugment1Rev : forall ps1a ps1b ps2a ps2b p' H r A,
+   footprint' H r p' = [] ->
+   (∃ p0 : phi, In p0 (meetSplit ps1a ps2a (p' :: ps1b) ps2b) ∧ evalphi H r A p0) ->
+   evalphi' H r [] p' /\
+   (∃ p0 : phi, In p0 (meetSplit ps1a ps2a ps1b ps2b) ∧ evalphi H r A p0).
+Proof.
+  induction ps1a; intros; unf; simpl in *.
+  - inversionx H2; try tauto.
+    apply evalphiSymm in H4.
+    rewriteRevIn app_comm_cons H4.
+    inversionx H4.
+    rewrite H1 in *.
+    split; auto.
+    common.
+    apply evalphiSymm in H13.
+    eex.
+  - apply in_flat_map in H2. unf.
+    inversionx H5.
+    * inversionx H4.
+      eappIn IHps1a H1; try apply H1.
+      unf.
+      exists (phiAcc (fst a) (snd a) :: x0).
+      split.
+      + apply in_flat_map.
+        eex.
+        apply in_eq.
+      + eca.
+    * apply in_map_iff in H3. unf. subst.
+      inversionx H4. simpl in *. common.
+      eappIn IHps1a H1; try apply H1. unf.
       exists (phiEq (fst a) (fst x2) :: x0).
       split.
       + apply in_flat_map.
@@ -228,6 +292,106 @@ Proof.
   eapp meetFPnotContains'.
 Qed.
 
+Lemma meetFPnotContains'Rev : forall H r A p1a p2a p1b p2b p o f,
+  evalphi H r A p ->
+  In p (meetSplit (staticFootprint p1a) (staticFootprint p2a) p1b p2b) ->
+  ¬ In (o, f) (footprint H r p) ->
+  ¬ In (o, f) (footprint H r p1a) /\
+  ¬ In (o, f) (footprint H r p2a).
+Proof.
+  induction p1a; intros; simpl in *.
+  - intuition.
+    subst.
+    contradict H3.
+    repeat rewrite footprintApp.
+    repeat rewrite in_app_iff.
+    constructor.
+    rewrite footprintMapAccStaticFootprint.
+    tauto.
+  - destruct a; simpl in *;
+    try (eapp (IHp1a p2a p1b p2b p0); fail).
+    apply in_flat_map in H2. unf.
+    apply not_or_and. unfold not. intros ii.
+    eappIn (IHp1a p2a p1b p2b x0 o0 f0) H2.
+    * unf.
+      inversionx ii; try tauto.
+      apply in_app_iff in H2.
+      inversionx H2; try tauto.
+      destruct (evale' H0 r e0) eqn: ee; try tauto.
+      destruct v0; try tauto.
+      apply InSingle in H7. inversionx H7.
+      contradict H3.
+      inversionx H5.
+      + unfold footprint.
+        rewrite in_flat_map.
+        eex; try apply in_eq.
+        simpl.
+        rewrite ee.
+        apply in_eq.
+      + rewrite in_map_iff in H2. unf. subst.
+        rewrite filter_In in H5. subst.
+        destruct x1. simpl in *. unf.
+        dec (string_dec f1 s0); try discriminate.
+        contradict H6.
+        inversionx H1. inversionx H14. common.
+        rewrite ee in *. inversionx H7.
+        apply staticVSdynamicFP.
+        eex.
+    * inversionx H5.
+      + inversionx H1.
+        eapp evalphiAexcept.
+      + apply in_map_iff in H4. unf.
+        subst.
+        inversionx H1.
+        eapp evalphiAexcept.
+    * unfold not. intros ff. contradict H3.
+      inversionx H5.
+      + unfold footprint in *.
+        apply in_flat_map.
+        apply in_flat_map in ff.
+        unf.
+        eex.
+        eapp in_cons.
+      + apply in_map_iff in H3. unf.
+        subst.
+        unfold footprint in *.
+        apply in_flat_map.
+        apply in_flat_map in ff.
+        unf.
+        eex.
+        eapp in_cons.
+Qed.
+
+Lemma meetFPnotContainsRev : forall H r A p1 p2 p o f,
+  let ps1 := splitPhi p1 in
+  let ps2 := splitPhi p2 in
+  evalphi H r A p ->
+  In p (meetSplit (fst ps1) (fst ps2) (snd ps1) (snd ps2)) ->
+  ~ In (o, f) (footprint H r p) ->
+  ~ In (o, f) (footprint H r p1) /\
+  ~ In (o, f) (footprint H r p2).
+Proof.
+  intros.
+  subst ps1 ps2.
+  repeat rewrite splitPhiAlt in *. simpl in *.
+
+  assert (forall p, footprint H0 r
+          (filter
+             (λ p' : phi',
+              match p' with
+              | phiTrue => true
+              | phiEq _ _ => true
+              | phiNeq _ _ => true
+              | phiAcc _ _ => false
+              | phiType _ _ => true
+              end) p) = []).
+    induction p3; simpl; try tauto.
+    unfold footprint in *.
+    destruct a; simpl; tauto.
+  
+  eapp meetFPnotContains'Rev.
+Qed.
+
 Lemma meetSplitWorks : forall p1 p2,
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
@@ -291,6 +455,91 @@ Proof.
           eapp meetFPnotContains.
 Qed.
 
+Lemma meetSplitWorksRev : forall p1 p2,
+  let ps1 := splitPhi p1 in
+  let ps2 := splitPhi p2 in
+  forall H r A,
+  (exists p, In p (meetSplit (fst ps1) (fst ps2) (snd ps1) (snd ps2)) /\
+             evalphi H r A p) ->
+  (evalphi H r A p1 /\ evalphi H r A p2).
+Proof.
+  induction p1; intros; simpl in *; unf.
+  - split; try constructor.
+    intuition. subst.
+    eapp evalphiSplitMergeRev.
+  - destruct (classic (exists e f, a = phiAcc e f)).
+    * invE H2 e0. invE H2 f0. subst.
+      simpl in *.
+      rewrite in_flat_map in H1. unf.
+      assert (evalphi H0 r A p1 ∧ evalphi H0 r A p2) as ev.
+        eapp IHp1. eex.
+        inversionx H4.
+          inversionx H3. eapp evalphiAexcept.
+        apply in_map_iff in H2. unf. subst.
+        inversionx H3. eapp evalphiAexcept.
+      unf. split; auto.
+      inversionx H4.
+      + inversionx H3.
+        eca.
+        eapp evalphiRemoveAexcept.
+        unfold disjoint. intros. apply or_comm. apply imply_to_or. intros.
+        assert (¬ In x0 (footprint H0 r x1)).
+          apply evalphiImpliesAccess in H15.
+          apply inclAexceptDisjoint in H15.
+          specialize (H15 x0).
+          inversionx H15; try tauto.
+        destruct x0.
+        eappIn meetFPnotContainsRev H15.
+        unf.
+        assumption.
+      + apply in_map_iff in H6. unf. subst.
+        apply filter_In in H7. unf.
+        destruct x2. simpl in *.
+        dec (string_dec f0 s0); try discriminate.
+        subst ps1 ps2. rewrite splitPhiAlt in *. simpl in *.
+        inversionx H3. simpl in *.
+        inversionx H16. common.
+        assert (In (phiAcc e1 s0) p2).
+          unfold staticFootprint in H4.
+          apply in_flat_map in H4. unf.
+          destruct x0; try tauto. simpl in *. intuition.
+          inversionx H3. assumption.
+        eappIn evalphiIn H3. inversionx H3. common.
+        rewrite H16 in *. inversionx H14.
+        assert (footprint' H0 r (phiAcc e0 s0) = [(o0, s0)]) as fp.
+          simpl. rewrite H9. tauto.
+        eca; rewrite fp.
+        ++apply inclSingle.
+          assumption.
+        ++eca.
+          apply in_eq.
+        ++assert (In (o0, s0) (footprint H0 r p2)) as fp2.
+            eapp staticVSdynamicFP.
+          assert (In (o0, s0) (footprint H0 r x1)) as fpx.
+            destruct (classic (In (o0, s0) (footprint H0 r x1))); try tauto.
+            eappIn (meetFPnotContainsRev H0 r A p1 p2) H3. tauto.
+            rewrite splitPhiAlt. simpl in *. assumption.
+          
+          Check meetFPnotContainsRev.
+    (*cont*)
+    * assert (footprint' H0 r a = []) as fp.
+        destruct a; try tauto.
+        contradict H2. eex.
+      assert (fp' := fp).
+      eapply meetSplitAugment1Rev in fp; eauto.
+      + unf.
+        lapply (IHp1 p2 H0 r A);
+        try eex;
+        try apply H6.
+        unf.
+        eca; rewrite fp';
+        try apply inclEmpty;
+        common;
+        assumption.
+      + destruct a; simpl in *; eex.
+        contradict H2. eex.
+Admitted.
+
 
 
 Theorem meetWorks : forall pd1 pd2,
@@ -312,13 +561,6 @@ Proof.
         exists (x1, x0).
         split; auto.
         rewrite in_map_iff. eex.
-      + 
-
-
-
-
-(*cont*)
-
       + specialize (IHpd1 pd2 H0 r A).
         inversionx IHpd1.
         lapply H2; intros.
@@ -327,73 +569,16 @@ Proof.
     * rewrite flat_map_app in H1.
       rewrite in_app_iff in H1.
       inversionx H1.
-      + admit.
+      + apply in_flat_map in H2. unf.
+        apply in_map_iff in H2. unf. subst.
+        simpl in *.
+        assert (evalphi H0 r A a /\ evalphi H0 r A x2).
+          eapp meetSplitWorksRev.
+        unf.
+        split; eex.
       + specialize (IHpd1 pd2 H0 r A).
         inversionx IHpd1.
         lapply H4; intros.
           unf. eex.
         eex.
-Admitted.
-
-
-Lemma phiMeetEmpty : forall a, In a (phiMeet a []).
-Proof.
-  induction a; simpl; try tauto.
-  destruct a; try (apply in_map; assumption).
-  apply in_flat_map.
-  exists a0.
-  intuition.
-  unfold phiEnsureAccess.
-  constructor.
-  tauto.
-Qed.
-
-Lemma evalphiFalse : forall a H r A x f, In (phiAcc x f) a -> ~ evalphi H r A (phiAcc x f :: a).
-Proof.
-  induction a; intros; inversionx H1; intuition.
-  - inversionx H1.
-    inversionx H12.
-    inversionx H11.
-    inversionx H9.
-    unfold footprint' in *.
-    rewrite H1 in *; clear H1.
-    apply H5 in H10.
-    unfold Aexcept, except in H10.
-    apply filter_In in H10.
-    inversionx H10.
-    contradict H2.
-    apply not_true_iff_false.
-    apply negb_false_iff.
-    simpl.
-    unfold A_d'_decb, o_decb, string_decb, dec2decb.
-    destruct (o_dec (fst (o0, f0)) (fst (o0, f0))); try (contradict n; tauto).
-    destruct (string_dec (snd (o0, f0)) (snd (o0, f0))); try (contradict n; tauto).
-    auto.
-  - specialize (IHa H0 r A x0 f0).
-    apply IHa; try assumption. clear IHa.
-    inversionx H1.
-    econstructor; eauto.
-    inversionx H13.
-    apply evalphiAexcept in H15.
-    assumption.
-Qed.
-
-Lemma evalphi'incl : forall A A' H r p, incl A' A -> evalphi' H r A' p -> evalphi' H r A p.
-Proof.
-  intros.
-  inversionx H2;
-  econstructor; eauto.
-Qed.
-
-Lemma evalphiIn : forall b b' H r A, In b' b -> evalphi H r A b -> evalphi' H r A b'.
-Proof.
-  induction b; intros.
-  - inversion H1.
-  - inversionx H1.
-    * inversionx H2.
-      eapply evalphi'incl; eauto.
-    * inversionx H2.
-      eapply IHb in H13; eauto.
-      apply evalphi'Aexcept in H13.
-      assumption.
 Qed.
