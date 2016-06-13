@@ -227,25 +227,29 @@ Proof.
 Qed.
 
 
-Lemma meetSplitDistinctAugment1 : forall ps1a ps1b ps2a ps2b p' H r A,
-   NoDup ps1a ->
-   NoDup ps2a ->
+Lemma meetSplitAugment1 : forall ps1a ps1b ps2a ps2b p' H r A,
    footprint' H r p' = [] ->
-   evalphi' H r [] p' ->
-   (∃ p0 : phi, In p0 (meetSplitDistinct ps1a ps2a ps1b ps2b) ∧ evalphi H r A p0) ->
-   (∃ p0 : phi, In p0 (meetSplitDistinct ps1a ps2a (p' :: ps1b) ps2b) ∧ evalphi H r A p0).
+   (
+    (evalphid H r A (meetSplit ps1a ps2a ps1b ps2b) /\ evalphi' H r [] p')
+    <->
+    (evalphid H r A (meetSplit ps1a ps2a (p' :: ps1b) ps2b))
+   ).
 Proof.
   induction ps1a; intros; unf; simpl in *.
-  - eex.
-    intuition. subst.
-    apply evalphiSymm.
-    rewriteRev app_comm_cons.
-    eca; rewrite H3.
-    * apply inclEmpty.
-    * assumption.
-    * apply evalphiSymm.
-      common.
-      assumption.
+  - split; intros; unfold evalphid in *; unf; simpl in *.
+    * inversionx H3; try tauto.
+      eex.
+      apply evalphiSymm. simpl.
+      eca; rewrite H1.
+      + apply inclEmpty.
+      + assumption.
+      + apply evalphiSymm.
+        common.
+        assumption.
+    * inversionx H2; try tauto.
+      apply evalphiSymm in H4.
+      eex.
+      aapply evalphiSymm in H4. simpl in *.
   - apply in_map_iff in H5. unf.
     apply in_app_iff in H8.
     inversionx H8.
@@ -281,8 +285,8 @@ Proof.
       + apply NoDupRemove.
         assumption.
 Qed.
-
-Lemma meetSplitAugment1Rev : forall ps1a ps1b ps2a ps2b p' H r A,
+ *)
+(* Lemma meetSplitAugment1Rev : forall ps1a ps1b ps2a ps2b p' H r A,
    NoDup ps1a ->
    NoDup ps2a ->
    footprint' H r p' = [] ->
@@ -341,7 +345,7 @@ Proof.
           eca.
       + inversionx H1. assumption.
       + apply NoDupRemove. assumption.
-Qed.
+Qed. *)
 
 (*
 Lemma meetFPnotContains' : forall H r p1a p2a p1b p2b p o f,
@@ -512,18 +516,21 @@ Proof.
 Qed.
  *)
 
-Lemma meetSplitDistinctWorks : forall p2 p1,
+Lemma meetSplitWorks : forall p2 p1,
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
-  NoDup (fst ps1) ->
-  NoDup (fst ps2) ->
   forall H r A,
-  (evalphi H r A p1 /\ evalphi H r A p2) ->
-  (exists p, In p (meetSplitDistinct (fst ps1) (fst ps2) (snd ps1) (snd ps2)) /\
-             evalphi H r A p).
+  (evalphi H r A p1 /\ evalphi H r A p2) <->
+  (evalphid H r A (meetSplit (fst ps1) (fst ps2) (snd ps1) (snd ps2))).
 Proof.
   induction p1; intros; simpl in *; unf.
-    eex. eapp evalphiSplitMerge.
+    split; intros; unfold evalphid in *; unf.
+      eappIn evalphiSplitMerge H3. subst ps2. eex. intuition.
+      split; try constructor. apply InSingle in H1. subst. eapp evalphiSplitMergeRev.
+  split; unfold evalphid in *; intros; unf.
+  - 
+  destruct (classic (~ exists e0 f0, a = phiAcc e0 f0)).
+    split; intros; unfold evalphid in *; unf.
   inversionx H4.
   assert (evalphi H2 r A p1 ∧ evalphi H2 r A p2) as IH.
     apply evalphiAexcept in H15. auto.
