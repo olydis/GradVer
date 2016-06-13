@@ -11,6 +11,32 @@ Proof.
   intuition.
 Qed.
 
+
+Lemma InRemove : forall {T : Type} (x : T) x' xs de,
+  In x (remove de x' xs) ->
+  In x xs.
+Proof.
+  induction xs; intros; simpl in *; try tauto.
+  des (de x'0 a).
+  - eappIn IHxs H0.
+  - inversionx H0; auto.
+    eappIn IHxs H1.
+Qed.
+
+Lemma NoDupRemove : forall {T : Type} (x : T) xs de,
+  NoDup xs ->
+  NoDup (remove de x xs).
+Proof.
+  induction xs; intros; simpl in *; auto.
+  inversionx H0.
+  eappIn IHxs H4.
+  destruct (de x0 a); eauto.
+  constructor; auto.
+  unfold not. intro. contradict H3.
+  apply InRemove in H0.
+  assumption.
+Qed.
+
 Lemma disjointSplitA : forall {A} (l1 l2a l2b : list A),
   disjoint (l2a ++ l2b) l1 ->
   disjoint l2a l1 /\ disjoint l2b l1.
@@ -106,4 +132,44 @@ Proof.
   unfold incl.
   intros.
   intuition.
+Qed.
+
+
+Lemma flat_map_app : forall {T U : Type} (f : T -> list U) l1 l2,
+  flat_map f (l1 ++ l2) = flat_map f l1 ++ flat_map f l2.
+Proof.
+  intros.
+  rewrite flat_map_concat_map.
+  rewrite map_app.
+  rewrite concat_app.
+  repeat rewriteRev flat_map_concat_map.
+  tauto.
+Qed.
+
+Lemma filterApp : forall {T : Type} (f : T -> bool) a b,
+  filter f (a ++ b) = filter f a ++ filter f b.
+Proof.
+  induction a; intros; simpl in *; try tauto.
+  rewrite IHa.
+  destruct (f0 a); tauto.
+Qed.
+
+Lemma in_concat : forall {T : Type} (x : T) xss,
+  In x (concat xss) <->
+  exists xs, In xs xss /\ In x xs.
+Proof.
+  induction xss; intros; simpl in *.
+  - split; try tauto.
+    intros. unf. tauto.
+  - rewrite in_app_iff.
+    rewrite IHxss.
+    split; intros.
+    * inversionx H0.
+      + eex.
+      + unf.
+        eex.
+    * unf.
+      inversionx H0; auto.
+      apply or_intror.
+      eex.
 Qed.

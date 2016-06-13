@@ -1,6 +1,39 @@
 Load GradVer3Defs.
 Import Semantics.
 
+
+Lemma footprintApp : forall H r p1 p2,
+  footprint H r (p1 ++ p2) = footprint H r p1 ++ footprint H r p2.
+Proof.
+  induction p1; intros; simpl in *; try tauto.
+  rewrite IHp1.
+  rewrite app_assoc.
+  tauto.
+Qed.
+
+Lemma footprintMapAcc : forall H r p,
+  footprint H r (map (λ p, phiAcc (fst p) (snd p)) p) =
+  oflatten (map (A'_s2A'_d H r) p).
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  rewrite IHp0.
+  unfold olist, A'_s2A'_d.
+  destruct a.
+  simpl.
+  destruct (evale' H0 r e0); try tauto.
+  destruct v0; tauto.
+Qed.
+
+Lemma footprintMapAccStaticFootprint : forall H r p,
+  footprint H r (map (λ p, phiAcc (fst p) (snd p)) (staticFootprint p)) =
+  footprint H r p.
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  rewriteRev IHp0.
+  rewrite map_app.
+  destruct a; tauto.
+Qed.
+
 Lemma dynSemLift : forall a b S,
   dynSem a b ->
   dynSem (fst a, snd a ++ S) (fst b, snd b ++ S).
@@ -99,10 +132,7 @@ Proof.
   apply negb_false_iff.
   apply existsb_exists.
   eexists; split; eauto.
-  undecb.
-  simpl.
-  dec (o_dec a0 a0).
-  dec (string_dec b b).
+  dec (A'_d_dec x0 x0).
   auto.
 Qed.
 
@@ -319,9 +349,7 @@ Proof.
     apply not_true_iff_false.
     apply negb_false_iff.
     simpl.
-    unfold A'_d_decb, o_decb, string_decb, dec2decb.
-    destruct (o_dec (fst (o0, f0)) (fst (o0, f0))); try (contradict n; tauto).
-    destruct (string_dec (snd (o0, f0)) (snd (o0, f0))); try (contradict n; tauto).
+    dec (A'_d_dec (o0, f0) (o0, f0)).
     auto.
   - specialize (IHa H0 r A x0 f0).
     apply IHa; try assumption. clear IHa.

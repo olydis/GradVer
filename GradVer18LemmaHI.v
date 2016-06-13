@@ -834,3 +834,22 @@ Proof.
     rewrite A_sSubstsFP' in H2.
     assumption.
 Qed.
+
+
+Lemma evalphiDistinctFP : forall H r p A,
+  evalphi H r A p ->
+  NoDup (footprint H r p).
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H1.
+  assert (disjoint (footprint H0 r p0) (footprint' H0 r a)) as dis.
+    eapp inclAexceptDisjoint.
+    eapp evalphiImpliesAccess.
+  apply IHp0 in H12.
+  destruct a; try apply H12.
+  simpl in *.
+  inversionx H11. rewrite H8 in *. simpl in *.
+  constructor; try assumption.
+  specialize (dis (o0, f0)).
+  intuition.
+Qed.

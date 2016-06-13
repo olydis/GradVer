@@ -39,6 +39,21 @@ Definition disjoint {A : Type} (l1 l2 : list A) :=
   forall x, ~ In x l1 \/ ~ In x l2.
 Definition appEnd {A : Type} (l : list A) (x : A) := l ++ [x].
 
+Lemma NoDupApp : forall {T : Type} (a b : list T),
+  NoDup (a ++ b) ->
+  NoDup a /\
+  NoDup b.
+Proof.
+  induction a; intros; simpl in *.
+  - split.
+    * constructor.
+    * assumption.
+  - inversion H. subst.
+    apply IHa in H3.
+    intuition.
+    constructor; intuition.
+Qed.
+
 (*option*)
 Definition option_bind {A B : Type} (f : A -> option B) (x : option A) : option B :=
 match x with

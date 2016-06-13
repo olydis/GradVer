@@ -147,8 +147,17 @@ Definition e_decb := dec2decb e_dec.
 Hint Resolve e_dec.
 Hint Resolve list_eq_dec e_dec.
 
-Definition A'_s_decb (a b : e * f) : bool := e_decb (fst a) (fst b) && string_decb (snd a) (snd b).
-Definition A'_d_decb (a b : o * f) : bool := o_decb (fst a) (fst b) && string_decb (snd a) (snd b).
+Definition A'_s_dec : ∀ n m : A'_s, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance A'_s_EqDec : EqDec A'_s eq := A'_s_dec.
+Definition A'_s_decb := dec2decb A'_s_dec.
+Hint Resolve A'_s_dec.
+Hint Resolve list_eq_dec A'_s_dec.
+
+Definition A'_d_dec : ∀ n m : A'_d, {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance A'_d_EqDec : EqDec A'_d eq := A'_d_dec.
+Definition A'_d_decb := dec2decb A'_d_dec.
+Hint Resolve A'_d_dec.
+Hint Resolve list_eq_dec A'_d_dec.
 
 Ltac undecb :=
   unfold
