@@ -591,6 +591,62 @@ Proof.
   - assumption.
 Qed.
 
+Lemma footprintAppSymm : forall H r p1 p2,
+  footprint H r (p1 ++ p2) = footprint H r (p2 ++ p1).
+Proof.
+  intros.
+  auto.
+Admitted.
+
+Lemma evalphiIsCutAt : forall H r A A1 A2 e o f p,
+  evale' H r e = Some (vo o) ->
+  isCutAt (staticFootprint p) A1 (e, f) A2 ->
+  incl [(o, f)] A ->
+  evalphi H r A p <->
+  evalphi H r (Aexcept A [(o, f)]) (mergePhi (A1 ++ A2) (snd (splitPhi p))).
+Proof.
+  unfold isCutAt, mergePhi.
+  intros.
+  rewrite evalphiSplitMerge.
+  assert (fst (splitPhi p0) = A1 ++ (e0, f0) :: A2).
+    rewrite splitPhiAlt. assumption.
+  rewrite H4.
+  repeat rewrite map_app.
+  set (mm := map (λ p : e * f, phiAcc (fst p) (snd p))).
+  assert (
+    evalphi H0 r A ((mm A1 ++ mm ((e0, f0) :: A2)) ++ snd (splitPhi p0))
+    <->
+    evalphi H0 r A ((mm ((e0, f0) :: A2) ++ mm A1) ++ snd (splitPhi p0))
+    ) as rw1.
+    split; intros;
+    apply evalphiApp in H5; unf;
+    apply evalphiSymm in H6;
+    rewrite footprintAppSymm in H7;
+    eapp evalphiAppRev.
+  assert (
+    evalphi H0 r (Aexcept A [(o0, f0)]) ((mm A1 ++ mm A2) ++ snd (splitPhi p0))
+    <->
+    evalphi H0 r (Aexcept A [(o0, f0)]) ((mm A2 ++ mm A1) ++ snd (splitPhi p0))
+    ) as rw2.
+    split; intros;
+    apply evalphiApp in H5; unf;
+    apply evalphiSymm in H6;
+    rewrite footprintAppSymm in H7;
+    eapp evalphiAppRev.
+  subst mm.
+  rewrite rw1, rw2.
+  repeat rewriteRev app_assoc.
+  simpl.
+  assert (forall p, evalphi H0 r A (phiAcc e0 f0 :: p) <->
+                    evalphi H0 r (Aexcept A [(o0, f0)]) p)
+  as rw.
+    split; intros.
+      inversionx H5. inversionx H15. simpl in *. rewrite H12 in *. inversionx H1. assumption.
+      eca; simpl; rewrite H1; auto. eca. apply in_eq.
+  rewrite rw.
+  tauto.
+Qed.
+
 Lemma meetSplitWorks : forall p1 p2,
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
@@ -612,7 +668,9 @@ Proof.
           
         assert (evalphi H0 r (Aexcept A [(o0, x1)]) p1 ∧ 
                 evalphi H0 r (Aexcept A [(o0, x1)]) (mergePhi (x3 ++ x4) (snd (splitPhi p2)))) as IH.
-          split; auto. admit.
+          split; auto.
+          eappIn evalphiIsCutAt H4.
+          rewriteRev H4. assumption.
         apply IHp1 in IH. unf.
         exists (phiAcc x0 x1 :: phiEq x0 x2 :: x5).
         split.
@@ -686,7 +744,10 @@ Proof.
         unf.
         split.
           eca; simpl; rewrite H10; auto. eca.
-          admit.
+          rewrite splitPhiAlt in H5. simpl in *.
+          inversionx H16. common. rewrite H10 in *. inversionx H12.
+          eappIn evalphiIsCutAt H5.
+          rewrite H5. assumption.
   - subst ps1 ps2.
     split; intros.
     * unf. inversionx H3.
@@ -705,7 +766,7 @@ Proof.
       split; try tauto;
       eca; simpl; common; auto;
       apply inclEmpty.
-Admitted.
+Qed.
 
 Lemma maxS1 : forall a b c x,
   max a b <= c ->
