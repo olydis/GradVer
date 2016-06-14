@@ -52,6 +52,8 @@ Inductive e :=
 | ex : x -> e
 (*coq2latex: edot #e #f := #e.#f *)
 | edot : e -> f -> e.
+
+(* φ: component *)
 Inductive phi' :=
 (*coq2latex: phiTrue := \true *)
 | phiTrue : phi'
@@ -63,7 +65,10 @@ Inductive phi' :=
 | phiAcc : e -> f -> phi'
 (*coq2latex: phiType #x #T := #x : #T *)
 | phiType : x -> T -> phi'.
+(* φ: term = separating conjunction of components *)
 Definition phi := list phi'.
+(* φ: formula = disjunction of terms *)
+Definition phid := list phi.
 Inductive s :=
 (*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
 | sMemberSet : x -> f -> x -> s
@@ -76,14 +81,14 @@ Inductive s :=
 (*coq2latex: sReturn #x := \return #x *)
 | sReturn : x -> s
 (*coq2latex: sAssert #p := \assert #p *)
-| sAssert : phi -> s
+| sAssert : phid -> s
 (*coq2latex: sRelease #p := \release #p *)
-| sRelease : phi -> s
+| sRelease : phid -> s
 (*coq2latex: sDeclare #T #x := #T~#x *)
 | sDeclare : T -> x -> s.
 Inductive contract :=
 (*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
-| Contract : phi -> phi -> contract.
+| Contract : phid -> phid -> contract.
 Inductive method :=
 (*coq2latex: Method #Tr #m #Tp #xp #c #s := #Tr~#m(#Tp~#xp)~#c~\{ #s \} *)
 | Method : T -> m -> T -> x' -> contract -> list s -> method.
@@ -229,12 +234,12 @@ Definition mcontract (C' : C) (m' : m) : option contract :=
     (fun me => match me with Method _ _ _ _ contr _ => contr end)
     (mmethod C' m').
 (*coq2latex: mpre #C #m := \mpre(#C, #m) *)
-Definition mpre (C' : C) (m' : m) : option phi :=
+Definition mpre (C' : C) (m' : m) : option phid :=
   option_map
     (fun contr => match contr with Contract res _ => res end)
     (mcontract C' m').
 (*coq2latex: mpost #C #m := \mpost(#C, #m) *)
-Definition mpost (C' : C) (m' : m) : option phi :=
+Definition mpost (C' : C) (m' : m) : option phid :=
   option_map
     (fun contr => match contr with Contract _ res => res end)
     (mcontract C' m').
@@ -285,16 +290,19 @@ end.
 (*coq2latex: phiSubsts #m #phi := #phi[#m] *)
 Definition phiSubsts (r : list (x * x)) (p : phi) : phi :=
   map (phi'Substs r) p.
+(*coq2latex: phidSubsts #m #phi := #phi[#m] *)
+Definition phidSubsts (r : list (x * x)) (p : phid) : phid :=
+  map (phiSubsts r) p.
 
-(*coq2latex: phiSubst #x #e #phi := #phi[#e / #x] *)
-Definition phiSubst (x' : x) (x'' : x) (p : phi) : phi :=
-  phiSubsts [(x', x'')] p.
+(*coq2latex: phidSubst #x #e #phi := #phi[#e / #x] *)
+Definition phidSubst (x' : x) (x'' : x) (p : phid) : phid :=
+  phidSubsts [(x', x'')] p.
 (*coq2latex: phiSubsts2 #x1 #e1 #x2 #e2 #phi := #phi[#e1, #e2 / #x1, #x2] *)
-Definition phiSubsts2 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (p : phi) : phi :=
-  phiSubsts [(x1, x1') ; (x2, x2')] p.
+Definition phidSubsts2 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (p : phid) : phid :=
+  phidSubsts [(x1, x1') ; (x2, x2')] p.
 (*coq2latex: phiSubsts3 #x1 #e1 #x2 #e2 #x3 #e3 #phi := #phi[#e1, #e2, #e3 / #x1, #x2, #x3] *)
-Definition phiSubsts3 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (x3 : x) (x3' : x) (p : phi) : phi :=
-  phiSubsts [(x1, x1') ; (x2, x2') ; (x3, x3')] p.
+Definition phidSubsts3 (x1 : x) (x1' : x) (x2 : x) (x2' : x) (x3 : x) (x3' : x) (p : phid) : phid :=
+  phidSubsts [(x1, x1') ; (x2, x2') ; (x3, x3')] p.
 
 (*coq2latex: HSubst #o #f #v #H := #H[#o \mapsto [#f \mapsto #v]] *)
 Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
@@ -366,6 +374,10 @@ Fixpoint sfrmphi (a : A_s) (p : phi) : Prop :=
   | [] => True
   | x :: xs => sfrmphi' a x /\ sfrmphi (staticFootprint' x ++ a) xs
   end.
+(*coq2latex: sfrmphid #A #e := #A \sfrmphi #e *)
+Definition sfrmphid (a : A_s) (pd : phid) : Prop :=
+  forall p, In p pd -> sfrmphi a p.
+
 
 (* Figure 6: Evaluation of expressions for core language *)
 Fixpoint evale' (H : H) (rho : rho) (e : e) : option v :=
@@ -447,10 +459,18 @@ Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
     evalphi H r A (x :: xs)
 .
 
+(*coq2latex: evalphid #H #rho #A #p := \evalphix #H #rho #A #p *)
+Definition evalphid H r A (pd : phid) :=
+  exists p, In p pd /\ evalphi H r A p.
+
 (* implication on phi *)
 (*coq2latex: phiImplies #a #b := #a \implies #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
+
+(*coq2latex: phidImplies #a #b := #a \implies #b *)
+Definition phidImplies (p1 p2 : phid) : Prop :=
+  forall h r a, evalphid h r a p1 -> evalphid h r a p2.
 
 
 (* static type derivation *)
@@ -470,9 +490,16 @@ Inductive hasStaticType : phi -> e -> T -> Prop :=
   hasStaticType p (edot e f) T
 .
 
+(*coq2latex: dhasStaticType #p #x #T := #p \vdash #x : #T *)
+Definition dhasStaticType (pd : phid) e T : Prop :=
+  forall p, In p pd -> hasStaticType p e T.
+  
 (*coq2latex: hasNoStaticType #p #x := #x \not\in \dom(#p) *)
 Definition hasNoStaticType (phi : phi) (e : e) : Prop :=
   ~ exists T, hasStaticType phi e T.
+(*coq2latex: dhasNoStaticType #p #x := #x \not\in \dom(#p) *)
+Definition dhasNoStaticType (phi : phid) (e : e) : Prop :=
+  ~ exists T, dhasStaticType phi e T.
 
 (*coq2latex: fieldHasType #x #f #T := \vdash #x.#f : #T *)
 Definition fieldHasType C f T := fieldType C f = Some T.
@@ -483,6 +510,10 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
         (fun arg1 arg2 => phiAcc (ex x) arg1 :: arg2)
         p
         f_bar.
+        
+(*coq2latex: daccListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
+Definition daccListApp (x : x) (f_bar : list f) (pd : phid) : phid :=
+  map (accListApp x f_bar) pd.
 
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
@@ -517,25 +548,26 @@ Definition FV' (phi : phi') : list x :=
   | phiType x T => [x]
   end.
 Definition FV (phi : phi) : list x := flat_map FV' phi.
+Definition FVd (phi : phid) : list x := flat_map FV phi.
 
 Definition FVA_s (A : A_s) : list x := flat_map FVe (map fst A).
 (* Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m). *)
 
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
-Inductive hoareSingle : phi -> s -> phi -> Prop :=
+Inductive hoareSingle : phid -> s -> phid -> Prop :=
 | HNewObj : forall phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
-    hasStaticType phi (ex x) (TClass C) ->
+    phidImplies phi phi' ->
+    sfrmphid [] phi' ->
+    NotIn x (FVd phi') ->
+    dhasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
     hoareSingle
       phi
       (sAlloc x C)
-      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
+      (daccListApp x f_bar (map (app [phiType x (TClass C) ; phiNeq (ex x) (ev vnull)]) phi'))
 | HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc (ex x) f :: 
+    phidImplies phi (phiAcc (ex x) f :: 
                     phiNeq (ex x) (ev vnull) :: phi') ->
     sfrmphi [] phi' ->
     (* NotIn x (FV phi') -> *)
