@@ -114,64 +114,39 @@ Proof.
 Admitted.
 
 (* meet operation *)
-(* Fixpoint meetSplit (pa1 pa2 : A_s) (pb1 pb2 : phi) : phid :=
+Fixpoint meetSplit (pa1 pa2 : A_s) (pb : phi) : phid :=
   match pa1 with
-  | [] => [map (fun p => phiAcc (fst p) (snd p)) pa2 ++ pb1 ++ pb2]
+  | [] => [map (fun p => phiAcc (fst p) (snd p)) pa2 ++ pb]
   | A :: pa1 =>
     map (fun p => phiAcc (fst A) (snd A) :: p)
     (
-      meetSplit pa1 pa2 pb1 pb2
+      meetSplit pa1 pa2 pb
       ++
       concat
       (
         mapRem
         (fun A' pa2 =>
           if f_decb (snd A) (snd A')
-          then map (fun p => phiEq (fst A) (fst A') :: p) (meetSplit pa1 pa2 pb1 pb2)
+          then map (fun p => phiEq (fst A) (fst A') :: p) (meetSplit pa1 pa2 pb)
           else []
         )
         pa2
       )
     )
-  end. *)
-
-Fixpoint meetSplit (pa1 pa2 : A_s) (pb1 pb2 : phi) : phid :=
-  match pa1 with
-  | [] => [map (fun p => phiAcc (fst p) (snd p)) pa2 ++ pb1 ++ pb2]
-  | A :: pa1 =>
-    map (fun p => phiAcc (fst A) (snd A) :: p)
-    (
-      meetSplit pa1 pa2 pb1 pb2
-      ++
-      concat
-      (
-        map
-        (fun pa2 =>
-          match pa2 with
-          | [] => []
-          | A' :: pa2 =>
-            if f_decb (snd A) (snd A')
-            then map (fun p => phiEq (fst A) (fst A') :: p) (meetSplit pa1 pa2 pb1 pb2)
-            else []
-          end
-        )
-        (cycles pa2)
-      )
-    )
   end.
 
-Lemma permutMeetSplit2a : forall pa1 pa2 pa2' pb1 pb2 H r A,
+(* Lemma permutMeetSplit2a : forall pa1 pa2 pa2' pb1 pb2 H r A,
   isPermutation pa2 pa2' ->
   (evalphid H r A (meetSplit pa1 pa2  pb1 pb2) <->
    evalphid H r A (meetSplit pa1 pa2' pb1 pb2)).
 Proof.
   auto.
-Admitted.
+Admitted. *)
 
 Definition meetSingle (p1 p2 : phi) : phid :=
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
-  meetSplit (fst ps1) (fst ps2) (snd ps1) (snd ps2).
+  meetSplit (fst ps1) (fst ps2) (snd ps1 ++ snd ps2).
 
 Definition meet (pd1 pd2 : phid) : phid :=
   flat_map (fun ps => meetSingle (fst ps) (snd ps)) (list_prod pd1 pd2).
@@ -183,59 +158,121 @@ Eval compute in meetSingle [] [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUser
 Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"] [phiAcc (ex (xUserDef "b")) "f"].
 Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"] [phiAcc (ex (xUserDef "b")) "g"].
 Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef "b")) "f"] [phiAcc (ex (xUserDef "c")) "f"].
+Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef "b")) "f"]
+                           [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef "b")) "f"].
 Close Scope string.
 (*END test*)
 
 Lemma evalphiSplitMerge : forall p,
   let ps := splitPhi p in
   forall H r A,
-  evalphi H r A p ->
+  evalphi H r A p <->
   evalphi H r A (map (λ p, phiAcc (fst p) (snd p)) (fst ps) ++ snd ps)
   .
 Proof.
   induction p0; intros; simpl in *; try tauto.
-  inversionx H1.
-  apply IHp0 in H12.
-  destruct a; subst ps; simpl in *;
-  try (apply evalphiSymm;
-      rewriteRev app_comm_cons;
-      eca; simpl;
-      apply evalphiSymm;
-      assumption).
-  eca.
-Qed.
-
-Lemma evalphiSplitMergeRev : forall p,
-  let ps := splitPhi p in
-  forall H r A,
-  evalphi H r A (map (λ p, phiAcc (fst p) (snd p)) (fst ps) ++ snd ps) ->
-  evalphi H r A p
-  .
-Proof.
-  induction p0; intros; simpl in *; try tauto.
   subst ps.
-  destruct a; simpl in *;
-  try (apply evalphiSymm in H1;
-      rewriteRevIn app_comm_cons H1;
-      inversionx H1;
-      eca;
-      common;
-      apply evalphiSymm in H12;
-      eapp IHp0).
-  inversionx H1.
-  eca.
+  split; intros.
+  - inversionx H1.
+    apply IHp0 in H12.
+    destruct a; simpl in *;
+    try (apply evalphiSymm;
+        rewriteRev app_comm_cons;
+        eca; simpl;
+        apply evalphiSymm;
+        assumption).
+    eca.
+  - destruct a; simpl in *;
+    try (apply evalphiSymm in H1;
+        rewriteRevIn app_comm_cons H1;
+        inversionx H1;
+        eca;
+        common;
+        apply evalphiSymm in H12;
+        eapp IHp0).
+    inversionx H1.
+    eca.
+    eapp IHp0.
 Qed.
 
+Lemma evalphidApp : forall H r A p1 p2,
+  evalphid H r A (p1 ++ p2) <->
+  evalphid H r A p1 \/ evalphid H r A p2.
+Proof.
+  unfold evalphid. intros.
+  split; intros; unf.
+  - apply in_app_iff in H1.
+    inversionx H1.
+    * apply or_introl. eex.
+    * apply or_intror. eex.
+  - inversionx H1; unf; eex; intuition.
+Qed.
 
-Lemma meetSplitAugment1 : forall ps1a ps1b ps2a ps2b p' H r A,
+Lemma mapConcat : forall {T U : Type} (f : T -> U) xs,
+  map f (concat xs) = flat_map (map f) xs.
+Proof.
+  intros.
+  rewrite flat_map_concat_map.
+  rewrite concat_map.
+  tauto.
+Qed.
+
+Lemma meetSplitAugment1 : forall ps1 ps2 ps p H r A,
+  let mc := map (cons (phiAcc (fst p) (snd p))) in
+    (evalphid H r A (mc (meetSplit ps1 ps2 ps)) \/
+     exists xs1 x xs2, 
+      isCutAt ps2 xs1 x xs2 /\ snd p = snd x /\
+      evalphid H r A (mc (map (cons (phiEq (fst p) (fst x))) (meetSplit ps1 (xs1 ++ xs2) ps))))
+    <->
+    (evalphid H r A (meetSplit (p :: ps1) ps2 ps))
+   .
+Proof.
+  split; simpl in *; unfold evalphid in *; intuition; unf; intuition.
+  - apply in_map_iff in H2. unf. subst.
+    eex.
+    apply in_map_iff. eex.
+    intuition.
+  - apply in_map_iff in H4. unf. subst.
+    destruct p0, x1. simpl in *. subst.
+    eex.
+    apply in_map_iff. eex.
+    apply in_app_iff. apply or_intror.
+    apply in_concat. eex.
+    apply in_mapRem_iff. repeat eex.
+    simpl.
+    dec (string_dec f1 f1).
+    tauto.
+  - apply in_map_iff in H1. unf. subst.
+    apply in_app_iff in H4.
+    inversionx H4.
+    * constructor. eex.
+      apply in_map_iff. eex.
+    * apply in_concat in H1. unf.
+      apply in_mapRem_iff in H1. unf. subst.
+      destruct p0, x3. simpl in *.
+      dec (string_dec f0 s0); try tauto.
+      apply in_map_iff in H4. unf. subst.
+      apply or_intror. repeat eex.
+      apply in_map_iff. eex.
+      apply in_map_iff. eex.
+Qed.
+
+Lemma meetSplitSymm : forall ps1 ps2 ps H r A,
+  evalphid H r A (meetSplit ps1 ps2 ps) ->
+  evalphid H r A (meetSplit ps2 ps1 ps).
+Proof.
+  admit.
+Admitted.
+
+Lemma meetSplitAugment : forall ps1 ps2 ps p' H r A,
    footprint' H r p' = [] ->
    (
-    (evalphid H r A (meetSplit ps1a ps2a ps1b ps2b) /\ evalphi' H r [] p')
+    (evalphid H r A (meetSplit ps1 ps2 ps) /\ evalphi' H r [] p')
     <->
-    (evalphid H r A (meetSplit ps1a ps2a (p' :: ps1b) ps2b))
+    (evalphid H r A (meetSplit ps1 ps2 (p' :: ps)))
    ).
 Proof.
-  induction ps1a; intros; unf; simpl in *.
+  induction ps1; intros; unf; simpl in *.
   - split; intros; unfold evalphid in *; unf; simpl in *.
     * inversionx H3; try tauto.
       eex.
@@ -248,104 +285,98 @@ Proof.
         assumption.
     * inversionx H2; try tauto.
       apply evalphiSymm in H4.
+      simpl in H4.
+      inversionx H4. rewrite H1 in *.
       eex.
-      aapply evalphiSymm in H4. simpl in *.
-  - apply in_map_iff in H5. unf.
-    apply in_app_iff in H8.
-    inversionx H8.
-    * inversionx H7.
-      eappIn IHps1a H3.
-      + unf.
-        exists (phiAcc (fst a) (snd a) :: x0).
-        split; try eca.
-        apply in_map_iff. eex.
-        apply in_app_iff. eauto.
-      + inversionx H1. assumption.
-    * apply in_flat_map in H6. unf.
-      destruct a, x0. simpl in *.
-      dec (string_dec f0 s0); subst; try tauto.
-      apply in_map_iff in H8. unf. subst.
-      inversionx H7.
-      inversionx H17.
-      inversionx H18.
-      inversionx H20.
+      eex.
+      apply evalphiSymm in H13.
       common.
-      simpl in *. rewrite H14 in *.
-      inversionx H10.
-      eappIn (IHps1a ps1b (remove A'_s_dec (e1, s0) ps2a) ps2b) H3; unf.
-      + exists (phiAcc e0 s0 :: phiEq e0 e1 :: x1). split.
-          apply in_map_iff. eex.
-          apply in_app_iff. apply or_intror.
-          apply in_flat_map. eex. simpl.
-          dec (string_dec s0 s0).
-          apply in_map_iff. eex.
-        eca; simpl; rewrite H14; auto; eca; common; auto.
+      assumption.
+  - destruct a. simpl in *.
+    split; intros; unfold evalphid in *; unf; simpl in *.
+    * apply in_map_iff in H3. unf.
+      apply in_app_iff in H6.
+      inversionx H6.
+      + inversionx H5. inversionx H14. common.
+        simpl in *. rewrite H11 in *.
+        apply (IHps1 ps2 ps p' H0 r (Aexcept A [(o0, f0)])) in H1. unf.
+        lapply H3; intros; eauto.
+        unf. exists (phiAcc e0 f0 :: x0).
+        split.
+          apply in_map_iff. eex. intuition.
+        eca; simpl; rewrite H11; auto.
         eca.
-      + inversionx H1. assumption.
-      + apply NoDupRemove.
+      + apply in_concat in H2. unf.
+        apply in_mapRem_iff in H2. unf. subst.
+        destruct x3. simpl in *.
+        dec (string_dec f0 s0); try tauto.
+        apply in_map_iff in H6. unf. subst.
+        inversionx H5. inversionx H15.
+        simpl in *. rewrite H12 in *.
+        apply (IHps1 (x2 ++ x4) ps p' H0 r (Aexcept A [(o0, s0)])) in H1. unf.
+        lapply H2; intros.
+          unf. exists (phiAcc e0 s0 :: phiEq e0 e1 :: x1).
+          split.
+            apply in_map_iff. eex.
+            apply in_app_iff. apply or_intror.
+            apply in_concat. eex.
+              apply in_mapRem_iff. repeat eex.
+              simpl. dec (string_dec s0 s0).
+              apply in_map_iff. eex.
+            eca; simpl; rewrite H12; auto.
+              eca.
+            inversionx H16.
+            inversionx H21.
+            eca; simpl. eca.
+            common.
+            assumption.
+        split; auto.
+        eex.
+        inversionx H16.
+        common.
+        assumption.
+    * apply in_map_iff in H2. unf. subst.
+      apply in_app_iff in H5.
+      inversionx H5.
+      + inversionx H4.
+        inversionx H13.
+        simpl in *. rewrite H10 in *.
+        apply (IHps1 ps2 ps p' H0 r (Aexcept A [(o0, f0)])) in H1. unf.
+        lapply H4; intros; eex; try apply H1.
+        unf.
+        exists (phiAcc e0 f0 :: x0). split.
+          apply in_map_iff. eex.
+          intuition.
+        eca; simpl; rewrite H10; auto.
+        eca.
+      + apply in_concat in H2. unf.
+        apply in_mapRem_iff in H2. unf. subst.
+        destruct x3. simpl in *.
+        dec (string_dec f0 s0); try tauto.
+        apply in_map_iff in H5. unf. subst.
+        inversionx H4. inversionx H14. simpl in *. rewrite H11 in *.
+        apply (IHps1 (x2 ++ x4) ps p' H0 r (Aexcept A [(o0, s0)])) in H1. unf.
+        lapply H3; intros; unf.
+          split; auto.
+          exists (phiAcc e0 s0 :: phiEq e0 e1 :: x1).
+          split.
+            apply in_map_iff. eex.
+            apply in_app_iff. apply or_intror.
+            apply in_concat. eex.
+              apply in_mapRem_iff. repeat eex.
+              simpl. dec (string_dec s0 s0).
+              apply in_map_iff. eex.
+            eca; simpl; rewrite H11; auto.
+              eca.
+            inversionx H15.
+            inversionx H21.
+            eca; simpl. eca.
+            common.
+            assumption.
+        eex.
+        inversionx H15. common.
         assumption.
 Qed.
- *)
-(* Lemma meetSplitAugment1Rev : forall ps1a ps1b ps2a ps2b p' H r A,
-   NoDup ps1a ->
-   NoDup ps2a ->
-   footprint' H r p' = [] ->
-   (∃ p0 : phi, In p0 (meetSplitDistinct ps1a ps2a (p' :: ps1b) ps2b) ∧ evalphi H r A p0) ->
-   evalphi' H r [] p' /\
-   (∃ p0 : phi, In p0 (meetSplitDistinct ps1a ps2a ps1b ps2b) ∧ evalphi H r A p0).
-Proof.
-  induction ps1a; intros; unf; simpl in *.
-  - inversionx H4; try tauto.
-    apply evalphiSymm in H6.
-    rewriteRevIn app_comm_cons H6.
-    inversionx H6.
-    rewrite H3 in *.
-    split; auto.
-    common.
-    apply evalphiSymm in H15.
-    eex.
-  - apply in_map_iff in H4. unf.
-    apply in_app_iff in H7.
-    inversionx H7.
-    * inversionx H6.
-      assert (NoDup ps1a). inversionx H1. assumption.
-      eappIn (IHps1a ps1b ps2a) H3; try apply H3.
-      unf.
-      exists (phiAcc (fst a) (snd a) :: x0).
-      split.
-      + apply in_map_iff.
-        eex.
-        intuition.
-      + eca.
-    * apply in_flat_map in H5. unf.
-      destruct a, x0. simpl in *.
-      dec (string_dec f0 s0); try tauto.
-      apply in_map_iff in H7. unf. subst.
-      inversionx H6. inversionx H16.
-      inversionx H17. inversionx H19.
-      common.
-      simpl in *.
-      rewrite H9 in *. inversionx H13.
-      eappIn (IHps1a ps1b (remove A'_s_dec (e1, s0) ps2a)) H3; try apply H3. 
-      + unf.
-        exists (phiAcc e0 s0 :: phiEq e0 e1 :: x1).
-        split.
-        ++apply in_map_iff. eex.
-          apply in_app_iff. apply or_intror.
-          apply in_flat_map. eex.
-          simpl.
-          dec (string_dec s0 s0).
-          eapp in_map.
-        ++eca;
-          simpl;
-          rewrite H9;
-          try assumption;
-          eca; common;
-          try assumption.
-          eca.
-      + inversionx H1. assumption.
-      + apply NoDupRemove. assumption.
-Qed. *)
 
 (*
 Lemma meetFPnotContains' : forall H r p1a p2a p1b p2b p o f,
@@ -516,24 +547,74 @@ Proof.
 Qed.
  *)
 
+Lemma InEnsuresCutAt : forall {T : Type} (x : T) p,
+  In x p ->
+  exists xs1 xs2, isCutAt p xs1 x xs2.
+Proof.
+  induction p0; intros; simpl in *; try tauto.
+  inversionx H0.
+  - exists []. exists p0.
+    unfold isCutAt.
+    tauto.
+  - intuition.
+    unf.
+    exists (a :: x1). exists x2.
+    unfold isCutAt in *.
+    subst.
+    tauto.
+Qed.
+
 Lemma meetSplitWorks : forall p2 p1,
   let ps1 := splitPhi p1 in
   let ps2 := splitPhi p2 in
   forall H r A,
   (evalphi H r A p1 /\ evalphi H r A p2) <->
-  (evalphid H r A (meetSplit (fst ps1) (fst ps2) (snd ps1) (snd ps2))).
+  (evalphid H r A (meetSplit (fst ps1) (fst ps2) (snd ps1 ++ snd ps2))).
 Proof.
   induction p1; intros; simpl in *; unf.
     split; intros; unfold evalphid in *; unf.
       eappIn evalphiSplitMerge H3. subst ps2. eex. intuition.
-      split; try constructor. apply InSingle in H1. subst. eapp evalphiSplitMergeRev.
-  split; unfold evalphid in *; intros; unf.
-  - 
+      split; try constructor. apply InSingle in H1. subst. eapp evalphiSplitMerge.
+  destruct (classic (exists e0 f0, a = phiAcc e0 f0)).
+  - unf. subst. subst ps1 ps2.
+    split; unfold evalphid in *; intros; unf.
+    * inversionx H2. inversionx H12. simpl in *. rewrite H9 in *.
+      destruct (classic (In (o0, x1) (footprint H0 r p2))) as [fp2 | fp2].
+      + apply staticVSdynamicFP in fp2. unf.
+        assert (evalphi H0 r A p1 ∧ evalphi H0 r A p2) as IH.
+          apply evalphiAexcept in H13. auto.
+        apply IHp1 in IH. unf.
+        exists (phiAcc x0 x1 :: phiEq x0 x2 :: x3).
+        split.
+          apply in_map_iff. eex.
+          apply in_app_iff. apply or_intror.
+          apply in_concat.
+          apply InEnsuresCutAt in H4. unf.
+          exists (map (λ p0, phiEq x0 x2 :: p0) (meetSplit (fst (splitPhi p1)) (x4 ++ x5) (snd (splitPhi p1) ++ snd (splitPhi p2)))).
+          split.
+            apply in_mapRem_iff.
+            exists x4. exists (x2, x1). exists x5.
+            split.
+              simpl.
+              dec (string_dec x1 x1). tauto.
+            rewrite splitPhiAlt. assumption.
+          apply in_map_iff. eex.
+             simpl. admit.
+          
+        exists (phiAcc x0 x1 :: x2).
+        split.
+          apply in_map_iff. eex. intuition.
+        
+      
+      
+      
+  - destruct (classic (exists e0 f0, a = phiAcc e0 f0)).
+    * 
+    split; intros; unfold evalphid in *; unf.
   destruct (classic (~ exists e0 f0, a = phiAcc e0 f0)).
     split; intros; unfold evalphid in *; unf.
   inversionx H4.
-  assert (evalphi H2 r A p1 ∧ evalphi H2 r A p2) as IH.
-    apply evalphiAexcept in H15. auto.
+ 
   assert (NoDup (fst (splitPhi p1))) as nd1.
     subst ps1. destruct a; simpl in *; auto. inversionx H0. assumption.
   eappIn IHp1 IH. invE IH p'.
@@ -543,7 +624,6 @@ Proof.
   inversionx H14.
   rewrite H11 in *. unf.
   
-  destruct (classic (In (o0, f0) (footprint H2 r p2))).
   - apply staticVSdynamicFP in H6. invE H6 e'. unf.
     eexists (phiAcc e0 f0 :: phiEq e0 e' :: _).
     split.
