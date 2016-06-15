@@ -341,24 +341,40 @@ Proof.
         apply hasDynamicTypeHSubst.
         assumption.
     repeat split; repeat constructor.
-    * eapp sfrmdIncl. apply inclEmpty.
-    * apply eph.
-    * induction e0; intros; inversionx H0; simpl in *.
-      + eex. eca.
-      + eex. eca.
-      + apply H3 in eph.
-        inversionx eph. inversionx H14.
+    * eapp sfrmphidCons.
         eex.
-      + apply H7 in eph.
-        inversionx eph. inversionx H16. common. inversionx H15.
-        unfold ehasDynamicType, evale. simpl.
-        apply IHe0 in H3.
-        inversionx H3. unf. common.
-        rewrite H1 in *. inversionx H6.
-        inversionx H2; try tauto.
-        rewrite H12.
-        simpl.
-        eapp hlp.
+        eca.
+      eappIn evalphidCons eph. unf.
+      eapp sfrmphidCons.
+        eex.
+        eca. eca.
+      eappIn evalphidCons H7. unf.
+      eapp sfrmphidCons.
+        eex.
+        eca; eca.
+      eappIn evalphidCons H10. unf.
+      eapp sfrmphidCons.
+        eex.
+        eca; eca; eca.
+      eapp sfrmdIncl. apply inclEmpty.
+    * apply eph.
+    * set (ppp := (phiType x0 (TClass C0)
+        ::: phiAcc (ex x0) f0
+            ::: phiNeq (ex x0) (ev vnull)
+                ::: phiEq (edot (ex x0) f0) (ex x1) ::: phi'0)) in *.
+      induction e0; intros.
+      + unfold evalphid in eph. unf.
+        specialize (H2 x2).
+        apply H2 in H6.
+        inversionx H6; eex; eca.
+      + unfold evalphid in eph. unf.
+        specialize (H2 x3).
+        apply H2 in H6.
+        inversionx H6.
+        apply H10 in H7.
+        inversionx H7. inversionx H17.
+        eex.
+      + admit.
     * apply hlp.
     * eexists. intros. apply INVheapNT in H0. unf.
       unfold HSubst.

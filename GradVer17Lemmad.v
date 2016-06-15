@@ -132,3 +132,8 @@ Proof.
     apply H4 in H5.
     eca.
 Qed.
+
+(* Ltac epdCommon H := 
+  try (apply sfrmphidEmpty in H; tauto);
+  unfold evalphid in H;
+  inversion H as [?p temp]; clear H; inversionx temp. *)
