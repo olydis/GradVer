@@ -172,6 +172,40 @@ Proof.
   apply HSubstNOTodotInPhi; auto.
 Qed.
 
+Lemma evalphidEmpty : forall H r A,
+  ~ evalphid H r A [].
+Proof.
+  intuition.
+  inversionx H1.
+  tauto.
+Qed.
+Ltac epdCommon H := 
+  try (apply evalphidEmpty in H; tauto);
+  unfold evalphid in H;
+  inversion H as [?p temp]; clear H; inversionx temp.
+
+Lemma evalphidHSubstAexcept : forall p H r A o f x v,
+  sfrmphid [] p ->
+  r x = Some (vo o) ->
+  evalphid H r (Aexcept A [(o, f)]) p ->
+  evalphid (HSubst o f v H) r (Aexcept A [(o, f)]) p.
+Proof.
+  induction p0; intros; simpl in *; epdCommon H3.
+  inversionx H3.
+  - specialize (H1 p1).
+    eex.
+    * eapp in_eq.
+    * eapp evalphiHSubstAexcept.
+      intuition.
+  - eappIn IHp0 H2.
+    * epdCommon H2.
+      eex.
+      eapp in_cons.
+    * unfold sfrmphid in *.
+      intuition.
+    * eex.
+Qed.
+
 
 Lemma evale'eSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 e,
   incl (FVe e) [xUserDef z; xthis] ->
@@ -289,7 +323,7 @@ Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 p A,
     H
     r
     A
-    (phiSubsts2 xthis x1 (xUserDef z) x2 p) ->
+    (phiSubsts [(xthis, x1); (xUserDef z, x2)] p) ->
   evalphi
     H
     (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
@@ -510,7 +544,7 @@ Qed.
 Lemma inclPhiSubsts3 : forall x0 x1 x2 z p p',
   let xUDz := xUserDef z in
   incl (FV p) [xUDz; xthis; xresult] ->
-  In p' (phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 p) ->
+  In p' (phiSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] p) ->
   incl (FV' p') [x2; x1; x0].
 Proof.
   induction p0; intros; simpl in *; inversionx H1;
@@ -653,7 +687,7 @@ Lemma footprint2PhiSubsts3 :
   x0 <> x2 ->
   x0 <> x1 ->
   x1 <> x2 ->
-  footprint fH' fR (phiSubsts3 xthis x1 xUDz x2 xresult x0 p) =
+  footprint fH' fR (phiSubsts [(xthis, x1); (xUDz, x2); (xresult, x0)] p) =
   footprint fH' fR' p.
 Proof.
   induction p0; intros; simpl in *; try tauto.
@@ -709,8 +743,8 @@ Lemma evalphi2PhiSubsts3 :
   evalphi
     fH'
     fR
-    (footprint fH' fR (phiSubsts3 xthis x1 xUDz x2 xresult x0 ppost))
-    (phiSubsts3 xthis x1 xUDz x2 xresult x0 ppost).
+    (footprint fH' fR (phiSubsts [(xthis, x1); (xUDz, x2); (xresult, x0)] ppost))
+    (phiSubsts [(xthis, x1); (xUDz, x2); (xresult, x0)] ppost).
 Proof.
   induction ppost; intros; simpl in *; try constructor.
   eca.

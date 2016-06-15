@@ -69,6 +69,14 @@ Inductive phi' :=
 Definition phi := list phi'.
 (* φ: formula = disjunction of terms *)
 Definition phid := list phi.
+
+Definition dcons (p' : phi') (pd : phid) : phid :=
+  map (cons p') pd.
+Infix ":::" := dcons (at level 60, right associativity) : list_scope.
+Definition dapp (pd1 pd2 : phid) : phid :=
+  flat_map (fun p1 => map (app p1) pd2) pd1.
+Infix "+++" := dapp (at level 60, right associativity) : list_scope.
+
 Inductive s :=
 (*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
 | sMemberSet : x -> f -> x -> s
@@ -463,6 +471,18 @@ Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
 Definition evalphid H r A (pd : phid) :=
   exists p, In p pd /\ evalphi H r A p.
 
+Inductive footprintd : H -> rho -> A_d -> phid -> A_d -> Prop :=
+| FPEmpty : forall H r A, footprintd H r A [] []
+| FPConsTrue : forall H r A A' p ps,
+        evalphi H r A p -> 
+        footprintd H r A ps A' ->
+        footprintd H r A (p :: ps) (footprint H r p ++ A')
+| FPConsFalse : forall H r A A' p ps,
+        ~ evalphi H r A p -> 
+        footprintd H r A ps A' ->
+        footprintd H r A (p :: ps) A'
+.
+
 (* implication on phi *)
 (*coq2latex: phiImplies #a #b := #a \implies #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
@@ -471,7 +491,6 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
 (*coq2latex: phidImplies #a #b := #a \implies #b *)
 Definition phidImplies (p1 p2 : phid) : Prop :=
   forall h r a, evalphid h r a p1 -> evalphid h r a p2.
-
 
 (* static type derivation *)
 (*coq2latex: hasStaticType #p #x #T := #p \vdash #x : #T *)
@@ -565,76 +584,76 @@ Inductive hoareSingle : phid -> s -> phid -> Prop :=
     hoareSingle
       phi
       (sAlloc x C)
-      (daccListApp x f_bar (map (app [phiType x (TClass C) ; phiNeq (ex x) (ev vnull)]) phi'))
-| HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phidImplies phi (phiAcc (ex x) f :: 
-                    phiNeq (ex x) (ev vnull) :: phi') ->
-    sfrmphi [] phi' ->
+      (daccListApp x f_bar (phiType x (TClass C) ::: phiNeq (ex x) (ev vnull) ::: phi'))
+| HFieldAssign : forall (phi(*\*) : phid) phi'(*\*) (x y : x) (f : f) C T,
+    phidImplies phi (phiAcc (ex x) f ::: 
+                     phiNeq (ex x) (ev vnull) ::: phi') ->
+    sfrmphid [] phi' ->
     (* NotIn x (FV phi') -> *)
-    hasStaticType phi (ex x) (TClass C) ->
-    hasStaticType phi (ex y) T ->
+    dhasStaticType phi (ex x) (TClass C) ->
+    dhasStaticType phi (ex y) T ->
     fieldHasType C f T ->
     hoareSingle phi (sMemberSet x f y) 
-      (phiType x (TClass C) ::
-       phiAcc (ex x) f ::
-       phiNeq (ex x) (ev vnull) ::
-       phiEq (edot (ex x) f) (ex y) :: phi')
+      (phiType x (TClass C) :::
+       phiAcc (ex x) f :::
+       phiNeq (ex x) (ev vnull) :::
+       phiEq (edot (ex x) f) (ex y) ::: phi')
 | HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+    phidImplies phi phi' ->
+    sfrmphid [] phi' ->
+    NotIn x (FVd phi') ->
     NotIn x (FVe e) ->
-    hasStaticType phi (ex x) T ->
-    hasStaticType phi e T ->
-    sfrme (staticFootprint phi') e ->
-    hoareSingle phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
+    dhasStaticType phi (ex x) T ->
+    dhasStaticType phi e T ->
+    (forall p, In p phi' -> sfrme (staticFootprint p) e) ->
+    hoareSingle phi (sAssign x e) (map (fun p => p ++ [phiEq (ex x) e]) phi')
 | HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn xresult (FV phi') ->
-    hasStaticType phi (ex x) T ->
-    hasStaticType phi (ex xresult) T ->
+    phidImplies phi phi' ->
+    sfrmphid [] phi' ->
+    NotIn xresult (FVd phi') ->
+    dhasStaticType phi (ex x) T ->
+    dhasStaticType phi (ex xresult) T ->
     hoareSingle 
       phi 
       (sReturn x) 
-      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
+      (phiType xresult T ::: phiEq (ex xresult) (ex x) ::: phi')
 | HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
-    hasStaticType phi_i (ex y) (TClass C) ->
+    dhasStaticType phi_i (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
-    hasStaticType phi_i (ex x) T_r ->
-    hasStaticType phi_i (ex z') T_p ->
-    phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
-    sfrmphi [] phi_r ->
-    NotIn x (FV phi_r) ->
+    dhasStaticType phi_i (ex x) T_r ->
+    dhasStaticType phi_i (ex z') T_p ->
+    phidImplies phi_i (phiNeq (ex y) (ev vnull) ::: phi_p +++ phi_r) ->
+    sfrmphid [] phi_r ->
+    NotIn x (FVd phi_r) ->
     (* NotIn y (FV phi_r) ->
     NotIn z' (FV phi_r) -> *)
     listDistinct [x ; y ; z'] ->
-    phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
-    phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
+    phi_p = phidSubsts2 xthis y (xUserDef z) z' phi_pre ->
+    phi_q = phidSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
     hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
-    phiImplies phi_1 phi_2 ->
+    phidImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
 | HRelease : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
-    phiImplies phi_1 (phi_2 ++ phi_r) ->
-    sfrmphi [] phi_r ->
+    phidImplies phi_1 (phi_2 ++ phi_r) ->
+    sfrmphid [] phi_r ->
     hoareSingle phi_1 (sRelease phi_2) phi_r
 | HDeclare : forall phi(*\*) phi'(*\*) x T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+    phidImplies phi phi' ->
+    sfrmphid [] phi' ->
+    NotIn x (FVd phi') ->
     hoareSingle 
       phi
       (sDeclare T x)
-      (phiType x T ::
-       phiEq (ex x) (ev (defaultValue' T)) :: phi')
+      (phiType x T :::
+       phiEq (ex x) (ev (defaultValue' T)) ::: phi')
 .
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
-Inductive hoare : phi -> list s -> phi -> Prop :=
-| HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
+Inductive hoare : phid -> list s -> phid -> Prop :=
+| HSec : forall (p q1 q2 r : phid) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
     hoareSingle p s1 q1 ->
-    phiImplies q1 q2 ->
+    phidImplies q1 q2 ->
     hoare q2 s2 r ->
     hoare p (s1 :: s2) r
 | HEMPTY : forall p, hoare p [] p
@@ -653,6 +672,11 @@ Definition rhoFrom3 (x1 : x) (v1 : v) (x2 : x) (v2 : v) (x3 : x) (v3 : v) : rho 
 
 (*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
 Definition HeapNotSetAt (H : H) (o : o) : Prop := H o = None.
+
+Definition isContainedInAll {T : Type} (ls : list (list T)) (l : list T) :=
+  forall ls', In ls' ls -> incl l ls'.
+Definition isIntersection {T : Type} (ls : list (list T)) (l : list T) :=
+  isContainedInAll ls l /\ (forall x, isContainedInAll ls (x :: l) -> In x l).
 
 Definition execState : Set := H * S.
 (*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
@@ -684,23 +708,24 @@ Inductive dynSem : execState -> execState -> Prop :=
     H o = Some (C, underscore) ->
     mmethod C m = Some (Method T_r m T w (Contract phi underscore2) r_bar) ->
     rho' = rhoFrom3 xresult (defaultValue T_r) xthis (vo o) (xUserDef w) v ->
-    evalphi H rho' A phi ->
-    A' = footprint H rho' phi ->
+    evalphid H rho' A phi ->
+    footprintd H rho' A phi A' ->
     dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
 | ESAppFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
     evale H rho (ex y) (vo o) ->
     H o = Some (C, underscore) ->
     mpost C m = Some phi ->
-    evalphi H rho' A' phi ->
-    A'' = footprint H rho' phi ->
+    evalphid H rho' A' phi ->
+    footprintd H rho' A' phi A'' ->
     evale H rho' (ex xresult) v_r ->
     dynSem (H, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (H, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
 | ESAssert : forall H rho(*\*) A phi(*\*) s_bar(*\overline{s}*) S,
-    evalphi H rho A phi ->
+    evalphid H rho A phi ->
     dynSem (H, (rho, A, sAssert phi :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
-| ESRelease : forall H rho(*\*) A A' phi(*\*) s_bar(*\overline{s}*) S,
-    evalphi H rho A phi ->
-    A' = Aexcept A (footprint H rho phi) ->
+| ESRelease : forall H rho(*\*) A A' A'' phi(*\*) s_bar(*\overline{s}*) S,
+    evalphid H rho A phi ->
+    footprintd H rho A phi A'' ->
+    A' = Aexcept A A'' ->
     dynSem (H, (rho, A, sRelease phi :: s_bar) :: S) (H, (rho, A', s_bar) :: S)
 | ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*\overline{s}*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
@@ -749,13 +774,13 @@ Inductive writesTo : x -> s -> Prop :=
 Definition mWellDefined (C : C) (m : method) := 
   match m with Method T' m' pT px c s =>
     match c with Contract pre post =>
-      let pre' := phiType (xUserDef px) pT :: phiType xthis (TClass C) :: pre in
-      let post' := phiType (xUserDef px) pT :: phiType xthis (TClass C) :: phiType xresult T' :: post in
-        incl (FV pre) [xUserDef px ; xthis] /\
-        incl (FV post) [xUserDef px ; xthis ; xresult] /\
+      let pre' := phiType (xUserDef px) pT ::: phiType xthis (TClass C) ::: pre in
+      let post' := phiType (xUserDef px) pT ::: phiType xthis (TClass C) ::: phiType xresult T' ::: post in
+        incl (FVd pre) [xUserDef px ; xthis] /\
+        incl (FVd post) [xUserDef px ; xthis ; xresult] /\
         hoare pre' s post' /\
-        sfrmphi [] pre /\
-        sfrmphi [] post /\
+        sfrmphid [] pre /\
+        sfrmphid [] post /\
         (forall s', In s' s -> ~ writesTo xthis s') /\
         (forall s', In s' s -> ~ writesTo (xUserDef px) s')
     end

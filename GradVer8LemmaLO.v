@@ -829,6 +829,13 @@ Proof.
     * apply incl_appr.
       assumption.
 Qed.
+
+Lemma sfrmdIncl : forall p a b, incl a b -> sfrmphid a p -> sfrmphid b p.
+Proof.
+  unfold sfrmphid.
+  intros.
+  eapp sfrmIncl.
+Qed.
 (* end incl and sfrm *)
 
 
