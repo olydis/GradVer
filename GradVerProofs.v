@@ -233,48 +233,6 @@ Proof.
     intuition.
 Qed.
 
-Lemma evalphidCons : forall H r A p' pd,
-  evalphid H r A (p' ::: pd) <->
-  incl (footprint' H r p') A /\
-  evalphi' H r (footprint' H r p') p' /\
-  evalphid H r (Aexcept A (footprint' H r p')) pd.
-Proof.
-  induction pd; split; intros; simpl in *.
-  - inversionx H1.
-    tauto.
-  - unf.
-    inversionx H4.
-    tauto.
-  - unfold evalphid in *. unf.
-    inversionx H1.
-    * inversionx H3.
-      split; auto.
-      split; auto.
-      eex.
-      eapp in_eq.
-    * lapply H2; intros.
-      + unf.
-        split; auto.
-        split; auto.
-        eex.
-        eapp in_cons.
-      + eex.
-  - unf.
-    unfold evalphid in H4. unf.
-    inversionx H4.
-    * eex.
-      + eapp in_eq.
-      + eca.
-    * lapply H5; intros.
-      + unfold evalphid in H4. unf.
-        eex.
-        eapp in_cons.
-      + split; auto.
-        split; auto.
-        eex.
-Qed.
-
-Ltac ecad := apply evalphidCons; simpl; repeat split.
 
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phid) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->
@@ -383,7 +341,7 @@ Proof.
         apply hasDynamicTypeHSubst.
         assumption.
     repeat split; repeat constructor.
-    * eapply sfrmdIncl; eauto. apply inclEmpty.
+    * eapp sfrmdIncl. apply inclEmpty.
     * apply eph.
     * induction e0; intros; inversionx H0; simpl in *.
       + eex. eca.

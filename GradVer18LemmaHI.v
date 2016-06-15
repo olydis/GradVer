@@ -1,4 +1,4 @@
-Load GradVer16LemmaHalloc.
+Load GradVer17Lemmad.
 Import Semantics.
 
 
@@ -171,18 +171,6 @@ Proof.
     eapp AexceptNOTodotInPhi.
   apply HSubstNOTodotInPhi; auto.
 Qed.
-
-Lemma evalphidEmpty : forall H r A,
-  ~ evalphid H r A [].
-Proof.
-  intuition.
-  inversionx H1.
-  tauto.
-Qed.
-Ltac epdCommon H := 
-  try (apply evalphidEmpty in H; tauto);
-  unfold evalphid in H;
-  inversion H as [?p temp]; clear H; inversionx temp.
 
 Lemma evalphidHSubstAexcept : forall p H r A o f x v,
   sfrmphid [] p ->

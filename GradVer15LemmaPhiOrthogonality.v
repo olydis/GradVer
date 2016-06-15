@@ -2,7 +2,7 @@ Load GradVer14LemmaAliasing.
 (* Load GradVer12LemmaFootprint. *)
 Import Semantics.
 
-
+Definition phidSatisfiable (p : phid) := exists H r A, evalphid H r A p.
 
 Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
 
