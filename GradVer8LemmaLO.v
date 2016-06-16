@@ -1,6 +1,12 @@
 Load GradVer3Defs.
 Import Semantics.
 
+Lemma ecoincidesEmpty : forall H r o,
+  ecoincides H r o [] = false.
+Proof.
+  tauto.
+Qed.
+
 Lemma Aexcept2AppComm : forall A2 A3 A1,
   Aexcept A1 (A2 ++ A3) = Aexcept A1 (A3 ++ A2).
 Proof.
@@ -22,8 +28,8 @@ Proof.
   tauto.
 Qed.
 
-Lemma footprintMapAcc : forall H r p,
-  footprint H r (map (λ p, phiAcc (fst p) (snd p)) p) =
+(* Lemma footprintMapAcc : forall H r p,
+  footprint H r (map (λ p, phiAcc [] (fst p) (snd p)) p) =
   oflatten (map (A'_s2A'_d H r) p).
 Proof.
   induction p0; intros; simpl in *; try tauto.
@@ -36,14 +42,14 @@ Proof.
 Qed.
 
 Lemma footprintMapAccStaticFootprint : forall H r p,
-  footprint H r (map (λ p, phiAcc (fst p) (snd p)) (staticFootprint p)) =
+  footprint H r (map (λ p, phiAcc [] (fst p) (snd p)) (staticFootprint p)) =
   footprint H r p.
 Proof.
   induction p0; intros; simpl in *; try tauto.
   rewriteRev IHp0.
   rewrite map_app.
-  destruct a; tauto.
-Qed.
+  destruct a; try tauto.
+Qed. *)
 
 Lemma dynSemLift : forall a b S,
   dynSem a b ->
@@ -278,8 +284,13 @@ Proof.
   simpl;
   try apply inclEmpty.
   rewrite H3.
-  rewrite inclSingle.
-  assumption.
+  inversionx H4.
+  - unfold incl.
+    destruct (ecoincides H0 r o0 es); intuition.
+    apply InSingle in H2. subst.
+    assumption.
+  - rewrite H1.
+    apply inclEmpty.
 Qed.
 
 Lemma inclAexceptTriple : forall P Q A,
@@ -339,12 +350,13 @@ Proof.
   intros.
   inversionx H0;
   econstructor; eauto.
-  unfold Aexcept, except in H3.
-  apply filter_In in H3.
+  intuition.
+  unfold Aexcept, except in H0.
+  apply filter_In in H0.
   intuition.
 Qed.
 
-Lemma evalphiFalse : forall a H r A x f, In (phiAcc x f) a -> ~ evalphi H r A (phiAcc x f :: a).
+Lemma evalphiFalse : forall a H r A x f, In (phiAcc [] x f) a -> ~ evalphi H r A (phiAcc [] x f :: a).
 Proof.
   induction a; intros; inversionx H1; intuition.
   - inversionx H1.
@@ -352,16 +364,11 @@ Proof.
     inversionx H11.
     unfold footprint' in *.
     rewrite H9 in *; clear H9.
-    apply H5 in H10.
-    unfold Aexcept, except in H10.
-    apply filter_In in H10.
-    inversionx H10.
-    contradict H2.
-    apply not_true_iff_false.
-    apply negb_false_iff.
-    simpl.
-    dec (A'_d_dec (o0, f0) (o0, f0)).
-    auto.
+    rewrite ecoincidesEmpty in *. intuition.
+    apply H5 in H1.
+    apply InAexceptNot in H1.
+    contradict H1.
+    apply in_eq.
   - specialize (IHa H0 r A x0 f0).
     apply IHa; try assumption. clear IHa.
     inversionx H1.
@@ -376,6 +383,7 @@ Proof.
   intros.
   inversionx H2;
   econstructor; eauto.
+  intuition.
 Qed.
 
 Lemma evalphiIn : forall b b' H r A, In b' b -> evalphi H r A b -> evalphi' H r A b'.
@@ -605,8 +613,10 @@ Proof.
   intros;
   constructor;
   inversionx H0;
-  apply sfrmeAccessReorder;
-  assumption.
+  try eapp sfrmeAccessReorder.
+  intros.
+  apply H4 in H0.
+  eapp sfrmeAccessReorder.
 Qed.
 
 Lemma sfrmphiAccessReorder : forall p a1 a2 a3 a4,
@@ -709,6 +719,22 @@ Proof.
     tauto.
 Qed.
 
+Lemma ecoincidesRemoveRhoSubst : forall o es H r x v,
+  ~ In x (flat_map FVe es) ->
+  ecoincides H (rhoSubst x v r) o es = ecoincides H r o es.
+Proof.
+  induction es;
+  unfold evale in *;
+  simpl in *;
+  intros; try tauto.
+  rewrite in_app_iff in H1.
+  apply not_or_and in H1. unf.
+  unfold ecoincides in *.
+  simpl.
+  rewrite IHes; auto.
+  rewrite evale'RemoveRhoSubst; auto.
+Qed.
+
 Lemma evalphi'RemoveRhoSubst : forall p H r A x v,
   ~ In x (FV' p) ->
   evalphi' H (rhoSubst x v r) A p <->
@@ -724,8 +750,8 @@ Proof.
   try erewrite evaleRemoveRhoSubst in *;
   eauto;
   intuition;
-  unfold rhoSubst in *;
-  dec (x_dec x1 x0);
+  try (unfold rhoSubst in *; dec (x_dec x1 x0); intuition; fail);
+  try rewrite ecoincidesRemoveRhoSubst in *; eauto;
   intuition.
 Qed.
 
@@ -740,7 +766,11 @@ Proof.
   try tauto.
   
   simpl in *.
+  rewrite in_app_iff in H1.
   rewrite evaleRemoveRhoSubst; auto.
+  destruct (evale' H0 r e0); try tauto.
+  destruct v1; try tauto.
+  rewrite ecoincidesRemoveRhoSubst; tauto.
 Qed.
 
 Lemma footprintRemoveRhoSubst : forall p H r x v,
@@ -822,7 +852,10 @@ Lemma sfrm'Incl : forall p a b, incl a b -> sfrmphi' a p -> sfrmphi' b p.
 Proof.
   intros.
   inversionx H1; try constructor;
-  eapply sfrmeIncl; eauto.
+  try eapply sfrmeIncl; eauto.
+  intros.
+  apply H2 in H1.
+  eapp sfrmeIncl.
 Qed.
 
 Lemma sfrmIncl : forall p a b, incl a b -> sfrmphi a p -> sfrmphi b p.
@@ -857,11 +890,12 @@ Proof.
   intros; simpl; repeat eexists; eauto.
 Qed.
 
-
-Lemma eSubstsEmpty : forall p, eSubsts [] p = p.
+Require Import Coq.Logic.FunctionalExtensionality.
+Lemma eSubstsEmpty : eSubsts [] = id.
 Proof.
-  induction p0; simpl; try tauto.
-  rewrite IHp0. tauto.
+  apply functional_extensionality.
+  induction x0; simpl; try tauto.
+  rewrite IHx0. tauto.
 Qed.
 
 Lemma phiSubstsEmpty : forall p, phiSubsts [] p = p.
@@ -869,7 +903,9 @@ Proof.
   induction p0; simpl; try tauto.
   rewrite IHp0.
   unfold phi'Substs.
-  destruct a; repeat rewrite eSubstsEmpty; tauto.
+  destruct a; repeat rewrite eSubstsEmpty; try tauto.
+  rewrite map_id.
+  tauto.
 Qed.
 
 
@@ -1076,21 +1112,23 @@ Proof.
   try eapp IHp0.
   
   inversionx H11.
-  destruct (evale' H0 r e0); try tauto.
-  destruct v0; try tauto.
-  simpl.
-  undecb.
-  simpl.
-  dec (o_dec o1 o1).
-  dec (string_dec f0 f0).
-  simpl.
-  rewrite AexceptReduceSecond.
-    rewrite AexceptEmpty.
+  rewrite H8 in *.
+  inversionx H10.
+  - destruct (ecoincides H0 r o0 l); try tauto.
+    simpl.
+    dec (A'_d_dec (o0, f0) (o0, f0)).
+    simpl.
+    rewrite AexceptReduceSecond.
+      rewrite AexceptEmpty.
+      eapp IHp0.
+    apply evalphiImpliesAccess in H12.
+    specialize (H12 (o0, f0)).
+    intuition.
+    apply InAexceptNot in H3.
+    intuition.
+  - rewrite H1 in *.
+    simpl.
+    rewrite AexceptEmpty in *.
     eapp IHp0.
-  apply evalphiImpliesAccess in H12.
-  specialize (H12 (o1, f0)).
-  intuition.
-  apply InAexceptNot in H2.
-  intuition.
 Qed.
   
