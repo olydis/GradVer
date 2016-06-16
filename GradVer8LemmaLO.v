@@ -284,7 +284,7 @@ Proof.
   simpl;
   try apply inclEmpty.
   rewrite H3.
-  inversionx H4.
+  inversionx H5.
   - unfold incl.
     destruct (ecoincides H0 r o0 es); intuition.
     apply InSingle in H2. subst.
@@ -363,7 +363,7 @@ Proof.
     inversionx H12.
     inversionx H11.
     unfold footprint' in *.
-    rewrite H9 in *; clear H9.
+    rewrite H10 in *; clear H10.
     rewrite ecoincidesEmpty in *. intuition.
     apply H5 in H1.
     apply InAexceptNot in H1.
@@ -752,7 +752,26 @@ Proof.
   intuition;
   try (unfold rhoSubst in *; dec (x_dec x1 x0); intuition; fail);
   try rewrite ecoincidesRemoveRhoSubst in *; eauto;
+  rewrite in_app_iff, in_flat_map in *;
   intuition.
+  - assert (H3' := H3).
+    apply H11 in H3; try tauto. unf.
+    rewrite evale'RemoveRhoSubst in H1. eex.
+    intuition.
+    contradict H4. eex.
+  - assert (H3' := H3).
+    apply H11 in H3; try tauto. unf.
+    rewrite evale'RemoveRhoSubst in H1. eex.
+    intuition.
+    contradict H4. eex.
+  - assert (H3' := H3).
+    apply H11 in H3; try tauto.
+    rewrite evale'RemoveRhoSubst; intuition.
+    contradict H4. eex.
+  - assert (H3' := H3).
+    apply H11 in H3; try tauto.
+    rewrite evale'RemoveRhoSubst; intuition.
+    contradict H4. eex.
 Qed.
 
 Lemma footprint'RemoveRhoSubst : forall p H r x v,
@@ -1112,8 +1131,8 @@ Proof.
   try eapp IHp0.
   
   inversionx H11.
-  rewrite H8 in *.
-  inversionx H10.
+  rewrite H9 in *.
+  inversionx H13.
   - destruct (ecoincides H0 r o0 l); try tauto.
     simpl.
     dec (A'_d_dec (o0, f0) (o0, f0)).

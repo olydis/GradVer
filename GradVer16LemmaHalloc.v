@@ -34,11 +34,36 @@ Proof.
            if string_dec f0 (snd fs') then true else false) l); try discriminate.
 Qed.
 
+Lemma ecoincidesHalloc : forall H r o l o0 C,
+  H o0 = None ->
+  ecoincides H r o l =
+  ecoincides (Halloc o0 C H) r o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty in *.
+    tauto.
+  - unfold ecoincides in *.
+    simpl.
+    erewrite IHl; try eassumption.
+    undecb.
+    destruct (option_dec v_dec (evale' H0 r a) (Some (vo o0))) eqn: ee;
+    try assert (xx := e0);
+    try assert (xx := n);
+    rewrite evale'Halloc in xx; try eassumption.
+    * erewrite e0, xx.
+      tauto.
+    * clear ee.
+      des (option_dec v_dec (Some (vo o0)) (evale' (Halloc o1 C0 H0) r a));
+      try tauto. clear de2.
+      des (option_dec v_dec (Some (vo o0)) (evale' H0 r a));
+      try tauto.
+Qed.
+
 Lemma footprint'Halloc : forall H r o C p,
   H o = None ->
   footprint' H r p = footprint' (Halloc o C H) r p.
 Proof.
-  intros.
+  intros. assert (H1x := H1).
   destruct p0; simpl; try tauto.
   destruct (evale' H0 r e0) eqn: ee1;
   destruct (evale' (Halloc o0 C0 H0) r e0) eqn: ee2;
@@ -55,7 +80,7 @@ Proof.
   - apply H1 in ee2.
     rewrite ee2 in *.
     inversionx ee1.
-    tauto.
+    erewrite ecoincidesHalloc; eauto.
   - apply H1 in ee1.
     rewrite ee2 in *.
     discriminate.
@@ -99,12 +124,18 @@ Proof.
     inversionx H12;
     eca;
     try eapp evaleRemoveHalloc.
-    unfold Halloc.
-    destruct (fields C0); auto.
-    inversionx H4; eca.
-    dec (o_dec o0 o1); eauto.
-    rewrite H1 in *.
-    discriminate.
+    * intros.
+      apply H4 in H2. unf.
+      exists x0.
+      eapp evaleRemoveHalloc.
+    * inversionx H5; auto.
+      erewrite ecoincidesHalloc in H2; eauto.
+    * unfold Halloc.
+      destruct (fields C0); auto.
+      inversionx H4; eca.
+      dec (o_dec o0 o1); eauto.
+      rewrite H1 in *.
+      discriminate.
   - rewriteRev footprint'Halloc; auto.
 Qed.
 

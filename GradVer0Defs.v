@@ -443,6 +443,7 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     evalphi' H rho A (phiNeq e_1 e_2)
 | EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f es,
     evale H rho e (vo o) ->
+    (forall e', In e' es -> exists o, evale H rho e' (vo o)) ->
     (In (o, f) A \/ ecoincides H rho o es = true) ->
     evalphi' H rho A (phiAcc es e f)
 | EAType : forall H rho(*\*) (A : A_d) x T v,

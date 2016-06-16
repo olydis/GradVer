@@ -2,49 +2,46 @@ Load GradVer10LemmaSfrmSubst.
 Import Semantics.
 
 Lemma dynamicASstaticFP : forall H r p,
-  footprint H r p = oflatten (map (A'_s2A'_d H r) (staticFootprint p)).
+  incl (oflatten (map (A'_s2A'_d H r) (staticFootprint p))) (footprint H r p).
 Proof.
-  induction p0; try tauto.
+  induction p0; simpl; try apply inclEmpty.
   destruct a; try tauto.
-  simpl.
-  rewrite IHp0.
-  unfold A'_s2A'_d. simpl.
+  unfold incl. intros.
+  rewrite map_app, oflattenApp, in_app_iff in H1.
+  inversionx H1; try rewrite IHp0 in H2; intuition.
+  simpl in *.
+  destruct l; try tauto.
+  unfold A'_s2A'_d in *. simpl in *.
   destruct (evale' H0 r e0); try tauto.
   destruct v0; try tauto.
-Qed.
-
-Lemma staticVSdynamicFP : forall p H r o f,
-  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint p))
-  <->
-  In (o, f) (footprint H r p).
-Proof.
-  intros.
-  unfold staticFootprint, footprint, staticFootprint', footprint'.
-  split; intros; unf; rewrite in_flat_map in *; unf.
-  - eexists; split; eauto.
-    destruct x1; inversionx H4; inversionx H2; try tauto.
-    rewrite H1.
-    intuition.
-  - destruct x0; try inversionx H3.
-    exists e0.
-    rewrite in_flat_map.
-    destruct (evale' H0 r e0); try inversionx H3.
-    destruct v0; try inversionx H3; inversionx H2; try tauto.
-    split; intuition.
-    eexists; split; eauto.
-    simpl.
-    auto.
+  intuition.
 Qed.
 
 Lemma staticVSdynamicFP' : forall p H r o f,
-  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint' p))
-  <->
-  In (o, f) (footprint' H r p).
+  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint' p)) ->
+  In (o, f) (footprint' H r p)
+  .
 Proof.
-  intros.
-  assert (sdFP := staticVSdynamicFP [p0] H0 r o0 f0).
-  simpl in sdFP. repeat rewrite app_nil_r in sdFP.
-  assumption.
+  intros. unf.
+  destruct p0; try tauto. simpl in *.
+  destruct l; inversionx H3; try tauto.
+  inversionx H2.
+  rewrite H1.
+  rewrite ecoincidesEmpty.
+  apply in_eq.
+Qed.
+
+Lemma staticVSdynamicFP : forall p H r o f,
+  (exists e, evale' H r e = Some (vo o) /\ In (e, f) (staticFootprint p)) ->
+  In (o, f) (footprint H r p).
+Proof.
+  induction p0; intros; simpl in *; unf; try tauto.
+  rewrite in_app_iff in *.
+  inversionx H3.
+  - apply or_introl.
+    eapp staticVSdynamicFP'.
+  - apply or_intror.
+    eapp IHp0.
 Qed.
 
 Lemma footprintContainsNot : forall p H r A o f,
@@ -75,6 +72,8 @@ Proof.
   destruct a; simpl in *; try (eapply IHp0; eassumption).
   destruct (evale' H0 r e0); simpl in *; try (eapply IHp0; eassumption).
   destruct v0; simpl in *; try (eapply IHp0; eassumption).
+  destruct (ecoincides H0 r o0 l).
+    common. eapp IHp0.
   split.
   - eapply footprintContainsNot.
     eauto.

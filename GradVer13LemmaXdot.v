@@ -48,7 +48,7 @@ Definition staticFootprintX' (p : phi') : A_s :=
   | phiTrue => []
   | phiEq  e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
   | phiNeq e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
-  | phiAcc e _ => staticFootprintXe e
+  | phiAcc es e _ => flat_map staticFootprintXe es ++ staticFootprintXe e
   | phiType _ _ => []
   end.
 
@@ -98,9 +98,18 @@ Proof.
     constructor;
     eapp sfrmeVSsfpX.
   - inversionx H0.
-    eapp sfrmeVSsfpX.
-  - constructor.
-    eapp sfrmeVSsfpX.
+    apply incl_app; try eapp sfrmeVSsfpX.
+    unfold incl. intros.
+    rewrite in_flat_map in H0. unf.
+    apply H4 in H0.
+    apply sfrmeVSsfpX in H0.
+    eapp H0.
+  - apply inclApp in H0. unf.
+    constructor; intros; eapp sfrmeVSsfpX.
+    intros.
+    unfold incl in *. intros.
+    apply H1.
+    apply in_flat_map. eex.
   - apply inclEmpty.
   - constructor.
 Qed.
@@ -151,7 +160,7 @@ Proof.
   destruct x0, a.
   unfold A'_s2A'_d in *.
   simpl in *.
-  rewriteRev staticVSdynamicFP.
+  apply staticVSdynamicFP.
   eexists e0.
   destruct (evale' H0 r e0); try discriminate.
   simpl in *.
@@ -188,7 +197,31 @@ Proof.
   repeat rewrite oflattenApp;
   repeat rewrite oflattenMapSome;
   try rewrite map_app;
-  tauto.
+  try tauto.
+  assert (forall {T : Type} xs,
+          (forall x : option T, In x xs -> x <> None) ->
+          map Some (oflatten xs) = xs)
+  as mm.
+    induction xs; intros; simpl in *; try tauto.
+    rewrite map_app.
+    unfold olist.
+    rewrite IHxs.
+      destruct a; try tauto.
+      specialize (H1 None). intuition.
+    intros.
+    eapp H1.
+  rewrite mm. tauto.
+  unfold not in *.
+  intros. subst.
+  apply in_map_iff in H1. unf.
+  unfold A'_s2A'_d in *.
+  destruct x0. simpl in *.
+  apply in_flat_map in H6. unf.
+  apply H4 in H6. unf.
+  apply evaleVSfpX in H2.
+  eapply evalsInIn in H2; eauto. unf.
+  unfold A'_s2A'_d in H2. simpl in *.
+  rewrite H1 in *. discriminate.
 Qed.
 
 Lemma evalphiVSfpX : forall H r p A,
@@ -208,7 +241,7 @@ Proof.
 Qed.
 
 
-Lemma evalphi'VSfp : forall H r p A,
+(* Lemma evalphi'VSfp : forall H r p A,
   evalphi' H r A p ->
   evalsIn H r (staticFootprint' p) (footprint' H r p).
 Proof.
@@ -216,7 +249,13 @@ Proof.
   intros.
   inversionx H1; simpl; try tauto.
   rewrite H3.
-  tauto.
+  destruct es; simpl.
+  - rewrite H3.
+    tauto.
+  - inversionx H5.
+    * 
+    * rewrite H1.
+      tauto.
 Qed.
 
 Lemma evalphiVSfp : forall H r p A,
@@ -229,7 +268,7 @@ Proof.
   inversionx H1.
   erewrite IHp0; eauto.
   erewrite evalphi'VSfp; eauto.
-Qed.
+Qed. *)
 
 
 (*evaluation*)
@@ -266,7 +305,12 @@ Proof.
   - apply in_app_iff in H2.
     inversionx H2;
     eappIn evaleVSsfpX H1.
-  - eapp evaleVSsfpX.
+  - apply in_app_iff in H2.
+    inversionx H2.
+    * apply in_flat_map in H1. unf.
+      apply H5 in H1. unf.
+      eapp evaleVSsfpX.
+    * eapp evaleVSsfpX.
 Qed.
 
 Lemma evalphiVSsfpX : forall p A H r A',

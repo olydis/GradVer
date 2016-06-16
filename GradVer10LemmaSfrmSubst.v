@@ -177,4 +177,5 @@ Proof.
           apply in_flat_map. eex.
           apply in_map_iff. eex.
     * destruct a; simpl in *; intuition.
+      destruct l; simpl in *; intuition.
 Qed.
