@@ -74,6 +74,19 @@ Proof.
     * inversionx H3.
 Qed.
 
+Lemma ecoincidesHSubst : forall H r o es o' f' v',
+  ¬ In (o', f') (flat_map (footprintXe H r) es) ->
+  ecoincides (HSubst o' f' v' H) r o es = ecoincides H r o es.
+Proof.
+  induction es; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *. simpl.
+    rewrite in_app_iff in H1.
+    rewrite IHes; intuition.
+    rewriteRev HSubst'NOTodotInE; intuition.
+Qed.
+
 Lemma HSubst'NOTodotInPhi : forall H r o v f p,
   ¬ In (o, f) (footprintX' H r p) ->
   evalphi' H r (footprint' H r p) p <->
@@ -104,15 +117,39 @@ Proof.
     erewrite HSubst'NOTodotInE; eauto.
     erewrite HSubst'NOTodotInE; eauto.
   - unfold evale in *.
-    erewrite HSubst'NOTodotInE in H9; eauto.
+    erewrite HSubst'NOTodotInE in H10; eauto.
     eca.
-    rewrite H9.
-    eca.
+      intros. assert (H2' := H2).
+      apply H11 in H2. unf. 
+      exists x0. unfold evale.
+      erewrite HSubst'NOTodotInE in H4; eauto.
+      unfold not in *. intros. contradict H1.
+      apply evaleVSfpX in H4.
+      eapply evalsInInRev in H4; eauto. unf.
+      rewrite InOflatten, in_map_iff.
+      eex.
+      eapp in_flat_map.
+    rewrite H10.
+    destruct (ecoincides (HSubst o0 f0 v0 H0) r o1 l); auto.
+    constructor. apply in_eq.
   - unfold evale in *.
-    rewriteRevIn HSubst'NOTodotInE H9; eauto.
-    rewrite H9.
+    rewrite H10 in *.
+    rewriteRevIn HSubst'NOTodotInE H10; eauto.
+    rewrite H10.
     eca.
-    eca.
+    * intros. assert (H2' := H2).
+      apply H11 in H2. unf. 
+      exists x0. unfold evale.
+      erewrite HSubst'NOTodotInE; eauto.
+      unfold not in *. intros. contradict H1.
+      apply evaleVSfpX in H4.
+      unfold footprintXe in H2.
+      rewrite InOflatten, in_map_iff in H2. unf.
+      rewrite InOflatten, in_map_iff.
+      eex.
+      eapp in_flat_map.
+    * destruct (ecoincides H0 r o1 l); auto.
+      constructor. apply in_eq.
   - eca.
     rewriteRev HSubstHasDynamicType.
     assumption.
@@ -126,7 +163,22 @@ Lemma footprint'HSubst : forall H r p o f v,
 Proof.
   intros.
   destruct p0; simpl in *; try tauto.
+  unfold footprintX' in H1. simpl in *.
+  rewrite map_app, oflattenApp, in_app_iff in H1.
   rewriteRev HSubst'NOTodotInE; eauto.
+  destruct (evale' H0 r e0); try tauto.
+  destruct v1; try tauto.
+  erewrite ecoincidesHSubst; eauto.
+  unfold footprintXe.
+  intuition.
+  contradict H3.
+  rewrite in_flat_map in H2. unf.
+  rewrite InOflatten in H3.
+  rewrite InOflatten.
+  rewrite in_map_iff in H3. unf.
+  rewrite in_map_iff.
+  eex.
+  rewrite in_flat_map. eex.
 Qed.
 
 Lemma HSubstNOTodotInPhi : forall H r o v f p A,
@@ -191,6 +243,22 @@ Proof.
   - rewrite IHe0; auto.
 Qed.
 
+Lemma ecoincides'eSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 o l,
+  incl (flat_map FVe l) [xUserDef z; xthis] ->
+  r x2 = Some v2 ->
+  r x1 = Some v1 ->
+  ecoincides H r o (map (eSubsts [(xthis, x1); (xUserDef z, x2)]) l) =
+  ecoincides H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *. simpl.
+    apply inclApp in H1. unf.
+    rewrite IHl; auto.
+    erewrite evale'eSubsts2RhoFrom3; eauto.
+Qed.
+
 Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
   incl (FV' a) [xUserDef z; xthis] ->
   r x2 = Some v2 ->
@@ -200,7 +268,13 @@ Lemma footprint'PhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
 Proof.
   intros.
   destruct a; simpl in *; try tauto.
-  erewrite evale'eSubsts2RhoFrom3; auto.
+  apply inclApp in H1. unf.
+  rewrite (evale'eSubsts2RhoFrom3 _ _ _ _ _ v0 v1 v2); eauto.
+  destruct (evale' H0
+    (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
+    e0); try tauto.
+  destruct v3; try tauto.
+  erewrite ecoincides'eSubsts2RhoFrom3; eauto.
 Qed.
 
 Lemma footprintPhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 a,
@@ -266,8 +340,20 @@ Proof.
   - apply inclApp in H1. unf.
     eca; unfold evale;
     erewrite evale'eSubsts2RhoFrom3 in *; eauto.
-  - eca; unfold evale;
-    erewrite evale'eSubsts2RhoFrom3 in *; eauto.
+  - apply inclApp in H1. unf.
+    eca; unfold evale; eauto.
+    * erewrite evale'eSubsts2RhoFrom3 in *; eauto.
+    * intros.
+      specialize (H13 (eSubsts [(xthis, x1); (xUserDef z, x2)] e')).
+      lapply H13; intros.
+      + unf. common.
+        erewrite evale'eSubsts2RhoFrom3 in H7; eauto.
+        unfold incl in *. intros.
+        apply H4.
+        eapp in_flat_map.
+      + eapp in_map_iff.
+    * inversionx H14; auto.
+      erewrite ecoincides'eSubsts2RhoFrom3 in H1; eauto.
   - apply inclSingle in H1.
     unfold xSubsts, rhoFrom3 in *.
     inversionx H1; simpl in *; eca.
@@ -334,6 +420,23 @@ Proof.
   - rewrite IHe0; auto.
 Qed.
 
+Lemma ecoincides'eSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 o l,
+  incl (flat_map FVe l) [xUserDef z; xthis; xresult] ->
+  r x2 = Some v2 ->
+  r x1 = Some v1 ->
+  r x0 = Some v0 ->
+  ecoincides H r o (map (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)]) l) =
+  ecoincides H (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2) o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *. simpl.
+    apply inclApp in H1. unf.
+    rewrite IHl; auto.
+    erewrite evale'eSubsts3RhoFrom3; eauto.
+Qed.
+
 Lemma footprint'PhiSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 a,
   incl (FV' a) [xUserDef z; xthis; xresult] ->
   r x2 = Some v2 ->
@@ -344,7 +447,13 @@ Lemma footprint'PhiSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 a,
 Proof.
   intros.
   destruct a; simpl in *; try tauto.
-  erewrite evale'eSubsts3RhoFrom3; auto.
+  apply inclApp in H1. unf.
+  rewrite (evale'eSubsts3RhoFrom3 _ _ _ _ _ _ v0 v1 v2); eauto.
+  destruct (evale' H0
+    (rhoFrom3 xresult v0 xthis v1 (xUserDef z) v2)
+    e0); try tauto.
+  destruct v3; try tauto.
+  erewrite ecoincides'eSubsts3RhoFrom3; eauto.
 Qed.
 
 Lemma footprintPhiSubsts3RhoFrom3 : forall H r z x0 x1 x2 v0 v1 v2 a,
@@ -524,7 +633,17 @@ Proof.
     * apply inclApp in H1. unf.
       apply incl_app;
       eapp incleSubsts.
-    * eapp incleSubsts.
+    * apply inclApp in H1. unf.
+      apply incl_app;
+      try eapp incleSubsts.
+      unfold incl in *.
+      intros.
+      apply in_flat_map in H1. unf.
+      apply in_map_iff in H1. unf. subst.
+      apply incleSubsts in H5; auto.
+      unfold incl. intros.
+      apply H0.
+      eapp in_flat_map.
     * apply inclSingle.
       apply inclSingle in H1.
       eapp inclxSubsts.
@@ -618,6 +737,32 @@ Proof.
     erewrite IHe0; eauto.
 Qed.
 
+Lemma ecoincides2PhiSubsts3 : 
+  forall fH' iR fR' x0 x1 x2 vo1 v2 vresult z o l,
+  let xUDz := xUserDef z in
+  let fR := rhoSubst x0 vresult iR in
+  incl (flat_map FVe l) [xUDz; xthis; xresult] ->
+  iR x1 = Some (vo vo1) ->
+  iR x2 = Some v2 ->
+  fR' xthis = Some (vo vo1) ->
+  fR' xUDz = Some v2 ->
+  fR' xresult = Some vresult ->
+  x0 <> x2 ->
+  x0 <> x1 ->
+  x1 <> x2 ->
+  ecoincides fH' fR o (map (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)]) l) =
+  ecoincides fH' fR' o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *. simpl in *.
+    apply inclApp in H0. unf.
+    subst fR.
+    rewrite IHl; auto.
+    erewrite evale'2PhiSubsts3; eauto.
+Qed.
+
 Lemma footprint'2PhiSubsts3 : 
   forall fH' iR fR' x0 x1 x2 vo1 v2 vresult z p,
   let xUDz := xUserDef z in
@@ -637,7 +782,11 @@ Proof.
   intros.
   destruct p0; simpl in *; try tauto.
   subst fR.
+  apply inclApp in H0. unf.
   erewrite evale'2PhiSubsts3; eauto.
+  destruct (evale' fH' fR' e0); try tauto.
+  destruct v0; try tauto.
+  erewrite ecoincides2PhiSubsts3; eauto.
 Qed.
 
 Lemma footprint2PhiSubsts3 : 
@@ -735,9 +884,24 @@ Proof.
       erewrite incl2PhiSubst3; eauto.
     * apply inclApp in H0. unf.
       inversionx inva.
+      apply inclApp in H9. unf.
       eca; unfold evale in *;
       subst fR xUDz;
-      erewrite incl2PhiSubst3; eauto.
+      try erewrite incl2PhiSubst3; eauto.
+      + intros.
+        apply in_map_iff in H9. unf. subst.
+        assert (H13' := H13).
+        apply H18 in H13. unf.
+        exists x4.
+        erewrite incl2PhiSubst3; eauto.
+        unfold incl in *. intros.
+        apply H0.
+        eapp in_flat_map.
+      + inversionx H19.
+      ++  destruct (evale' fH' fR' e0); try tauto.
+          destruct v0; try tauto.
+          erewrite ecoincides2PhiSubsts3; eauto.
+      ++  erewrite ecoincides2PhiSubsts3; eauto.
     * assert (x_decb xUDz xthis = false) as xd1. dec (x_dec xUDz xthis). tauto.
       assert (x_decb xUDz xresult = false) as xd2. dec (x_dec xUDz xresult). tauto.
       assert (x_decb xUDz xUDz = true) as xd3. dec (x_dec xUDz xUDz). tauto.
@@ -795,7 +959,8 @@ Lemma A_sSubstsFP' : forall m p,
 Proof.
   unfold A_sSubsts;
   destruct p0;
-  tauto.
+  try tauto.
+  destruct l; tauto.
 Qed.
 
 Lemma sfrmeSubsts : forall x0 x1 x2 z e A,
@@ -808,11 +973,11 @@ Proof.
   eca.
   unfold A_sSubsts.
   apply in_flat_map.
-  exists (phiAcc (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] e0) f0).
+  exists (phiAcc [] (eSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] e0) f0).
   split.
   - unfold phiSubsts, phi'Substs.
     apply in_map_iff.
-    exists (phiAcc e0 f0).
+    exists (phiAcc [] e0 f0).
     intuition.
     apply in_map_iff.
     eex. tauto.
@@ -829,6 +994,9 @@ Proof.
   eapply IHp0 in H2; eauto.
   eca.
   - inversionx H1; simpl; eca;
+    try eapp sfrmeSubsts.
+    intros.
+    apply in_map_iff in H1. unf. subst.
     eapp sfrmeSubsts.
   - rewrite A_sSubstsApp in H2.
     rewrite A_sSubstsFP' in H2.
@@ -848,7 +1016,9 @@ Proof.
   apply IHp0 in H12.
   destruct a; try apply H12.
   simpl in *.
-  inversionx H11. rewrite H8 in *. simpl in *.
+  inversionx H11. rewrite H9 in *.
+  destruct (ecoincides H0 r o0 l); try tauto.
+  simpl in *.
   constructor; try assumption.
   specialize (dis (o0, f0)).
   intuition.
