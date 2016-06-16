@@ -110,7 +110,6 @@ Definition meetSingle (p1 p2 : phi) : phid :=
 Definition meet (pd1 pd2 : phid) : phid :=
   flat_map (fun ps => meetSingle (fst ps) (snd ps)) (list_prod pd1 pd2).
 
-(* 
 (*BEGIN test*)
 Open Scope string.
 Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef "b")) "f"] [].
@@ -122,7 +121,6 @@ Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef
                            [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef "b")) "f"].
 Close Scope string.
 (*END test*)
- *)
 
 Lemma evalphiSplitMerge : forall p,
   let ps := splitPhi p in

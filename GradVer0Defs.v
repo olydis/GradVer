@@ -59,8 +59,8 @@ Inductive phi' :=
 | phiEq : e -> e -> phi'
 (*coq2latex: phiNeq #a #b := (#a \neq #b) *)
 | phiNeq : e -> e -> phi'
-(*coq2latex: phiAcc #e #f := \acc(#e.#f) *)
-| phiAcc : e -> f -> phi'
+(*coq2latex: phiAcc #es #e #f := #es != #e \implies \acc(#e.#f) *)
+| phiAcc : list e -> e -> f -> phi'
 (*coq2latex: phiType #x #T := #x : #T *)
 | phiType : x -> T -> phi'.
 Definition phi := list phi'.
@@ -159,8 +159,18 @@ Definition A'_d_decb := dec2decb A'_d_dec.
 Hint Resolve A'_d_dec.
 Hint Resolve list_eq_dec A'_d_dec.
 
+Definition option_dec : ∀ {T : Type} (T_eq_dec : forall t1 t2 : T, {t1 = t2} + {t1 <> t2}),
+  forall l1 l2 : option T, {l1 = l2} + {l1 <> l2}.
+Proof. decide equality. Qed.
+(* Program Instance option_EqDec : EqDec A'_d eq := option_dec. *)
+Definition option_decb {T : Type} (T_eq_dec : forall t1 t2 : T, {t1 = t2} + {t1 <> t2}) := 
+  dec2decb (option_dec T_eq_dec).
+Hint Resolve option_decb.
+
+
 Ltac undecb :=
   unfold
+    option_decb,
     A'_s_decb,
     A'_d_decb,
     vex_decb,
@@ -277,7 +287,7 @@ Definition phi'Substs (r : list (x * x)) (p : phi') : phi' :=
 match p with
 | phiEq  e1 e2 => phiEq  (eSubsts r e1) (eSubsts r e2)
 | phiNeq e1 e2 => phiNeq (eSubsts r e1) (eSubsts r e2)
-| phiAcc e f'' => phiAcc (eSubsts r e) f''
+| phiAcc es e f'' => phiAcc (map (eSubsts r) es) (eSubsts r e) f''
 | phiType x T => phiType (xSubsts r x) T
 | phiTrue => p
 end.
@@ -345,7 +355,7 @@ Inductive sfrme : A_s -> e -> Prop :=
 (*coq2latex: staticFootprint' #p := \staticFP #p *)
 Definition staticFootprint' (p : phi') : A_s := 
   match p with
-  | phiAcc x' f' => [(x', f')]
+  | phiAcc [] x' f' => [(x', f')]
   | _ => []
   end.
 (*coq2latex: staticFootprint #p := \staticFP #p *)
@@ -357,7 +367,7 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFTrue : forall A, sfrmphi' A phiTrue
 | WFEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiEq e_1 e_2)
 | WFNEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiNeq e_1 e_2)
-| WFAcc : forall A e f, sfrme A e -> sfrmphi' A (phiAcc e f)
+| WFAcc : forall A es e f, (forall e', In e' es -> sfrme A e') -> sfrme A e -> sfrmphi' A (phiAcc es e f)
 | WFType : forall A x T, sfrmphi' A (phiType x T)
 .
 (*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
@@ -395,14 +405,19 @@ Definition hasNoDynamicType (H : H) (rho : rho) (v : v) : Prop :=
 Definition ehasDynamicType (H : H) (rho : rho) (e : e) (T : T) : Prop :=
   exists v, evale H rho e v /\ hasDynamicType H v T.
 
-
 (* Figure 8: Definition of footprint meta-function *)
+Definition ecoincides h r o es : bool :=
+  existsb (option_decb v_dec (Some (vo o))) (map (evale' h r) es).
+
 (*coq2latex: footprint' #H #r #p := \dynamicFP #H #r #p *)
 Definition footprint' (h : H) (r : rho) (p : phi') : A_d :=
   match p with
-  | phiAcc e' f' => 
+  | phiAcc es e' f' => 
       match evale' h r e' with
-      | Some (vo o) => [(o, f')]
+      | Some (vo o) =>
+        if ecoincides h r o es
+          then []
+          else [(o, f')]
       | _ => []
       end
   | _ => []
@@ -426,10 +441,10 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     evale H rho e_2 v_2 ->
     neq v_1 v_2 ->
     evalphi' H rho A (phiNeq e_1 e_2)
-| EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f,
+| EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f es,
     evale H rho e (vo o) ->
-    In (o, f) A ->
-    evalphi' H rho A (phiAcc e f)
+    (In (o, f) A \/ ecoincides H rho o es = true) ->
+    evalphi' H rho A (phiAcc es e f)
 | EAType : forall H rho(*\*) (A : A_d) x T v,
     rho x = Some v ->
     hasDynamicType H v T ->
@@ -480,7 +495,7 @@ Definition fieldHasType C f T := fieldType C f = Some T.
 (* Figure 5: Hoare-based proof rules for core language *)
 (*coq2latex: accListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
 Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
-        (fun arg1 arg2 => phiAcc (ex x) arg1 :: arg2)
+        (fun arg1 arg2 => phiAcc [] (ex x) arg1 :: arg2)
         p
         f_bar.
 
@@ -513,7 +528,7 @@ Definition FV' (phi : phi') : list x :=
   | phiTrue => []
   | phiEq e1 e2 => FVe e1 ++ FVe e2
   | phiNeq e1 e2 => FVe e1 ++ FVe e2
-  | phiAcc e f => FVe e
+  | phiAcc es e f => flat_map FVe es ++ FVe e
   | phiType x T => [x]
   end.
 Definition FV (phi : phi) : list x := flat_map FV' phi.
@@ -535,7 +550,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
 | HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc (ex x) f :: 
+    phiImplies phi (phiAcc [] (ex x) f :: 
                     phiNeq (ex x) (ev vnull) :: phi') ->
     sfrmphi [] phi' ->
     (* NotIn x (FV phi') -> *)
@@ -544,7 +559,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     fieldHasType C f T ->
     hoareSingle phi (sMemberSet x f y) 
       (phiType x (TClass C) ::
-       phiAcc (ex x) f ::
+       phiAcc [] (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi')
 | HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
