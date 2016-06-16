@@ -31,7 +31,7 @@ Proof.
   tauto.
 Qed.
 
-Lemma HSubst'NOTodotInE : forall H r o v f e,
+Lemma evale'RemoveHSubst : forall H r o v f e,
   ¬ In (o, f) (footprintXe H r e) ->
   evale' H r e =
   evale' (HSubst o f v H) r e.
@@ -84,88 +84,18 @@ Proof.
   - unfold ecoincides in *. simpl.
     rewrite in_app_iff in H1.
     rewrite IHes; intuition.
-    rewriteRev HSubst'NOTodotInE; intuition.
+    rewriteRev evale'RemoveHSubst; intuition.
 Qed.
 
-Lemma HSubst'NOTodotInPhi : forall H r o v f p,
+Lemma footprint'RemoveHSubst : forall H r p o f v,
   ¬ In (o, f) (footprintX' H r p) ->
-  evalphi' H r (footprint' H r p) p <->
-  evalphi' (HSubst o f v H) r (footprint' (HSubst o f v H) r p) p.
-Proof.
-  intros.
-  unfold footprintX' in *.
-  rename H1 into H2.
-  destruct p0; simpl in H2; try apply not_or_and in H2; unf;
-  split; intros;
-  try constructor;
-  try inversionx H1;
-  simpl in *;
-  repeat rewrite map_app in H2;
-  repeat rewrite oflattenApp in H2;
-  try rewrite in_app_iff in H2;
-  try apply not_or_and in H2; unf.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE in H6; eauto.
-    erewrite HSubst'NOTodotInE in H10; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE; eauto.
-    erewrite HSubst'NOTodotInE; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE in H6; eauto.
-    erewrite HSubst'NOTodotInE in H10; eauto.
-  - eca; unfold evale in *.
-    erewrite HSubst'NOTodotInE; eauto.
-    erewrite HSubst'NOTodotInE; eauto.
-  - unfold evale in *.
-    erewrite HSubst'NOTodotInE in H10; eauto.
-    eca.
-      intros. assert (H2' := H2).
-      apply H11 in H2. unf. 
-      exists x0. unfold evale.
-      erewrite HSubst'NOTodotInE in H4; eauto.
-      unfold not in *. intros. contradict H1.
-      apply evaleVSfpX in H4.
-      eapply evalsInInRev in H4; eauto. unf.
-      rewrite InOflatten, in_map_iff.
-      eex.
-      eapp in_flat_map.
-    rewrite H10.
-    destruct (ecoincides (HSubst o0 f0 v0 H0) r o1 l); auto.
-    constructor. apply in_eq.
-  - unfold evale in *.
-    rewrite H10 in *.
-    rewriteRevIn HSubst'NOTodotInE H10; eauto.
-    rewrite H10.
-    eca.
-    * intros. assert (H2' := H2).
-      apply H11 in H2. unf. 
-      exists x0. unfold evale.
-      erewrite HSubst'NOTodotInE; eauto.
-      unfold not in *. intros. contradict H1.
-      apply evaleVSfpX in H4.
-      unfold footprintXe in H2.
-      rewrite InOflatten, in_map_iff in H2. unf.
-      rewrite InOflatten, in_map_iff.
-      eex.
-      eapp in_flat_map.
-    * destruct (ecoincides H0 r o1 l); auto.
-      constructor. apply in_eq.
-  - eca.
-    rewriteRev HSubstHasDynamicType.
-    assumption.
-  - eca.
-    eapp HSubstHasDynamicType.
-Qed.
-
-Lemma footprint'HSubst : forall H r p o f v,
-  ¬ In (o, f) (footprintX' H r p) ->
-  footprint' (HSubst o f v H) r p = footprint' H r p.
+  footprint' H r p = footprint' (HSubst o f v H) r p.
 Proof.
   intros.
   destruct p0; simpl in *; try tauto.
   unfold footprintX' in H1. simpl in *.
   rewrite map_app, oflattenApp, in_app_iff in H1.
-  rewriteRev HSubst'NOTodotInE; eauto.
+  rewriteRev evale'RemoveHSubst; eauto.
   destruct (evale' H0 r e0); try tauto.
   destruct v1; try tauto.
   erewrite ecoincidesHSubst; eauto.
@@ -181,35 +111,129 @@ Proof.
   rewrite in_flat_map. eex.
 Qed.
 
-Lemma HSubstNOTodotInPhi : forall H r o v f p A,
-  ¬ In (o, f) (footprintX H r p) ->
+
+Lemma evalphi'RemoveHSubst : forall o f v H r p A,
+  ~ In (o, f) (footprintX' H r p) ->
+  evalphi' H r A p <->
+  evalphi' (HSubst o f v H) r A p.
+Proof.
+  intros.
+  unfold footprintX' in H1.
+  destruct p0; simpl in *;
+  try rewrite map_app in H1;
+  try rewrite oflattenApp in H1;
+  try rewrite in_app_iff in H1;
+  try apply not_or_and in H1;
+  unf.
+  - split; constructor.
+  - split; intros;
+    inversionx H1; eca; unfold evale in *;
+    try rewriteRev evale'RemoveHSubst; eauto;
+    try erewrite evale'RemoveHSubst; eauto.
+  - split; intros;
+    inversionx H1; eca; unfold evale in *;
+    try rewriteRev evale'RemoveHSubst; eauto;
+    try erewrite evale'RemoveHSubst; eauto.
+  - split; intros;
+    inversionx H1; eca; unfold evale in *;
+    try rewriteRev evale'RemoveHSubst; eauto;
+    try erewrite evale'RemoveHSubst; eauto.
+    * intros.
+      assert (H1' := H1).
+      apply H12 in H1. unf.
+      exists x0.
+      erewrite evale'RemoveHSubst in H4; eauto.
+      unfold not in *.
+      contradict H2.
+      apply InOflatten.
+      apply in_map_iff.
+      apply evaleVSfpX in H4.
+      eapply evalsInInRev in H4; eauto.
+      unf. eex.
+      eapp in_flat_map.
+    * inversionx H13; auto.
+      apply or_intror.
+      rewrite ecoincidesHSubst; auto.
+      unfold not in *. intros.
+      contradict H2.
+      apply InOflatten.
+      apply in_map_iff.
+      apply in_flat_map in H4. unf.
+      assert (H4' := H4).
+      apply H12 in H4. unf.
+      apply evaleVSfpX in H2.
+      eapply evalsInInRev in H2; eauto.
+      unf. eex.
+      eapp in_flat_map.
+    * intros.
+      assert (H1' := H1).
+      apply H12 in H1. unf.
+      exists x0.
+      erewrite evale'RemoveHSubst; eauto.
+      unfold not in *. intros.
+      contradict H2.
+      unfold footprintXe in H1.
+      apply InOflatten.
+      apply in_map_iff.
+      apply InOflatten in H1.
+      apply in_map_iff in H1.
+      unf. eex.
+      eapp in_flat_map.
+    * inversionx H13; auto.
+      apply or_intror.
+      rewrite ecoincidesHSubst in H1; auto.
+      unfold not in *. intros.
+      contradict H2.
+      apply InOflatten.
+      apply in_map_iff.
+      apply in_flat_map in H4. unf.
+      unfold footprintXe in H5.
+      apply InOflatten in H5.
+      apply in_map_iff in H5.
+      unf. eex.
+      eapp in_flat_map.
+  - split; intros;
+    inversionx H2; eca.
+    * rewriteRev hasDynamicTypeHSubst. eauto.
+    * eapp hasDynamicTypeHSubst.
+Qed.
+
+Lemma evalphiRemoveHSubst : forall o f v H r p A,
+  ~ In (o, f) (footprintX H r p) ->
   evalphi H r A p <->
   evalphi (HSubst o f v H) r A p.
 Proof.
-  induction p0; intros; simpl in *.
-  - split; intros; constructor.
-  - unfold footprintX in *.
-    simpl in *.
-    repeat rewrite map_app, oflattenApp in H1.
+  induction p0; intros; simpl in *; split; try constructor; intros.
+  - inversionx H2.
+    unfold footprintX in H1.
+    simpl in H1.
+    rewrite map_app in H1.
+    rewrite oflattenApp in H1.
     rewrite in_app_iff in H1.
     apply not_or_and in H1.
-    unf.
-    rename H3 into od1.
-    rename H2 into od2.
-    apply (IHp0 (Aexcept A (footprint' H0 r a))) in od1.
-    split; intros.
-    * inversionx H1.
-      rewrite od1 in H12.
-      eca.
-      + rewrite footprint'HSubst; auto.
-      + rewriteRev HSubst'NOTodotInPhi; auto.
-      + rewrite footprint'HSubst; auto.
-    * inversionx H1.
-      rewrite footprint'HSubst in *; auto.
-      rewriteRevIn od1 H12.
-      eca.
-      rewrite HSubst'NOTodotInPhi; eauto.
-      rewrite footprint'HSubst in *; eauto.
+    eca.
+    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
+    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
+      rewriteRev evalphi'RemoveHSubst; try apply H1.
+      eauto.
+    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
+      eapp IHp0.
+      tauto.
+  - inversionx H2.
+    unfold footprintX in H1.
+    simpl in H1.
+    rewrite map_app in H1.
+    rewrite oflattenApp in H1.
+    rewrite in_app_iff in H1.
+    apply not_or_and in H1.
+    eca.
+    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
+    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
+      erewrite evalphi'RemoveHSubst; try apply H1.
+      eauto.
+    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
+      eapp IHp0.
+      tauto.
 Qed.
 
 Lemma evalphiHSubstAexcept : forall p H r A o f x v,
@@ -221,7 +245,7 @@ Proof.
   intros.
   assert (~ In (o0, f0) (footprintX H0 r p0)).
     eapp AexceptNOTodotInPhi.
-  apply HSubstNOTodotInPhi; auto.
+  apply evalphiRemoveHSubst; auto.
 Qed.
 
 

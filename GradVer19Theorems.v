@@ -263,6 +263,27 @@ Proof.
   try tauto.
 Qed.
 
+Lemma ecoincidesChangeHeap : forall H1 H2 r o l,
+  (forall A', In A' (flat_map staticFootprintXe l) ->
+    evalA'_s H1 r A' = evalA'_s H2 r A') ->
+  ecoincides H1 r o l = ecoincides H2 r o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *.
+    simpl.
+    rewrite (evale'ChangeHeap H1 H2).
+    rewrite IHl.
+    * tauto.
+    * intros.
+      apply H0.
+      intuition.
+    * intros.
+      apply H0.
+      intuition.
+Qed.
+
 Lemma footprint'ChangeHeap : forall H1 H2 r p,
   (forall A', In A' (staticFootprintX' p) ->
     evalA'_s H1 r A' = evalA'_s H2 r A') ->
@@ -271,7 +292,16 @@ Proof.
   intros.
   destruct p0; try tauto.
   simpl in *.
-  erewrite evale'ChangeHeap; eauto.
+  erewrite (evale'ChangeHeap H1 H2); eauto.
+  destruct (evale' H2 r e0); try tauto.
+  destruct v0; try tauto.
+  erewrite (ecoincidesChangeHeap H1 H2); eauto.
+  * intros.
+    apply H0.
+    intuition.
+  * intros.
+    apply H0.
+    intuition.
 Qed.
 
 Lemma footprintChangeHeap : forall H1 H2 r p,
@@ -299,10 +329,23 @@ Proof.
   unfold evale in *;
   try (rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition).
   
-  inversionx H7; try constructor.
-  eappIn HeapGetsMoreSpecific H5.
-  unf.
-  eca.
+  - intros.
+    assert (H4' := H4).
+    apply H7 in H4. unf.
+    eex.
+    erewrite (evale'ChangeHeap H1 H2) in H5; eauto.
+    intros. apply H3.
+    apply in_app_iff. constructor.
+    apply in_flat_map.
+    eex.
+  - inversionx H8; auto.
+    erewrite (ecoincidesChangeHeap H1 H2) in H4; eauto.
+    intros. apply H3.
+    intuition.
+  - inversionx H7; try constructor.
+    eappIn HeapGetsMoreSpecific H5.
+    unf.
+    eca.
 Qed.
 
 Lemma evalphiChangeHeap : forall H1 H2 S1 S2 r p A,
@@ -333,6 +376,26 @@ Proof.
     tauto.
 Qed.
 
+Lemma ecoincidesChangeRho : forall r1 r2 H o l,
+  (forall x, In x (flat_map FVe l) -> r1 x = r2 x) ->
+  ecoincides H r1 o l = ecoincides H r2 o l.
+Proof.
+  induction l; intros; simpl in *.
+  - repeat rewrite ecoincidesEmpty.
+    tauto.
+  - unfold ecoincides in *.
+    simpl.
+    rewrite (evale'ChangeRho r1 r2).
+    rewrite IHl.
+    * tauto.
+    * intros.
+      apply H1.
+      intuition.
+    * intros.
+      apply H1.
+      intuition.
+Qed.
+
 Lemma footprint'ChangeRho : forall r1 r2 H p,
   (forall x, In x (FV' p) -> r1 x = r2 x) ->
   footprint' H r1 p = footprint' H r2 p.
@@ -340,7 +403,13 @@ Proof.
   intros.
   destruct p0; try tauto.
   simpl in *.
-  erewrite evale'ChangeRho; tauto.
+  erewrite (evale'ChangeRho r1 r2).
+  destruct (evale' H0 r2 e0); try tauto.
+  destruct v0; try tauto.
+  erewrite (ecoincidesChangeRho r1 r2).
+  * tauto.
+  * intuition.
+  * intuition.
 Qed.
 
 Lemma footprintChangeRho : forall r1 r2 H p,
@@ -371,7 +440,19 @@ Proof.
   - simpl in *.
     eca; unfold evale in *;
     erewrite evale'ChangeRho in H4; eauto;
-    intros; intuition.
+    intros; try (intuition; fail).
+    * assert (H2' := H2).
+      apply H5 in H2. unf.
+      rewrite (evale'ChangeRho r1 r2) in H3; try eex.
+      intros.
+      apply H1.
+      apply in_app_iff. constructor.
+      eapp in_flat_map.
+    * inversionx H6; auto.
+      rewrite (ecoincidesChangeRho r1 r2) in H2; auto.
+      intros.
+      apply H1.
+      intuition.
   - simpl in *.
     eca.
     rewrite H1 in H4; auto.
@@ -396,109 +477,6 @@ Proof.
     * eapp IHp0.
       intros. intuition.
     * intros. intuition.
-Qed.
-
-
-Lemma evale'RemoveHSubst : forall o f v H r e,
-  ~ In (o, f) (footprintXe H r e) ->
-  evale' H r e = evale' (HSubst o f v H) r e.
-Proof.
-  induction e0; intros; simpl in *; try tauto.
-  unfold footprintXe in *. simpl in *.
-  rewrite in_app_iff in H1.
-  apply not_or_and in H1. unf.
-  rewriteRev IHe0; auto.
-  unfold A'_s2A'_d in *. simpl in *.
-  destruct (evale' H0 r e0); try tauto.
-  destruct v1; try tauto.
-  simpl in *.
-  unfold HSubst.
-  dec (o_dec o1 o0); try tauto.
-  destruct (H0 o0); try tauto. destruct p0. simpl.
-  dec (string_dec f1 f0); try tauto.
-Qed.
-
-Lemma footprint'RemoveHSubst : forall o f v H r p,
-  ~ In (o, f) (footprintX' H r p) ->
-  footprint' H r p = footprint' (HSubst o f v H) r p.
-Proof.
-  intros.
-  destruct p0; try tauto.
-  unfold footprintX' in *.
-  simpl in *.
-  eappIn evale'RemoveHSubst H1.
-  rewriteRev H1.
-  tauto.
-Qed.
-
-Lemma evalphi'RemoveHSubst : forall o f v H r p A,
-  ~ In (o, f) (footprintX' H r p) ->
-  evalphi' H r A p <->
-  evalphi' (HSubst o f v H) r A p.
-Proof.
-  intros.
-  unfold footprintX' in H1.
-  destruct p0; simpl in *;
-  try rewrite map_app in H1;
-  try rewrite oflattenApp in H1;
-  try rewrite in_app_iff in H1;
-  try apply not_or_and in H1;
-  unf.
-  - split; constructor.
-  - split; intros;
-    inversionx H1; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H1; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca.
-    * rewriteRev hasDynamicTypeHSubst. eauto.
-    * eapp hasDynamicTypeHSubst.
-Qed.
-
-Lemma evalphiRemoveHSubst : forall o f v H r p A,
-  ~ In (o, f) (footprintX H r p) ->
-  evalphi H r A p <->
-  evalphi (HSubst o f v H) r A p.
-Proof.
-  induction p0; intros; simpl in *; split; try constructor; intros.
-  - inversionx H2.
-    unfold footprintX in H1.
-    simpl in H1.
-    rewrite map_app in H1.
-    rewrite oflattenApp in H1.
-    rewrite in_app_iff in H1.
-    apply not_or_and in H1.
-    eca.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-      rewriteRev evalphi'RemoveHSubst; try apply H1.
-      eauto.
-    * rewriteRev footprint'RemoveHSubst; eauto; try apply H1.
-      eapp IHp0.
-      tauto.
-  - inversionx H2.
-    unfold footprintX in H1.
-    simpl in H1.
-    rewrite map_app in H1.
-    rewrite oflattenApp in H1.
-    rewrite in_app_iff in H1.
-    apply not_or_and in H1.
-    eca.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-      erewrite evalphi'RemoveHSubst; try apply H1.
-      eauto.
-    * erewrite footprint'RemoveHSubst; eauto; try apply H1.
-      eapp IHp0.
-      tauto.
 Qed.
 
 (*
