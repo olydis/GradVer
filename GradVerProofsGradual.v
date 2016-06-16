@@ -5,12 +5,14 @@ Import Semantics.
 Definition gphi := prod bool phi.
 Definition pphi := phi -> Prop.
 
-(* concretization *)
-Definition gGamma (phi : gphi) : pphi :=
-  match fst phi with
-  | false => (fun p => p = snd phi)
-  | true => (fun p => phiSatisfiable p /\ sfrmphi [] p /\ phiImplies p (snd phi))
-  end.
+Definition gUnknown : gphi := (true, []).
+Definition gThat (p : phi) : gphi := (false, p).
+Definition gThatOrSub (p : phi) : gphi := (true, p).
+
+Definition pFromList (ps : list phi) := fun p => In p ps.
+
+Definition pincl (pp1 pp2 : pphi) :=
+  forall p, pp1 p -> pp2 p.
 
 Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
 Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
@@ -113,6 +115,18 @@ Definition meet (gp1 gp2 : gphi) : gphi :=
   let ps2 := splitPhi (snd gp2) in
   (true, meetSplit (fst ps1) (fst ps2) (snd ps1 ++ snd ps2)).
 
+
+(* concretization *)
+Definition gGamma (phi : gphi) : pphi :=
+  match fst phi with
+  | false => (fun p => p = snd phi)
+  | true => (fun p => phiSatisfiable p /\ sfrmphi [] p /\ phiImplies p (snd phi))
+  end.
+
+(* abstraction *)
+Definition gAbstr (pp : list phi) : gphi :=
+  fold_right meet gUnknown (map gThat pp).
+
 (* 
 (*BEGIN test*)
 Open Scope string.
@@ -126,6 +140,15 @@ Eval compute in meetSingle [phiAcc (ex (xUserDef "a")) "f"; phiAcc (ex (xUserDef
 Close Scope string.
 (*END test*)
  *)
+
+
+
+Theorem gSoundness : forall ps : list phi,
+  pincl (pFromList ps) (gGamma (gAbstr ps)).
+Proof.
+  unfold pFromList, pincl, gAbstr, gGamma, meet.
+  induction ps; intros; simpl in *; inversionx H0.
+  
 
 Lemma evalphiSplitMerge : forall p,
   let ps := splitPhi p in
