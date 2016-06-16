@@ -5,11 +5,11 @@ Import Semantics.
 Definition A_sSubsts m (A : A_s) : A_s := 
   flat_map (fun p =>
     match p with
-    | phiAcc x f => [(x, f)]
+    | phiAcc [] x f => [(x, f)]
     | _ => []
     end
   )
-  (phiSubsts m (map (fun a => phiAcc (fst a) (snd a)) A)).
+  (phiSubsts m (map (fun a => phiAcc [] (fst a) (snd a)) A)).
 
 
 Definition mMapsTo (m : list (x * x)) (x' : x) : Prop :=
@@ -110,6 +110,11 @@ Proof.
   intros.
   destruct e0; constructor;
   inversionx H1;
+  try (
+    intro; intro Hx;
+    assert (sfrme (A_sSubsts m0 a) (eSubsts m0 e')) as tt;
+      try (apply H5; eapp in_map_iff));
+  
   apply (sfrmeSubst m0); intuition;
   try apply H0;
   apply H0 in H1;
@@ -118,6 +123,9 @@ Proof.
   contradict H3;
   simpl;
   intuition.
+  
+  apply in_app_iff. constructor.
+  apply in_flat_map. eex.
 Qed.
 
 (* counter-examples:
@@ -159,16 +167,14 @@ Proof.
         intuition.
       + destruct a; simpl in *; intuition.
         unfold FVA_s in *.
-        apply in_flat_map in H5.
-        unf.
-        apply in_map_iff in H5.
-        unf.
-        subst.
-        inversionx H9; simpl in *; intuition.
-        contradict H6.
-        apply in_flat_map.
-        eexists; split; eauto.
-        apply in_map_iff.
-        eexists; split; eauto.
+        apply in_flat_map in H5. unf.
+        apply in_map_iff in H5. unf. subst.
+        apply in_app_iff in H9. inversionx H9.
+      ++  destruct l; try tauto.
+          apply InSingle in H5. subst. simpl in *.
+          intuition.
+      ++  contradict H6.
+          apply in_flat_map. eex.
+          apply in_map_iff. eex.
     * destruct a; simpl in *; intuition.
 Qed.
