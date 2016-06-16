@@ -12,6 +12,15 @@ Proof.
 Qed.
 
 
+Lemma mapConcat : forall {T U : Type} (f : T -> U) xs,
+  map f (concat xs) = flat_map (map f) xs.
+Proof.
+  intros.
+  rewrite flat_map_concat_map.
+  rewrite concat_map.
+  tauto.
+Qed.
+
 Lemma InRemove : forall {T : Type} (x : T) x' xs de,
   In x (remove de x' xs) ->
   In x xs.
