@@ -1,16 +1,21 @@
 Load GradVer20Hook.
 Import Semantics.
 
-(* disjunciton of phi *)
-Definition phid := list phi.
+(* gradualization of phi *)
+Definition gphi := prod bool phi.
+Definition pphi := phi -> Prop.
 
-Definition evalphid H r A (pd : phid) :=
-  exists p, In p pd /\ evalphi H r A p.
+(* concretization *)
+Definition gGamma (phi : gphi) : pphi :=
+  match fst phi with
+  | false => (fun p => p = snd phi)
+  | true => (fun p => phiSatisfiable p /\ sfrmphi [] p /\ phiImplies p (snd phi))
+  end.
+
+Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
+Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
 
 (* helping defs *)
-Definition isIntersection (pd1 pd2 pdi : phid) :=
-  forall H r A, evalphid H r A pd1 /\ evalphid H r A pd2 <-> evalphid H r A pdi.
-
 Definition splitPhi (p : phi) : prod A_s phi :=
   fold_right
     (fun p pr => 
@@ -81,8 +86,9 @@ Proof.
 Qed.
 
 (* meet operation *)
-Fixpoint meetSplit (pa1 pa2 : A_s) (pb : phi) : phid :=
-  match pa1 with
+Fixpoint meetSplit (pa1 pa2 : A_s) (pb : phi) : phi :=
+  pb.
+(*   match pa1 with
   | [] => [map (fun p => phiAcc (fst p) (snd p)) pa2 ++ pb]
   | A :: pa1 =>
     map (fun p => phiAcc (fst A) (snd A) :: p)
@@ -100,15 +106,12 @@ Fixpoint meetSplit (pa1 pa2 : A_s) (pb : phi) : phid :=
         pa2
       )
     )
-  end.
+  end. *)
 
-Definition meetSingle (p1 p2 : phi) : phid :=
-  let ps1 := splitPhi p1 in
-  let ps2 := splitPhi p2 in
-  meetSplit (fst ps1) (fst ps2) (snd ps1 ++ snd ps2).
-
-Definition meet (pd1 pd2 : phid) : phid :=
-  flat_map (fun ps => meetSingle (fst ps) (snd ps)) (list_prod pd1 pd2).
+Definition meet (gp1 gp2 : gphi) : gphi :=
+  let ps1 := splitPhi (snd gp1) in
+  let ps2 := splitPhi (snd gp2) in
+  (true, meetSplit (fst ps1) (fst ps2) (snd ps1 ++ snd ps2)).
 
 (* 
 (*BEGIN test*)
