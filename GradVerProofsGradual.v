@@ -519,4 +519,39 @@ Proof.
   admit.
 Admitted.
 
+(* gradualization of phi *)
+Definition gphi := prod bool phi.
+Definition pphi := phi -> Prop.
+
+Definition gUnknown : gphi := (true, []).
+Definition gThat (p : phi) : gphi := (false, p).
+Definition gThatOrSub (p : phi) : gphi := (true, p).
+
+Definition pFromList (ps : list phi) := fun p => In p ps.
+
+Definition pincl (pp1 pp2 : pphi) :=
+  forall p, pp1 p -> pp2 p.
+
+Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
+Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
+
+
+(* concretization *)
+Definition gGamma (phi : gphi) : pphi :=
+  match fst phi with
+  | false => (fun p => p = snd phi)
+  | true => (fun p => phiSatisfiable p /\ sfrmphi [] p /\ phiImplies p (snd phi))
+  end.
+
+(* abstraction *)
+Definition gAbstr (pp : list phi) : gphi :=
+  gThatOrSub (fold_right meet [] pp).
+
+Theorem gSoundness : forall ps : list phi,
+  pincl (pFromList ps) (gGamma (gAbstr ps)).
+Proof.
+  unfold pFromList, pincl, gAbstr, gGamma.
+  
+  induction ps; intros; simpl in *; inversionx H0.
+
 
