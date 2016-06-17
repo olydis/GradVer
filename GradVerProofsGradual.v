@@ -204,15 +204,6 @@ Proof.
   - inversionx H1; unf; eex; intuition.
 Qed.
 
-Lemma mapConcat : forall {T U : Type} (f : T -> U) xs,
-  map f (concat xs) = flat_map (map f) xs.
-Proof.
-  intros.
-  rewrite flat_map_concat_map.
-  rewrite concat_map.
-  tauto.
-Qed.
-
 Lemma meetSplitAugment1 : forall ps1 ps2 ps p H r A,
   let mc := map (cons (phiAcc (fst p) (snd p))) in
     (evalphid H r A (mc (meetSplit ps1 ps2 ps)) \/
@@ -411,13 +402,6 @@ Proof.
   - assumption.
 Qed.
 
-Lemma footprintAppSymm : forall H r p1 p2,
-  footprint H r (p1 ++ p2) = footprint H r (p2 ++ p1).
-Proof.
-  intros.
-  auto.
-Admitted.
-
 Lemma evalphiIsCutAt : forall H r A A1 A2 e o f p,
   evale' H r e = Some (vo o) ->
   isCutAt (staticFootprint p) A1 (e, f) A2 ->
@@ -441,7 +425,9 @@ Proof.
     split; intros;
     apply evalphiApp in H5; unf;
     apply evalphiSymm in H6;
-    rewrite footprintAppSymm in H7;
+    rewrite footprintApp in H7;
+    rewrite Aexcept2AppComm in H7;
+    rewriteRevIn footprintApp H7;
     eapp evalphiAppRev.
   assert (
     evalphi H0 r (Aexcept A [(o0, f0)]) ((mm A1 ++ mm A2) ++ snd (splitPhi p0))
@@ -451,7 +437,9 @@ Proof.
     split; intros;
     apply evalphiApp in H5; unf;
     apply evalphiSymm in H6;
-    rewrite footprintAppSymm in H7;
+    rewrite footprintApp in H7;
+    rewrite Aexcept2AppComm in H7;
+    rewriteRevIn footprintApp H7;
     eapp evalphiAppRev.
   subst mm.
   rewrite rw1, rw2.
@@ -465,6 +453,24 @@ Proof.
       eca; simpl; rewrite H1; auto. eca. apply in_eq.
   rewrite rw.
   tauto.
+Qed.
+
+Lemma evalphiRemoveAexcept : forall H r p A1 A2,
+  disjoint (footprint H r p) A2 ->
+  evalphi H r A1 p ->
+  evalphi H r (Aexcept A1 A2) p.
+Proof.
+  induction p0; intros; simpl in *; try constructor.
+  inversionx H2.
+  apply disjointSplitA in H1. unf.
+  eca.
+  - unfold incl, disjoint in *.
+    intros.
+    eapp InAexceptConstr.
+    specialize (H2 a0).
+    intuition.
+  - rewrite AexceptComm.
+    eapp IHp0.
 Qed.
 
 Lemma meetSplitWorks : forall p1 p2,
@@ -522,6 +528,7 @@ Proof.
           split; auto. eapp evalphiRemoveAexcept.
           unfold disjoint. intros. apply or_comm. apply imply_to_or. intros. simpl in *.
           inversionx H1; tauto.
+          
         apply IHp1 in IH. unf.
         exists (phiAcc x0 x1 :: x2).
         split.
@@ -629,3 +636,111 @@ Proof.
           unf. eex.
         eex.
 Qed.
+
+(* gradualization of phi *)
+Definition phidSatisfiable p := exists H r A, evalphid H r A p.
+Definition good (p : phid) : Prop := phidSatisfiable p /\ sfrmphid [] p.
+
+Definition gphi := prod bool phid.
+Definition pphi := phid -> Prop.
+
+Definition gUnknown : gphi := (true, []).
+Definition gThat (p : phid) : gphi := (false, p).
+Definition gThatOrSub (p : phid) : gphi := (true, p).
+
+Definition pFromList (ps : list phid) := fun p => In p ps.
+
+Definition pincl (pp1 pp2 : pphi) :=
+  forall p, pp1 p -> pp2 p.
+
+Definition evalgphi H r A (gp : gphi) := evalphid H r A (snd gp).
+Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphid H r A p.
+
+
+(* concretization *)
+Definition gGamma (phi : gphi) : pphi :=
+  match fst phi with
+  | false => (fun p => p = snd phi)
+  | true => (fun p => good p /\ phidImplies p (snd phi))
+  end.
+
+(* abstraction *)
+Definition gAbstr (pp : list phid) : gphi :=
+  gThatOrSub (concat pp).
+
+Theorem gSoundness : forall ps : list phid,
+  (forall p, In p ps -> good p) ->
+  pincl (pFromList ps) (gGamma (gAbstr ps)).
+Proof.
+  unfold pFromList, pincl, gAbstr, gGamma.
+  induction ps; intros; simpl in *; inversionx H1.
+  - split. eapp H0.
+    unfold phidImplies. intros.
+    unfold evalphid in *. unf.
+    eex.
+    intuition.
+  - apply IHps in H2;
+    intuition.
+    unfold phidImplies. intros.
+    apply H3 in H2.
+    unfold evalphid in *. unf.
+    eex.
+    intuition.
+Qed.
+
+Theorem gOptimality : forall (gp : gphi) (ps : list phid),
+  (forall p, In p ps -> good p) ->
+  pincl (pFromList ps) (gGamma gp) ->
+  pincl (gGamma (gAbstr ps)) (gGamma gp).
+Proof.
+  unfold pFromList, pincl, gAbstr, gGamma.
+  induction ps; intros; simpl in *.
+  - unf.
+    unfold good, phidSatisfiable in H3. unf.
+    apply H4 in H3.
+    inversionx H3. tauto.
+  - destruct gp. simpl in *.
+    unf.
+    destruct b.
+    * split; auto.
+      assert (phidImplies a p1). eapp H1.
+      unfold phidImplies. intros.
+      apply H4 in H5.
+      unfold evalphid in H5. unf.
+      rewrite in_app_iff in H5. inversionx H5.
+      + apply H2.
+        eex.
+      + assert (∀ p : phid, In p ps → good p) as IH.
+          intros. eapp H0.
+        eapply IHps in IH.
+      ++  unf.
+          apply H8. eex.
+      ++  intros. eapp H1.
+      ++  split.
+      +++ unfold good. split.
+            unfold phidSatisfiable. repeat eex.
+          unfold sfrmphid. intros.
+          rewrite in_concat in H5. unf.
+          assert (good x1). eapp H0.
+          unfold good in H8. unf.
+          eapp H11.
+      +++ unfold phidImplies.
+          tauto.
+    * assert (H3' := H3).
+      unfold good, phidSatisfiable in H3. unf.
+      apply H4 in H3. unfold evalphid in H3. unf.
+      apply in_app_iff in H3.
+      inversionx H3.
+      + apply H1.
+        admit.
+      + apply IHps.
+      ++  intros.
+          eapp H0.
+      ++  intros.
+          eapp H1.
+      ++  split; auto.
+          unfold phidImplies. intros.
+          apply H4 in H3.
+Qed.
+
+

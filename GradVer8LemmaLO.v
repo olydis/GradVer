@@ -1,6 +1,17 @@
 Load GradVer3Defs.
 Import Semantics.
 
+Lemma Aexcept2AppComm : forall A2 A3 A1,
+  Aexcept A1 (A2 ++ A3) = Aexcept A1 (A3 ++ A2).
+Proof.
+  unfold Aexcept, except.
+  intros.
+  induction A1; intros; simpl in *; try tauto.
+  rewrite IHA1.
+  repeat rewrite existsb_app.
+  rewrite orb_comm.
+  tauto.
+Qed.
 
 Lemma footprintApp : forall H r p1 p2,
   footprint H r (p1 ++ p2) = footprint H r p1 ++ footprint H r p2.
