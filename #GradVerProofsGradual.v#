@@ -21,9 +21,7 @@ Admitted.
 
 Theorem GLIFT_phiImplies : forall p1 p2,
   gphiSatisfiable p1 ->
-  gphiSatisfiable p2 ->
   sfrmgphi [] p1 ->
-  sfrmgphi [] p2 ->
   gphiImplies p1 p2 <-> GLIFT2 phiImplies p1 p2.
 Proof.
   unfold GLIFT2, PLIFT2, gGamma, gphiSatisfiable, sfrmgphi, gphiImplies.
@@ -38,14 +36,14 @@ Proof.
         auto.
       + exists p0.
         exists p0.
-        inversionx H2; try discriminate.
+        inversionx H1; try discriminate.
         auto.
     * destruct b.
       + unf.
         eexists x0.
         repeat split; auto.
         eapp (phiImpliesTrans x0 x1 p1).
-      + inversionx H2; try discriminate.
+      + inversionx H1; try discriminate.
         eapp (phiImpliesTrans p0 x1 p1).
   - destruct b.
     * split; intros; unf.
