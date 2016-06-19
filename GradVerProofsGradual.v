@@ -14,19 +14,10 @@ Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
 
 Inductive ghoareSec (ghoare : gphi -> gphi -> Prop) : gphi -> gphi -> Prop :=
 | GHSec00 : forall (p1 p2a p2b p3 : gphi),
-    fst p2a = false ->
     fst p2b = false ->
     ghoare p1 p2a ->
     ghoare p2b p3 ->
-    gphiImplies p2a p2b ->
-    sfrmgphi [] p2b ->
-    ghoareSec ghoare p1 p3
-| GHSec10 : forall (p1 p2a p2b p2b' p3 : gphi),
-    fst p2a = true ->
-    fst p2b = false ->
-    ghoare p1 p2a ->
-    ghoare p2b p3 ->
-    snd p2a = snd p2b ->
+    gphiImplies (false, snd p2a) p2b ->
     sfrmgphi [] p2b ->
     ghoareSec ghoare p1 p3
 .
@@ -42,24 +33,19 @@ Proof.
   simpl in *. subst.
   split; intros.
   - inversionx H0.
-    * unf.
-      destruct p2a, p2b.
-      simpl in *. repeat subst.
-      exists x2.
-      exists x1.
-      repeat split; auto.
-      unfold sfrmgphi, gphiImplies in *.
-      simpl in *.
-      inversionx H6; try discriminate.
-      eca.
-    * unf.
-      destruct p2a, p2b.
-      simpl in *. repeat subst. unf.
-      exists x2.
-      exists x1.
-      repeat split; auto.
-      inversionx H6; try discriminate.
-      eca.
+    unf.
+    destruct p2a, p2b.
+    simpl in *. repeat subst.
+    exists x2.
+    exists x1.
+    repeat split; auto.
+    unfold gphiImplies in *.
+    inversionx H5; try discriminate.
+    simpl in *.
+    eca.
+    destruct b; unf; subst.
+    * eapp phiImpliesTrans.
+    * assumption.
   - unf.
     inversionx H3.
     apply (GHSec00 _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
