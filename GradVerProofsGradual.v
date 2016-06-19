@@ -2,11 +2,12 @@ Load GradVer20Hook.
 Import Semantics.
 
 
-Definition gphiImplies (gp1 gp2 : gphi) : Prop :=
-  if fst gp1
-  then (exists meet, phiSatisfiable meet ∧ sfrmphi [] meet ∧ phiImplies meet (snd gp2) /\ phiImplies meet (snd gp1))
-  else phiImplies (snd gp1) (snd gp2).
+Definition morePrecise (p1 p2 : gphi) :=
+  pincl (gGamma p1) (gGamma p2).
 
+Definition morePreciseIntuitive (p1 p2 : gphi) :=
+  pincl (gGamma p1) (gGamma p2).
+  
 
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
@@ -19,11 +20,60 @@ Proof.
   - admit.
 Admitted.
 
+(* Inductive ghasStaticType : gphi -> e -> T -> Prop :=
+| GSTValNum : forall p n, 
+  ghasStaticType p (ev (vn n)) TPrimitiveInt
+| GSTValNull : forall p C, 
+  ghasStaticType p (ev vnull) (TClass C)
+| GSTVar : forall p T x,
+
+  gphiImplies p (gThat [phiType x T]) -> 
+  ghasStaticType p (ex x) T
+| GSTField : forall p e f C T,
+  
+  ghasStaticType p e (TClass C) -> 
+  gphiImplies p (gThat [phiNeq e (ev vnull)]) ->
+  fieldType C f = Some T ->
+  ghasStaticType p (edot e f) T
+.
+
+Theorem GLIFT_sfrmphi : forall p e T,
+  gphiSatisfiable p ->
+  ghasStaticType p e T <-> GLIFT1 (fun p => hasStaticType p e T) p.
+Proof.
+  unfold GLIFT1, PLIFT1, gGamma, gphiSatisfiable, sfrmgphi.
+  intros.
+  destruct p0. simpl in *.
+  split; intros.
+  - destruct b.
+    * apply hasWellFormedSubtype in H0. unf.
+      exists x0.
+      split; auto.
+      inversionx H1; eca.
+      unfold gphiImplies in *; simpl in *; unf.
+      repeat auto.
+      inversionx H1.
+      + exists [].
+        repeat eca.
+        .
+      unfold gphiSatisfiable in H0. simpl in *.
+      eappIn hasWellFormedSubtype H0.
+      unf.
+      eex.
+      eapp sfrmIncl.
+      apply inclEmpty.
+    * inversionx H0; try discriminate.
+      eex.
+      intuition.
+  - unf.
+    destruct b; try tauto.
+    subst.
+    auto.
+Qed. *)
+
 Theorem GLIFT_phiImplies : forall p1 p2,
   gphiSatisfiable p1 ->
-  gphiSatisfiable p2 ->
   sfrmgphi [] p1 ->
-  sfrmgphi [] p2 ->
   gphiImplies p1 p2 <-> GLIFT2 phiImplies p1 p2.
 Proof.
   unfold GLIFT2, PLIFT2, gGamma, gphiSatisfiable, sfrmgphi, gphiImplies.
@@ -38,14 +88,14 @@ Proof.
         auto.
       + exists p0.
         exists p0.
-        inversionx H2; try discriminate.
+        inversionx H1; try discriminate.
         auto.
     * destruct b.
       + unf.
         eexists x0.
         repeat split; auto.
         eapp (phiImpliesTrans x0 x1 p1).
-      + inversionx H2; try discriminate.
+      + inversionx H1; try discriminate.
         eapp (phiImpliesTrans p0 x1 p1).
   - destruct b.
     * split; intros; unf.

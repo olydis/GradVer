@@ -49,4 +49,7 @@ Definition GLIFT2 (prop : phi -> phi -> Prop) : (gphi -> gphi -> Prop) :=
 Definition sfrmgphi (a : A_s) (p : gphi) : Prop :=
   fst p = true \/ sfrmphi a (snd p).
 
-
+Definition gphiImplies (gp1 gp2 : gphi) : Prop :=
+  if fst gp1
+  then (exists meet, phiSatisfiable meet ∧ sfrmphi [] meet ∧ phiImplies meet (snd gp1) ∧ phiImplies meet (snd gp2))
+  else phiImplies (snd gp1) (snd gp2).
