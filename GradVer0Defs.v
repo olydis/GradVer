@@ -525,77 +525,67 @@ Definition FVA_s (A : A_s) : list x := flat_map FVe (map fst A).
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     hasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
     hoareSingle
-      phi
+      (phi' ++ phi)
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
-| HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc (ex x) f :: 
-                    phiNeq (ex x) (ev vnull) :: phi') ->
-    sfrmphi [] phi' ->
+| HFieldAssign : forall (phi(*\*) : phi) (x y : x) (f : f) C T,
     (* NotIn x (FV phi') -> *)
     hasStaticType phi (ex x) (TClass C) ->
     hasStaticType phi (ex y) T ->
     fieldHasType C f T ->
-    hoareSingle phi (sMemberSet x f y) 
+    hoareSingle 
+      (phi ++ [phiAcc (ex x) f])
+      (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
-       phiEq (edot (ex x) f) (ex y) :: phi')
-| HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+       phiEq (edot (ex x) f) (ex y) :: phi)
+| HVarAssign : forall T phi(*\*) (x : x) (e : e),
+    NotIn x (FV phi) ->
     NotIn x (FVe e) ->
     hasStaticType phi (ex x) T ->
     hasStaticType phi e T ->
-    sfrme (staticFootprint phi') e ->
-    hoareSingle phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
-| HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn xresult (FV phi') ->
+    sfrme (staticFootprint phi) e ->
+    hoareSingle phi (sAssign x e) (phi ++ [phiEq (ex x) e])
+| HReturn : forall phi(*\*) (x : x) T,
+    NotIn xresult (FV phi) ->
     hasStaticType phi (ex x) T ->
     hasStaticType phi (ex xresult) T ->
     hoareSingle 
-      phi 
+      phi
       (sReturn x) 
-      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
+      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi)
 | HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType phi_i (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType phi_i (ex x) T_r ->
     hasStaticType phi_i (ex z') T_p ->
-    phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
-    sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
     (* NotIn y (FV phi_r) ->
     NotIn z' (FV phi_r) -> *)
     listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
+    hoareSingle 
+      (phi_r ++ phiNeq (ex y) (ev vnull) :: phi_p ++ phi_i) 
+      (sCall x y m z') 
+      (phi_r ++ phi_q)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
-| HRelease : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
-    phiImplies phi_1 (phi_2 ++ phi_r) ->
-    sfrmphi [] phi_r ->
-    hoareSingle phi_1 (sRelease phi_2) phi_r
-| HDeclare : forall phi(*\*) phi'(*\*) x T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+| HRelease : forall phi(*\*) phi_r(*\*),
+    hoareSingle (phi_r ++ phi) (sRelease phi) phi_r
+| HDeclare : forall phi(*\*) x T,
+    NotIn x (FV phi) ->
     hoareSingle 
       phi
       (sDeclare T x)
       (phiType x T ::
-       phiEq (ex x) (ev (defaultValue' T)) :: phi')
+       phiEq (ex x) (ev (defaultValue' T)) :: phi)
 .
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
@@ -603,6 +593,7 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 | HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
     hoareSingle p s1 q1 ->
     phiImplies q1 q2 ->
+    sfrmphi [] q2 ->
     hoare q2 s2 r ->
     hoare p (s1 :: s2) r
 | HEMPTY : forall p, hoare p [] p
