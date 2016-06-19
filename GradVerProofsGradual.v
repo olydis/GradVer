@@ -1,13 +1,85 @@
 Load GradVer20Hook.
 Import Semantics.
 
+(* HSec *)
 
-Definition morePrecise (p1 p2 : gphi) :=
-  pincl (gGamma p1) (gGamma p2).
+Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
+| HSec : forall (p1 p2a p2b p3 : phi),
+    hoare p1 p2a ->
+    hoare p2b p3 ->
+    phiImplies p2a p2b ->
+    sfrmphi [] p2b ->
+    hoareSec hoare p1 p3
+.
 
-Definition morePreciseIntuitive (p1 p2 : gphi) :=
-  pincl (gGamma p1) (gGamma p2).
+Inductive ghoareSec (ghoare : gphi -> gphi -> Prop) : gphi -> gphi -> Prop :=
+| GHSec00 : forall (p1 p2a p2b p3 : gphi),
+    fst p2a = false ->
+    fst p2b = false ->
+    ghoare p1 p2a ->
+    ghoare p2b p3 ->
+    gphiImplies p2a p2b ->
+    sfrmgphi [] p2b ->
+    ghoareSec ghoare p1 p3
+| GHSec10 : forall (p1 p2a p2b p2b' p3 : gphi),
+    fst p2a = true ->
+    fst p2b = false ->
+    ghoare p1 p2a ->
+    ghoare p2b p3 ->
+    snd p2a = snd p2b ->
+    sfrmgphi [] p2b ->
+    ghoareSec ghoare p1 p3
+.
+
+Theorem GLIFT_hoareSec : forall (hoare : phi -> phi -> Prop) p1 p3,
+  ghoareSec (GLIFT2 hoare) p1 p3 <-> GLIFT2 (hoareSec hoare) p1 p3.
+Proof.
+  intros.
+  unfold GLIFT2, PLIFT2, gGamma.
+  destruct p1 as [bp1 p1].
+  destruct p3 as [bp3 p3].
   
+  simpl in *. subst.
+  split; intros.
+  - inversionx H0.
+    * unf.
+      destruct p2a, p2b.
+      simpl in *. repeat subst.
+      exists x2.
+      exists x1.
+      repeat split; auto.
+      unfold sfrmgphi, gphiImplies in *.
+      simpl in *.
+      inversionx H6; try discriminate.
+      eca.
+    * unf.
+      destruct p2a, p2b.
+      simpl in *. repeat subst. unf.
+      exists x2.
+      exists x1.
+      repeat split; auto.
+      inversionx H6; try discriminate.
+      eca.
+  - unf.
+    inversionx H3.
+    apply (GHSec00 _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
+    auto;
+    simpl;
+    try eex.
+    unfold sfrmgphi.
+    auto.
+Qed.
+
+
+
+Definition ghoareSec (ghoare : gphi -> gphi -> Prop) (gp1 gp3 : gphi) :=
+  exists (gp2a gp2b : gphi),
+    ghoare gp1 gp2a /\
+    ghoare gp2b gp3 /\
+    gphiImplies gp2a gp2b /\
+    sfrmgphi [] gp2b.
+
+
 
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
