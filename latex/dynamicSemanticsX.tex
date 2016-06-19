@@ -13,7 +13,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESNewObj]
-{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{o}}]}\\{A'} = {@app(prod(o, f), A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {{H}[{o} \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]]}}
+{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{o}}]}\\{A'} = {@app(A'_d, A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {{H}[{o} \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]]}}
 {{({H}, {{({{\rho}, {A}}, {{{x} := \new {C}} \cdot {\overline{s}}})} \cdot {S}})} \rightarrow {({H'}, {{({{\rho'}, {A'}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 
@@ -32,7 +32,7 @@
 \begin{mathpar}
 \inferrule* [Right=ESAppFinish]
 {\evalex {H} {\rho} {{y}} {{o}}\\{H(o)} = {{({C}, {\_})}}\\{\mpost({C}, {m})} = {{\phi}}\\\evalphix {H} {\rho'} {A'} {\phi}\\{A''} = {\dynamicFP {H} {\rho'} {\phi}}\\\evalex {H} {\rho'} {{\xresult}} {v_r}}
-{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{{x} := {y}.{m}({z})} \cdot {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({({{\rho}[{x} \mapsto {v_r}]}, {@app(prod(o, f), A, A'')})}, {\overline{s}})} \cdot {S}})}}
+{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{{x} := {y}.{m}({z})} \cdot {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({({{\rho}[{x} \mapsto {v_r}]}, {@app(A'_d, A, A'')})}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 
 \begin{mathpar}

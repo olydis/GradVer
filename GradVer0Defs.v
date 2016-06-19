@@ -486,6 +486,7 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
 
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @cons phi' #p1 (@nil phi') := #p1 *)
 (*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)

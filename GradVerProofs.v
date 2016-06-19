@@ -1335,7 +1335,7 @@ Proof.
         unfold evale.
         simpl.
         rewrite H5.
-        rewrite H10.
+        rewrite H102
         auto.
     * apply INVHELPER.
     * eax.

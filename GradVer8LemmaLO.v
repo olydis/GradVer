@@ -943,7 +943,6 @@ Proof.
     apply H0.
     assumption.
   - econstructor; eauto.
-    eapply phiImpliesTrans; eauto.
 Qed.
 
 Lemma evalphiImpliesType : forall H r A p x T,

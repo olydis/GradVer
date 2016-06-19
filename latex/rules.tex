@@ -231,14 +231,13 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 {
 \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
 \phi_{q1} \implies \phi_{q2} \\
+\sfrmphi \phi_{q2} \\
 \hoare {\phi_{q2}} {s_2} {\phi_r}
 }
 {\hoare {\phi_p} {s_1;s_2} {\phi_r}}
 \end{mathpar}
 
 \input{staticSemantics}
-
-Note: issue with HApp and $z'$ in the post-condition: the substitution reflects \textbf{any changes} made to $z$ onto $z'$ which is wrong in general (except we make $z'$ a by-ref parameter in the small-step semantics) 
 
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
