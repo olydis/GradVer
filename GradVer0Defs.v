@@ -465,7 +465,7 @@ Inductive hasStaticType : phi -> e -> T -> Prop :=
   hasStaticType p (ex x) T
 | STField : forall p e f C T, 
   hasStaticType p e (TClass C) -> 
-  phiImplies p [phiNeq e (ev vnull)] ->
+(*   phiImplies p [phiNeq e (ev vnull)] -> *)
   fieldType C f = Some T ->
   hasStaticType p (edot e f) T
 .

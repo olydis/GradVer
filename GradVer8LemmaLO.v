@@ -13,6 +13,15 @@ Proof.
   tauto.
 Qed.
 
+Lemma staticFootprintApp : forall p1 p2,
+  staticFootprint (p1 ++ p2) = staticFootprint p1 ++ staticFootprint p2.
+Proof.
+  induction p1; intros; simpl in *; try tauto.
+  rewrite IHp1.
+  rewrite app_assoc.
+  tauto.
+Qed.
+
 Lemma footprintApp : forall H r p1 p2,
   footprint H r (p1 ++ p2) = footprint H r p1 ++ footprint H r p2.
 Proof.
