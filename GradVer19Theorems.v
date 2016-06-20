@@ -501,6 +501,68 @@ Proof.
       tauto.
 Qed.
 
+
+Theorem framedOff : forall ss H1 H2 r1 r2 A1 A2 r A p,
+  dynSemStar (H1, [(r1, A1, ss)]) (H2, [(r2, A2, [])]) ->
+  (forall A', In A' A -> exists v, H1 (fst A') = Some v) ->
+  disjoint A A1 ->
+  sfrmphi [] p ->
+  evalphi H1 r A p ->
+  evalphi H2 r (A ++ A2) p.
+Proof.
+  induction ss; intros; simpl in *.
+  - inversionx H0; try inversionx H7.
+    eapp evalphiIncl.
+    intuition.
+  - inversionx H0.
+    inversionx H7.
+    * eappIn IHss H8.
+        intros.
+        apply H3 in H0. unf.
+        destruct A'. simpl in *.
+        unfold HSubst.
+        dec (o_dec o1 o0); try (eex; fail).
+        rewrite H7. destruct x1. eex.
+      apply evalphiRemoveHSubst; auto.
+      specialize (H4 (o0, f0)).
+      intuition.
+      eapply sfrmphiVSdfpX in H5. apply H5 in H0.
+      apply evalphiImpliesAccess in H6. apply H6 in H0.
+      tauto.
+    * eappIn IHss H8.
+    * assert (evalphi (Halloc o0 C0 H1) r A p0).
+        eapp evalphiRemoveHalloc.
+      eappIn IHss H8.
+        intros.
+        apply H3 in H7. unf.
+        destruct A'. simpl in *.
+        unfold Halloc.
+        rewrite H17.
+        dec (o_dec o0 o1); eex.
+      assert (disjoint A (map (λ cf' : T * f, (o0, snd cf')) Tfs)).
+        unfold disjoint. intros.
+        apply imply_to_or. intro.
+        unfold not. intro.
+        apply in_map_iff in H9. unf. subst.
+        apply H3 in H7. unf. simpl in *.
+        rewrite H16 in H9. discriminate.
+      unfold disjoint. intros.
+      specialize (H4 x1).
+      specialize (H7 x1).
+      rewrite in_app_iff. intuition.
+    * eappIn IHss H8.
+    * admit.
+    * eappIn IHss H8.
+    * eappIn IHss H8.
+      unfold disjoint. intros.
+      specialize (H4 x0).
+      intuition.
+      apply or_intror.
+      intro. contradict H0.
+      eapp InAexcept.
+    * eappIn IHss H8.
+Admitted.
+
 (*
 Lemma dynSemStarSustainsHelper : forall ss H1 H2 r1 r2 A1 A2 r A,
   ~ In (A'_s2A'_d H1 r1 A) (map Some A1) ->

@@ -13,6 +13,15 @@ Proof.
   tauto.
 Qed.
 
+Lemma staticFootprintApp : forall p1 p2,
+  staticFootprint (p1 ++ p2) = staticFootprint p1 ++ staticFootprint p2.
+Proof.
+  induction p1; intros; simpl in *; try tauto.
+  rewrite IHp1.
+  rewrite app_assoc.
+  tauto.
+Qed.
+
 Lemma footprintApp : forall H r p1 p2,
   footprint H r (p1 ++ p2) = footprint H r p1 ++ footprint H r p2.
 Proof.
@@ -626,29 +635,31 @@ Proof.
 Qed.
 
 Lemma sfrmphiApp' : forall p1 p2 a,
-  sfrmphi a p1 ->
-  sfrmphi (a ++ staticFootprint p1) p2 ->
+  sfrmphi a p1 /\
+  sfrmphi (a ++ staticFootprint p1) p2 <->
   sfrmphi a (p1 ++ p2).
 Proof.
   induction p1; intros; simpl in *.
-  - rewrite app_nil_r in H1.
-    assumption.
-  - inversionx H0.
-    intuition.
-    apply IHp1; try auto.
+  - rewrite app_nil_r.
+    tauto.
+  - rewriteRev IHp1.
     rewrite app_assoc_reverse.
     rewriteRev (app_nil_l (staticFootprint' a ++ a0 ++ staticFootprint p1)).
-    apply sfrmphiAccessReorder.
-    assumption.
+    assert (sfrmphi ([] ++ staticFootprint' a ++ a0 ++ staticFootprint p1) p2
+        <-> sfrmphi ([] ++ a0 ++ staticFootprint' a ++ staticFootprint p1) p2)
+    as iff.
+      split; eapp sfrmphiAccessReorder.
+    rewrite iff.
+    tauto.
 Qed.
 
 Lemma sfrmphiApp : forall p1 p2,
-  sfrmphi [] p1 ->
-  sfrmphi (staticFootprint p1) p2 ->
+  sfrmphi [] p1 /\
+  sfrmphi (staticFootprint p1) p2 <->
   sfrmphi [] (p1 ++ p2).
 Proof.
   intros.
-  apply sfrmphiApp'; simpl; assumption.
+  apply sfrmphiApp'.
 Qed.
 
 Lemma rhoSubstId : forall x v r, rhoSubst x v r x = Some v.
@@ -941,7 +952,7 @@ Proof.
     apply H0.
     assumption.
   - econstructor; eauto.
-    eapply phiImpliesTrans; eauto.
+    eapp phiImpliesTrans.
 Qed.
 
 Lemma evalphiImpliesType : forall H r A p x T,

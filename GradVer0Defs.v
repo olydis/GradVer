@@ -464,7 +464,7 @@ Inductive hasStaticType : phi -> e -> T -> Prop :=
   phiImplies p [phiType x T] -> 
   hasStaticType p (ex x) T
 | STField : forall p e f C T, 
-  hasStaticType p e (TClass C) -> 
+  hasStaticType p e (TClass C) ->
   phiImplies p [phiNeq e (ev vnull)] ->
   fieldType C f = Some T ->
   hasStaticType p (edot e f) T
@@ -486,6 +486,7 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
 
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @cons phi' #p1 (@nil phi') := #p1 *)
 (*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)

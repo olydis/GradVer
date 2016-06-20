@@ -12,7 +12,9 @@ Definition invPhiHolds
     sfrmphi [] phi /\ evalphi Heap rho A phi.
 Definition invTypesHold
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
-    forall e T, hasStaticType phi e T -> ehasDynamicType Heap rho e T.
+    forall e T,
+         hasStaticType phi e T
+      -> ehasDynamicType Heap rho e T.
 Definition invHeapConsistent
   (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall o C m f T,
@@ -62,7 +64,7 @@ Ltac uninv :=
   unfold invAevals in *.
 
 Ltac applyINVtypes INVtypes H :=
-  apply INVtypes in H;
+  apply INVtypes in H; try (apply dfrmeVar; fail);
   unfold ehasDynamicType in H;
   inversion H as [? xt]; clear H;
   inversion xt as [xt1 ?xd]; clear xt;
@@ -87,126 +89,6 @@ Ltac unfoldINV INV :=
   inversion INVheapNT' as [omin INVheapNT]; clear INVheapNT'.
 
 
-Theorem framedOff : forall ss H1 H2 r1 r2 A1 A2 r A p,
-  dynSemStar (H1, [(r1, A1, ss)]) (H2, [(r2, A2, [])]) ->
-  (forall A', In A' A -> exists v, H1 (fst A') = Some v) ->
-  disjoint A A1 ->
-  sfrmphi [] p ->
-  evalphi H1 r A p ->
-  evalphi H2 r (A ++ A2) p.
-Proof.
-  induction ss; intros; simpl in *.
-  - inversionx H0; try inversionx H7.
-    eapp evalphiIncl.
-    intuition.
-  - inversionx H0.
-    inversionx H7.
-    * eappIn IHss H8.
-        intros.
-        apply H3 in H0. unf.
-        destruct A'. simpl in *.
-        unfold HSubst.
-        dec (o_dec o1 o0); try (eex; fail).
-        rewrite H7. destruct x1. eex.
-      apply evalphiRemoveHSubst; auto.
-      specialize (H4 (o0, f0)).
-      intuition.
-      eapply sfrmphiVSdfpX in H5. apply H5 in H0.
-      apply evalphiImpliesAccess in H6. apply H6 in H0.
-      tauto.
-    * eappIn IHss H8.
-    * assert (evalphi (Halloc o0 C0 H1) r A p0).
-        eapp evalphiRemoveHalloc.
-      eappIn IHss H8.
-        intros.
-        apply H3 in H7. unf.
-        destruct A'. simpl in *.
-        unfold Halloc.
-        rewrite H17.
-        dec (o_dec o0 o1); eex.
-      assert (disjoint A (map (λ cf' : T * f, (o0, snd cf')) Tfs)).
-        unfold disjoint. intros.
-        apply imply_to_or. intro.
-        unfold not. intro.
-        apply in_map_iff in H9. unf. subst.
-        apply H3 in H7. unf. simpl in *.
-        rewrite H16 in H9. discriminate.
-      unfold disjoint. intros.
-      specialize (H4 x1).
-      specialize (H7 x1).
-      rewrite in_app_iff. intuition.
-    * eappIn IHss H8.
-    * admit.
-    * eappIn IHss H8.
-    * eappIn IHss H8.
-      unfold disjoint. intros.
-      specialize (H4 x0).
-      intuition.
-      apply or_intror.
-      intro. contradict H0.
-      eapp InAexcept.
-    * eappIn IHss H8.
-Admitted.
-
-Lemma inclFPXe : forall e f H r e',
-  In (e, f) (staticFootprintXe e') ->
-  incl (footprintXe H r e) (footprintXe H r e').
-Proof.
-  induction e'; intros; simpl in *; try tauto.
-  inversionx H1.
-  - inversionx H2.
-    unfold footprintXe.
-    simpl.
-    intuition.
-  - intuition.
-    eapp incl_tran.
-    unfold footprintXe.
-    simpl.
-    intuition.
-Qed.
-
-Lemma inclFPX' : forall e f H r p,
-  In (e, f) (staticFootprintX' p) ->
-  incl (footprintXe H r e) (footprintX' H r p).
-Proof.
-  intros.
-  destruct p0;
-  try tauto;
-  unfold footprintXe, footprintX';
-  simpl in *;
-  try apply in_app_iff in H1;
-  repeat rewrite map_app, oflattenApp;
-  fold footprintXe;
-  try inversionx H1;
-  try eappIn inclFPXe H1;
-  try eappIn inclFPXe H2;
-  unfold footprintXe, footprintX' in *;
-  unfold incl; intros; intuition.
-Qed.
-
-Lemma inclFPX : forall e f H r p,
-  In (e, f) (staticFootprintX p) ->
-  incl (footprintXe H r e) (footprintX H r p).
-Proof.
-  induction p0; simpl; try tauto.
-  intros.
-  apply in_app_iff in H1.
-  inversionx H1.
-  - eappIn inclFPX' H2.
-    eapp incl_tran.
-    unfold footprintX', footprintX.
-    simpl.
-    rewrite map_app.
-    rewrite oflattenApp.
-    intuition.
-  - apply IHp0 in H2.
-    unfold footprintX', footprintX.
-    simpl.
-    rewrite map_app.
-    rewrite oflattenApp.
-    intuition.
-Qed.
-
 Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
   hoareSingle pre s'' post ->
   invAll initialHeap initialRho initialAccess pre ->
@@ -227,7 +109,7 @@ Proof.
     rename H3 into im.
     rename H9 into fht.
     rename H4 into sf.
-    assert (temp := hstX0). 
+    assert (temp := hstX0).
       applyINVtypes INVtypes temp.
       rename x2 into v0.
       rename xd into hdtV0.
@@ -349,9 +231,14 @@ Proof.
       rewrite H1. destruct x2. eex.
   - unfoldINV INV.
     (*sAssign*)
-    assert (HH3 := H3).
-    applyINVtypes INVtypes H8.
+    rename H6 into hstX0.
+    rename H8 into hstE0.
+    rename H10 into sfe.
+    rename H4 into niFVphi.
+    rename H5 into niFVe0.
+    
     applyINVphi2 INVphi2 H2.
+    applyINVtypes INVtypes hstE0.
     do 4 eexists; try emagicProgress. (*progress*)
     assert (evalphi
               initialHeap 
@@ -368,30 +255,30 @@ Proof.
       apply evalphiRemoveRhoSubst; auto.
     repeat split; repeat constructor.
     * apply sfrmphiApp; try assumption.
-      repeat constructor.
+      repeat constructor;
       assumption.
     * apply eph.
     * induction e1; intros; unfold ehasDynamicType, evale; 
       inversionx H0; simpl in *.
       + eex. eca.
       + eex. eca.
-      + apply H9 in eph.
+      + apply H6 in eph.
         inversionx eph.
-        inversionx H17.
+        inversionx H13.
         eex.
-      + apply H12 in eph.
+      + apply H8 in eph.
         inversionx eph.
-        inversionx H19.
+        inversionx H15.
         
-        apply IHe1 in H9.
-        inversionx H9. unf.
+        apply IHe1 in H6.
+        inversionx H6. unf.
         
         common.
-        inversionx H18.
-        rewrite H11 in *.
-        inversionx H7.
-        inversionx H8; try tauto.
-        rewrite H16.
+        inversionx H14.
+        rewrite H7 in *.
+        inversionx H4.
+        inversionx H5; try tauto.
+        rewrite H12.
         simpl.
         eapp INVHELPER.
     * apply INVHELPER.
