@@ -322,33 +322,14 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 %\input{dynamicSemanticsX}
 
 \newcommand{\grad}[1]{\widetilde{#1}}
-\newcommand{\withqm}[1]{#1\:*\:?}
+\newcommand{\withqm}[1]{?\:*\:#1}
 \section{Gradualization}
 \subsection{Syntax}
 \begin{align*}
 &\grad{\phi} \quad ::= \quad \phi ~|~ \withqm{\phi}
 \end{align*}
-Note: allowing $?$ at different position is hardly useful
-\begin{itemize}
-\item dynamically: order makes no difference
-\item statically: Imagine substituting $?$ with $acc(x.f) * [...]$. The only time this makes sense to \textbf{not} put to the very right is when there are expressions containing $x.f$ (in the non-gradual part). In other words, there are expressions that are framed only when $?$ is substituted in a specific way. But then why not require the necessary framing in the non-gradual part as well, i.e. why not simply \textbf{write out} $acc(x.f)$ instead of relying on a substitution? Corollary: The non-gradual part of $\grad{\phi}$ should be self-framed.
-\end{itemize}
 
-\subsubsection{Discussion}
-\begin{itemize}
-\item We want $\withqm{\phi} \implies \phi$ for all $\phi$
-\item Meaning of $\hoare {\withqm{\phi_1}} {\overline{s}} {\phi_2}$ compared to $\hoare {\phi_1} {\overline{s}} {\phi_2}$?
-	\begin{itemize}
-	\item Caller: nothing
-	\item Callee: verification succeeds as long as there exists a (satisfiable) instantiation that makes proof about method body work.
-	\end{itemize}
-\item Meaning of $\hoare {\phi_1} {\overline{s}} {\withqm{\phi_2}}$ compared to $\hoare {\phi_1} {\overline{s}} {\phi_2}$?
-	\begin{itemize}
-	\item Caller: verification succeeds as long as there exists a (satisfiable) instantiation that makes upcoming proofs work.
-	\item Callee: nothing
-	\end{itemize}
-
-\end{itemize}
+Note: consider $?$ in other positions as ``self-framing delimiter'', but with semantically identical meaning.
 
 \subsection{Concretization}
 Syntax $\hat{\phi} := $ self-framed and satisfiable $\phi$
@@ -389,37 +370,64 @@ Syntax $\hat{\phi} := $ self-framed and satisfiable $\phi$
 \begin{mathpar}
 \inferrule* [Right=GSfrmNonGrad]
 {A \sfrmphi \phi}
-{A ~\widetilde{\sfrmphi}~ \phi}
+{A ~\grad{\sfrmphi}~ \phi}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=GSfrmGrad]
 {~}
-{A ~\widetilde{\sfrmphi}~ ?\:*\:\phi}
+{A ~\grad{\sfrmphi}~ ?\:*\:\phi}
 \end{mathpar}
 
 \subsubsection{Implication}
 \begin{mathpar}
 \inferrule* [Right=GImplNonGrad]
 {\phi_1 \implies \phi_2}
-{\phi_1 ~\widetilde{\implies}~ \widetilde{\phi_2}}
+{\phi_1 ~\grad{\implies}~ \grad{\phi_2}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=GImplGrad]
 {\hat{\phi_m} \implies \phi_2 \\
  \hat{\phi_m} \implies \phi_1}
-{?\:*\:\phi_1 ~\widetilde{\implies}~ \widetilde{\phi_2}}
+{?\:*\:\phi_1 ~\grad{\implies}~ \grad{\phi_2}}
 \end{mathpar}
 
-So $\hat{\phi_m}$ is evidence!\\
+%Remark: Whether second argument is gradual or not seems to be irrelevant. Interestingly, all of our later uses will also pass non-gradual formulas as second argument. Maybe the natural lifting of this predicate should only lift on first argument in the first place?
+
+$\hat{\phi_m}$ is evidence! \\
 
 
 \textbf{Consistent transitivity}
 
-While $\implies$ is transitive, $\widetilde{\implies}$ is generally not.
+While $\implies$ is transitive, $\grad{\implies}$ is generally not.
 
-In fact it's pretty complicated, but maybe not necessary with smarter hoare rules?
+But maybe not even necessary with smarter hoare rules?
+
+\subsubsection{Hoare and evidence}
+Discussion/Considerations:
+\begin{itemize}
+\item The post-condition-$\phi$ seems to inherit its gradual-ness from implication, which itself does not care about whether its second argument is gradual or not...
+\item Gradual
+\end{itemize}
+
+Example:
+
+\newcommand{\imp}[1]{\textcolor{red}{#1}}
+
+\begin{mathpar}
+\inferrule* [Right=GHVarAssign]
+{
+\imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} \grad{\phi'}
+\\\imp{\emptyset \sfrmphi \grad{\phi'}}
+\\\imp{x \not \in FV(\grad{\phi'})}
+\\x \not \in FVe(e)
+\\\imp{\epsilon \vdash\,} \grad{\phi} \vdash x : T
+\\\imp{\epsilon \vdash\,} \grad{\phi} \vdash e : T
+\\\imp{\staticFP {\phi'} \sfrme e}
+}
+{\hoare {\grad{\phi}} {x := e} {\grad{\phi'} * (x = e)}}
+\end{mathpar}
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}
@@ -428,8 +436,8 @@ In fact it's pretty complicated, but maybe not necessary with smarter hoare rule
 \end{align*}
 \subsubsection{Optimality of $\alpha$}
 \begin{align*}
-&\forall \overline{\phi}, \widetilde{\phi} : \overline{\phi} \subseteq \gamma(\widetilde{\phi}) \implies  \gamma(\alpha(\overline{\phi}))\subseteq
-\gamma(\widetilde{\phi}) 
+&\forall \overline{\phi}, \grad{\phi} : \overline{\phi} \subseteq \gamma(\grad{\phi}) \implies  \gamma(\alpha(\overline{\phi}))\subseteq
+\gamma(\grad{\phi}) 
 \end{align*}
 
 \section{Theorems}
