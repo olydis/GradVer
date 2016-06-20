@@ -998,7 +998,7 @@ Proof.
       assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
       uninv. repeat split. (*6*)
    (**) subst phi_end.
-        apply sfrmphiApp.
+        apply sfrmphiApp. split.
         unfold phiSubsts3.
           assert (sfrmphi [] phi_post) as sfp. apply INV2. eapply sfrmphiPhiSubsts3 in sfp. apply sfp.
           eapp sfrmIncl. apply inclEmpty.
