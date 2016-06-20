@@ -33,7 +33,8 @@ Inductive gGamma : gphi -> pphi -> Prop :=
 .
 
 Definition ppGood (pp : pphi) :=
-  forall p, pp p -> good p.
+  (exists p, pp p) /\
+  (forall p, pp p -> good p).
 
 Definition ppIsSingleton (p : phi) (pp : pphi) :=
   pp p /\ (forall p', pp p' -> p' = p).
@@ -149,6 +150,46 @@ Proof.
       unf.
       auto.
   - inversionx H1.
+    * (* contradict *)
+      specialize (H5 p0).
+      contradict H5.
+      unfold
+        pincl,
+        pSingleton,
+        ppGood,
+        ppHasMaximum,
+        ppIsSingleton
+      in *. unf.
+      assert (p0 = x0). eapp H3. subst.
+      split; auto.
+      intros.
+      apply H3 in H1. subst.
+      congruence.
+    * (* contradict everything but phi = true *)
+      unfold
+        pincl,
+        ppHasMaximum,
+        ppIsSingleton
+      in *.
+      intros. unf.
+      destruct (classic (phiImplies [] p0)).
+      + split; auto.
+        apply (phiImpliesTrans p1 [] p0); auto.
+      + (* contradict *)
+        assert (~ phiImplies [] p).
+        
+        unfold phiImplies in H1.
+        
+        rewrite not_all_ex_not in H1.
+      destruct p0; try tauto.
+      intros. unf.
+      split; auto.
+      apply (phiImpliesTrans p2 p0 p1); auto.
+      apply H3 in H1.
+      unf.
+      auto.
+      
+      inversionx H1.
     unfold
       pincl,
       ppHasMaximum,

@@ -14,7 +14,7 @@
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
 {{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FVe(e)}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
-{\hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})} * {\emptyset}}}}
+{\hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})}}}}
 \end{mathpar}
 
 \begin{mathpar}
