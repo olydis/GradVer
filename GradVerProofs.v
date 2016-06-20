@@ -1350,20 +1350,12 @@ Theorem initialINV :
 Proof.
   uninv. intuition; try (eca; fail).
   - unfold ehasDynamicType, evale.
-    inversionx H0; simpl; try (eex; eca).
-    * apply (phiImpliesTauto newHeap newRho newAccess) in H1.
-      inversionx H1.
-      inversionx H10.
-      discriminate.
+    inversionx H1; simpl; try (eex; eca).
     * apply (phiImpliesTauto newHeap newRho newAccess) in H2.
       inversionx H2.
-      inversionx H12.
-      common.
-      inversionx H10.
-      inversionx H1; simpl in *.
-      + inversionx H5. tauto.
-      + discriminate.
-      + destruct (evale' newHeap newRho e0); try discriminate.
-        destruct v0; try discriminate.
+      inversionx H11.
+      discriminate.
+    * inversionx H0.
+      tauto.
   - discriminate.
 Qed.
