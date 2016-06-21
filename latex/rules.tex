@@ -452,22 +452,17 @@ When shifting implication responsibility to GHSec:
 {\hoare {(x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}} {x := e} {\valphi{e}_{acc} * \grad{\phi'} * (x = e)}}
 \end{mathpar}
 
-Worth noting: the free variable part is only there to prevent creating false/unsatisfiable post-condition. Also, there is just no way to and point in preventing later instantiations of $\grad{\phi'}$ that contain $x$ - yet at those places it is always ensured that the instantiation is still satisfiable. Could we redefine this rule (or the hoare rules in general) to simply state that deriavations are only valid on satisfiable pre- and post-conditions?
- 
-\begin{mathpar}
-\inferrule* [Right=GHVarAssign]
-{
-x \not \in FV(e)
-\\[e : T]
-}
-{\hoare {(x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}} {x := e} {\valphi{e}_{acc} * \grad{\phi'} * (x = e)}}
-\end{mathpar}
+Worth noting: the free variable part must prevent $\grad{\phi'}$ getting instantiated into something containing $x$ (at least that's what the mechanical gradual lifting rules dictate). Does this force an extended syntax like $?_x$ for wildcards with side conditions?
+Or is this solved by evidence, consequently: evidence := ``coarsest'' witness of implication together with variable taboos
+
+Or does may gradual hoare rule not be gradual lifting of hoare rule? (Like TApp in AGT!)
 
 Example derivation:
 \begin{align*}
 \\& \{(x : T) * \textcolor{blue}{\acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \textcolor{cyan}{(y : C_y) * (y.a.b \neq \vnull)} * \grad{\phi'}\}
 \\& \{(x : T) * \textcolor{blue}{\valphi{y.a.b.c}_{acc}} * \textcolor{cyan}{[y.a.b.c : T]} * \grad{\phi'}\}
 \\& x := y.a.b.c;	\quad\quad\quad\quad\textcolor{gray}{\parbox{3cm}{
+\textcolor{red}{$x \not \in FV(\grad{\phi'})$}\\
 $x \not \in FV(y.a.b.c)$\\
 $\vdash C_y.a : C_a$\\
 $\vdash C_a.b : C_b$\\
