@@ -326,11 +326,15 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 \newcommand{\withqm}[1]{?\:*\:#1}
 \section{Gradualization}
 \subsection{Syntax}
+\subsubsection{Gradual formula}
 \begin{align*}
 &\grad{\phi} \quad ::= \quad \phi ~|~ \withqm{\phi}
 \end{align*}
 
 Note: consider $?$ in other positions as ``self-framing delimiter'', but with semantically identical meaning.
+
+As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propagates the $?$ to the very left in case $\grad{\phi_2}$ contains one.
+
 
 \subsection{Concretization}
 Syntax $\hat{\phi} := $ self-framed and satisfiable $\phi$
@@ -405,6 +409,13 @@ While $\implies$ is transitive, $\grad{\implies}$ is generally not.
 
 But maybe not even necessary with smarter hoare rules?
 
+%\subsubsection{Free Variable}
+%\begin{mathpar}
+%\inferrule* [Right=GNotInFV]
+%{x \not\in FV(\phi)}
+%{x \not\in FV(\grad{\phi})}
+%\end{mathpar}
+
 \subsubsection{Hoare and evidence}
 Discussion/Considerations:
 \begin{itemize}
@@ -434,7 +445,7 @@ Collapsing (hidden) gradual implications into a single one:
 \inferrule* [Right=GHVarAssign]
 {
 \imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} (x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}
-\\\imp{\emptyset \sfrmphi \grad{\phi'}}
+\\\imp{\emptyset \sfrmphi \valphi{e}_{acc} * \grad{\phi'}}
 \\\imp{x \not \in FV(\grad{\phi'})}
 \\x \not \in FV(e)
 \\[e : T]
@@ -452,11 +463,6 @@ When shifting implication responsibility to GHSec:
 }
 {\hoare {(x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}} {x := e} {\valphi{e}_{acc} * \grad{\phi'} * (x = e)}}
 \end{mathpar}
-
-Worth noting: the free variable part must prevent $\grad{\phi'}$ getting instantiated into something containing $x$ (at least that's what the mechanical gradual lifting rules dictate). Does this force an extended syntax like $?_x$ for wildcards with side conditions?
-Or is this solved by evidence, consequently: evidence := ``coarsest'' witness of implication together with variable taboos
-
-Or does may gradual hoare rule not be gradual lifting of hoare rule? (Like TApp in AGT!)
 
 Example derivation:
 \begin{align*}
