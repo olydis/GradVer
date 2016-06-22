@@ -598,6 +598,20 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
        phiEq (ex x) (ev (defaultValue' T)) :: phi')
 .
 
+Fixpoint unfoldTypeJudjPremise (e : e) (T T' : T) : Prop :=
+  match e with
+  | ev v => T = T' /\ hasStaticType [] (ev v) T
+  | ex x => T = T'
+  | edot e f => exists C, unfoldTypeJudjPremise e (TClass C) T' /\ fieldType C f = Some T
+  end.
+
+Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
+  match e with
+  | ev v => []
+  | ex x => [phiType x T']
+  | edot e f => unfoldTypeJudjFormula e T T' ++ [phiAcc e f]
+  end.
+
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi'(*\*) x (C : C) f_bar(*\overline{f}*),
@@ -608,28 +622,25 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (phiType x (TClass C) :: phi')
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
-| HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc (ex x) f :: 
-                    phiNeq (ex x) (ev vnull) :: phi') ->
-    sfrmphi [] phi' ->
-    (* NotIn x (FV phi') -> *)
-    hasStaticType phi (ex x) (TClass C) ->
-    hasStaticType phi (ex y) T ->
+| HFieldAssign : forall phi'(*\*) (x y : x) (f : f) C T,
     fieldHasType C f T ->
-    hoareSingle phi (sMemberSet x f y) 
+    hoareSingle 
+      (phiType x (TClass C) :: 
+       phiType y T ::
+       phiNeq (ex x) (ev vnull) :: phi' ++ [phiAcc (ex x) f])
+      (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi')
-| HVarAssign : forall T phi(*\*) phi'(*\*) (x : x) (e : e),
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
+| HVarAssign : forall T phi'(*\*) (x : x) (e : e) T',
     NotIn x (FV phi') ->
     NotIn x (FVe e) ->
-    hasStaticType phi (ex x) T ->
-    hasStaticType phi e T ->
-    sfrme (staticFootprint phi') e ->
-    hoareSingle phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
+    unfoldTypeJudjPremise e T T' ->
+    hoareSingle
+      (phiType x T :: unfoldTypeJudjFormula e T T' ++ phi')
+      (sAssign x e)
+      (unfoldTypeJudjFormula e T T' ++ phi' ++ [phiEq (ex x) e])
 | HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
     phiImplies phi phi' ->
     sfrmphi [] phi' ->

@@ -6,6 +6,7 @@ Definition phiEquals (p1 p2 : phi) :=
 
 Definition wrapHoare (hoare : phi -> s -> phi -> Prop) p1 s p2 : Prop :=
   exists p1x p2x,
+  sfrmphi [] p1x /\
   phiImplies p1 p1x /\
   phiImplies p2x p2 /\
   hoare p1x s p2x.
@@ -15,12 +16,14 @@ Theorem hoareMiniEquals : forall p1 p2 s,
   wrapHoare hoareSingle        p1 s p2.
 Proof.
   unfold wrapHoare. split; intros; unf.
-  - rename H1 into im1.
-    rename H0 into im2.
-    rename H3 into ho.
+  - rename H1 into sf.
+    rename H0 into im1.
+    rename H2 into im2.
+    rename H4 into ho.
     inversionx ho.
     * repeat eexists.
-      Focus 3. eca.
+      Focus 4. eca.
+      + repeat eca.
       + unfold phiImplies. intros.
         apply im1 in H5.
         eca.
@@ -34,16 +37,43 @@ Proof.
           rewrite AexceptEmpty.
           assumption.
       + assumption.
+    * repeat eexists.
+      Focus 4. eca.
+      + repeat eca. simpl.
+        rewriteRev sfrmphiApp.
+        split; eauto.
+        repeat eca.
+      + unfold phiImplies. intros.
+        apply im1 in H5.
+        inversionx H2.
+        inversionx H3.
+        eca.
+      ++  apply inclEmpty.
+      ++  apply H8 in H5.
+          inversionx H5.
+          assumption.
+      ++  simpl.
+          rewrite AexceptEmpty.
+          eca.
+            apply inclEmpty.
+            apply H7 in H5. inversionx H5. assumption.
+          simpl.
+          rewrite AexceptEmpty.
+          rewrite app_comm_cons.
+          apply evalphiSymm.
+          simpl.
+          eapp H0.
+      + assumption.
     * admit.
     * admit.
     * admit.
     * admit.
     * admit.
     * admit.
-    * admit.
-  - rename H1 into im1.
-    rename H0 into im2.
-    rename H3 into ho.
+  - rename H1 into sf.
+    rename H0 into im1.
+    rename H2 into im2.
+    rename H4 into ho.
     inversionx ho.
     * repeat eex.
       eca.
@@ -51,7 +81,30 @@ Proof.
         eapp phiImpliesSuffix.
       + eca. rewrite cons2app.
         eapp phiImpliesPrefix.
-    * admit.
+    * repeat eex.
+      eca.
+      + unfold phiImplies.
+        intros.
+        rewrite cons2app2 in H1.
+        apply evalphiSuffix in H1.
+        rewrite app_comm_cons in H1.
+        apply evalphiSymm in H1.
+        assumption.
+      + inversionx sf.
+        inversionx H2.
+        inversionx H4.
+        simpl in *.
+        apply sfrmphiApp in H5.
+        tauto.
+      + eca. rewrite cons2app.
+        eapp phiImpliesPrefix.
+      + eca.
+        unfold phiImplies. intros.
+        rewrite cons2app in H1.
+        apply evalphiSuffix in H1.
+        rewrite cons2app in H1.
+        apply evalphiPrefix in H1.
+        assumption.
     * admit.
     * admit.
     * admit.
