@@ -606,8 +606,8 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
 
 Fixpoint unfoldTypeJudjPremise (e : e) (T T' : T) : Prop :=
   match e with
-  | ev v => hasStaticType [] (ev v) T
-  | ex x => True
+  | ev v => T = T' /\ hasStaticType [] (ev v) T
+  | ex x => T = T'
   | edot e f => exists C, unfoldTypeJudjPremise e (TClass C) T' /\ fieldType C f = Some T
   end.
 
