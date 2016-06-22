@@ -240,9 +240,11 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 {\hoare {\phi_p} {s_1;s_2} {\phi_r}}
 \end{mathpar}
 
-\input{staticSemantics}
+\input{staticSemanticsPreMini}
 
-Note: issue with HApp and $z'$ in the post-condition: the substitution reflects \textbf{any changes} made to $z$ onto $z'$ which is wrong in general (except we make $z'$ a by-ref parameter in the small-step semantics) 
+\subsubsection{Hoare revisited - pre-grad minification}
+
+\input{staticSemantics}
 
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
@@ -334,6 +336,37 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 Note: consider $?$ in other positions as ``self-framing delimiter'', but with semantically identical meaning.
 
 As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propagates the $?$ to the very left in case $\grad{\phi_2}$ contains one.
+
+\subsubsection{Type judgment expansion}
+\newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
+\newcommand{\hasTypeFormula}[3]{{\llbracket #1 : #2\rrbracket}_{#3}}
+
+Motivation: Materialize and combine the requirements on $\phi$.
+
+Designed so that
+\begin{mathpar}
+\phi \vdash e : T
+\quad \wedge \quad
+\staticFP {\phi} \sfrme e
+\\ \iff \\
+\hasTypePremise e T C
+\quad \wedge \quad
+\phi \implies \hasTypeFormula e T C
+\end{mathpar}
+
+\textbf{Expand into premise: } $\hasTypePremise e T C$
+\begin{align*}
+   &\hasTypePremise {v} T C   	&&=\quad T = C \quad\wedge\quad \vdash v : T
+\\ &\hasTypePremise {x} T C   	&&=\quad T = C
+\\ &\hasTypePremise {e.f} T C	&&=\quad \hasTypePremise {e} {C'} C \quad\wedge\quad \vdash C'.f : T 
+\end{align*}
+
+\textbf{Expand into formula: } $\hasTypeFormula e T C$
+\begin{align*}
+   &\hasTypeFormula {v} T C   	&&= \true
+\\ &\hasTypeFormula {x} T C   	&&= (x : C)
+\\ &\hasTypeFormula {e.f} T C	&&= \hasTypeFormula e T C * \acc(e.f)
+\end{align*}
 
 
 \subsection{Concretization}
@@ -444,13 +477,13 @@ Collapsing (hidden) gradual implications into a single one:
 \begin{mathpar}
 \inferrule* [Right=GHVarAssign]
 {
-\imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} (x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}
-\\\imp{\emptyset \sfrmphi \valphi{e}_{acc} * \grad{\phi'}}
+\imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} (x : T) * \hasTypeFormula e T C * \grad{\phi'}
+\\\imp{\emptyset \sfrmphi \hasTypeFormula e T C * \grad{\phi'}}
 \\\imp{x \not \in FV(\grad{\phi'})}
 \\x \not \in FV(e)
-\\[e : T]
+\\\hasTypePremise e T C
 }
-{\hoare {\grad{\phi}} {x := e} {\valphi{e}_{acc} * \grad{\phi'} * (x = e)}}
+{\hoare {\grad{\phi}} {x := e} {\hasTypeFormula e T C * \grad{\phi'} * (x = e)}}
 \end{mathpar}
 
 When shifting implication responsibility to GHSec:
@@ -459,23 +492,25 @@ When shifting implication responsibility to GHSec:
 {
 \imp{x \not \in FV(\grad{\phi'})}
 \\x \not \in FV(e)
-\\[e : T]
+\\\hasTypePremise e T C
 }
-{\hoare {(x : T) * \valphi{e}_{acc} * [e : T] * \grad{\phi'}} {x := e} {\valphi{e}_{acc} * \grad{\phi'} * (x = e)}}
+{\hoare {(x : T) * \hasTypeFormula e T C * \grad{\phi'}} {x := e} {\hasTypeFormula e T C * \grad{\phi'} * (x = e)}}
 \end{mathpar}
 
 Example derivation:
 \begin{align*}
-\\& \{(x : T) * \textcolor{blue}{\acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \textcolor{cyan}{(y : C_y) * (y.a.b \neq \vnull)} * \grad{\phi'}\}
-\\& \{(x : T) * \textcolor{blue}{\valphi{y.a.b.c}_{acc}} * \textcolor{cyan}{[y.a.b.c : T]} * \grad{\phi'}\}
-\\& x := y.a.b.c;	\quad\quad\quad\quad\textcolor{gray}{\parbox{3cm}{
+\\& \{(x : T) * \textcolor{blue}{(y : C) * \acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'}\}
+\\& \{(x : T) * \textcolor{blue}{\hasTypeFormula {y.a.b.c} T C} * \grad{\phi'}\}
+\\& x := y.a.b.c;	\quad\quad\quad\quad\textcolor{gray}{\parbox{14cm}{
 \textcolor{red}{$x \not \in FV(\grad{\phi'})$}\\
 $x \not \in FV(y.a.b.c)$\\
-$\vdash C_y.a : C_a$\\
-$\vdash C_a.b : C_b$\\
-$\vdash C_b.c : T$}}
-\\& \{\textcolor{blue}{\valphi{y.a.b.c}_{acc}} * \grad{\phi'} * (x = y.a.b.c)\}
-\\& \{\textcolor{blue}{\acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'} * (x = y.a.b.c)\}
+$\hasTypePremise {y.a.b.c} T C =
+~\vdash C_y = C 	\,\,\wedge 
+~\vdash C_y.a : C_a \,\,\wedge
+~\vdash C_a.b : C_b \,\,\wedge
+~\vdash C_b.c : T$}}
+\\& \{\textcolor{blue}{\hasTypeFormula {y.a.b.c} T C} * \grad{\phi'} * (x = y.a.b.c)\}
+\\& \{\textcolor{blue}{(y : C) * \acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'} * (x = y.a.b.c)\}
 \end{align*}
 
 
