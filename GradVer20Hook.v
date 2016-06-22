@@ -66,9 +66,141 @@ Proof.
   admit.
 Admitted.
 
-Lemma unfoldTypeJudjLemma : forall p e T,
+Lemma footprintUnfoldTypeJudjASfpx : forall h r e T' T,
+  footprint h r (unfoldTypeJudjFormula e T' T) = rev (footprintXe h r e).
+Proof.
+  unfold footprintXe.
+  induction e0; intros; simpl; try tauto.
+  rewrite footprintApp.
+  rewrite IHe0.
+  rewrite rev_app_distr.
+  unfold olist, A'_s2A'_d.
+  simpl.
+  destruct (evale' h r e0); try tauto.
+  destruct v0; tauto.
+Qed.
+
+Lemma unfoldTypeJudjLemma : forall e T p,
+  (hasStaticType p e T /\ (exists p', phiImplies p p' /\ sfrmphi [] p' /\ sfrme (staticFootprint p') e))
+  <->
+  (exists T', unfoldTypeJudjPremise e T T' /\ phiImplies p (unfoldTypeJudjFormula e T T')).
+Proof.
+  induction e0; intros.
+  - split; intros; simpl in *; unf.
+    * eex.
+      + inversionx H1;
+        eca.
+      + repeat intro.
+        eca.
+    * split.
+      + inversionx H3;
+        eca.
+      + eex;
+        eca.
+  - split; intros; simpl in *; unf.
+    * eex.
+      inversionx H1.
+      assumption.
+    * subst.
+      split; eca.
+      split; eauto.
+      split; repeat eca.
+  - split; intros; simpl in *; unf.
+    * assert (H4' := H4).
+      inversionx H1.
+      inversionx H4.
+      assert (hasStaticType p0 e0 (TClass C0) ∧ (∃ p' : phi, phiImplies p0 p' ∧ sfrmphi [] p' ∧ sfrme (staticFootprint p') e0))
+        as IH. split; auto. exists x0. auto.
+      apply IHe0 in IH; auto. unf.
+      eex.
+      repeat intro.
+      apply evalphiAppRev.
+      + apply H4 in H1.
+        erewrite unfoldTypeJudjFormulaTirrel.
+        eauto.
+      + clear H4.
+        apply evalphiRemoveAexcept.
+      ++  simpl.
+          unfold disjoint. intros.
+          apply imply_to_or. intros.
+          destruct (evale' h r e0) eqn: ee; try tauto.
+          destruct v0; try tauto.
+          rewrite app_nil_r in *.
+          apply InSingle in H4. subst.
+          
+          rewrite footprintUnfoldTypeJudjASfpx.
+          apply H2 in H1.
+          apply evalphiDistinctFP in H1.
+          rewriteRev in_rev.
+          apply sfrmeVSsfpX in H9.
+          assert (In (o0, f0) (footprint h r x0)) as inFP.
+            apply staticVSdynamicFP. eex.
+          autounfold. intro inFPX.
+          unfold footprintXe in inFPX.
+          apply InOflatten in inFPX.
+          apply in_map_iff in inFPX. unf.
+          unfold A'_s2A'_d in H5. destruct x2. simpl in *.
+          destruct (evale' h r e1) eqn: ee2; try discriminate.
+          destruct v0; try discriminate.
+          inversionx H5.
+          admit.
+      ++  apply H2 in H1.
+          assert (fp := H1).
+          apply evalphiImpliesAccess in fp.
+          apply evalphiVSfp in H1.
+          eappIn evalsInIn H7. unf.
+          unfold A'_s2A'_d in *. simpl in *.
+          destruct (evale' h r e0) eqn: ee; try discriminate.
+          destruct v0; try discriminate. simpl in *.
+          inversionx H5.
+          apply fp in H7.
+          assert (footprint' h r (phiAcc e0 f0) = [(o0, f0)]) as ffp.
+            simpl. rewrite ee. tauto.
+          eca; rewrite ffp.
+            apply inclSingle. assumption.
+            eca. apply in_eq.
+          eca.
+    * assert (hasStaticType p0 e0 (TClass x1) ∧ (∃ p' : phi, phiImplies p0 p' ∧ sfrmphi [] p' ∧ sfrme (staticFootprint p') e0))
+        as IH. 
+        eapp IHe0. eex.
+        repeat intro.
+        apply H2 in H1.
+        apply evalphiPrefix in H1.
+        erewrite unfoldTypeJudjFormulaTirrel. eauto.
+      unf.
+      split.
+      + eca.
+        repeat intro.
+        apply H2 in H6.
+        apply evalphiSuffix in H6.
+        inversionx H6. inversionx H17.
+        eca.
+          apply inclEmpty.
+          eca. unfold evale. simpl. eauto. discriminate.
+        eca.
+      + exists (unfoldTypeJudjFormula e0 T0 x0 ++ [phiAcc e0 f0]).
+        eca.
+        split.
+          admit.
+        unfold staticFootprint.
+        rewrite flat_map_app.
+        simpl.
+        eca. intuition.
+        apply (sfrmeIncl _ (flat_map staticFootprint' (unfoldTypeJudjFormula e0 T0 x0)) _).
+          intuition.
+        generalize e0. clear.
+        induction e0; eca; simpl.
+      ++  rewrite flat_map_app.
+          simpl.
+          intuition.
+      ++  rewrite flat_map_app.
+          eapp sfrmeIncl.
+          intuition.
+Admitted.
+
+Lemma unfoldTypeJudjLemma : forall e T p,
   sfrmphi [] p ->
-  (hasStaticType p e T /\ sfrme (staticFootprint p) e)
+  (hasStaticType p e T /\ (exists p', phiImplies p p' /\ sfrme (staticFootprint p') e))
   <->
   (exists T', unfoldTypeJudjPremise e T T' /\ phiImplies p (unfoldTypeJudjFormula e T T')).
 Proof.
@@ -82,27 +214,31 @@ Proof.
     * split.
       + inversionx H3;
         eca.
-      + eca.
+      + eex.
+        eca.
   - split; intros; simpl in *; unf.
     * eex.
       inversionx H1.
       assumption.
     * subst.
       split; eca.
+      eax.
+      eca.
   - split; intros; simpl in *; unf.
-    * assert (H2' := H2).
+    * assert (H3' := H3).
       inversionx H1.
-      inversionx H2.
-      assert (hasStaticType p0 e0 (TClass C0) ∧ sfrme (staticFootprint p0) e0)
-        as IH. auto.
+      inversionx H3.
+      assert (hasStaticType p0 e0 (TClass C0) ∧ (∃ p' : phi, phiImplies p0 p' ∧ sfrme (staticFootprint p') e0))
+        as IH. split; auto. exists x0. auto.
       apply IHe0 in IH; auto. unf.
       eex.
       repeat intro.
       apply evalphiAppRev.
-      + apply H2 in H0.
+      + apply H3 in H0.
         erewrite unfoldTypeJudjFormulaTirrel.
         eauto.
-      + apply evalphiRemoveAexcept.
+      + clear H3.
+        apply evalphiRemoveAexcept.
       ++  simpl.
           unfold disjoint. intros.
           apply imply_to_or. intros.
@@ -110,23 +246,74 @@ Proof.
           destruct v0; try tauto.
           rewrite app_nil_r in *.
           apply InSingle in H3. subst.
-          eappIn sfrmeNoRecursion H2'.
           
-      ++  assert (fp := H0).
+          rewrite footprintUnfoldTypeJudjASfpx.
+          apply H2 in H0.
+          apply evalphiDistinctFP in H0.
+          rewriteRev in_rev.
+          apply sfrmeVSsfpX in H8.
+          assert (In (o0, f0) (footprint h r x0)) as inFP.
+            apply staticVSdynamicFP. eex.
+          autounfold. intro inFPX.
+          unfold footprintXe in inFPX.
+          apply InOflatten in inFPX.
+          apply in_map_iff in inFPX. unf.
+          unfold A'_s2A'_d in H4. destruct x2. simpl in *.
+          destruct (evale' h r e1) eqn: ee2; try discriminate.
+          destruct v0; try discriminate.
+          inversionx H4.
+          Check sfrmeVSsfpX.
+          admit.
+      ++  apply H2 in H0.
+          assert (fp := H0).
           apply evalphiImpliesAccess in fp.
           apply evalphiVSfp in H0.
-          eappIn evalsInIn H5. unf.
+          eappIn evalsInIn H6. unf.
           unfold A'_s2A'_d in *. simpl in *.
           destruct (evale' h r e0) eqn: ee; try discriminate.
           destruct v0; try discriminate. simpl in *.
-          inversionx H5.
-          apply fp in H9.
+          inversionx H4.
+          apply fp in H6.
           assert (footprint' h r (phiAcc e0 f0) = [(o0, f0)]) as ffp.
             simpl. rewrite ee. tauto.
           eca; rewrite ffp.
             apply inclSingle. assumption.
             eca. apply in_eq.
           eca.
+    * assert (hasStaticType p0 e0 (TClass x1) ∧ (∃ p' : phi, phiImplies p0 p' ∧ sfrme (staticFootprint p') e0))
+        as IH. 
+        eapp IHe0. eex.
+        repeat intro.
+        apply H2 in H1.
+        apply evalphiPrefix in H1.
+        erewrite unfoldTypeJudjFormulaTirrel. eauto.
+      unf.
+      split.
+      + eca.
+        repeat intro.
+        apply H2 in H5.
+        apply evalphiSuffix in H5.
+        inversionx H5. inversionx H16.
+        eca.
+          apply inclEmpty.
+          eca. unfold evale. simpl. eauto. discriminate.
+        eca.
+      + exists (unfoldTypeJudjFormula e0 T0 x0 ++ [phiAcc e0 f0]).
+        eca.
+        unfold staticFootprint.
+        rewrite flat_map_app.
+        simpl.
+        eca; intuition.
+        apply (sfrmeIncl _ (flat_map staticFootprint' (unfoldTypeJudjFormula e0 T0 x0)) _).
+          intuition.
+        generalize e0. clear.
+        induction e0; eca; simpl.
+      ++  rewrite flat_map_app.
+          simpl.
+          intuition.
+      ++  rewrite flat_map_app.
+          eapp sfrmeIncl.
+          intuition.
 Admitted.
 
 Theorem hoareMiniEquals : forall p1 p2 s,
