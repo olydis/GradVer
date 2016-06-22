@@ -670,19 +670,15 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HAssert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
-| HRelease : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
-    phiImplies phi_1 (phi_2 ++ phi_r) ->
-    sfrmphi [] phi_r ->
-    hoareSingle phi_1 (sRelease phi_2) phi_r
-| HDeclare : forall phi(*\*) phi'(*\*) x T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
-    NotIn x (FV phi') ->
+| HRelease : forall phi(*\*) phi_r(*\*),
+    hoareSingle (phi_r ++ phi) (sRelease phi) phi_r
+| HDeclare : forall phi(*\*)  x T,
+    NotIn x (FV phi) ->
     hoareSingle 
       phi
       (sDeclare T x)
       (phiType x T ::
-       phiEq (ex x) (ev (defaultValue' T)) :: phi')
+       phiEq (ex x) (ev (defaultValue' T)) :: phi)
 .
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)

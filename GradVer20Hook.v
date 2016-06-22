@@ -127,9 +127,13 @@ Proof.
         eapp H0.
       + assumption.
     * admit.
+    * repeat eex. eca.
     * admit.
-    * admit.
-    * admit.
+    * repeat eexists.
+      Focus 4. eca.
+      + assumption.
+      + eapp phiImpliesTrans.
+      + assumption.
   - rename H1 into sf.
     rename H0 into im1.
     rename H2 into im2.
@@ -187,9 +191,9 @@ Proof.
         apply evalphiPrefix in H1.
         assumption.
     * admit.
+    * repeat eex. eca.
     * admit.
-    * admit.
-    * admit.
+    * repeat eex. eca.
 Admitted.
 
 (* 
