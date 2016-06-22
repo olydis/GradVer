@@ -6,9 +6,9 @@ Definition phiEquals (p1 p2 : phi) :=
 
 Definition wrapHoare (hoare : phi -> s -> phi -> Prop) p1 s p2 : Prop :=
   exists p1x p2x,
-  phiImplies p1x p1 /\
-  phiImplies p2 p2x /\
-  hoare p1 s p2.
+  phiImplies p1 p1x /\
+  phiImplies p2x p2 /\
+  hoare p1x s p2x.
 
 Theorem hoareMiniEquals : forall p1 p2 s,
   wrapHoare hoareSinglePreMini p1 s p2 <->
@@ -18,11 +18,46 @@ Proof.
   - rename H1 into im1.
     rename H0 into im2.
     rename H3 into ho.
-    admit.
+    inversionx ho.
+    * repeat eexists.
+      Focus 3. eca.
+      + unfold phiImplies. intros.
+        apply im1 in H5.
+        eca.
+      ++  apply inclEmpty.
+      ++  inversionx H3.
+          apply H8 in H5.
+          inversionx H5.
+          assumption.
+      ++  apply H0 in H5.
+          simpl.
+          rewrite AexceptEmpty.
+          assumption.
+      + assumption.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
   - rename H1 into im1.
     rename H0 into im2.
     rename H3 into ho.
-    admit.
+    inversionx ho.
+    * repeat eex.
+      eca.
+      + rewrite cons2app.
+        eapp phiImpliesSuffix.
+      + eca. rewrite cons2app.
+        eapp phiImpliesPrefix.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
 Admitted.
 
 (* 

@@ -61,7 +61,7 @@ Inductive phi' :=
 | phiNeq : e -> e -> phi'
 (*coq2latex: phiAcc #e #f := \acc(#e.#f) *)
 | phiAcc : e -> f -> phi'
-(*coq2latex: phiType #x #T := #x : #T *)
+(*coq2latex: phiType #x #T := (#x : #T) *)
 | phiType : x -> T -> phi'.
 Definition phi := list phi'.
 Inductive s :=
@@ -600,14 +600,12 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
-| HNewObj : forall phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
-    phiImplies phi phi' ->
+| HNewObj : forall phi'(*\*) x (C : C) f_bar(*\overline{f}*),
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
-    hasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
     hoareSingle
-      phi
+      (phiType x (TClass C) :: phi')
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
 | HFieldAssign : forall (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
