@@ -147,6 +147,12 @@ Definition e_decb := dec2decb e_dec.
 Hint Resolve e_dec.
 Hint Resolve list_eq_dec e_dec.
 
+Definition phi'_dec : ∀ n m : phi', {n = m} + {n ≠ m}. decide equality. Defined.
+Program Instance phi'_EqDec : EqDec phi' eq := phi'_dec.
+Definition phi'_decb := dec2decb phi'_dec.
+Hint Resolve phi'_dec.
+Hint Resolve list_eq_dec phi'_dec.
+
 Definition A'_s_dec : ∀ n m : A'_s, {n = m} + {n ≠ m}. decide equality. Defined.
 Program Instance A'_s_EqDec : EqDec A'_s eq := A'_s_dec.
 Definition A'_s_decb := dec2decb A'_s_dec.
@@ -600,8 +606,8 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
 
 Fixpoint unfoldTypeJudjPremise (e : e) (T T' : T) : Prop :=
   match e with
-  | ev v => T = T' /\ hasStaticType [] (ev v) T
-  | ex x => T = T'
+  | ev v => hasStaticType [] (ev v) T
+  | ex x => True
   | edot e f => exists C, unfoldTypeJudjPremise e (TClass C) T' /\ fieldType C f = Some T
   end.
 
@@ -641,14 +647,10 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (phiType x T :: unfoldTypeJudjFormula e T T' ++ phi')
       (sAssign x e)
       (unfoldTypeJudjFormula e T T' ++ phi' ++ [phiEq (ex x) e])
-| HReturn : forall phi(*\*) phi'(*\*) (x : x) T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
+| HReturn : forall phi'(*\*) (x : x) T,
     NotIn xresult (FV phi') ->
-    hasStaticType phi (ex x) T ->
-    hasStaticType phi (ex xresult) T ->
     hoareSingle 
-      phi 
+      (phiType x T :: phiType xresult T :: phi') 
       (sReturn x) 
       (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
 | HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
