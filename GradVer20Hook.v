@@ -320,7 +320,36 @@ Proof.
           simpl.
           eapp H0.
       + assumption.
-    * admit.
+    * assert (∃ T' : T, unfoldTypeJudjPremise e0 T0 T'
+              ∧ phiImplies p1 (unfoldTypeJudjFormula e0 T0 T'))
+      as co.
+        apply unfoldTypeJudjLemma.
+        split. eapp phiImpliesStaticType.
+        exists phi'0.
+        split; auto.
+        eapp phiImpliesTrans.
+      unf.
+      repeat eexists.
+      Focus 4. eca.
+      + repeat eca. simpl.
+        rewriteRev sfrmphiApp.
+        split. eapp sfrmphiApp. apply sfrmphiUnfoldType.
+        eapp sfrmIncl.
+        apply inclEmpty.
+      + repeat intro.
+        eca.
+          apply inclEmpty.
+          apply im1 in H7. inversionx H4. apply H12 in H7. inversionx H7. assumption.
+        common.
+        apply evalphiAppRev. eapp H9.
+        apply im1 in H7.
+        apply H0 in H7.
+        rewrite footprintUnfoldTypeJudjASfpx.
+        eapp evalphiRemoveAexcept.
+        admit.
+      + repeat intro.
+        apply im2.
+        eapp evalphiSuffix.
     * repeat eexists.
       Focus 4. eca.
       + repeat eca.
@@ -337,9 +366,43 @@ Proof.
         common.
         eapp H0.
       + assumption.
-    * admit.
+    * repeat eexists.
+      Focus 4. eca.
+      + repeat eca.
+        simpl.
+        rewriteRev sfrmphiApp.
+        split; auto.
+        repeat eca. simpl.
+        apply IsMethodWellDef in H1.
+        inversionx H1. unf.
+        eapply sfrmphiPhiSubsts2 in H10.
+        eapp sfrmIncl.
+        apply inclEmpty.
+      + repeat intro.
+        apply im1 in H8.
+        inversionx H0.
+        inversionx H2.
+        inversionx H3.
+        eca.
+          apply inclEmpty.
+          apply H10 in H8. inversionx H8. assumption.
+        eca.
+          apply inclEmpty.
+          apply H11 in H8. inversionx H8. assumption.
+        eca.
+          apply inclEmpty.
+          apply H9 in H8. inversionx H8. assumption.
+        common.
+        eapp evalphiSymm.
+      + assumption.
     * repeat eex. eca.
-    * admit.
+    * repeat eexists.
+      Focus 4. eca.
+      Focus 3. eauto.
+      Focus 2. repeat intro. apply im1 in H2. apply H0 in H2. eapp evalphiSymm.
+      rewriteRev sfrmphiApp.
+      split; auto.
+      admit.
     * repeat eexists.
       Focus 4. eca.
       + assumption.
@@ -381,12 +444,32 @@ Proof.
         rewrite cons2app in H1.
         apply evalphiPrefix in H1.
         assumption.
-    * repeat eex.
+    * (* assert (∃ T' : T, unfoldTypeJudjPremise e0 T0 T'
+             ∧ phiImplies p1 (unfoldTypeJudjFormula e0 T0 T'))
+      as conv.
+        eex.
+        repeat intro.
+        apply im1 in H3.
+        rewrite cons2app in H3.
+        apply evalphiSuffix in H3.
+        apply evalphiPrefix in H3.
+        assumption. *)
+      assert (∃ T0' : T, unfoldTypeJudjPremise e0 T0 T0'
+             ∧ phiImplies (phiType x2 T0 :: unfoldTypeJudjFormula e0 T0 T' ++ phi'0) (unfoldTypeJudjFormula e0 T0 T0'))
+      as conv.
+        eex.
+        repeat intro.
+        rewrite cons2app in H3.
+        apply evalphiSuffix in H3.
+        apply evalphiPrefix in H3.
+        assumption.
+      
+      apply unfoldTypeJudjLemma in conv. unf.
+      
+      repeat eex.   eapp phiImpliesTrans.
       rewrite app_assoc.
       eca.
-      + repeat intro.
-        rewrite cons2app in H3.
-        eapp evalphiSuffix.
+      + admit.
       + inversionx sf.
         assumption.
       + rewrite FVApp.
@@ -402,44 +485,8 @@ Proof.
         rewrite app_nil_r in H1.
         intuition.
       + eca.
-        rewrite cons2app.
-        eapp phiImpliesPrefix.
-      + generalize e0 T0 H1 H2. clear.
-        induction e0; intros; simpl in *;
-        inversionx H2.
-      ++  inversionx H3; eca.
-      ++  eca.
-          repeat intro.
-          rewrite cons2app in H0.
-          apply evalphiSuffix in H0.
-          rewrite cons2app in H0.
-          apply evalphiPrefix in H0.
-          assumption.
-      ++  unf.
-          assert (H2' := H2).
-          apply IHe0 in H2'; auto. clear IHe0.
-          eca.
-      +++ inversionx H2'; inversionx H2; eca; simpl.
-            rewrite cons2app.
-              repeat intro.
-              apply evalphiSuffix in H2.
-              rewrite cons2app in H2.
-              apply evalphiPrefix in H2.
-              assumption.
-            unf.
-              eappIn phiImpliesStaticType H0.
-            admit.
-      +++ rewrite cons2app.
-          repeat intro.
-          apply evalphiSuffix in H0.
-          apply evalphiPrefix in H0.
-          apply evalphiSuffix in H0.
-          inversionx H0.
-          inversionx H13.
-          eca.
-            apply inclEmpty.
-            eca. unfold evale. simpl. eauto. discriminate.
-          eca.
+        admit.
+      + admit.
       + admit.
     * repeat eex.
       eca.
@@ -461,7 +508,38 @@ Proof.
         rewrite cons2app in H1.
         apply evalphiPrefix in H1.
         assumption.
-    * admit.
+    * repeat eex.
+      eca.
+      + eca.
+        repeat intro.
+        rewrite cons2app in H3.
+        apply evalphiSuffix in H3.
+        rewrite cons2app in H3.
+        eapp evalphiPrefix.
+      + eca.
+        repeat intro.
+        rewrite cons2app in H3.
+        eapp evalphiPrefix.
+      + eca.
+        repeat intro.
+        rewrite cons2app in H3.
+        apply evalphiSuffix in H3.
+        rewrite cons2app in H3.
+        apply evalphiSuffix in H3.
+        rewrite cons2app in H3.
+        eapp evalphiPrefix.
+      + unfold phiImplies.
+        intros.
+        inversionx H3.
+        inversionx H14.
+        inversionx H16.
+        common.
+        rewrite app_comm_cons.
+        eapp evalphiSymm.
+      + inversionx sf.
+        inversionx H4.
+        inversionx H6.
+        eapp sfrmphiApp.
     * repeat eex. eca.
     * repeat eex.
       eca.

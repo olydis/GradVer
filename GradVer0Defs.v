@@ -653,20 +653,15 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (phiType x T :: phiType xresult T :: phi') 
       (sReturn x) 
       (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
-| HApp : forall underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
-    hasStaticType phi_i (ex y) (TClass C) ->
+| HApp : forall underscore(*\_*) phi_r(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
-    hasStaticType phi_i (ex x) T_r ->
-    hasStaticType phi_i (ex z') T_p ->
-    phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
-    sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
-    (* NotIn y (FV phi_r) ->
-    NotIn z' (FV phi_r) -> *)
     listDistinct [x ; y ; z'] ->
-    phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
-    phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
+    hoareSingle
+      (phiType x T_r :: phiType y (TClass C) :: phiType z' T_p :: phi_r ++ 
+       phiNeq (ex y) (ev vnull) :: phiSubsts2 xthis y (xUserDef z) z' phi_pre)
+      (sCall x y m z')
+      (phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ++ phi_r)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1

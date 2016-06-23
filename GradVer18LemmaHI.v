@@ -820,6 +820,28 @@ Proof.
     tauto.
 Qed.
 
+Lemma sfrmeSubstsX : forall m e A,
+  sfrme A e ->
+  sfrme (A_sSubsts m A) (eSubsts m e).
+Proof.
+  induction e0; intros; simpl in *; try (constructor; fail).
+  inversionx H0.
+  eapply IHe0 in H5; eauto.
+  eca.
+  unfold A_sSubsts.
+  apply in_flat_map.
+  exists (phiAcc (eSubsts m0 e0) f0).
+  split.
+  - unfold phiSubsts, phi'Substs.
+    apply in_map_iff.
+    exists (phiAcc e0 f0).
+    intuition.
+    apply in_map_iff.
+    eex. tauto.
+  - constructor.
+    tauto.
+Qed.
+
 Lemma sfrmphiPhiSubsts3 : forall x0 x1 x2 z p A,
   sfrmphi A p ->
   sfrmphi (A_sSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] A) (phiSubsts [(xthis, x1); (xUserDef z, x2); (xresult, x0)] p).
@@ -830,6 +852,21 @@ Proof.
   eca.
   - inversionx H1; simpl; eca;
     eapp sfrmeSubsts.
+  - rewrite A_sSubstsApp in H2.
+    rewrite A_sSubstsFP' in H2.
+    assumption.
+Qed.
+
+Lemma sfrmphiPhiSubsts2 : forall x1 x2 z p A,
+  sfrmphi A p ->
+  sfrmphi (A_sSubsts [(xthis, x1); (xUserDef z, x2)] A) (phiSubsts [(xthis, x1); (xUserDef z, x2)] p).
+Proof.
+  induction p0; intros; try tauto.
+  inversionx H0.
+  eapply IHp0 in H2; eauto.
+  eca.
+  - inversionx H1; simpl; eca;
+    eapp sfrmeSubstsX.
   - rewrite A_sSubstsApp in H2.
     rewrite A_sSubstsFP' in H2.
     assumption.
