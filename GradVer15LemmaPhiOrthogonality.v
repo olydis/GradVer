@@ -6,8 +6,6 @@ Import Semantics.
 
 Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
 
-Definition phiSatisfiable (p : phi) := exists H r A, evalphi H r A p.
-
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 

@@ -195,7 +195,7 @@ Proof.
           apply H2 in H1.
           apply evalphiDistinctFP in H1.
           rewriteRev in_rev.
-          apply sfrmeVSsfpX in H9.
+          apply sfrmeVSsfpX in H8.
           assert (In (o0, f0) (footprint h r x0)) as inFP.
             apply staticVSdynamicFP. eex.
           autounfold. intro inFPX.
@@ -208,21 +208,21 @@ Proof.
           inversionx H5.
           assert (e0 <> e1) as uneq.
             autounfold. intro eqq. subst.
-            contradict H11.
+            contradict H10.
             eapp nonRecursiveFootprint.
-          apply H9 in H11.
+          apply H8 in H10.
           
           eapp NoDupFPcontradiction.
       ++  apply H2 in H1.
           assert (fp := H1).
           apply evalphiImpliesAccess in fp.
           apply evalphiVSfp in H1.
-          eappIn evalsInIn H7. unf.
+          eappIn evalsInIn H6. unf.
           unfold A'_s2A'_d in *. simpl in *.
           destruct (evale' h r e0) eqn: ee; try discriminate.
           destruct v0; try discriminate. simpl in *.
           inversionx H5.
-          apply fp in H7.
+          apply fp in H6.
           assert (footprint' h r (phiAcc e0 f0) = [(o0, f0)]) as ffp.
             simpl. rewrite ee. tauto.
           eca; rewrite ffp.
@@ -239,14 +239,6 @@ Proof.
       unf.
       split.
       + eca.
-        repeat intro.
-        apply H2 in H6.
-        apply evalphiSuffix in H6.
-        inversionx H6. inversionx H17.
-        eca.
-          apply inclEmpty.
-          eca. unfold evale. simpl. eauto. discriminate.
-        eca.
       + exists (unfoldTypeJudjFormula e0 T0 x0 ++ [phiAcc e0 f0]).
         eca.
         split. apply sfrmphiUnfoldType.
