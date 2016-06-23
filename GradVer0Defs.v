@@ -473,7 +473,6 @@ Inductive hasStaticType : phi -> e -> T -> Prop :=
   hasStaticType p (ex x) T
 | STField : forall p e f C T, 
   hasStaticType p e (TClass C) ->
-  phiImplies p [phiNeq e (ev vnull)] ->
   fieldType C f = Some T ->
   hasStaticType p (edot e f) T
 .
@@ -532,14 +531,14 @@ Definition FVA_s (A : A_s) : list x := flat_map FVe (map fst A).
 (* Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m). *)
 
 
-Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
+Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | H'NewObj : forall phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     hasStaticType phi (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
-    hoareSinglePreMini
+    hoareSingle
       phi
       (sAlloc x C)
       (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
@@ -551,7 +550,7 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
     hasStaticType phi (ex x) (TClass C) ->
     hasStaticType phi (ex y) T ->
     fieldHasType C f T ->
-    hoareSinglePreMini phi (sMemberSet x f y) 
+    hoareSingle phi (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
@@ -564,14 +563,14 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
     hasStaticType phi (ex x) T ->
     hasStaticType phi e T ->
     sfrme (staticFootprint phi') e ->
-    hoareSinglePreMini phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
+    hoareSingle phi (sAssign x e) (phi' ++ [phiEq (ex x) e])
 | H'Return : forall phi(*\*) phi'(*\*) (x : x) T,
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn xresult (FV phi') ->
     hasStaticType phi (ex x) T ->
     hasStaticType phi (ex xresult) T ->
-    hoareSinglePreMini 
+    hoareSingle 
       phi 
       (sReturn x) 
       (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
@@ -588,19 +587,19 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
     listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    hoareSinglePreMini phi_i (sCall x y m z') (phi_q ++ phi_r)
+    hoareSingle phi_i (sCall x y m z') (phi_q ++ phi_r)
 | H'Assert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
-    hoareSinglePreMini phi_1 (sAssert phi_2) phi_1
+    hoareSingle phi_1 (sAssert phi_2) phi_1
 | H'Release : forall phi_1(*\*) phi_2(*\*) phi_r(*\*),
     phiImplies phi_1 (phi_2 ++ phi_r) ->
     sfrmphi [] phi_r ->
-    hoareSinglePreMini phi_1 (sRelease phi_2) phi_r
+    hoareSingle phi_1 (sRelease phi_2) phi_r
 | H'Declare : forall phi(*\*) phi'(*\*) x T,
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
-    hoareSinglePreMini 
+    hoareSingle 
       phi
       (sDeclare T x)
       (phiType x T ::
@@ -623,7 +622,7 @@ Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
   | ex x => [phiType x T']
   | edot e f => unfoldTypeJudjFormula e T T' ++ [phiAcc e f]
   end.
-
+(* 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi'(*\*) x (C : C) f_bar(*\overline{f}*),
@@ -680,7 +679,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (sDeclare T x)
       (phiType x T ::
        phiEq (ex x) (ev (defaultValue' T)) :: phi)
-.
+. *)
 
 (*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoare : phi -> list s -> phi -> Prop :=
