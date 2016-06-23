@@ -386,7 +386,7 @@ Proof.
           apply H9 in H8. inversionx H8. assumption.
         common.
         eapp evalphiSymm.
-      + assumption.
+      + eapp phiImpliesAppCommA.
     * repeat eex. eca.
     * repeat eexists.
       Focus 4. eca.
@@ -410,6 +410,8 @@ Proof.
       eca.
       + rewrite cons2app.
         eapp phiImpliesSuffix.
+      + inversionx sf.
+        assumption.
       + eca. rewrite cons2app.
         eapp phiImpliesPrefix.
     * repeat eex.

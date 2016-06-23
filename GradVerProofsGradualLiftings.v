@@ -1,8 +1,14 @@
 Load GradVer20Hook.
 Import Semantics.
 
-(* HSec *)
+(* hasStaticType *)
 
+
+Theorem GLIFT_hasStaticType : forall (hoare : phi -> phi -> Prop) e T p,
+  ghasStaticType e T p <-> GLIFT1 (fun p => hasStaticType e T p) p.
+Proof.
+
+(* HSec *)
 Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
 | HSec : forall (p1 p2a p2b p3 : phi),
     hoare p1 p2a ->
@@ -55,17 +61,6 @@ Proof.
     unfold sfrmgphi.
     auto.
 Qed.
-
-
-
-Definition ghoareSec (ghoare : gphi -> gphi -> Prop) (gp1 gp3 : gphi) :=
-  exists (gp2a gp2b : gphi),
-    ghoare gp1 gp2a /\
-    ghoare gp2b gp3 /\
-    gphiImplies gp2a gp2b /\
-    sfrmgphi [] gp2b.
-
-
 
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
@@ -194,6 +189,9 @@ Proof.
     subst.
     auto.
 Qed.
+
+
+
 
 (* hasWellFormedSubtype *)
 Fixpoint eComplexity (e : e) : nat :=

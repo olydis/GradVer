@@ -246,6 +246,18 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \input{staticSemanticsPreMini}
 
 \subsubsection{Hoare revisited - pre-grad minification}
+\begin{mathpar}
+\inferrule* [Right=HSec]
+{
+%\hoare {\phi_p} {s_1} {\phi_{q}} \\ 
+%\hoare {\phi_{q}} {s_2} {\phi_r}
+ \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
+ \phi_{q1} \implies \phi_{q2} \\
+ \emptyset \sfrmphi \phi_{q2} \\
+ \hoare {\phi_{q2}} {s_2} {\phi_r}
+}
+{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\end{mathpar}
 
 \input{staticSemantics}
 

@@ -626,7 +626,6 @@ Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
 | HNewObj : forall phi'(*\*) x (C : C) f_bar(*\overline{f}*),
-    sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     fieldsNames C = Some f_bar ->
     hoareSingle
@@ -666,7 +665,7 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
       (phiType x T_r :: phiType y (TClass C) :: phiType z' T_p :: phi_r ++ 
        phiNeq (ex y) (ev vnull) :: phiSubsts2 xthis y (xUserDef z) z' phi_pre)
       (sCall x y m z')
-      (phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ++ phi_r)
+      (phi_r ++ phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post)
 | HAssert : forall phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
     hoareSingle phi_1 (sAssert phi_2) phi_1
