@@ -4,7 +4,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{tikz}
-\usepackage[margin=1.2in]{geometry}
+\usepackage[margin=0.5in]{geometry}
 \usepackage{amsmath}
 \usepackage{mathtools}
 \usepackage{hyperref}
@@ -47,6 +47,10 @@
 
 \begin{document}
 \pagenumbering{arabic}
+
+
+\newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
+\newcommand{\hasTypeFormula}[3]{{\llbracket #1 : #2\rrbracket}_{#3}}
 
 \newcommand{\Heap}{H}
 
@@ -338,8 +342,6 @@ Note: consider $?$ in other positions as ``self-framing delimiter'', but with se
 As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propagates the $?$ to the very left in case $\grad{\phi_2}$ contains one.
 
 \subsubsection{Type judgment expansion}
-\newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
-\newcommand{\hasTypeFormula}[3]{{\llbracket #1 : #2\rrbracket}_{#3}}
 
 Motivation: Materialize and combine the requirements on $\phi$.
 

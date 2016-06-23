@@ -1,5 +1,7 @@
 Load GradVer_Imports.
 
+(*coq2latex: @listDistinct #_ #xs := x \neq y \wedge x \neq z' *)
+
 (*coq2latex: @NotIn #_ #x #xs := #x \not \in #xs *)
 Definition NotIn {T : Type} (x : T) (xs : list T) : Prop := ~(In x xs).
 
@@ -503,6 +505,7 @@ Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
 (*coq2latex: snd cf' := f_i *)
 (*coq2latex: Halloc #o #C #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
 
+(*coq2latex: FVe #e := FV(#e) *)
 Fixpoint FVe (e : e) : list x :=
   match e with
   | ev v => []
@@ -604,6 +607,8 @@ Inductive hoareSinglePreMini : phi -> s -> phi -> Prop :=
        phiEq (ex x) (ev (defaultValue' T)) :: phi')
 .
 
+
+(*coq2latex: unfoldTypeJudjPremise #e #T #TT := \hasTypePremise {#e} {#T} {#TT} *)
 Fixpoint unfoldTypeJudjPremise (e : e) (T T' : T) : Prop :=
   match e with
   | ev v => T = T' /\ hasStaticType [] (ev v) T
@@ -611,6 +616,7 @@ Fixpoint unfoldTypeJudjPremise (e : e) (T T' : T) : Prop :=
   | edot e f => exists C, unfoldTypeJudjPremise e (TClass C) T' /\ fieldType C f = Some T
   end.
 
+(*coq2latex: unfoldTypeJudjFormula #e #T #TT := \hasTypeFormula {#e} {#T} {#TT} *)
 Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
   match e with
   | ev v => []
