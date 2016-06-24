@@ -1,433 +1,231 @@
 Load GradVer20Hook_import.
 Import Semantics.
 
-Definition phiRemoveX (x : x) (p : phi) : phi :=
-  filter (fun p' => negb (existsb (x_decb x) (FV' p'))) p.
-
-Definition phiIndependentOfX (x : x) (p : phi) := forall H r A,
-  evalphi H r A p -> evalphi H r A (phiRemoveX x p).
-
-(* NotInFV *)
-Definition GNotInFV (x : x) (gp : gphi) : Prop :=
-  In x (FV (snd gp)) -> 
-  fst gp = true /\ phiIsIndependentVar x (snd gp).
-
-Lemma phiIsIndependentVarBidirectional : forall x p,
-  phiIsIndependentVar x p ->
-  forall H r A v, evalphi H r A p <-> evalphi H (rhoSubst x v r) A p.
-Proof.
-  unfold phiIsIndependentVar.
-  intros.
-  split; try apply H0.
-  intros.
-Admitted.
-
-Lemma phiImpliesIsIndependentVar : forall p1 p2 x,
-  phiImplies p1 p2 ->
-  phiIsIndependentVar x p1 ->
-  phiIsIndependentVar x p2.
-Proof.
-  unfold phiIsIndependentVar.
-  intros.
-Admitted.
-
-Theorem GLIFT_GNotInFV : forall x p,
-  gphiSatisfiable p ->
-  sfrmgphi [] p ->
-  GNotInFV x p <-> GLIFT1 (NotInFV x) p.
-Proof.
-  unfold
-    GLIFT1, PLIFT1, gGamma, sfrmgphi, GNotInFV, 
-    gphiSatisfiable, NotInFV, NotIn,
-    phiIsIndependentVar.
-  intros.
-  destruct p0. simpl.
-  split; intros.
-  - destruct b; simpl in *.
-    * admit.
-    * inversionx H0; try discriminate.
-      eex.
-      autounfold.
-      intro inf. apply H1 in inf. unf.
-      discriminate.
-  - unf.
-    destruct b; unf.
-    * split; auto.
-      intros.
-      admit.
-    * subst.
-      tauto.
-Admitted.
-
-
-(* HSec *)
-Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
-| HSec : forall (p1 p2a p2b p3 : phi),
-    hoare p1 p2a ->
-    hoare p2b p3 ->
-    phiImplies p2a p2b ->
-    sfrmphi [] p2b ->
-    hoareSec hoare p1 p3
-.
-
-Inductive ghoareSec (ghoare : gphi -> gphi -> Prop) : gphi -> gphi -> Prop :=
-| GHSec00 : forall (p1 p2a p2b p3 : gphi),
-    fst p2b = false ->
-    ghoare p1 p2a ->
-    ghoare p2b p3 ->
-    gphiImplies (false, snd p2a) p2b ->
-    sfrmgphi [] p2b ->
-    ghoareSec ghoare p1 p3
-| GHSec01 : forall (p1 p2a p2b p3 : gphi),
-    fst p2a = false ->
-    fst p2b = true ->
-    ghoare p1 p2a ->
-    ghoare p2b p3 ->
-    gphiImplies p2a p2b ->
-    ghoareSec ghoare p1 (false, snd p3)
-.
-
-Theorem GLIFT_hoareSec : forall (hoare : phi -> phi -> Prop) p1 p3,
-  ghoareSec (GLIFT2 hoare) p1 p3 <-> GLIFT2 (hoareSec hoare) p1 p3.
-Proof.
-  intros.
-  unfold GLIFT2, PLIFT2, gGamma.
-  destruct p1 as [bp1 p1].
-  destruct p3 as [bp3 p3].
-  
-  simpl in *.
-  split; intros.
-  - inversionx H.
-    + unf.
-      destruct p2a, p2b.
-      simpl in *. repeat subst.
-      exists x1.
-      exists x0.
-      repeat split; auto.
-      unfold gphiImplies in *.
-      inversionx H4; try discriminate.
-      simpl in *.
-      eca.
-      destruct b; unf; subst.
-      * eapp phiImpliesTrans.
-      * assumption.
-    + unf.
-      destruct p2a, p2b, p2.
-      simpl in *. repeat subst.
-      exists x1.
-      exists p2.
-      repeat split; auto.
-      unfold gphiImplies in *. unf.
-      simpl in *.
-      eca.
-      destruct b1; unf; subst.
-      * assumption.
-      * apply phiImpliesRefl.
-  - unf.
-    inversionx H2.
-    apply (GHSec00 _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
-    auto;
-    simpl;
-    try eex.
-    unfold sfrmgphi.
-    auto.
-Qed.
+Definition dfrmphi (p : phi) :=
+  exists p', sfrmphi [] p' /\ phiEquals p p'.
 
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
   ∃ p' : phi, phiSatisfiable p' ∧ sfrmphi [] p' ∧ phiImplies p' p.
 Proof.
-  induction p0; intros; simpl.
-  - exists [].
-    split; auto.
-    repeat eex.
-  - admit.
 Admitted.
 
-(* Inductive ghasStaticType : gphi -> e -> T -> Prop :=
-| GSTValNum : forall p n, 
-  ghasStaticType p (ev (vn n)) TPrimitiveInt
-| GSTValNull : forall p C, 
-  ghasStaticType p (ev vnull) (TClass C)
-| GSTVar : forall p T x,
+(* concretization *)
+Definition gGammaX (phi : gphi) : pphi :=
+  match fst phi with
+  | false => (fun p => p = snd phi)
+  | true => (fun p => (exists p', p = p' ++ snd phi) 
+                   /\ dfrmphi p
+                   /\ phiSatisfiable p)
+  end.
 
-  gphiImplies p (gThat [phiType x T]) -> 
-  ghasStaticType p (ex x) T
-| GSTField : forall p e f C T,
+Theorem gammaEq1 : forall gp p,
+  gGammaX gp p -> (exists p', phiEquals p p' /\ gGamma gp p').
+Proof.
+  unfold gGamma, gGammaX.
+  intros.
+  destruct gp. simpl in *.
+  destruct b.
+  - unf. subst.
+    invE H0 x0. unf.
+    exists x0.
+    split; auto.
+    split; auto.
+      unfold phiSatisfiable in *.
+      unf. apply H1 in H0.
+      eex.
+    split; auto.
+    repeat intro.
+    apply H1 in H0.
+    eapp evalphiSuffix.
+  - subst.
+    eex.
+Qed.
+
+Theorem gammaEq2 : forall gp p,
+  gGamma gp p -> (exists p', phiEquals p p' /\ gGammaX gp p').
+Proof.
+  unfold gGamma, gGammaX.
+  intros.
+  destruct gp. simpl in *.
+  destruct b.
+  - unf.
+    exists ( ++ p1).
+    admit.
+  - subst.
+    eex.
+Qed.
+
+Definition ppGood (pp : pphi) :=
+  (exists p, pp p) /\
+  (forall p, pp p -> good p).
+
+Definition ppIsSingleton (p : phi) (pp : pphi) :=
+  pp p /\ (forall p', pp p' -> p' = p).
+
+Definition ppHasMaximum (p : phi) (pp : pphi) :=
+  pp p /\ (forall p', pp p' -> phiImplies p' p).
+
+Inductive gAlpha : pphi -> gphi -> Prop :=
+| AlphaNonGradual : forall (pp : pphi) (p : phi),
+  ppGood pp ->
   
-  ghasStaticType p e (TClass C) -> 
-  gphiImplies p (gThat [phiNeq e (ev vnull)]) ->
-  fieldType C f = Some T ->
-  ghasStaticType p (edot e f) T
+  ppIsSingleton p pp ->
+  gAlpha pp (false, p)
+| AlphaGradual : forall (pp : pphi) (p : phi),
+  ppGood pp ->
+  (forall p, ~ ppIsSingleton p pp) ->
+  
+  ppHasMaximum p pp ->
+  gAlpha pp (true, p)
+| AlphaTotal : forall (pp : pphi),
+  ppGood pp ->
+  (forall p, ~ ppIsSingleton p pp) ->
+  (forall p, ~ ppHasMaximum p pp) ->
+  
+  gAlpha pp (true, [])
 .
 
-Theorem GLIFT_sfrmphi : forall p e T,
-  gphiSatisfiable p ->
-  ghasStaticType p e T <-> GLIFT1 (fun p => hasStaticType p e T) p.
+Theorem alphaSound : forall pp1 gp pp2,
+  gAlpha pp1 gp ->
+  gGamma gp pp2 ->
+  pincl pp1 pp2.
 Proof.
-  unfold GLIFT1, PLIFT1, gGamma, gphiSatisfiable, sfrmgphi.
   intros.
-  destruct p0. simpl in *.
-  split; intros.
-  - destruct b.
-    * apply hasWellFormedSubtype in H0. unf.
-      exists x0.
+  inversionx H0.
+  - inversionx H1.
+    unfold
+      pincl,
+      pSingleton,
+      ppIsSingleton
+    in *. unf.
+    intros.
+    apply H1 in H3.
+    subst.
+    congruence.
+  - inversionx H1.
+    unfold
+      pincl,
+      ppHasMaximum,
+      ppIsSingleton
+    in *. unf.
+    intros.
+    split.
+    * eapp H2.
+    * eapp H1.
+  - inversionx H1.
+    unfold
+      pincl,
+      ppHasMaximum,
+      ppIsSingleton
+    in *.
+    intros.
+    split.
+    * eapp H2.
+    * unfold phiImplies.
+      intros.
+      constructor.
+Qed.
+
+Require Import Coq.Logic.Classical_Pred_Type.
+
+Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
+  gAlpha pp1 gp2 ->
+  gGamma gp1 pp2 ->
+  gGamma gp2 pp3 ->
+  pincl pp1 pp2 ->
+  pincl pp3 pp2.
+Proof.
+  intros.
+  inversionx H0; inversionx H2.
+  - unfold
+      pincl,
+      pSingleton,
+      ppIsSingleton
+    in *. unf.
+    intros. subst.
+    apply H3.
+    assumption.
+  - inversionx H1.
+    * (* contradict *)
+      specialize (H5 p0).
+      contradict H5.
+      unfold
+        pincl,
+        pSingleton,
+        ppHasMaximum,
+        ppIsSingleton
+      in *. unf.
       split; auto.
-      inversionx H1; eca.
-      unfold gphiImplies in *; simpl in *; unf.
-      repeat auto.
+      intros.
+      apply H3 in H1.
+      apply H3 in H5.
+      subst.
+      congruence.
+    * unfold
+        pincl,
+        ppHasMaximum,
+        ppIsSingleton
+      in *.
+      intros. unf.
+      split; auto.
+      apply (phiImpliesTrans p2 p0 p1); auto.
+      apply H3 in H1.
+      unf.
+      auto.
+  - inversionx H1.
+    * (* contradict *)
+      specialize (H5 p0).
+      contradict H5.
+      unfold
+        pincl,
+        pSingleton,
+        ppGood,
+        ppHasMaximum,
+        ppIsSingleton
+      in *. unf.
+      assert (p0 = x0). eapp H3. subst.
+      split; auto.
+      intros.
+      apply H3 in H1. subst.
+      congruence.
+    * (* contradict everything but phi = true *)
+      unfold
+        pincl,
+        ppHasMaximum,
+        ppIsSingleton
+      in *.
+      intros. unf.
+      destruct (classic (phiImplies [] p0)).
+      + split; auto.
+        apply (phiImpliesTrans p1 [] p0); auto.
+      + (* contradict *)
+        assert (~ phiImplies [] p).
+        
+        unfold phiImplies in H1.
+        
+        rewrite not_all_ex_not in H1.
+      destruct p0; try tauto.
+      intros. unf.
+      split; auto.
+      apply (phiImpliesTrans p2 p0 p1); auto.
+      apply H3 in H1.
+      unf.
+      auto.
+      
       inversionx H1.
-      + exists [].
-        repeat eca.
-        .
-      unfold gphiSatisfiable in H0. simpl in *.
-      eappIn hasWellFormedSubtype H0.
-      unf.
-      eex.
-      eapp sfrmIncl.
-      apply inclEmpty.
-    * inversionx H0; try discriminate.
-      eex.
-      intuition.
-  - unf.
-    destruct b; try tauto.
-    subst.
-    auto.
-Qed. *)
-
-Theorem GLIFT_phiImplies : forall p1 p2,
-  gphiSatisfiable p1 ->
-  sfrmgphi [] p1 ->
-  gphiImplies p1 p2 <-> GLIFT2 phiImplies p1 p2.
-Proof.
-  unfold GLIFT2, PLIFT2, gGamma, gphiSatisfiable, sfrmgphi, gphiImplies.
-  intros.
-  destruct p1, p2. simpl in *.
-  destruct b0.
-  - split; intros; unf.
-    * destruct b.
-      + unf.
-        exists x0.
-        exists x0.
-        auto.
-      + exists p0.
-        exists p0.
-        inversionx H1; try discriminate.
-        auto.
-    * destruct b.
-      + unf.
-        eexists x0.
-        repeat split; auto.
-        eapp (phiImpliesTrans x0 x1 p1).
-      + inversionx H1; try discriminate.
-        eapp (phiImpliesTrans p0 x1 p1).
-  - destruct b.
-    * split; intros; unf.
-      + exists x0.
-        exists p1.
-        auto.
-      + subst.
-        exists x0.
-        auto.
-    * split; intros.
-      + eex.
-      + unf.
-        subst.
-        assumption.
+    unfold
+      pincl,
+      ppHasMaximum,
+      ppIsSingleton
+    in *.
+    intros.
+    split.
+    * eapp H2.
+    * unfold phiImplies.
+      intros.
+      constructor.
 Qed.
-
-
-Theorem GLIFT_sfrmphi : forall a p,
-  gphiSatisfiable p ->
-  sfrmgphi a p <-> GLIFT1 (sfrmphi a) p.
-Proof.
-  unfold GLIFT1, PLIFT1, gGamma, sfrmgphi.
-  intros.
-  destruct p0. simpl.
-  split; intros.
-  - destruct b.
-    * unfold gphiSatisfiable in H0. simpl in *.
-      eappIn hasWellFormedSubtype H0.
-      unf.
-      eex.
-      eapp sfrmIncl.
-      apply inclEmpty.
-    * inversionx H0; try discriminate.
-      eex.
-      intuition.
-  - unf.
-    destruct b; try tauto.
-    subst.
-    auto.
-Qed.
-
-
-
-
-(* hasWellFormedSubtype *)
-Fixpoint eComplexity (e : e) : nat :=
-  match e with
-  | edot e f => Datatypes.S (eComplexity e)
-  | _ => 0
-  end.
-
-Fixpoint gee (e1 e2 : e) : bool :=
-  let e1c := eComplexity e1 in
-  let e2c := eComplexity e2 in
-  if ge_dec e1c e2c then true else false.
-
-Definition NORMphi' (p : phi') : phi' :=
-  match p with
-  | phiEq  e1 e2 => if gee e1 e2 then phiEq  e1 e2 else phiEq  e2 e1
-  | phiNeq e1 e2 => if gee e1 e2 then phiNeq e1 e2 else phiNeq e2 e1
-  | _ => p
-  end.
-Definition NORMphi (p : phi) : phi :=
-  map NORMphi' p.
-
-Lemma NORMphi'evalphi' : forall p H r A,
-  evalphi' H r A p <-> evalphi' H r A (NORMphi' p).
-Proof.
-  intros.
-  destruct p0; simpl;
-  try destruct (gee e0 e1);
-  try tauto;
-  split; intros;
-  inversionx H1;
-  eca;
-  unfold neq in *;
-  auto.
-Qed.
-
-Lemma NORMphi'footprint' : forall p H r,
-  footprint' H r p = footprint' H r (NORMphi' p).
-Proof.
-  intros.
-  destruct p0; simpl;
-  try destruct (gee e0 e1);
-  tauto.
-Qed.
-
-Lemma NORMphievalphi : forall p H r A,
-  evalphi H r A p <-> evalphi H r A (NORMphi p).
-Proof.
-  induction p0; intros; simpl in *; try tauto.
-  split; intros; inversionx H1.
-  - rewrite NORMphi'footprint', NORMphi'evalphi' in *.
-    apply IHp0 in H12.
-    eca.
-  - rewriteRevIn NORMphi'footprint' H6.
-    rewriteRevIn NORMphi'footprint' H11.
-    rewriteRevIn NORMphi'footprint' H12.
-    rewriteRevIn NORMphi'evalphi' H11.
-    apply IHp0 in H12.
-    eca.
-Qed.
-
-Fixpoint eSubste (e1 e2 : e) (e' : e) : e :=
-  if e_dec e' e1
-  then e2
-  else match e' with
-       | edot e f => edot (eSubste e1 e2 e) f
-       | _ => e'
-       end.
-
-Definition phi'Subste (e1 e2 : e) (p : phi') : phi' :=
-  match p with
-  | phiTrue => phiTrue
-  | phiEq e1' e2' => phiEq (eSubste e1 e2 e1') (eSubste e1 e2 e2')
-  | phiNeq e1' e2' => phiNeq (eSubste e1 e2 e1') (eSubste e1 e2 e2')
-  | phiAcc e f => phiAcc (eSubste e1 e2 e) f
-  | phiType x T => phiType x T
-  end.
-
-Definition phiSubste (e1 e2 : e) (p : phi) : phi :=
-  map (phi'Subste e1 e2) p.
-
-Lemma eSubsteSAME : forall e1 e2 H r e,
-  evale' H r e1 = evale' H r e2 ->
-  evale' H r (eSubste e1 e2 e) = evale' H r e.
-Proof.
-  induction e0; intros.
-  - destruct e1; try tauto.
-    simpl.
-    destruct (vex_dec v0 v1); try tauto.
-    subst.
-    simpl.
-    rewriteRev H1.
-    tauto.
-  - destruct e1; try tauto.
-    simpl.
-    destruct (x_dec x0 x1); try tauto.
-    subst.
-    simpl.
-    rewriteRev H1.
-    tauto.
-  - destruct e1; simpl; try rewrite IHe0; auto.
-    destruct (e_dec e0 e1); simpl; try rewrite IHe0; auto.
-    subst.
-    destruct (string_dec f0 f1); simpl; try rewrite IHe0; auto.
-    subst.
-    rewriteRev H1.
-    tauto.
-Qed.
-
-Lemma phi'SubsteSAME : forall e1 e2 H r A p,
-  evale' H r e1 = evale' H r e2 ->
-  evalphi' H r A (phi'Subste e1 e2 p) <-> evalphi' H r A p.
-Proof.
-  intros.
-  destruct p0; simpl;
-  try tauto;
-  split; intros;
-  inversionx H2;
-  eca;
-  unfold evale in *;
-  rewrite eSubsteSAME in *;
-  eauto.
-Qed.
-
-Lemma footprint'phi'SubsteSAME : forall e1 e2 H r p,
-  evale' H r e1 = evale' H r e2 ->
-  footprint' H r (phi'Subste e1 e2 p) = footprint' H r p.
-Proof.
-  intros.
-  destruct p0; simpl;
-  try tauto.
-  rewrite eSubsteSAME; auto.
-Qed.
-
-Lemma phiSubsteSAME : forall e1 e2 H r p A,
-  evale' H r e1 = evale' H r e2 ->
-  evalphi H r A (phiSubste e1 e2 p) <-> evalphi H r A p.
-Proof.
-  induction p0; intros; simpl in *; try tauto.
-  split; intros;
-  inversionx H2; eca;
-  try rewrite phi'SubsteSAME in *; auto;
-  try rewrite footprint'phi'SubsteSAME in *; auto;
-  eapp IHp0.
-Qed.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* PLAYGROUND *)
-
 
 
 (* disjunciton of phi *)

@@ -449,7 +449,7 @@ Proof.
         apply evalphiPrefix in H3.
         assumption. *)
       assert (∃ T0' : T, unfoldTypeJudjPremise e0 T0 T0'
-             ∧ phiImplies (phiType x2 T0 :: unfoldTypeJudjFormula e0 T0 T' ++ phi'0) (unfoldTypeJudjFormula e0 T0 T0'))
+             ∧ phiImplies (phiType x2 T0 :: unfoldTypeJudjFormula e0 T0 T' ++ phi0) (unfoldTypeJudjFormula e0 T0 T0'))
       as conv.
         eex.
         repeat intro.
@@ -467,7 +467,7 @@ Proof.
       + inversionx sf.
         assumption.
       + rewrite FVApp.
-        unfold NotIn, not in *.
+        unfold NotInFV, NotIn, not in *.
         intros nin.
         apply in_app_iff in nin.
         contradict H1.

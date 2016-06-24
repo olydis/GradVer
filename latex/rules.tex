@@ -249,8 +249,6 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \begin{mathpar}
 \inferrule* [Right=HSec]
 {
-%\hoare {\phi_p} {s_1} {\phi_{q}} \\ 
-%\hoare {\phi_{q}} {s_2} {\phi_r}
  \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
  \phi_{q1} \implies \phi_{q2} \\
  \emptyset \sfrmphi \phi_{q2} \\
@@ -305,17 +303,18 @@ We give a denotational semantics of formulas as $\valphi {\phi} = \{~ (H,\rho,A)
 Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 
 \subsubsection{Implication ($\phi_1 \implies \phi_2$)}
-\begin{equation*}
-\phi_1 \implies \phi_2
-\quad\quad \iff \quad\quad
-\valphi {\phi_1} \subseteq \valphi {\phi_2}
-\end{equation*}
 %\begin{equation*}
 %\phi_1 \implies \phi_2
 %\quad\quad \iff \quad\quad
-%\forall H, \rho, A: \evalphi \phi_1 \implies \evalphi \phi_2
+%\valphi {\phi_1} \subseteq \valphi {\phi_2}
 %\end{equation*}
-%Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equirecursive State Abstractions''.
+
+\begin{equation*}
+\phi_1 \implies \phi_2
+\quad\quad \iff \quad\quad
+\forall H, \rho, A: \evalphi \phi_1 \implies \evalphi \phi_2
+\end{equation*}
+Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equirecursive State Abstractions''.
 
 \subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
 \begin{align*}

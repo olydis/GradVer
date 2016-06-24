@@ -623,56 +623,58 @@ Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
   | edot e f => unfoldTypeJudjFormula e T T' ++ [phiAcc e f]
   end.
 
+Definition NotInFV (x : x) (p : phi) : Prop := NotIn x (FV p).
+
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
 Inductive hoareSingle : phi -> s -> phi -> Prop :=
-| HNewObj : forall phi'(*\*) x (C : C) f_bar(*\overline{f}*),
-    NotIn x (FV phi') ->
+| HNewObj : forall phi(*\*) x (C : C) f_bar(*\overline{f}*),
+    NotInFV x phi ->
     fieldsNames C = Some f_bar ->
     hoareSingle
-      (phiType x (TClass C) :: phi')
+      (phiType x (TClass C) :: phi)
       (sAlloc x C)
-      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi'))
-| HFieldAssign : forall phi'(*\*) (x y : x) (f : f) C T,
+      (accListApp x f_bar (phiType x (TClass C) :: phiNeq (ex x) (ev vnull) :: phi))
+| HFieldAssign : forall phi(*\*) (x y : x) (f : f) C T,
     fieldHasType C f T ->
     hoareSingle 
       (phiType x (TClass C) :: 
        phiType y T ::
-       phiNeq (ex x) (ev vnull) :: phi' ++ [phiAcc (ex x) f])
+       phiNeq (ex x) (ev vnull) :: phi ++ [phiAcc (ex x) f])
       (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
-       phiEq (edot (ex x) f) (ex y) :: phi')
-| HVarAssign : forall T phi'(*\*) (x : x) (e : e) T',
-    NotIn x (FV phi') ->
+       phiEq (edot (ex x) f) (ex y) :: phi)
+| HVarAssign : forall T phi(*\*) (x : x) (e : e) T',
+    NotInFV x phi ->
     NotIn x (FVe e) ->
     unfoldTypeJudjPremise e T T' ->
     hoareSingle
-      (phiType x T :: unfoldTypeJudjFormula e T T' ++ phi')
+      (phiType x T :: unfoldTypeJudjFormula e T T' ++ phi)
       (sAssign x e)
-      (unfoldTypeJudjFormula e T T' ++ phi' ++ [phiEq (ex x) e])
-| HReturn : forall phi'(*\*) (x : x) T,
-    NotIn xresult (FV phi') ->
+      (unfoldTypeJudjFormula e T T' ++ phi ++ [phiEq (ex x) e])
+| HReturn : forall phi(*\*) (x : x) T,
+    NotInFV xresult phi ->
     hoareSingle 
-      (phiType x T :: phiType xresult T :: phi') 
+      (phiType x T :: phiType xresult T :: phi) 
       (sReturn x) 
-      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi')
+      (phiType xresult T :: phiEq (ex xresult) (ex x) :: phi)
 | HApp : forall underscore(*\_*) phi_r(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
-    NotIn x (FV phi_r) ->
+    NotInFV x phi_r ->
     listDistinct [x ; y ; z'] ->
     hoareSingle
       (phiType x T_r :: phiType y (TClass C) :: phiType z' T_p :: phi_r ++ 
        phiNeq (ex y) (ev vnull) :: phiSubsts2 xthis y (xUserDef z) z' phi_pre)
       (sCall x y m z')
       (phi_r ++ phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post)
-| HAssert : forall phi_1(*\*) phi_2(*\*),
-    phiImplies phi_1 phi_2 ->
-    hoareSingle phi_1 (sAssert phi_2) phi_1
-| HRelease : forall phi(*\*) phi_r(*\*),
-    hoareSingle (phi_r ++ phi) (sRelease phi) phi_r
+| HAssert : forall phi(*\*) phi'(*\*),
+    phiImplies phi phi' ->
+    hoareSingle phi (sAssert phi') phi
+| HRelease : forall phi(*\*) phi'(*\*),
+    hoareSingle (phi ++ phi') (sRelease phi') phi
 | HDeclare : forall phi(*\*)  x T,
-    NotIn x (FV phi) ->
+    NotInFV x phi ->
     hoareSingle 
       phi
       (sDeclare T x)
@@ -685,6 +687,7 @@ Inductive hoare : phi -> list s -> phi -> Prop :=
 | HSec : forall (p q1 q2 r : phi) (s1 : s) (s2 : list s), (* w.l.o.g.??? *)
     hoareSingle p s1 q1 ->
     phiImplies q1 q2 ->
+    sfrmphi [] q2 ->
     hoare q2 s2 r ->
     hoare p (s1 :: s2) r
 | HEMPTY : forall p, hoare p [] p

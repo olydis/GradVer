@@ -22,11 +22,13 @@ Definition pincl (pp1 pp2 : pphi) :=
 Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
 Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
 
+Definition good (p : phi) := phiSatisfiable p /\ sfrmphi [] p.
+
 (* concretization *)
 Definition gGamma (phi : gphi) : pphi :=
   match fst phi with
   | false => (fun p => p = snd phi)
-  | true => (fun p => phiSatisfiable p /\ sfrmphi [] p /\ phiImplies p (snd phi))
+  | true => (fun p => good p /\ phiImplies p (snd phi))
   end.
 
 (*
@@ -51,5 +53,5 @@ Definition sfrmgphi (a : A_s) (p : gphi) : Prop :=
 
 Definition gphiImplies (gp1 gp2 : gphi) : Prop :=
   if fst gp1
-  then (exists meet, phiSatisfiable meet ∧ sfrmphi [] meet ∧ phiImplies meet (snd gp1) ∧ phiImplies meet (snd gp2))
+  then (exists meet, good meet ∧ phiImplies meet (snd gp1) ∧ phiImplies meet (snd gp2))
   else phiImplies (snd gp1) (snd gp2).
