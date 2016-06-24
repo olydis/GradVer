@@ -502,14 +502,16 @@ Proof.
         rewrite cons2app in H1.
         apply evalphiPrefix in H1.
         assumption.
-    * repeat eex.
+    * apply phiImpliesAppCommA in im2.
+      repeat eex.
       eca.
       + eca.
         repeat intro.
         rewrite cons2app in H3.
         apply evalphiSuffix in H3.
         rewrite cons2app in H3.
-        eapp evalphiPrefix.
+        apply evalphiPrefix in H3.
+        assumption.
       + eca.
         repeat intro.
         rewrite cons2app in H3.
