@@ -639,11 +639,10 @@ Inductive hoareSingle : phi -> s -> phi -> Prop :=
     hoareSingle 
       (phiType x (TClass C) :: 
        phiType y T ::
-       phiNeq (ex x) (ev vnull) :: phi ++ [phiAcc (ex x) f])
+       phi ++ [phiAcc (ex x) f])
       (sMemberSet x f y) 
       (phiType x (TClass C) ::
        phiAcc (ex x) f ::
-       phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: phi)
 | HVarAssign : forall T phi(*\*) (x : x) (e : e) T',
     NotInFV x phi ->
