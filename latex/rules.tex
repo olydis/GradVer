@@ -573,6 +573,28 @@ $\hasTypePremise {y.a.b.c} T C =
 {\ghoare {\grad{\phi_p}} {s_1;s_2} {\grad{\phi_r}}}
 \end{mathpar}
 
+
+
+\subsubsection{GHFieldAssign (implication alternative)}
+
+\begin{mathpar}
+\inferrule* [Right=GHFieldAssign]
+{
+\sfrmphi \phi \\
+\vdash C.f : T \\\\
+\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
+{(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi} \in \gamma(\grad{\phi_2})
+}
+{\ghoare
+{\grad{\phi_1}}
+{x.f := y}
+{\grad{\phi_2}}}
+\end{mathpar}
+
+Note: With this alternative rule design $\grad{\implies}$ is consistently used with static formulas as second argument. 
+This plays nicely with the fact that $\grad{\implies}$ does not care about the gradualness of that argument.
+Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.
+
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}
 \begin{align*}

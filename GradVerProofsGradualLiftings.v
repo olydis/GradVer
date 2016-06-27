@@ -93,12 +93,11 @@ Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
           phiEq (edot (ex x) f) (ex y) :: phi) ->
     gphiImplies gp1 (false, p1) ->
 (*     geq gp2 (false, p2) -> *)
-    (if fst gp2 
+(*     (if fst gp2 
       then phiImplies p2 (snd gp2) /\
-          ∃ meet,
-           phiSatisfiable meet ∧ sfrmphi [] meet ∧
-           phiImplies meet p2
-      else p2 = snd gp2) ->
+           phiSatisfiable p2
+      else p2 = snd gp2) -> *)
+    gGamma gp2 p2 ->
     gIHFieldAssign 
       gp1
       (sMemberSet x f y) 
@@ -124,6 +123,7 @@ Proof.
   destruct p1, p2. simpl in *.
   split; intros.
   - inversionx H.
+    unfold gGamma in *.
     destruct b, b0;
     simpl in *;
     try discriminate;
@@ -139,18 +139,15 @@ Proof.
         repeat eca.
         eauto.
       split. eex.
-      split. repeat eca. apply sfrmphiApp in H8. intuition. eapp sfrmIncl. apply inclEmpty.
-      eauto.
-      split; eauto.
+      split. repeat eca.
+      assumption.
+      split. eex.
+      split. assumption.
+      assumption.
     * repeat eexists; eauto;
       repeat eca.
     * repeat eexists; eauto;
       repeat eca.
-      simpl.
-      apply sfrmphiApp in H3.
-      unf.
-      eapp sfrmIncl.
-      apply inclEmpty.
     * repeat eexists; eauto;
       repeat eca.
   - unf.
@@ -184,90 +181,7 @@ Proof.
         Focus 2. eauto.
         eauto.
         subst. assumption.
-        simpl. assumption.
-Qed.
-
-Theorem GLIFT_HFieldAssign : forall s p1 p2,
-(*   gphiSatisfiable p1 ->
-  gphiSatisfiable p2 ->
-  sfrmgphi [] p1 ->
-  sfrmgphi [] p2 -> *)
-  gIHFieldAssign p1 s p2 <-> GLIFT2 (fun p1 p2 => IHFieldAssign p1 s p2) p1 p2.
-Proof.
-  unfold
-    GLIFT2, PLIFT2, gGamma, sfrmgphi,
-    gphiSatisfiable, NotIn,
-    phiIsIndependentVar.
-  intros.
-(*   rename H into ps1.
-  rename H0 into ps2.
-  rename H1 into sf1.
-  rename H2 into sf2. *)
-  destruct p1, p2. simpl in *.
-  split; intros.
-  - inversionx H.
-    destruct b, b0;
-    simpl in *;
-    inversionx H5;
-    try discriminate;
-    unfold gphiImplies, phiSatisfiable in *;
-    simpl in *; unf.
-    * eexists. eexists.
-      split. Focus 2.
-      split. Focus 2.
-      econstructor.
-        eauto.
-        Focus 2. eauto.
-        Focus 2. eauto.
-        repeat eca.
-        eauto.
-      split. eex.
-      split. repeat eca. apply sfrmphiApp in H13. intuition. eapp sfrmIncl. apply inclEmpty.
-      eauto.
-      split; eauto.
-    * repeat eexists; eauto;
-      repeat eca.
-    * repeat eexists; eauto;
-      repeat eca.
-      simpl.
-      apply sfrmphiApp in H10.
-      unf.
-      eapp sfrmIncl.
-      apply inclEmpty.
-    * repeat eexists; eauto;
-      repeat eca.
-  - unf.
-    inversionx H2.
-    destruct b, b0;
-    unf.
-    * econstructor.
-        eauto.
-        apply H3.
-        eauto.
-        eauto.
-        repeat eca.
-        repeat eca.
-    * econstructor.
-        eauto.
-        Focus 2. eauto.
-        Focus 2. eauto.
-        eauto.
-        eex.
-        eca.
-    * econstructor.
-        eauto.
-        Focus 2. eauto.
-        Focus 2. eauto.
-        eauto.
-        subst. assumption.
-        eca. eex.
-    * econstructor.
-        eauto.
-        Focus 2. eauto.
-        Focus 2. eauto.
-        eauto.
-        subst. assumption.
-        eca.
+        assumption.
 Qed.
 
 Definition phiRemoveX (x : x) (p : phi) : phi :=
@@ -331,26 +245,21 @@ Admitted.
 
 (* HSec *)
 Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
-| HSec : forall (p1 p2a p2b p3 : phi),
-    hoare p1 p2a ->
-    hoare p2b p3 ->
-    phiImplies p2a p2b ->
-    sfrmphi [] p2b ->
+| HSec : forall (p1 p2 p3 : phi),
+    hoare p1 p2 ->
+    hoare p2 p3 ->
     hoareSec hoare p1 p3
 .
 
 Inductive ghoareSec (ghoare : gphi -> gphi -> Prop) : gphi -> gphi -> Prop :=
-| GHSecGuarantee : forall (p1 p2a p2b p3 : gphi), (* later: probably just special case of generic one with 0 evidence requirement! *)
-    fst p2b = false ->
-    ghoare p1 p2a ->
-    ghoare p2b p3 ->
-    gphiImplies (false, snd p2a) p2b ->
-    sfrmgphi [] p2b ->
+| GHSecGuarantee : forall (p1 p2 p3 : gphi), (* later: probably just special case of generic one with 0 evidence requirement! *)
+    fst p2 = false ->
+    ghoare p1 p2 ->
+    ghoare p2 p3 ->
     ghoareSec ghoare p1 p3
-| GHSecGeneric : forall (p1 p2a p2b p3 : gphi),
-    ghoare p1 p2a ->
-    ghoare p2b p3 ->
-    gphiImplies p2a p2b ->
+| GHSecGeneric : forall (p1 p2 p3 : gphi),
+    ghoare p1 p2 ->
+    ghoare p2 p3 ->
     ghoareSec ghoare p1 p3
 .
 
@@ -366,27 +275,28 @@ Proof.
   split; intros.
   - inversionx H.
     + unf.
-      destruct p2a, p2b.
+      destruct p2.
       simpl in *. repeat subst.
       exists x1.
       exists x0.
       repeat split; auto.
-      unfold gphiImplies in *.
-      inversionx H4; try discriminate.
-      simpl in *.
       eca.
-      destruct b; unf; subst.
-      * eapp phiImpliesTrans.
-      * assumption.
-    + admit. (* only guaranteeable using runtime info *)
+    + unf.
+      destruct p2.
+      assert (b = true). admit.
+      simpl in *. repeat subst.
+       
+      exists x1.
+      exists x0.
+      repeat split; auto.
+      eca.
+      admit. (* only guaranteeable using runtime info *)
   - unf.
     inversionx H2.
-    apply (GHSecGuarantee _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
+    apply (GHSecGuarantee _ (bp1, p1) (false, p2) (bp3, p3));
     auto;
     simpl;
     try eex.
-    unfold sfrmgphi.
-    auto.
 Admitted.
 
 (* Inductive ghasStaticType : gphi -> e -> T -> Prop :=
