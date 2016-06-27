@@ -1,6 +1,155 @@
 Load GradVer20Hook_import.
 Import Semantics.
 
+(* phi equality *)
+Inductive geq : gphi -> gphi -> Prop :=
+| geqStatic : forall p1 p2,
+  p1 = p2 ->
+  geq (false, p1) (false, p2)
+| geqGradual : forall gp1 gp2,
+  fst gp1 || fst gp2 = true ->
+  gphiImplies gp1 gp2 ->
+  gphiImplies gp2 gp1 ->
+  geq gp1 gp2
+.
+
+Theorem GLIFT_eq : forall p1 p2,
+  gphiSatisfiable p1 ->
+  gphiSatisfiable p2 ->
+  sfrmgphi [] p1 ->
+  sfrmgphi [] p2 ->
+  geq p1 p2 <-> GLIFT2 eq p1 p2.
+Proof.
+  unfold
+    GLIFT2, PLIFT2, gGamma, sfrmgphi,
+    gphiSatisfiable, NotIn,
+    phiIsIndependentVar.
+  intros.
+  split; intros.
+  - inversionx H3; simpl.
+    * eex.
+    * destruct p1, p2.
+      unfold gphiImplies in *.
+      simpl in *.
+      destruct b, b0; try discriminate; unf.
+      + repeat eex.
+      + exists p1. eex.
+        intuition.
+      + exists p0. eex.
+        intuition.
+  - unf.
+    subst.
+    destruct p1, p2. simpl in *.
+    destruct b, b0; unf.
+    * repeat eca.
+    * subst.
+      repeat eca.
+    * subst.
+      repeat eca.
+    * repeat subst.
+      eca.
+Qed.
+
+(* HFieldAssign *)
+Inductive IHFieldAssign : phi -> s -> phi -> Prop :=
+| IIHFieldAssign : forall p1 p2 phi(*\*) (x y : x) (f : f) C T,
+    fieldHasType C f T ->
+    sfrmphi [] p1 ->
+    p1 = (phiType x (TClass C) :: 
+          phiType y T ::
+          phi ++ [phiAcc (ex x) f]) ->
+    p2 = (phiType x (TClass C) ::
+          phiAcc (ex x) f ::
+          phiEq (edot (ex x) f) (ex y) :: phi) ->
+    IHFieldAssign 
+      p1
+      (sMemberSet x f y) 
+      p2
+.
+Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
+| gIIHFieldAssign : forall gp1 gp2 p1 p2 phi (x y : x) (f : f) C T,
+    fieldHasType C f T ->
+    sfrmphi [] p1 ->
+    p1 = (phiType x (TClass C) :: 
+          phiType y T ::
+          phi ++ [phiAcc (ex x) f]) ->
+    p2 = (phiType x (TClass C) ::
+          phiAcc (ex x) f ::
+          phiEq (edot (ex x) f) (ex y) :: phi) ->
+    geq gp1 (false, p1) ->
+    geq gp2 (false, p2) ->
+    gIHFieldAssign 
+      gp1
+      (sMemberSet x f y) 
+      gp2
+.
+
+Theorem GLIFT_HFieldAssign : forall s p1 p2,
+(*   gphiSatisfiable p1 ->
+  gphiSatisfiable p2 ->
+  sfrmgphi [] p1 ->
+  sfrmgphi [] p2 -> *)
+  gIHFieldAssign p1 s p2 <-> GLIFT2 (fun p1 p2 => IHFieldAssign p1 s p2) p1 p2.
+Proof.
+  unfold
+    GLIFT2, PLIFT2, gGamma, sfrmgphi,
+    gphiSatisfiable, NotIn,
+    phiIsIndependentVar.
+  intros.
+(*   rename H into ps1.
+  rename H0 into ps2.
+  rename H1 into sf1.
+  rename H2 into sf2. *)
+  destruct p1, p2. simpl in *.
+  split; intros.
+  - inversionx H.
+    destruct b, b0;
+    simpl in *;
+    inversionx H4;
+    inversionx H5;
+    try discriminate;
+    unfold gphiImplies, phiSatisfiable in *;
+    simpl in *; unf.
+    * repeat eexists; eauto;
+      repeat eca.
+      simpl.
+      apply sfrmphiApp in H15.
+      unf.
+      eapp sfrmIncl.
+      apply inclEmpty.
+    * repeat eexists; eauto;
+      repeat eca.
+    * repeat eexists; eauto;
+      repeat eca.
+      simpl.
+      apply sfrmphiApp in H9.
+      unf.
+      eapp sfrmIncl.
+      apply inclEmpty.
+    * eex. eex.
+      repeat eca.
+  - unf.
+    inversionx H2.
+    destruct b, b0;
+    unf.
+    * econstructor.
+        eauto.
+        apply H3.
+        eauto.
+        eauto.
+        repeat eca.
+        repeat eca.
+    * repeat eca.
+    * econstructor.
+        eauto.
+        apply H3.
+        eauto.
+        eauto.
+        repeat eca.
+        repeat eca.
+    * repeat eca.
+Qed.
+
 Definition phiRemoveX (x : x) (p : phi) : phi :=
   filter (fun p' => negb (existsb (x_decb x) (FV' p'))) p.
 
@@ -71,20 +220,18 @@ Inductive hoareSec (hoare : phi -> phi -> Prop) : phi -> phi -> Prop :=
 .
 
 Inductive ghoareSec (ghoare : gphi -> gphi -> Prop) : gphi -> gphi -> Prop :=
-| GHSec00 : forall (p1 p2a p2b p3 : gphi),
+| GHSecGuarantee : forall (p1 p2a p2b p3 : gphi), (* later: probably just special case of generic one with 0 evidence requirement! *)
     fst p2b = false ->
     ghoare p1 p2a ->
     ghoare p2b p3 ->
     gphiImplies (false, snd p2a) p2b ->
     sfrmgphi [] p2b ->
     ghoareSec ghoare p1 p3
-| GHSec01 : forall (p1 p2a p2b p3 : gphi),
-    fst p2a = false ->
-    fst p2b = true ->
+| GHSecGeneric : forall (p1 p2a p2b p3 : gphi),
     ghoare p1 p2a ->
     ghoare p2b p3 ->
     gphiImplies p2a p2b ->
-    ghoareSec ghoare p1 (false, snd p3)
+    ghoareSec ghoare p1 p3
 .
 
 Theorem GLIFT_hoareSec : forall (hoare : phi -> phi -> Prop) p1 p3,
@@ -111,27 +258,16 @@ Proof.
       destruct b; unf; subst.
       * eapp phiImpliesTrans.
       * assumption.
-    + unf.
-      destruct p2a, p2b, p2.
-      simpl in *. repeat subst.
-      exists x1.
-      exists p2.
-      repeat split; auto.
-      unfold gphiImplies in *. unf.
-      simpl in *.
-      eca.
-      destruct b1; unf; subst.
-      * assumption.
-      * apply phiImpliesRefl.
+    + admit. (* only guaranteeable using runtime info *)
   - unf.
     inversionx H2.
-    apply (GHSec00 _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
+    apply (GHSecGuarantee _ (bp1, p1) (false, p2a) (false, p2b) (bp3, p3));
     auto;
     simpl;
     try eex.
     unfold sfrmgphi.
     auto.
-Qed.
+Admitted.
 
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
