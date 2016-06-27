@@ -63,7 +63,7 @@ Qed.
 
 (* HFieldAssign *)
 Inductive IHFieldAssign : phi -> s -> phi -> Prop :=
-| IIHFieldAssign : forall p1 p2 phi(*\*) (x y : x) (f : f) C T,
+| IIHFieldAssign : forall p1' p1 p2 phi(*\*) (x y : x) (f : f) C T,
     fieldHasType C f T ->
     sfrmphi [] p1 ->
     p1 = (phiType x (TClass C) :: 
@@ -72,30 +72,17 @@ Inductive IHFieldAssign : phi -> s -> phi -> Prop :=
     p2 = (phiType x (TClass C) ::
           phiAcc (ex x) f ::
           phiEq (edot (ex x) f) (ex y) :: phi) ->
+    phiImplies p1' p1 ->
     IHFieldAssign 
-      p1
+      p1'
       (sMemberSet x f y) 
       p2
 .
-(* Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
-| gIIHFieldAssign : forall gp1 gp2 p1 p2 phi (x y : x) (f : f) C T,
-    fieldHasType C f T ->
-    sfrmphi [] p1 ->
-    p1 = (phiType x (TClass C) :: 
-          phiType y T ::
-          phi ++ [phiAcc (ex x) f]) ->
-    p2 = (phiType x (TClass C) ::
-          phiAcc (ex x) f ::
-          phiEq (edot (ex x) f) (ex y) :: phi) ->
-    geq gp1 (false, p1) ->
-    geq gp2 (false, p2) ->
-    gIHFieldAssign 
-      gp1
-      (sMemberSet x f y) 
-      gp2
-. *)
+
+Print gphiImplies.
+
 Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
-| gIIHFieldAssign : forall gp1 gp2 p1 p2 phi (x y : x) (f : f) C T,
+| gIIHFieldAssign : forall (gp1 gp2 : gphi) p1 p2 phi (x y : x) (f : f) C T,
     fieldHasType C f T ->
     sfrmphi [] p1 ->
     p1 = (phiType x (TClass C) :: 
@@ -104,8 +91,14 @@ Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
     p2 = (phiType x (TClass C) ::
           phiAcc (ex x) f ::
           phiEq (edot (ex x) f) (ex y) :: phi) ->
-    geq gp1 (false, p1) ->
-    geq gp2 (false, p2) ->
+    gphiImplies gp1 (false, p1) ->
+(*     geq gp2 (false, p2) -> *)
+    (if fst gp2 
+      then phiImplies p2 (snd gp2) /\
+          ∃ meet,
+           phiSatisfiable meet ∧ sfrmphi [] meet ∧
+           phiImplies meet p2
+      else p2 = snd gp2) ->
     gIHFieldAssign 
       gp1
       (sMemberSet x f y) 
@@ -133,28 +126,32 @@ Proof.
   - inversionx H.
     destruct b, b0;
     simpl in *;
-    inversionx H4;
-    inversionx H5;
     try discriminate;
     unfold gphiImplies, phiSatisfiable in *;
     simpl in *; unf.
+    * eexists. eexists.
+      split. Focus 2.
+      split. Focus 2.
+      econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        repeat eca.
+        eauto.
+      split. eex.
+      split. repeat eca. apply sfrmphiApp in H8. intuition. eapp sfrmIncl. apply inclEmpty.
+      eauto.
+      split; eauto.
+    * repeat eexists; eauto;
+      repeat eca.
     * repeat eexists; eauto;
       repeat eca.
       simpl.
-      apply sfrmphiApp in H15.
+      apply sfrmphiApp in H3.
       unf.
       eapp sfrmIncl.
       apply inclEmpty.
     * repeat eexists; eauto;
-      repeat eca.
-    * repeat eexists; eauto;
-      repeat eca.
-      simpl.
-      apply sfrmphiApp in H9.
-      unf.
-      eapp sfrmIncl.
-      apply inclEmpty.
-    * eex. eex.
       repeat eca.
   - unf.
     inversionx H2.
@@ -167,7 +164,82 @@ Proof.
         eauto.
         repeat eca.
         repeat eca.
-    * repeat eca.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        eex.
+        assumption.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        subst. assumption.
+        eca.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        subst. assumption.
+        simpl. assumption.
+Qed.
+
+Theorem GLIFT_HFieldAssign : forall s p1 p2,
+(*   gphiSatisfiable p1 ->
+  gphiSatisfiable p2 ->
+  sfrmgphi [] p1 ->
+  sfrmgphi [] p2 -> *)
+  gIHFieldAssign p1 s p2 <-> GLIFT2 (fun p1 p2 => IHFieldAssign p1 s p2) p1 p2.
+Proof.
+  unfold
+    GLIFT2, PLIFT2, gGamma, sfrmgphi,
+    gphiSatisfiable, NotIn,
+    phiIsIndependentVar.
+  intros.
+(*   rename H into ps1.
+  rename H0 into ps2.
+  rename H1 into sf1.
+  rename H2 into sf2. *)
+  destruct p1, p2. simpl in *.
+  split; intros.
+  - inversionx H.
+    destruct b, b0;
+    simpl in *;
+    inversionx H5;
+    try discriminate;
+    unfold gphiImplies, phiSatisfiable in *;
+    simpl in *; unf.
+    * eexists. eexists.
+      split. Focus 2.
+      split. Focus 2.
+      econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        repeat eca.
+        eauto.
+      split. eex.
+      split. repeat eca. apply sfrmphiApp in H13. intuition. eapp sfrmIncl. apply inclEmpty.
+      eauto.
+      split; eauto.
+    * repeat eexists; eauto;
+      repeat eca.
+    * repeat eexists; eauto;
+      repeat eca.
+      simpl.
+      apply sfrmphiApp in H10.
+      unf.
+      eapp sfrmIncl.
+      apply inclEmpty.
+    * repeat eexists; eauto;
+      repeat eca.
+  - unf.
+    inversionx H2.
+    destruct b, b0;
+    unf.
     * econstructor.
         eauto.
         apply H3.
@@ -175,7 +247,27 @@ Proof.
         eauto.
         repeat eca.
         repeat eca.
-    * repeat eca.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        eex.
+        eca.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        subst. assumption.
+        eca. eex.
+    * econstructor.
+        eauto.
+        Focus 2. eauto.
+        Focus 2. eauto.
+        eauto.
+        subst. assumption.
+        eca.
 Qed.
 
 Definition phiRemoveX (x : x) (p : phi) : phi :=
