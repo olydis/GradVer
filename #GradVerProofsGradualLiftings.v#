@@ -84,7 +84,7 @@ Inductive IHFieldAssign : phi -> s -> phi -> Prop :=
       gp2
 . *)
 Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
-| gIIHFieldAssign : forall (gp1 gp2 : gphi) p1 p2 phi (x y : x) (f : f) C T,
+| gIIHFieldAssign : forall gp1 gp2 p1 p2 phi (x y : x) (f : f) C T,
     fieldHasType C f T ->
     sfrmphi [] p1 ->
     p1 = (phiType x (TClass C) :: 
@@ -93,8 +93,8 @@ Inductive gIHFieldAssign : gphi -> s -> gphi -> Prop :=
     p2 = (phiType x (TClass C) ::
           phiAcc (ex x) f ::
           phiEq (edot (ex x) f) (ex y) :: phi) ->
-    (if fst gp1 then phiImplies p1 (snd gp1) else p1 = snd gp1) ->
-    (if fst gp2 then phiImplies p2 (snd gp2) else p2 = snd gp2) ->
+    geq gp1 (false, p1) ->
+    geq gp2 (false, p2) ->
     gIHFieldAssign 
       gp1
       (sMemberSet x f y) 

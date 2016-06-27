@@ -525,6 +525,21 @@ $\hasTypePremise {y.a.b.c} T C =
 \\& \{\textcolor{blue}{(y : C) * \acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'} * (x = y.a.b.c)\}
 \end{align*}
 
+\subsubsection{GHFieldAssign}
+
+\begin{mathpar}
+\inferrule* [Right=GHFieldAssign]
+{
+\sfrmphi \phi \\
+\vdash C.f : T \\
+\grad{\phi_1} \approx {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
+\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi}
+}
+{\hoare
+{\grad{\phi_1}} 
+{x.f := y} 
+{\grad{\phi_2}}}
+\end{mathpar}
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}
