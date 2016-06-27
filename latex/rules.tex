@@ -461,6 +461,24 @@ But maybe not even necessary with smarter hoare rules?
 %{x \not\in FV(\grad{\phi})}
 %\end{mathpar}
 
+\subsubsection{Equality}
+\begin{mathpar}
+\inferrule* [Right=GEqStatic]
+{\phi_1 = \phi_2}
+{\phi_1 \approx \phi_2}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=GEqGradual]
+{
+\text{at least one of $\grad{\phi_1}$ or $\grad{\phi_2}$ contains $?$}
+\\\\
+\grad{\phi_1} \grad{\implies} \grad{\phi_2} \\
+\grad{\phi_2} \grad{\implies} \grad{\phi_1}
+}
+{\grad{\phi_1} \approx \grad{\phi_2}}
+\end{mathpar}
+
 \subsubsection{Hoare and evidence}
 Discussion/Considerations:
 \begin{itemize}
