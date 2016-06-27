@@ -91,6 +91,7 @@
 
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
+\newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}
 
 \section{Syntax}
 
@@ -553,10 +554,23 @@ $\hasTypePremise {y.a.b.c} T C =
 \grad{\phi_1} \approx {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
 \grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi}
 }
-{\hoare
+{\ghoare
 {\grad{\phi_1}} 
 {x.f := y} 
 {\grad{\phi_2}}}
+\end{mathpar}
+
+\subsubsection{GHSec - sound but obviously not complete!}
+
+\begin{mathpar}
+\inferrule* [Right=HSec]
+{
+ \ghoare {\grad{\phi_p}} {s_1} {\grad{\phi_{q1}}} \\ 
+ \phi_{q1} \implies \phi_{q2} \\
+ \emptyset \sfrmphi \phi_{q2} \\
+ \ghoare {\phi_{q2}} {s_2} {\grad{\phi_r}}
+}
+{\ghoare {\grad{\phi_p}} {s_1;s_2} {\grad{\phi_r}}}
 \end{mathpar}
 
 \subsection{Theorems}
