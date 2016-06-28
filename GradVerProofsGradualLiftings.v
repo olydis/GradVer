@@ -1,6 +1,32 @@
 Load GradVer20Hook_import.
 Import Semantics.
 
+(* INTERIORS *)
+Definition interior : Type := phi -> phi -> Prop.
+Definition interiorCreate (pp1 pp2 : pphi) : interior :=
+  fun p1 p2 => pp1 p1 /\ pp2 p2.
+Definition interiorGCreate (gp1 gp2 : gphi) : interior :=
+  interiorCreate (gGamma gp1) (gGamma gp2).
+Definition interiorProp (prop : phi -> phi -> Prop) : interior :=
+  prop.
+Definition interiorIntersect (i1 i2 : interior) : interior :=
+  fun a b => i1 a b /\ i2 a b.
+
+Definition interiorInner (prop : phi -> phi -> Prop) (gp1 gp2 : gphi) : interior :=
+  interiorIntersect
+    (interiorProp prop)
+    (interiorGCreate gp1 gp2).
+
+(* Definition interiorEq : interior := fun p1 p2 => p1 = p2.
+Definition interiorJoin (i1 i2 : interior) : interior :=
+  fun a b => exists c, i1 a c /\ i2 c b.
+  
+Definition interiorHoareSingle (s : s) := fun p1 p2 => hoareSingle p1 s p2.
+Definition interiorHoare (s : list s) :=
+  fold_right interiorJoin interiorEq (map interiorHoareSingle s).
+ *)
+
+(* hasWellFormedSubtype *)
 Theorem hasWellFormedSubtype : forall p,
   phiSatisfiable p ->
   ∃ p' : phi, phiSatisfiable p' ∧ sfrmphi [] p' ∧ phiImplies p' p.
