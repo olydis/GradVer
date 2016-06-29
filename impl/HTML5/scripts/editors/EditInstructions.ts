@@ -1,6 +1,3 @@
-import { Statement } from "./Statement";
-import { VerificationFormula } from "./VerificationFormula";
-
 import { EditStatement } from "./EditStatement";
 import { EditVerificationFormula } from "./EditVerificationFormula";
 
@@ -44,6 +41,7 @@ export class EditInstructions
             $("<span>")
                 .addClass("rightFloat")
                 .append($("<span>")
+                    .addClass("button")
                     .addClass("buttonAutohide")
                     .text(s));
 

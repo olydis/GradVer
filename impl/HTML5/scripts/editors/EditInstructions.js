@@ -31,6 +31,7 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], f
                 return $("<span>")
                     .addClass("rightFloat")
                     .append($("<span>")
+                    .addClass("button")
                     .addClass("buttonAutohide")
                     .text(s));
             };

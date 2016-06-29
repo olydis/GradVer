@@ -1,19 +1,26 @@
-import { Editable } from "./Editable";
 import { VerificationFormula } from "./VerificationFormula";
 
-export class VerificationFormulaGradual implements Editable
+export class VerificationFormulaGradual
 {
     private html: JQuery;
 
     public gradual: boolean;
     public staticFormula: VerificationFormula;
 
-    public constructor()
+    public constructor(
+        source: string = "?"
+    )
     {
         this.html = $("<span>");
 
-        this.gradual = true;
-        this.staticFormula = new VerificationFormula();
+        source = source.trim();
+        this.gradual = false;
+        if (source.charAt(0) == "?")
+        {
+            this.gradual = true;
+            source = source.substr(1).trim().substr(1);
+        }
+        this.staticFormula = new VerificationFormula(source);
         this.updateHTML();
     }
 
@@ -22,9 +29,9 @@ export class VerificationFormulaGradual implements Editable
         this.html.text("");
         var grad = $("<span>").text("?");
         if (!this.staticFormula.isEmpty())
-            grad.append($("<span>").addClass("sepConj"));
-        grad.addClass(this.gradual ? "vfGradOn" : "vfGradOff");
-        this.html.append(grad);
+            grad.append($("<span>").addClass("sepConj").text(" * "));
+        if (this.gradual)
+            this.html.append(grad);
         if (!this.gradual || !this.staticFormula.isEmpty())
             this.html.append(this.staticFormula.createHTML());
     }

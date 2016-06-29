@@ -1,9 +1,19 @@
 body
 {
-    background-color: #DDD;
+    background-color: #FAFAFA;
     font-family: sans-serif;
 
     padding: 100px 20%;
+}
+
+input
+{
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    border: none;
+
+    width: 80%;
 }
 
 .overlay
@@ -63,30 +73,30 @@ body
 {
     
 }
-.sepConj::after
-{
-    content: "*";
-}
 
 .rightFloat
 {
     float: right;
     height: 0;
 }
-.buttonAutohide
+.button
 {
     display: inline-block;
-    opacity: 0.01;
+
+    cursor: pointer;
+    border-radius: 100%;
+    border: 1px solid black;
 
     width: 1em;
     height: 1em;
     line-height: 0.9em;
     text-align: center;
-    font-size: 1.3em;
+}
 
-    cursor: pointer;
-    border-radius: 100%;
-    border: 1px solid black;
+.buttonAutohide
+{
+    opacity: 0.03;
+    font-size: 1.3em;
 }
 .buttonAutohide:hover
 {
