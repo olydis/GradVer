@@ -1,0 +1,94 @@
+body
+{
+    background-color: #DDD;
+    font-family: sans-serif;
+
+    padding: 100px 20%;
+}
+
+.overlay
+{
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+
+    background: rgba(0,0,0,0.5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.roundedContainer
+{
+    background-color: white;
+
+    border-radius: 8px;
+    border: 1px solid gray;
+    padding: 10px;
+}
+
+.clickable
+{
+    cursor: pointer;
+}
+
+#codeContainer
+{
+    font-family: monospace;
+    font-size: 18px;
+}
+
+.instructionVerForm
+{
+    display: block;
+    width: 100%;
+    height: 1.5em;
+    line-height: 1.5em;
+
+    color: gray;
+}
+
+.instructionStatement
+{
+    display: block;
+    width: 100%;
+    height: 1.5em;
+    line-height: 1.5em;
+}
+
+.sepConj
+{
+    
+}
+.sepConj::after
+{
+    content: "*";
+}
+
+.rightFloat
+{
+    float: right;
+    height: 0;
+}
+.buttonAutohide
+{
+    display: inline-block;
+    opacity: 0.01;
+
+    width: 1em;
+    height: 1em;
+    line-height: 0.9em;
+    text-align: center;
+    font-size: 1.3em;
+
+    cursor: pointer;
+    border-radius: 100%;
+    border: 1px solid black;
+}
+.buttonAutohide:hover
+{
+    opacity: 1;
+}
