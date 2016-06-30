@@ -260,6 +260,18 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \input{staticSemantics}
 
+\subsubsection{Hoare revisited - pre-grad minification with simple HSec}
+\begin{mathpar}
+\inferrule* [Right=HSec]
+{
+ \hoare {\phi_p} {s_1} {\phi_{q}} \\ 
+ \hoare {\phi_{q}} {s_2} {\phi_r}
+}
+{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\end{mathpar}
+
+(other rules not printed here: think of previous subsection, but with self-framed implication on every pre-condition)
+
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
@@ -607,7 +619,10 @@ $\hasTypePremise {y.a.b.c} T C =
 
 Note: With this alternative rule design $\grad{\implies}$ is consistently used with static formulas as second argument. 
 This plays nicely with the fact that $\grad{\implies}$ does not care about the gradualness of that argument.
-Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.
+Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.\\
+
+\textbf{Minimum runtime checks}: For $\grad{\phi_1} \grad{\implies} \grad{\phi_2}$ to hold at runtime, practically just $\phi_2$ needs to hold. So that would be a valid assertion to check. Yet, we know statically that $\phi_1$ holds, so we can remove everything from the runtime check that is implied by $\phi_1$.
+So in a sense, we only need to check $\phi_2 \backslash \phi_1$ at runtime (the operator can be an approximation).
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}

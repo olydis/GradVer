@@ -105,7 +105,7 @@ input
 
 .buttonAutohide
 {
-    opacity: 0.03;
+    opacity: 0.1;
     font-size: 1.3em;
 }
 .buttonAutohide:hover
