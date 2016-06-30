@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     "use strict";
     var ValueExpression = (function () {
         function ValueExpression() {
@@ -41,6 +41,9 @@ define(["require", "exports"], function (require, exports) {
         ValueExpressionN.prototype.createHTML = function () {
             return $("<span>").text(this.n.toString());
         };
+        ValueExpressionN.prototype.getType = function () {
+            return Type_1.Type.getPrimitiveInt();
+        };
         return ValueExpressionN;
     }(ValueExpression));
     exports.ValueExpressionN = ValueExpressionN;
@@ -56,6 +59,9 @@ define(["require", "exports"], function (require, exports) {
         };
         ValueExpressionNull.prototype.createHTML = function () {
             return $("<span>").text("null");
+        };
+        ValueExpressionNull.prototype.getType = function () {
+            return null;
         };
         return ValueExpressionNull;
     }(ValueExpression));

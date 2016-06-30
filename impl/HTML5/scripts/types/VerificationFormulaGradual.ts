@@ -1,4 +1,5 @@
 import { VerificationFormula } from "./VerificationFormula";
+import { FootprintStatic } from "./FootprintStatic";
 
 export class VerificationFormulaGradual
 {
@@ -39,5 +40,9 @@ export class VerificationFormulaGradual
     public createHTML(): JQuery
     {
         return this.html;
+    }
+    public sfrm(fp: FootprintStatic = []): boolean
+    {
+        return this.gradual || this.staticFormula.sfrm(fp);
     }
 }

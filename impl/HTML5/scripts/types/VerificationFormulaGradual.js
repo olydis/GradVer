@@ -26,6 +26,10 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
         VerificationFormulaGradual.prototype.createHTML = function () {
             return this.html;
         };
+        VerificationFormulaGradual.prototype.sfrm = function (fp) {
+            if (fp === void 0) { fp = []; }
+            return this.gradual || this.staticFormula.sfrm(fp);
+        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;

@@ -1,8 +1,10 @@
 import { VerificationFormula } from "./VerificationFormula";
+import { Type } from "./Type";
 
 export abstract class ValueExpression
 {
     abstract createHTML(): JQuery;
+    abstract getType(): Type;
 
     public static parse(source: string): ValueExpression
     {
@@ -40,6 +42,10 @@ export class ValueExpressionN extends ValueExpression
     {
         return $("<span>").text(this.n.toString());
     }
+    public getType(): Type
+    {
+        return Type.getPrimitiveInt();
+    }
 }
 
 export class ValueExpressionNull extends ValueExpression
@@ -54,5 +60,9 @@ export class ValueExpressionNull extends ValueExpression
     public createHTML(): JQuery
     {
         return $("<span>").text("null");
+    }
+    public getType(): Type
+    {
+        return null;
     }
 }

@@ -20,7 +20,7 @@ export class EditableElement
         if (editMode)
             this.editBegin();
         else
-            this.editEnd();
+            this.rerender();
     }
 
     private editedSource: string;
@@ -45,8 +45,15 @@ export class EditableElement
     public editEnd(accept: boolean = true): void
     {
         if (accept && this.editedSource != null)
+        {
             this.source = this.editedSource;
-        this.editedSource = null;
+            this.editedSource = null;
+            this.rerender();
+        }
+    }
+
+    public rerender(): void
+    {
         var rendered = this.render(this.source);
         this.source = rendered.source;
         this.container.text("").append(rendered.html);

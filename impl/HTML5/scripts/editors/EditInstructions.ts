@@ -55,6 +55,8 @@ export class EditInstructions
                 if (i != n)
                 {
                     this.container.append(createRightButton("-").click(() => this.removeInstruction(i)));
+                    this.container.append(createRightButton("▲").click(() => {}));
+                    this.container.append(createRightButton("▼").click(() => {}));
                     this.container.append(this.statements[i].createHTML());
                 }
             })(i);

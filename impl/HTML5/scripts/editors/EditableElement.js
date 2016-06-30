@@ -12,7 +12,7 @@ define(["require", "exports"], function (require, exports) {
             if (editMode)
                 this.editBegin();
             else
-                this.editEnd();
+                this.rerender();
         }
         EditableElement.editEndAll = function () {
             EditableElement.elems = EditableElement.elems.filter(function (elem) { return $.contains(document.documentElement, elem.container.get(0)); });
@@ -36,9 +36,13 @@ define(["require", "exports"], function (require, exports) {
         };
         EditableElement.prototype.editEnd = function (accept) {
             if (accept === void 0) { accept = true; }
-            if (accept && this.editedSource != null)
+            if (accept && this.editedSource != null) {
                 this.source = this.editedSource;
-            this.editedSource = null;
+                this.editedSource = null;
+                this.rerender();
+            }
+        };
+        EditableElement.prototype.rerender = function () {
             var rendered = this.render(this.source);
             this.source = rendered.source;
             this.container.text("").append(rendered.html);

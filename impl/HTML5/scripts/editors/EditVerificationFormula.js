@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./EditableElement", "../types/VerificationFormulaGradual"], function (require, exports, EditableElement_1, VerificationFormulaGradual_1) {
+define(["require", "exports", "./EditableElement", "../types/VerificationFormulaGradual", "../types/VerificationFormulaDataServices"], function (require, exports, EditableElement_1, VerificationFormulaGradual_1, VerificationFormulaDataServices_1) {
     "use strict";
     var EditVerificationFormula = (function (_super) {
         __extends(EditVerificationFormula, _super);
@@ -14,6 +14,13 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
             _super.call(this, formulaContainer, initialSource, function (source) {
                 _this.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
                 var html = _this.verForm.createHTML();
+                if (!_this.verForm.sfrm())
+                    html.addClass("errSfrm");
+                // DEBUG: normalized data
+                var data = _this.verForm.staticFormula.collectData();
+                data = VerificationFormulaDataServices_1.vfdNormalize(data);
+                console.log(JSON.stringify(data));
+                // DEBUG end
                 return {
                     source: html.text(),
                     html: html

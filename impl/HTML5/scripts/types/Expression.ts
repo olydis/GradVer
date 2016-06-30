@@ -1,9 +1,29 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { ValueExpression } from "./ValueExpression";
+import { FootprintStatic } from "./FootprintStatic";
 
 export abstract class Expression
 {
-    abstract createHTML(): JQuery;
+    public createHTML(): JQuery
+    {
+        return $("<span>").text(this.toString());
+    }
+    public abstract substs(m: (x: string) => string): Expression;
+    public subste(a: Expression, b: Expression): Expression
+    {
+        if (Expression.eq(a, this))
+            return b;
+        else
+            return this;
+    }
+    public abstract sfrm(fp: FootprintStatic): boolean;
+    public abstract toString(): string;
+    public abstract depth(): number;
+
+    public static eq(e1: Expression, e2: Expression): boolean
+    {
+        return e1.toString() == e2.toString();
+    }
 
     public static parse(source: string): Expression
     {
@@ -19,6 +39,11 @@ export abstract class Expression
     {
         if (source == null) return false;
         return source.search(/^[A-Za-z]+$/) == 0;
+    }
+
+    public static getNull(): Expression
+    {
+        return new ExpressionV(ValueExpression.getNull());
     }
 }
 
@@ -38,9 +63,22 @@ export class ExpressionV extends Expression
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return this.v.createHTML();
+        return this.v.createHTML().text();
+    }
+
+    public substs(m: (x: string) => string): Expression
+    {
+        return this;
+    }
+    public sfrm(fp: FootprintStatic): boolean
+    {
+        return true;
+    }
+    public depth(): number
+    {
+        return 0;
     }
 }
 
@@ -59,9 +97,22 @@ export class ExpressionX extends Expression
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text(this.x);
+        return this.x;
+    }
+
+    public substs(m: (x: string) => string): Expression
+    {
+        return new ExpressionX(m(this.x));
+    }
+    public sfrm(fp: FootprintStatic): boolean
+    {
+        return true;
+    }
+    public depth(): number
+    {
+        return 1;
     }
 }
 
@@ -88,10 +139,31 @@ export class ExpressionDot extends Expression
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.e.createHTML())
-            .append($("<span>").text("." + this.f));
+        return this.e.toString() + "." + this.f;
+    }
+
+    public substs(m: (x: string) => string): Expression
+    {
+        return new ExpressionDot(this.e.substs(m), this.f);
+    }
+    public sfrm(fp: FootprintStatic): boolean
+    {
+        return this.e.sfrm(fp)
+            && fp.some(fpx => Expression.eq(this.e, fpx.e) && this.f == fpx.f);
+    }
+    public depth(): number
+    {
+        return 1 + this.e.depth();
+    }
+    public subste(a: Expression, b: Expression): Expression
+    {
+        var ex = this.e.subste(a, b);
+        var thisx = new ExpressionDot(ex, this.f);
+        if (Expression.eq(a, thisx))
+            return b;
+        else
+            return thisx;
     }
 }

@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./VerificationFormula", "./Expression"], function (require, exports, VerificationFormula_1, Expression_1) {
+define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"], function (require, exports, VerificationFormula_1, Type_1, Expression_1) {
     "use strict";
     var Statement = (function () {
         function Statement() {
@@ -254,8 +254,6 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
             _super.call(this);
             this.T = T;
             this.x = x;
-            if (!Expression_1.Expression.isValidX(T))
-                throw "null arg";
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
         }
@@ -263,11 +261,14 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
             var srcParts = source.trim().split(" ");
             if (srcParts.length != 2)
                 return null;
-            return new StatementDeclare(srcParts[0], srcParts[1]);
+            var T = Type_1.Type.parse(srcParts[0]);
+            if (T == null)
+                return null;
+            return new StatementDeclare(T, srcParts[1]);
         };
         StatementDeclare.prototype.createHTML = function () {
             return $("<span>")
-                .append(this.T)
+                .append(this.T.createHTML())
                 .append($("<span>").text(" "))
                 .append(this.x)
                 .append($("<span>").text(";"));

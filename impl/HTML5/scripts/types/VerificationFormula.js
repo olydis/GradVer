@@ -3,11 +3,14 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./Expression"], function (require, exports, Expression_1) {
+define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDataServices"], function (require, exports, Expression_1, Type_1, VerificationFormulaDataServices_1) {
     "use strict";
     var FormulaPart = (function () {
         function FormulaPart() {
         }
+        FormulaPart.prototype.footprintStatic = function () {
+            return [];
+        };
         FormulaPart.parse = function (source) {
             source = source.replace(/\s/g, "");
             source = source.replace(/\(/g, "");
@@ -39,6 +42,14 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         };
         FormulaPartTrue.prototype.createHTML = function () {
             return $("<span>").text("true");
+        };
+        FormulaPartTrue.prototype.substs = function (m) {
+            return this;
+        };
+        FormulaPartTrue.prototype.sfrm = function (fp) {
+            return true;
+        };
+        FormulaPartTrue.prototype.collectData = function (data) {
         };
         return FormulaPartTrue;
     }(FormulaPart));
@@ -72,6 +83,16 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 .append($("<span>").text(" = "))
                 .append(this.e2.createHTML())
                 .append($("<span>").text(")"));
+        };
+        FormulaPartEq.prototype.substs = function (m) {
+            return new FormulaPartEq(this.e1.substs(m), this.e2.substs(m));
+        };
+        FormulaPartEq.prototype.sfrm = function (fp) {
+            return this.e1.sfrm(fp)
+                && this.e2.sfrm(fp);
+        };
+        FormulaPartEq.prototype.collectData = function (data) {
+            data.equalities.push({ e1: this.e1, e2: this.e2 });
         };
         return FormulaPartEq;
     }(FormulaPart));
@@ -110,6 +131,16 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 .append(this.e2.createHTML())
                 .append($("<span>").text(")"));
         };
+        FormulaPartNeq.prototype.substs = function (m) {
+            return new FormulaPartNeq(this.e1.substs(m), this.e2.substs(m));
+        };
+        FormulaPartNeq.prototype.sfrm = function (fp) {
+            return this.e1.sfrm(fp)
+                && this.e2.sfrm(fp);
+        };
+        FormulaPartNeq.prototype.collectData = function (data) {
+            data.inEqualities.push({ e1: this.e1, e2: this.e2 });
+        };
         return FormulaPartNeq;
     }(FormulaPart));
     var FormulaPartAcc = (function (_super) {
@@ -145,6 +176,18 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 .append($("<span>").text("." + this.f))
                 .append($("<span>").text(")"));
         };
+        FormulaPartAcc.prototype.substs = function (m) {
+            return new FormulaPartAcc(this.e.substs(m), this.f);
+        };
+        FormulaPartAcc.prototype.footprintStatic = function () {
+            return [{ e: this.e, f: this.f }];
+        };
+        FormulaPartAcc.prototype.sfrm = function (fp) {
+            return this.e.sfrm(fp);
+        };
+        FormulaPartAcc.prototype.collectData = function (data) {
+            data.access.push({ e: this.e, f: this.f });
+        };
         return FormulaPartAcc;
     }(FormulaPart));
     var FormulaPartType = (function (_super) {
@@ -155,8 +198,6 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
             this.T = T;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
-            if (!Expression_1.Expression.isValidX(T))
-                throw "null arg";
         }
         FormulaPartType.parse = function (source) {
             var dotIndex = source.lastIndexOf(":");
@@ -164,15 +205,27 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 return null;
             var x = source.substr(0, dotIndex);
             var T = source.substr(dotIndex + 1);
-            return new FormulaPartType(x, T);
+            var TT = Type_1.Type.parse(T);
+            if (TT == null)
+                return null;
+            return new FormulaPartType(x, TT);
         };
         FormulaPartType.prototype.createHTML = function () {
             return $("<span>")
                 .append($("<span>").text("("))
                 .append($("<span>").text(this.x))
                 .append($("<span>").text(" : "))
-                .append($("<span>").text(this.T))
+                .append(this.T.createHTML())
                 .append($("<span>").text(")"));
+        };
+        FormulaPartType.prototype.substs = function (m) {
+            return new FormulaPartType(m(this.x), this.T);
+        };
+        FormulaPartType.prototype.sfrm = function (fp) {
+            return true;
+        };
+        FormulaPartType.prototype.collectData = function (data) {
+            data.types.push({ x: this.x, T: this.T });
         };
         return FormulaPartType;
     }(FormulaPart));
@@ -200,6 +253,33 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         };
         VerificationFormula.prototype.createHTML = function () {
             return this.html;
+        };
+        VerificationFormula.prototype.substs = function (m) {
+            var frm = new VerificationFormula();
+            frm.parts = this.parts.map(function (part) { return part.substs(m); });
+            return frm;
+        };
+        VerificationFormula.prototype.sfrm = function (fp) {
+            if (fp === void 0) { fp = []; }
+            for (var _i = 0, _a = this.parts; _i < _a.length; _i++) {
+                var part = _a[_i];
+                if (!part.sfrm(fp))
+                    return false;
+                fp.push.apply(fp, part.footprintStatic());
+            }
+            return true;
+        };
+        VerificationFormula.prototype.collectData = function () {
+            var data = VerificationFormulaDataServices_1.vfdTrue();
+            for (var _i = 0, _a = this.parts; _i < _a.length; _i++) {
+                var part = _a[_i];
+                part.collectData(data);
+            }
+            return VerificationFormulaDataServices_1.vfdNormalize(data);
+        };
+        // may produce false negatives
+        VerificationFormula.prototype.impliesApprox = function (phi) {
+            return VerificationFormulaDataServices_1.vfdImpliesApprox(this.collectData(), phi.collectData());
         };
         return VerificationFormula;
     }());

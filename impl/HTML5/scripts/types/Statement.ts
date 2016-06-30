@@ -1,4 +1,5 @@
 import { VerificationFormula } from "./VerificationFormula";
+import { Type } from "./Type";
 import { Expression } from "./Expression";
 
 export abstract class Statement
@@ -254,11 +255,10 @@ export class StatementRelease extends Statement
 export class StatementDeclare extends Statement
 {
     public constructor(
-        private T: string,
+        private T: Type,
         private x: string)
     {
         super();
-        if (!Expression.isValidX(T)) throw "null arg";
         if (!Expression.isValidX(x)) throw "null arg";
     }
 
@@ -266,13 +266,15 @@ export class StatementDeclare extends Statement
     {
         var srcParts = source.trim().split(" ");
         if (srcParts.length != 2) return null;
-        return new StatementDeclare(srcParts[0], srcParts[1]);
+        var T = Type.parse(srcParts[0]);
+        if (T == null) return null;
+        return new StatementDeclare(T, srcParts[1]);
     }
 
     public createHTML(): JQuery
     {
         return $("<span>")
-            .append(this.T)
+            .append(this.T.createHTML())
             .append($("<span>").text(" "))
             .append(this.x)
             .append($("<span>").text(";"));

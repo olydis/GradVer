@@ -43,6 +43,8 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], f
                     _this.container.append(_this.verificationFormulas[i].createHTML());
                     if (i != n) {
                         _this.container.append(createRightButton("-").click(function () { return _this.removeInstruction(i); }));
+                        _this.container.append(createRightButton("▲").click(function () { }));
+                        _this.container.append(createRightButton("▼").click(function () { }));
                         _this.container.append(_this.statements[i].createHTML());
                     }
                 })(i);

@@ -8,6 +8,18 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
     var Expression = (function () {
         function Expression() {
         }
+        Expression.prototype.createHTML = function () {
+            return $("<span>").text(this.toString());
+        };
+        Expression.prototype.subste = function (a, b) {
+            if (Expression.eq(a, this))
+                return b;
+            else
+                return this;
+        };
+        Expression.eq = function (e1, e2) {
+            return e1.toString() == e2.toString();
+        };
         Expression.parse = function (source) {
             source = source.replace(/\s/g, "");
             var result = null;
@@ -23,6 +35,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
             if (source == null)
                 return false;
             return source.search(/^[A-Za-z]+$/) == 0;
+        };
+        Expression.getNull = function () {
+            return new ExpressionV(ValueExpression_1.ValueExpression.getNull());
         };
         return Expression;
     }());
@@ -41,8 +56,17 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 ? new ExpressionV(vex)
                 : null;
         };
-        ExpressionV.prototype.createHTML = function () {
-            return this.v.createHTML();
+        ExpressionV.prototype.toString = function () {
+            return this.v.createHTML().text();
+        };
+        ExpressionV.prototype.substs = function (m) {
+            return this;
+        };
+        ExpressionV.prototype.sfrm = function (fp) {
+            return true;
+        };
+        ExpressionV.prototype.depth = function () {
+            return 0;
         };
         return ExpressionV;
     }(Expression));
@@ -60,8 +84,17 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 ? new ExpressionX(source)
                 : null;
         };
-        ExpressionX.prototype.createHTML = function () {
-            return $("<span>").text(this.x);
+        ExpressionX.prototype.toString = function () {
+            return this.x;
+        };
+        ExpressionX.prototype.substs = function (m) {
+            return new ExpressionX(m(this.x));
+        };
+        ExpressionX.prototype.sfrm = function (fp) {
+            return true;
+        };
+        ExpressionX.prototype.depth = function () {
+            return 1;
         };
         return ExpressionX;
     }(Expression));
@@ -87,10 +120,27 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 ? new ExpressionDot(e, f)
                 : null;
         };
-        ExpressionDot.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.e.createHTML())
-                .append($("<span>").text("." + this.f));
+        ExpressionDot.prototype.toString = function () {
+            return this.e.toString() + "." + this.f;
+        };
+        ExpressionDot.prototype.substs = function (m) {
+            return new ExpressionDot(this.e.substs(m), this.f);
+        };
+        ExpressionDot.prototype.sfrm = function (fp) {
+            var _this = this;
+            return this.e.sfrm(fp)
+                && fp.some(function (fpx) { return Expression.eq(_this.e, fpx.e) && _this.f == fpx.f; });
+        };
+        ExpressionDot.prototype.depth = function () {
+            return 1 + this.e.depth();
+        };
+        ExpressionDot.prototype.subste = function (a, b) {
+            var ex = this.e.subste(a, b);
+            var thisx = new ExpressionDot(ex, this.f);
+            if (Expression.eq(a, thisx))
+                return b;
+            else
+                return thisx;
         };
         return ExpressionDot;
     }(Expression));
