@@ -11,25 +11,43 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPart.prototype.footprintStatic = function () {
             return [];
         };
+        Object.defineProperty(FormulaPart, "subs", {
+            get: function () {
+                return [
+                    FormulaPartType,
+                    FormulaPartAcc,
+                    FormulaPartTrue,
+                    FormulaPartNeq,
+                    FormulaPartEq,
+                ];
+            },
+            enumerable: true,
+            configurable: true
+        });
         FormulaPart.parse = function (source) {
             source = source.replace(/\s/g, "");
             source = source.replace(/\(/g, "");
             source = source.replace(/\)/g, "");
             var result = null;
-            if (!result)
-                result = FormulaPartType.parse(source);
-            if (!result)
-                result = FormulaPartAcc.parse(source);
-            if (!result)
-                result = FormulaPartTrue.parse(source);
-            if (!result)
-                result = FormulaPartNeq.parse(source);
-            if (!result)
-                result = FormulaPartEq.parse(source);
+            for (var _i = 0, _a = FormulaPart.subs; _i < _a.length; _i++) {
+                var sub = _a[_i];
+                if (result)
+                    break;
+                result = sub.parse(source);
+            }
             return result;
+        };
+        FormulaPart.eq = function (p1, p2) {
+            for (var _i = 0, _a = FormulaPart.subs; _i < _a.length; _i++) {
+                var sub = _a[_i];
+                if (p1 instanceof sub && p2 instanceof sub)
+                    return JSON.stringify(p1) == JSON.stringify(p2);
+            }
+            return false;
         };
         return FormulaPart;
     }());
+    exports.FormulaPart = FormulaPart;
     var FormulaPartTrue = (function (_super) {
         __extends(FormulaPartTrue, _super);
         function FormulaPartTrue() {
@@ -51,8 +69,10 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         };
         FormulaPartTrue.prototype.collectData = function (data) {
         };
+        FormulaPartTrue.prototype.FV = function () { return []; };
         return FormulaPartTrue;
     }(FormulaPart));
+    exports.FormulaPartTrue = FormulaPartTrue;
     var FormulaPartEq = (function (_super) {
         __extends(FormulaPartEq, _super);
         function FormulaPartEq(e1, e2) {
@@ -94,8 +114,10 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartEq.prototype.collectData = function (data) {
             data.equalities.push({ e1: this.e1, e2: this.e2 });
         };
+        FormulaPartEq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
         return FormulaPartEq;
     }(FormulaPart));
+    exports.FormulaPartEq = FormulaPartEq;
     var FormulaPartNeq = (function (_super) {
         __extends(FormulaPartNeq, _super);
         function FormulaPartNeq(e1, e2) {
@@ -141,8 +163,10 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartNeq.prototype.collectData = function (data) {
             data.inEqualities.push({ e1: this.e1, e2: this.e2 });
         };
+        FormulaPartNeq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
         return FormulaPartNeq;
     }(FormulaPart));
+    exports.FormulaPartNeq = FormulaPartNeq;
     var FormulaPartAcc = (function (_super) {
         __extends(FormulaPartAcc, _super);
         function FormulaPartAcc(e, f) {
@@ -188,8 +212,10 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartAcc.prototype.collectData = function (data) {
             data.access.push({ e: this.e, f: this.f });
         };
+        FormulaPartAcc.prototype.FV = function () { return this.e.FV(); };
         return FormulaPartAcc;
     }(FormulaPart));
+    exports.FormulaPartAcc = FormulaPartAcc;
     var FormulaPartType = (function (_super) {
         __extends(FormulaPartType, _super);
         function FormulaPartType(x, T) {
@@ -227,16 +253,22 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartType.prototype.collectData = function (data) {
             data.types.push({ x: this.x, T: this.T });
         };
+        FormulaPartType.prototype.FV = function () { return [this.x]; };
         return FormulaPartType;
     }(FormulaPart));
+    exports.FormulaPartType = FormulaPartType;
     var VerificationFormula = (function () {
-        function VerificationFormula(source) {
-            if (source === void 0) { source = ""; }
+        function VerificationFormula(source, parts) {
+            if (source === void 0) { source = null; }
+            if (parts === void 0) { parts = []; }
+            this.parts = parts;
             this.html = $("<span>");
-            this.parts = [];
-            source = source.trim();
-            if (source != "")
-                this.parts = source.split("*").map(FormulaPart.parse).filter(function (part) { return part != null; });
+            if (source) {
+                this.parts = [];
+                source = source.trim();
+                if (source != "")
+                    this.parts = source.split("*").map(FormulaPart.parse).filter(function (part) { return part != null; });
+            }
             this.updateHTML();
         }
         VerificationFormula.prototype.isEmpty = function () {
@@ -276,6 +308,17 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
                 part.collectData(data);
             }
             return VerificationFormulaDataServices_1.vfdNormalize(data);
+        };
+        VerificationFormula.prototype.FV = function () {
+            return this.parts.reduce(function (a, b) { return a.concat(b.FV()); }, []);
+        };
+        // conservative: might not find type, but WILL, if x:T exists
+        VerificationFormula.prototype.tryGetType = function (x) {
+            var data = this.collectData();
+            if (data.knownToBeFalse)
+                return null;
+            var type = data.types.filter(function (y) { return y.x == x; });
+            return type.length == 1 ? type[0].T : null;
         };
         // may produce false negatives
         VerificationFormula.prototype.impliesApprox = function (phi) {

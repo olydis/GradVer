@@ -2,7 +2,7 @@ import { Program, Class, Field, Method } from "./Program";
 import { Type } from "../types/Type";
 import { Statement } from "../types/Statement";
 
-class ExecutionEnvironment
+export class ExecutionEnvironment
 {
     public constructor(
         private program: Program
@@ -26,7 +26,7 @@ class ExecutionEnvironment
         return res.length == 0 ? null : res[0];
     }
 
-    private fields(C: string): Field[]
+    public fields(C: string): Field[]
     {
         var cls = this.getClass(C);
         return cls == null
@@ -34,7 +34,7 @@ class ExecutionEnvironment
             : cls.fields;
     }
 
-    private fieldType(C: string, f: string): Type
+    public fieldType(C: string, f: string): Type
     {
         var res = this.fields(C);
         if (res == null) return null;
@@ -42,7 +42,7 @@ class ExecutionEnvironment
         return res.length == 0 ? null : res[0].type;
     }
 
-    private mmethod(C: string, m: string): Method
+    public mmethod(C: string, m: string): Method
     {
         var res = this.getClass(C);
         if (res == null) return null;

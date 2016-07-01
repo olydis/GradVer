@@ -82,7 +82,7 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
         return ExpressionTryGetCoreVar(ee.e);
     }
     function vfdNormalize(data) {
-        var knownToBeFalse = false;
+        var knownToBeFalse = data.knownToBeFalse;
         // EQ
         var eqs = data.equalities.slice();
         var changed = true;

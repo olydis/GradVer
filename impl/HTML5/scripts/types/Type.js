@@ -54,6 +54,9 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
             // types compatible? works for primitive and class
             return t1.toString() == t2.toString();
         };
+        Type.eq = function (t1, t2) {
+            return Type.implies(t1, t2) && Type.implies(t2, t1);
+        };
         return Type;
     }());
     exports.Type = Type;

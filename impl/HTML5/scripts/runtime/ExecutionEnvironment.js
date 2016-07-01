@@ -36,4 +36,5 @@ define(["require", "exports"], function (require, exports) {
         };
         return ExecutionEnvironment;
     }());
+    exports.ExecutionEnvironment = ExecutionEnvironment;
 });

@@ -104,7 +104,7 @@ function ExpressionTryGetCoreVar(e: Expression): string
 
 export function vfdNormalize(data: VerificationFormulaData): VerificationFormulaData
 {
-    var knownToBeFalse = false;
+    var knownToBeFalse = data.knownToBeFalse;
 
     // EQ
     var eqs = data.equalities.slice();

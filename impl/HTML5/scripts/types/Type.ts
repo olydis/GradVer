@@ -55,6 +55,10 @@ export abstract class Type
         // types compatible? works for primitive and class
         return t1.toString() == t2.toString();
     }
+    public static eq(t1: Type, t2: Type): boolean
+    {
+        return Type.implies(t1, t2) && Type.implies(t2, t1);
+    }
 }
 
 export class TypePrimitiveInt extends Type
@@ -74,7 +78,7 @@ export class TypePrimitiveInt extends Type
 
 export class TypeClass extends Type
 {
-    public constructor(private C: string) 
+    public constructor(public C: string) 
     { 
         super();
         if (!Expression.isValidX(C)) throw "null arg";

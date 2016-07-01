@@ -68,6 +68,7 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
         ExpressionV.prototype.depth = function () {
             return 0;
         };
+        ExpressionV.prototype.FV = function () { return []; };
         return ExpressionV;
     }(Expression));
     exports.ExpressionV = ExpressionV;
@@ -96,6 +97,7 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
         ExpressionX.prototype.depth = function () {
             return 1;
         };
+        ExpressionX.prototype.FV = function () { return [this.x]; };
         return ExpressionX;
     }(Expression));
     exports.ExpressionX = ExpressionX;
@@ -142,6 +144,7 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
             else
                 return thisx;
         };
+        ExpressionDot.prototype.FV = function () { return this.e.FV(); };
         return ExpressionDot;
     }(Expression));
     exports.ExpressionDot = ExpressionDot;

@@ -24,8 +24,9 @@ export class EditVerificationFormula extends EditableElement
                     html.addClass("errSfrm");
                 // DEBUG: normalized data
                 var data = this.verForm.staticFormula.collectData();
-                data = vfdNormalize(data);
                 console.log(JSON.stringify(data));
+                if (data.knownToBeFalse)
+                    html.addClass("errFalse");
                 // DEBUG end
                 return {
                     source: html.text(),

@@ -4,7 +4,7 @@ import { FootprintStatic } from "./FootprintStatic";
 import { VerificationFormulaData } from "./VerificationFormulaData";
 import { vfdTrue, vfdNormalize, vfdImpliesApprox } from "./VerificationFormulaDataServices";
 
-abstract class FormulaPart
+export abstract class FormulaPart
 {
     public abstract createHTML(): JQuery;
     public abstract substs(m: (x: string) => string): FormulaPart;
@@ -14,23 +14,41 @@ abstract class FormulaPart
     }
     public abstract sfrm(fp: FootprintStatic): boolean;
     public abstract collectData(data: VerificationFormulaData): void;
+    public abstract FV(): string[];
 
+    static get subs(): any[]
+    {
+        return [
+        	FormulaPartType,
+            FormulaPartAcc,
+            FormulaPartTrue,
+            FormulaPartNeq,
+            FormulaPartEq,
+        ];
+    }
     public static parse(source: string): FormulaPart
     {
         source = source.replace(/\s/g, "");
         source = source.replace(/\(/g, "");
         source = source.replace(/\)/g, "");
         var result: FormulaPart = null;
-        if (!result) result = FormulaPartType.parse(source);
-        if (!result) result = FormulaPartAcc.parse(source);
-        if (!result) result = FormulaPartTrue.parse(source);
-        if (!result) result = FormulaPartNeq.parse(source);
-        if (!result) result = FormulaPartEq.parse(source);
+        for (var sub of FormulaPart.subs)
+        {
+            if (result) break;
+            result = sub.parse(source);
+        }
         return result;
+    }
+    public static eq(p1: FormulaPart, p2: FormulaPart): boolean
+    {
+        for (var sub of FormulaPart.subs)
+            if (p1 instanceof sub && p2 instanceof sub)
+                return JSON.stringify(p1) == JSON.stringify(p2);
+        return false;
     }
 }
 
-class FormulaPartTrue extends FormulaPart
+export class FormulaPartTrue extends FormulaPart
 {
     public static parse(source: string): FormulaPart
     {
@@ -54,9 +72,10 @@ class FormulaPartTrue extends FormulaPart
     public collectData(data: VerificationFormulaData): void
     {
     }
+    public FV(): string[] { return []; }
 }
 
-class FormulaPartEq extends FormulaPart
+export class FormulaPartEq extends FormulaPart
 {
     public constructor(
         private e1: Expression,
@@ -103,9 +122,10 @@ class FormulaPartEq extends FormulaPart
     {
         data.equalities.push({e1: this.e1, e2: this.e2});
     }
+    public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
 }
 
-class FormulaPartNeq extends FormulaPart
+export class FormulaPartNeq extends FormulaPart
 {
     public constructor(
         private e1: Expression,
@@ -154,9 +174,10 @@ class FormulaPartNeq extends FormulaPart
     {
         data.inEqualities.push({e1: this.e1, e2: this.e2});
     }
+    public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
 }
 
-class FormulaPartAcc extends FormulaPart
+export class FormulaPartAcc extends FormulaPart
 {
     public constructor(
         private e: Expression,
@@ -207,9 +228,10 @@ class FormulaPartAcc extends FormulaPart
     {
         data.access.push({e: this.e, f: this.f});
     }
+    public FV(): string[] { return this.e.FV(); }
 }
 
-class FormulaPartType extends FormulaPart
+export class FormulaPartType extends FormulaPart
 {
     public constructor(
         private x: string,
@@ -253,24 +275,27 @@ class FormulaPartType extends FormulaPart
     {
         data.types.push({x: this.x, T: this.T});
     }
+    public FV(): string[] { return [this.x]; }
 }
 
 export class VerificationFormula
 {
     private html: JQuery;
 
-    public parts: FormulaPart[];
-
     public constructor(
-        source: string = ""
+        source: string = null,
+        public parts: FormulaPart[] = []
     )
     {
         this.html = $("<span>");
 
-        this.parts = [];
-        source = source.trim();
-        if (source != "")
-            this.parts = source.split("*").map(FormulaPart.parse).filter(part => part != null);
+        if (source)
+        {
+            this.parts = [];
+            source = source.trim();
+            if (source != "")
+                this.parts = source.split("*").map(FormulaPart.parse).filter(part => part != null);
+        }
         this.updateHTML();
     }
 
@@ -317,6 +342,19 @@ export class VerificationFormula
         for (var part of this.parts)
             part.collectData(data);
         return vfdNormalize(data);
+    }
+    public FV(): string[] 
+    {
+        return this.parts.reduce((a, b) => a.concat(b.FV()), []);
+    }
+
+    // conservative: might not find type, but WILL, if x:T exists
+    public tryGetType(x : string): Type
+    {
+        var data = this.collectData();
+        if (data.knownToBeFalse) return null;
+        var type = data.types.filter(y => y.x == x);
+        return type.length == 1 ? type[0].T : null;
     }
 
     // may produce false negatives

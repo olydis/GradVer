@@ -19,6 +19,7 @@ export abstract class Expression
     public abstract sfrm(fp: FootprintStatic): boolean;
     public abstract toString(): string;
     public abstract depth(): number;
+    public abstract FV(): string[];
 
     public static eq(e1: Expression, e2: Expression): boolean
     {
@@ -80,6 +81,7 @@ export class ExpressionV extends Expression
     {
         return 0;
     }
+    public FV(): string[] { return []; }
 }
 
 export class ExpressionX extends Expression
@@ -114,6 +116,7 @@ export class ExpressionX extends Expression
     {
         return 1;
     }
+    public FV(): string[] { return [this.x]; }
 }
 
 export class ExpressionDot extends Expression
@@ -166,4 +169,5 @@ export class ExpressionDot extends Expression
         else
             return thisx;
     }
+    public FV(): string[] { return this.e.FV(); }
 }

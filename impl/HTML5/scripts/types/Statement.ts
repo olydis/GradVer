@@ -29,9 +29,9 @@ export abstract class Statement
 export class StatementMemberSet extends Statement
 {
     public constructor(
-        private x: string,
-        private f: string,
-        private y: string)
+        public x: string,
+        public f: string,
+        public y: string)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
@@ -70,8 +70,8 @@ export class StatementMemberSet extends Statement
 export class StatementAssign extends Statement
 {
     public constructor(
-        private x: string,
-        private e: Expression)
+        public x: string,
+        public e: Expression)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
@@ -107,8 +107,8 @@ export class StatementAssign extends Statement
 export class StatementAlloc extends Statement
 {
     public constructor(
-        private x: string,
-        private C: string)
+        public x: string,
+        public C: string)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
@@ -143,10 +143,10 @@ export class StatementAlloc extends Statement
 export class StatementCall extends Statement
 {
     public constructor(
-        private x: string,
-        private y: string,
-        private m: string,
-        private z: string)
+        public x: string,
+        public y: string,
+        public m: string,
+        public z: string)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
@@ -190,7 +190,7 @@ export class StatementCall extends Statement
 
 export class StatementReturn extends Statement
 {
-    public constructor(private x: string) 
+    public constructor(public x: string) 
     { 
         super(); 
         if (!Expression.isValidX(x)) throw "null arg";
@@ -214,7 +214,7 @@ export class StatementReturn extends Statement
 
 export class StatementAssert extends Statement
 {
-    public constructor(private assertion: VerificationFormula) { super(); }
+    public constructor(public assertion: VerificationFormula) { super(); }
 
     public static parse(source: string): Statement
     {
@@ -234,7 +234,7 @@ export class StatementAssert extends Statement
 
 export class StatementRelease extends Statement
 {
-    public constructor(private assertion: VerificationFormula) { super(); }
+    public constructor(public assertion: VerificationFormula) { super(); }
 
     public static parse(source: string): Statement
     {
@@ -255,8 +255,8 @@ export class StatementRelease extends Statement
 export class StatementDeclare extends Statement
 {
     public constructor(
-        private T: Type,
-        private x: string)
+        public T: Type,
+        public x: string)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";

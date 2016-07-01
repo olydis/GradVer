@@ -122,6 +122,12 @@ input
 .errSfrm::after
 {
     color: red;
-    content: " not self-framed! ";
+    content: " not self-framed ";
+    font-size: 0.7em;
+}
+.errFalse::after
+{
+    color: red;
+    content: " unsatisfiable ";
     font-size: 0.7em;
 }
