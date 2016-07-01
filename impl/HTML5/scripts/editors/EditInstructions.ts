@@ -51,12 +51,11 @@ export class EditInstructions
             ((i: number) =>
             {
                 this.container.append(createRightButton("+").click(() => this.insertInstruction(i)));
+                this.container.append(createRightButton("⇳").click(() => {}));
                 this.container.append(this.verificationFormulas[i].createHTML());
                 if (i != n)
                 {
                     this.container.append(createRightButton("-").click(() => this.removeInstruction(i)));
-                    this.container.append(createRightButton("▲").click(() => {}));
-                    this.container.append(createRightButton("▼").click(() => {}));
                     this.container.append(this.statements[i].createHTML());
                 }
             })(i);

@@ -40,11 +40,10 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], f
             for (var i = 0; i <= n; ++i)
                 (function (i) {
                     _this.container.append(createRightButton("+").click(function () { return _this.insertInstruction(i); }));
+                    _this.container.append(createRightButton("⇳").click(function () { }));
                     _this.container.append(_this.verificationFormulas[i].createHTML());
                     if (i != n) {
                         _this.container.append(createRightButton("-").click(function () { return _this.removeInstruction(i); }));
-                        _this.container.append(createRightButton("▲").click(function () { }));
-                        _this.container.append(createRightButton("▼").click(function () { }));
                         _this.container.append(_this.statements[i].createHTML());
                     }
                 })(i);

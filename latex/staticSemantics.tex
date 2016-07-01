@@ -1,31 +1,31 @@
 % Inductive Semantics.hoareSingle
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{{x} \not \in {FV(\phi)}\\{\fields({C})} = {{\overline{f}}}}
+{NotInFV(x, \phi)\\{\fields({C})} = {{\overline{f}}}}
 {\hoare {{({x} : {{C}})} * {\phi}} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{({x} : {{C}})} * {{({{x}} \neq {{\vnull}})} * {\phi}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
 {\vdash {C}.{f} : {T}}
-{\hoare {{({x} : {{C}})} * {{({y} : {T})} * {{({{x}} \neq {{\vnull}})} * {{\phi} * {{\acc({{x}}.{f})}}}}}} {{x}.{f} := {y}} {{({x} : {{C}})} * {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi}}}}}}
+{\hoare {{({x} : {{C}})} * {{({y} : {T})} * {{\phi} * {{\acc({{x}}.{f})}}}}} {{x}.{f} := {y}} {{({x} : {{C}})} * {{\acc({{x}}.{f})} * {{({{{x}}.{f}} = {{y}})} * {\phi}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{{x} \not \in {FV(\phi)}\\{x} \not \in {FV({e})}\\\hasTypePremise {{e}} {{T}} {{T'}}}
+{NotInFV(x, \phi)\\{x} \not \in {FV({e})}\\\hasTypePremise {{e}} {{T}} {{T'}}}
 {\hoare {{({x} : {T})} * {{\hasTypeFormula {{e}} {{T}} {{T'}}} * {\phi}}} {{x} := {e}} {{\hasTypeFormula {{e}} {{T}} {{T'}}} * {{\phi} * {{({{x}} = {e})}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{{\xresult} \not \in {FV(\phi)}}
+{NotInFV(\xresult, \phi)}
 {\hoare {{({x} : {T})} * {{({\xresult} : {T})} * {\phi}}} {\return {x}} {{({\xresult} : {T})} * {{({{\xresult}} = {{x}})} * {\phi}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{x} \not \in {FV(\phi_r)}\\x \neq y \wedge x \neq z'}
+{{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\NotInFV(x, \phi_r)\\x \neq y \wedge x \neq z'}
 {\hoare {{({x} : {T_r})} * {{({y} : {{C}})} * {{({z'} : {T_p})} * {{\phi_r} * {{({{y}} \neq {{\vnull}})} * {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}}}}}} {{x} := {y}.{m}({z'})} {{\phi_r} * {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}}
 \end{mathpar}
 
@@ -43,7 +43,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{{x} \not \in {FV(\phi)}}
+{NotInFV(x, \phi)}
 {\hoare {\phi} {{T}~{x}} {{({x} : {T})} * {{({{x}} = {{\texttt{defaultValue}({T})}})} * {\phi}}}}
 \end{mathpar}
 

@@ -587,6 +587,38 @@ $\hasTypePremise {y.a.b.c} T C =
 
 
 
+\subsubsection{HFieldAssign (deterministic alternative)}
+
+\begin{mathpar}
+\inferrule* [Right=HFieldAssign]
+{
+\vdash C.f : T \\\\
+\phi_1 \implies {(x : C) * (y : T) * \acc(x.f)} \\
+\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi_1[\textbf{w/o } \acc(x.f)]}
+}
+{\hoare
+{\phi_1}
+{x.f := y}
+{\phi_2}}
+\end{mathpar}
+
+Note: $\phi[\textbf{w/o } \acc(x.f)]$ removes $\acc(x.f)$ and all uses of $x.f$ from $\phi$. The result is self-framed given that $\phi$ is.\\
+
+\textbf{Attention}:
+This version is weaker than the other (pairwise equivalent) versions of HFieldAssign!
+
+Explanation: Above operator may remove more information than necessary from $\phi$.
+
+Example:
+\begin{itemize}
+\item Given: $\phi_1 = \acc(x.f) * (x.f = a) * (x.f = b)$
+\item Goal: $\phi_2 \implies (a = b)$
+\item \textbf{not provable} with this deterministic version of HFieldAssign
+\item \textbf{provable} with all other versions
+\end{itemize}
+
+
+
 \subsubsection{GHFieldAssign (implication alternative)}
 
 \begin{mathpar}
@@ -594,8 +626,8 @@ $\hasTypePremise {y.a.b.c} T C =
 {
 \sfrmphi \phi \\
 \vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
-\phi_2 = {(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi}
+\phi_1 \implies {(x : C) * (y : T) * \phi * \acc(x.f)} \\
+\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi}
 }
 {\hoare
 {\phi_1}
@@ -608,8 +640,8 @@ $\hasTypePremise {y.a.b.c} T C =
 {
 \sfrmphi \phi \\
 \vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
-\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi}
+\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * \phi * \acc(x.f)} \\
+\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x.f = y) * \phi}
 }
 {\ghoare
 {\grad{\phi_1}}
