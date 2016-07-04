@@ -73,6 +73,9 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         TypePrimitiveInt.prototype.createHTML = function () {
             return $("<span>").text("int");
         };
+        TypePrimitiveInt.prototype.defaultValue = function () {
+            return Expression_1.Expression.getZero();
+        };
         return TypePrimitiveInt;
     }(Type));
     exports.TypePrimitiveInt = TypePrimitiveInt;
@@ -91,6 +94,9 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         };
         TypeClass.prototype.createHTML = function () {
             return $("<span>").text(this.C);
+        };
+        TypeClass.prototype.defaultValue = function () {
+            return Expression_1.Expression.getNull();
         };
         return TypeClass;
     }(Type));

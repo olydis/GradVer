@@ -30,6 +30,12 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             if (fp === void 0) { fp = []; }
             return this.gradual || this.staticFormula.sfrm(fp);
         };
+        VerificationFormulaGradual.prototype.substs = function (m) {
+            var frm = new VerificationFormulaGradual();
+            frm.gradual = this.gradual;
+            frm.staticFormula = this.staticFormula.substs(m);
+            return frm;
+        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;

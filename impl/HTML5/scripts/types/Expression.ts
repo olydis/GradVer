@@ -1,6 +1,7 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { ValueExpression } from "./ValueExpression";
 import { FootprintStatic } from "./FootprintStatic";
+import { Type } from "./Type";
 
 export abstract class Expression
 {
@@ -46,11 +47,18 @@ export abstract class Expression
     {
         return new ExpressionV(ValueExpression.getNull());
     }
+    public static getZero(): Expression
+    {
+        return new ExpressionV(ValueExpression.getZero());
+    }
+
+    public static getResult(): string { return "result" };
+    public static getThis(): string { return "this" };
 }
 
 export class ExpressionV extends Expression
 {
-    public constructor(private v: ValueExpression)
+    public constructor(public v: ValueExpression)
     {
         super();
         if (v == null) throw "null arg";
@@ -86,7 +94,7 @@ export class ExpressionV extends Expression
 
 export class ExpressionX extends Expression
 {
-    public constructor(private x: string)
+    public constructor(public x: string)
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
@@ -122,8 +130,8 @@ export class ExpressionX extends Expression
 export class ExpressionDot extends Expression
 {
     public constructor(
-        private e: Expression,
-        private f: string)
+        public e: Expression,
+        public f: string)
     {
         super();
         if (e == null) throw "null arg";

@@ -20,6 +20,9 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         ValueExpression.getNull = function () {
             return new ValueExpressionNull();
         };
+        ValueExpression.getZero = function () {
+            return new ValueExpressionN(0);
+        };
         return ValueExpression;
     }());
     exports.ValueExpression = ValueExpression;

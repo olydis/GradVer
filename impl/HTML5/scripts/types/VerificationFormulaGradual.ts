@@ -45,4 +45,11 @@ export class VerificationFormulaGradual
     {
         return this.gradual || this.staticFormula.sfrm(fp);
     }
+    public substs(m: (x: string) => string): VerificationFormulaGradual
+    {
+        var frm = new VerificationFormulaGradual();
+        frm.gradual = this.gradual;
+        frm.staticFormula = this.staticFormula.substs(m);
+        return frm;
+    }
 }

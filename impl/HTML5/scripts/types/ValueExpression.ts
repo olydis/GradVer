@@ -19,6 +19,10 @@ export abstract class ValueExpression
     {
         return new ValueExpressionNull();
     }
+    public static getZero(): ValueExpression
+    {
+        return new ValueExpressionN(0);
+    }
 }
 
 export class ValueExpressionN extends ValueExpression

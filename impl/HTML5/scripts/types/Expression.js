@@ -39,6 +39,13 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
         Expression.getNull = function () {
             return new ExpressionV(ValueExpression_1.ValueExpression.getNull());
         };
+        Expression.getZero = function () {
+            return new ExpressionV(ValueExpression_1.ValueExpression.getZero());
+        };
+        Expression.getResult = function () { return "result"; };
+        ;
+        Expression.getThis = function () { return "this"; };
+        ;
         return Expression;
     }());
     exports.Expression = Expression;

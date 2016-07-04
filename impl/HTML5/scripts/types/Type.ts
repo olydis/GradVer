@@ -1,8 +1,9 @@
-import { Expression } from "./Expression";
+import { Expression, ExpressionV } from "./Expression";
 
 export abstract class Type
 {
     abstract createHTML(): JQuery;
+    abstract defaultValue(): Expression;
     public toString(): string
     {
         return this.createHTML().text();
@@ -74,6 +75,10 @@ export class TypePrimitiveInt extends Type
     {
         return $("<span>").text("int");
     }
+    public defaultValue(): Expression
+    {
+        return Expression.getZero();
+    }
 }
 
 export class TypeClass extends Type
@@ -93,5 +98,9 @@ export class TypeClass extends Type
     public createHTML(): JQuery
     {
         return $("<span>").text(this.C);
+    }
+    public defaultValue(): Expression
+    {
+        return Expression.getNull();
     }
 }

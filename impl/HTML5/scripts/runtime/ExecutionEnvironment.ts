@@ -1,6 +1,9 @@
 import { Program, Class, Field, Method } from "./Program";
-import { Type } from "../types/Type";
+import { Type, TypeClass } from "../types/Type";
 import { Statement } from "../types/Statement";
+import { VerificationFormula } from "../types/VerificationFormula";
+
+import { Expression, ExpressionDot, ExpressionV, ExpressionX } from "./../types/Expression";
 
 export class ExecutionEnvironment
 {
@@ -8,6 +11,32 @@ export class ExecutionEnvironment
         private program: Program
     )
     {
+    }
+
+    public tryGetType(p: VerificationFormula, e: Expression): Type
+    {
+        if (e instanceof ExpressionV)
+            return e.v.getType();
+        if (e instanceof ExpressionX)
+            return p.tryGetType(e.x);
+        if (e instanceof ExpressionDot)
+        {
+            var inner = this.tryGetType(p, e.e);
+            if (inner instanceof TypeClass)
+                return this.fieldType(inner.C, e.f);
+            return null;
+        }
+        return null;
+    }
+    public tryGetCoreType(p: VerificationFormula, e: Expression): Type
+    {
+        if (e instanceof ExpressionV)
+            return e.v.getType();
+        if (e instanceof ExpressionX)
+            return p.tryGetType(e.x);
+        if (e instanceof ExpressionDot)
+            return this.tryGetCoreType(p, e.e);
+        return null;
     }
 
     private getMain(): Statement[]
