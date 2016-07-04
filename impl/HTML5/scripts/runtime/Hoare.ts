@@ -1,5 +1,5 @@
 import { VerificationFormula, FormulaPart, FormulaPartAcc, FormulaPartType, FormulaPartNeq, FormulaPartEq } from "../types/VerificationFormula";
-import { Statement, 
+import { Statement,
     StatementAlloc,
     StatementMemberSet,
     StatementAssign,
@@ -56,9 +56,45 @@ class Hoare
                 return rule;
         throw "unknown statement type";
     }
-    private getParams(s: Statement, pre: VerificationFormula)
+    private check(s: Statement, pre: VerificationFormula): string[]
     {
+        var rule = this.getRule(s);
+        var errs: string[] = [];
+        var res = rule.params(s, pre, msg => errs.push(msg));
+        return res == null ? errs : null;
+    }
+    private guessPhiFromPre(s: Statement, pre: VerificationFormula): VerificationFormula
+    {
+        var rule = this.getRule(s);
+        var params = rule.params(s, pre, () => {});
+        var barePre = rule.pre(s, VerificationFormula.empty(), params);
+        var nonos = rule.notInPhi(s);
+        var isNono = (x : string) => nonos.indexOf(x) != -1;
 
+        var remaining = pre.parts.filter(p1 => !(
+            p1 instanceof FormulaPartAcc &&
+            barePre.parts.some(p2 => FormulaPart.eq(p1, p2))));
+        remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
+        return new VerificationFormula(null, remaining);
+    }
+    private guessPhiFromPost(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    {
+        var rule = this.getRule(s);
+        var params = rule.params(s, pre, () => {});
+        var barePost = rule.post(s, VerificationFormula.empty(), params);
+        var nonos = rule.notInPhi(s);
+        var isNono = (x : string) => nonos.indexOf(x) != -1;
+
+        var remaining = post.parts.filter(p1 => !(
+            barePost.parts.some(p2 => FormulaPart.eq(p1, p2))));
+        remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
+        return new VerificationFormula(null, remaining);
+    }
+    private guessPhi(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    {
+        var phiPre = this.guessPhiFromPre(s, pre);
+        var phiPost = this.guessPhiFromPost(s, pre, post);
+        return VerificationFormula.intersect(phiPre, phiPost);
     }
 
     private unfoldTypeFormula(e: Expression, coreType: Type): FormulaPart[]
@@ -79,10 +115,10 @@ class Hoare
             (s, pre, onErr) => {
                 var fs = this.env.fields(s.C);
                 // check
-                if (fs == null) 
-                { 
+                if (fs == null)
+                {
                     onErr("class '" + s.C + "' not found");
-                    return null; 
+                    return null;
                 }
                 return {fs: fs};
             },
@@ -106,19 +142,19 @@ class Hoare
             (s, pre, onErr) => {
                 var Tx = pre.tryGetType(s.x);
                 if (Tx == null)
-                { 
+                {
                     onErr("couldn't determine type of '" + s.x + "'");
-                    return null; 
+                    return null;
                 }
                 if (!(Tx instanceof TypeClass))
-                { 
+                {
                     onErr("'" + s.x + "' must have class type");
-                    return null; 
+                    return null;
                 }
                 var Cx = <TypeClass>Tx;
                 var Cf = this.env.fieldType(Cx.C, s.f);
                 // check
-                if (Cf == null) 
+                if (Cf == null)
                 {
                     onErr("class '" + Cx + "' doesn't have field '" + s.f + "'");
                     return null;
@@ -148,25 +184,25 @@ class Hoare
             (s, pre, onErr) => {
                 var Tx = pre.tryGetType(s.x);
                 if (Tx == null)
-                { 
+                {
                     onErr("couldn't determine type of '" + s.x + "'");
-                    return null; 
+                    return null;
                 }
                 var Te = this.env.tryGetType(pre, s.e);
                 if (Te == null)
-                { 
+                {
                     onErr("couldn't determine type of RHS expression");
-                    return null; 
+                    return null;
                 }
                 var TeCore = this.env.tryGetCoreType(pre, s.e);
 
                 // check
-                if (s.e.FV().some(x => x == s.x)) 
+                if (s.e.FV().some(x => x == s.x))
                 {
                     onErr("RHS expression cannot contain variable '" + s.x + "'");
                     return null;
                 }
-                if (!Type.eq(Tx, Te)) 
+                if (!Type.eq(Tx, Te))
                 {
                     onErr("type mismatch");
                     return null;
@@ -195,9 +231,9 @@ class Hoare
             (s, pre, onErr) => {
                 var Tx = pre.tryGetType(s.x);
                 if (Tx == null)
-                { 
+                {
                     onErr("couldn't determine type of '" + s.x + "'");
-                    return null; 
+                    return null;
                 }
                 return {T:Tx};
             },
@@ -222,28 +258,28 @@ class Hoare
             (s, pre, onErr) => {
                 var Ty = pre.tryGetType(s.y);
                 if (Ty == null)
-                { 
+                {
                     onErr("couldn't determine type of '" + s.y + "'");
-                    return null; 
+                    return null;
                 }
                 if (!(Ty instanceof TypeClass))
-                { 
+                {
                     onErr("'" + s.y + "' must have class type");
-                    return null; 
+                    return null;
                 }
                 var Cy = <TypeClass>Ty;
                 var m = this.env.mmethod(Cy.C, s.m);
                 // check
-                if (m == null) 
+                if (m == null)
                 {
                     onErr("class '" + Cy + "' doesn't have method '" + s.m + "'");
                     return null;
                 }
 
                 if (s.x == s.y || s.x == s.z)
-                { 
+                {
                     onErr("'" + s.x + "' cannot appear both in LHS and RHS");
-                    return null; 
+                    return null;
                 }
                 return {m: m, C: Cy};
             },

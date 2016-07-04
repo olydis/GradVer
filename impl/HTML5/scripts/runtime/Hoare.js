@@ -224,7 +224,37 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }
             throw "unknown statement type";
         };
-        Hoare.prototype.getParams = function (s, pre) {
+        Hoare.prototype.check = function (s, pre) {
+            var rule = this.getRule(s);
+            var errs = [];
+            var res = rule.params(s, pre, function (msg) { return errs.push(msg); });
+            return res == null ? errs : null;
+        };
+        Hoare.prototype.guessPhiFromPre = function (s, pre) {
+            var rule = this.getRule(s);
+            var params = rule.params(s, pre, function () { });
+            var barePre = rule.pre(s, VerificationFormula_1.VerificationFormula.empty(), params);
+            var nonos = rule.notInPhi(s);
+            var isNono = function (x) { return nonos.indexOf(x) != -1; };
+            var remaining = pre.parts.filter(function (p1) { return !(p1 instanceof VerificationFormula_1.FormulaPartAcc &&
+                barePre.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
+            remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
+            return new VerificationFormula_1.VerificationFormula(null, remaining);
+        };
+        Hoare.prototype.guessPhiFromPost = function (s, pre, post) {
+            var rule = this.getRule(s);
+            var params = rule.params(s, pre, function () { });
+            var barePost = rule.post(s, VerificationFormula_1.VerificationFormula.empty(), params);
+            var nonos = rule.notInPhi(s);
+            var isNono = function (x) { return nonos.indexOf(x) != -1; };
+            var remaining = post.parts.filter(function (p1) { return !(barePost.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
+            remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
+            return new VerificationFormula_1.VerificationFormula(null, remaining);
+        };
+        Hoare.prototype.guessPhi = function (s, pre, post) {
+            var phiPre = this.guessPhiFromPre(s, pre);
+            var phiPost = this.guessPhiFromPost(s, pre, post);
+            return VerificationFormula_1.VerificationFormula.intersect(phiPre, phiPost);
         };
         Hoare.prototype.unfoldTypeFormula = function (e, coreType) {
             if (e instanceof Expression_1.ExpressionV)

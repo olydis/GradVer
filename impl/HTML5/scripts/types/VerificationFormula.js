@@ -271,6 +271,14 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             }
             this.updateHTML();
         }
+        VerificationFormula.empty = function () {
+            return new VerificationFormula(null, []);
+        };
+        VerificationFormula.intersect = function (p1, p2) {
+            var parts = p1.parts;
+            parts.push.apply(parts, p2.parts.filter(function (x) { return !parts.some(function (y) { return FormulaPart.eq(x, y); }); }));
+            return new VerificationFormula(null, parts);
+        };
         VerificationFormula.prototype.isEmpty = function () {
             return this.parts.length == 0;
         };

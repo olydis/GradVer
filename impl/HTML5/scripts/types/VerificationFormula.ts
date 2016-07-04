@@ -280,6 +280,17 @@ export class FormulaPartType extends FormulaPart
 
 export class VerificationFormula
 {
+    public static empty(): VerificationFormula
+    {
+        return new VerificationFormula(null, []);
+    }
+    public static intersect(p1: VerificationFormula, p2: VerificationFormula): VerificationFormula
+    {
+        var parts = p1.parts;
+        parts.push(...p2.parts.filter(x => !parts.some(y => FormulaPart.eq(x, y))));
+        return new VerificationFormula(null, parts);
+    }
+
     private html: JQuery;
 
     public constructor(
