@@ -10,13 +10,15 @@ export abstract class Statement
     {
         var result: Statement = null;
         source = source.replace(/;$/, "");
-        if (!result) result = StatementDeclare.parse(source);
+        var sourceWS = source;
         source = source.replace(/\s/g, "");
         if (!result) result = StatementCall.parse(source);
         if (!result) result = StatementAlloc.parse(source);
         if (!result) result = StatementMemberSet.parse(source);
         if (!result) result = StatementAssign.parse(source);
         if (!result) result = StatementAssert.parse(source);
+        if (!result) result = StatementRelease.parse(source);
+        if (!result) result = StatementDeclare.parse(sourceWS);
         return result;
     }
 
@@ -240,7 +242,7 @@ export class StatementRelease extends Statement
     {
         if (source.substr(0, 7) != "release")
             return null;
-        return new StatementAssert(new VerificationFormula(source.substr(7)));
+        return new StatementRelease(new VerificationFormula(source.substr(7)));
     }
 
     public createHTML(): JQuery

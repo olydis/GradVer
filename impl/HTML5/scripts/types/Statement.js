@@ -11,8 +11,7 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
         Statement.parse = function (source) {
             var result = null;
             source = source.replace(/;$/, "");
-            if (!result)
-                result = StatementDeclare.parse(source);
+            var sourceWS = source;
             source = source.replace(/\s/g, "");
             if (!result)
                 result = StatementCall.parse(source);
@@ -24,6 +23,10 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 result = StatementAssign.parse(source);
             if (!result)
                 result = StatementAssert.parse(source);
+            if (!result)
+                result = StatementRelease.parse(source);
+            if (!result)
+                result = StatementDeclare.parse(sourceWS);
             return result;
         };
         Statement.getNop = function () {
@@ -237,7 +240,7 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
         StatementRelease.parse = function (source) {
             if (source.substr(0, 7) != "release")
                 return null;
-            return new StatementAssert(new VerificationFormula_1.VerificationFormula(source.substr(7)));
+            return new StatementRelease(new VerificationFormula_1.VerificationFormula(source.substr(7)));
         };
         StatementRelease.prototype.createHTML = function () {
             return $("<span>")
