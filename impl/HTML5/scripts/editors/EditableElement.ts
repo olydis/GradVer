@@ -9,7 +9,7 @@ export class EditableElement
 
     public constructor(
         private container: JQuery, 
-        private source: string,
+        protected source: string,
         private render: (source: string) => { source: string, html: JQuery },
         private editMode: boolean = false
     )

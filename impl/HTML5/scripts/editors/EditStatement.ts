@@ -4,7 +4,7 @@ import { GUIHelpers } from "./GUIHelpers"
 
 export class EditStatement extends EditableElement
 {
-    private stmtContainer: JQuery;
+    public stmtContainer: JQuery;
     private stmt: Statement;
 
     public constructor(
@@ -40,4 +40,6 @@ export class EditStatement extends EditableElement
                 eo.stopPropagation();
             });
     }
+
+    public getStatement(): Statement { return this.stmt; }
 }

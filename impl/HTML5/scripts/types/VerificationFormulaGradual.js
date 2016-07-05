@@ -13,6 +13,13 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             this.staticFormula = new VerificationFormula_1.VerificationFormula(source);
             this.updateHTML();
         }
+        VerificationFormulaGradual.create = function (gradual, staticFormula) {
+            var res = new VerificationFormulaGradual();
+            res.gradual = gradual;
+            res.staticFormula = staticFormula;
+            res.updateHTML();
+            return res;
+        };
         VerificationFormulaGradual.prototype.updateHTML = function () {
             this.html.text("");
             var grad = $("<span>").text("?");

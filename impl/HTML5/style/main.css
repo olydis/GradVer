@@ -13,7 +13,7 @@ input
     font: inherit;
     border: none;
 
-    width: 80%;
+    width: 70%;
 }
 
 .overlay
@@ -119,6 +119,13 @@ input
     color: red;
 }
 */
+.err
+{
+    vertical-align: bottom;
+    padding-left: 8px;
+    color: red;
+    font-size: 0.7em;
+}
 .errSfrm::after
 {
     color: red;

@@ -22,6 +22,29 @@ define(["require", "exports"], function (require, exports) {
             html.click(function (eo) { eo.stopPropagation(); hide(); });
             $("body").append(overlay);
         };
+        GUIHelpers.flash = function (html, color, timeMS) {
+            if (timeMS === void 0) { timeMS = 500; }
+            html.css("box-shadow", "0px 0px 3px 2px " + color);
+            html.css("background", color);
+            var handle;
+            var reset = function () {
+                clearTimeout(handle);
+                html.css("box-shadow", "none");
+                html.css("background", "none");
+            };
+            handle = setTimeout(function () { return reset(); }, timeMS);
+        };
+        GUIHelpers.flashCorrect = function (html) {
+            GUIHelpers.flash(html, "#8F8");
+            html.children(".err").remove();
+        };
+        GUIHelpers.flashError = function (html, err) {
+            GUIHelpers.flash(html, "#F88");
+            html.children(".err").remove();
+            var errHtml = $("<span>").addClass("err").text(err);
+            html.append(errHtml);
+            errHtml.mouseenter(function () { return errHtml.remove(); });
+        };
         return GUIHelpers;
     }());
     exports.GUIHelpers = GUIHelpers;

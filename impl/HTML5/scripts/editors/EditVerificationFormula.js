@@ -42,6 +42,12 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
                 eo.stopPropagation();
             });
         };
+        EditVerificationFormula.prototype.getFormula = function () { return this.verForm; };
+        EditVerificationFormula.prototype.setFormula = function (frm) {
+            this.verForm = frm;
+            this.source = frm.createHTML().text();
+            this.rerender();
+        };
         return EditVerificationFormula;
     }(EditableElement_1.EditableElement));
     exports.EditVerificationFormula = EditVerificationFormula;

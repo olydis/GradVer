@@ -1,8 +1,20 @@
 import { EditInstructions } from "./editors/EditInstructions";
 import { EditableElement } from "./editors/EditableElement";
+import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
+import { Hoare } from "./runtime/Hoare";
+import { Program } from "./runtime/Program";
 
 $(() =>
 {
     $(window).click(() => EditableElement.editEndAll());
-    var editor = new EditInstructions($("#codeContainer"));
+
+    var program: Program = {
+        classes: [],
+        main: []
+    };
+    var env = new ExecutionEnvironment(program);
+    var hoare = new Hoare(env);
+
+    var editor = new EditInstructions($("#codeContainer"), hoare);
+    $("#btnVerify").click(() => editor.btnCheckAll());
 });

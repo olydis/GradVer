@@ -288,7 +288,14 @@ export class VerificationFormula
     {
         var parts = p1.parts;
         parts.push(...p2.parts.filter(x => !parts.some(y => FormulaPart.eq(x, y))));
+        parts = parts.filter(p => !(p instanceof FormulaPartTrue));
         return new VerificationFormula(null, parts);
+    }
+    public static eq(p1: VerificationFormula, p2: VerificationFormula): boolean
+    {
+        if (p1.parts.length != p2.parts.length)
+            return false;
+        return p1.parts.every((p, i) => FormulaPart.eq(p, p2.parts[i]));
     }
 
     private html: JQuery;

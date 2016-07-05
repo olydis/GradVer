@@ -1,8 +1,9 @@
-define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], function (require, exports, EditStatement_1, EditVerificationFormula_1) {
+define(["require", "exports", "./EditStatement", "./EditVerificationFormula", "../GUIHelpers", "../types/VerificationFormulaGradual"], function (require, exports, EditStatement_1, EditVerificationFormula_1, GUIHelpers_1, VerificationFormulaGradual_1) {
     "use strict";
     var EditInstructions = (function () {
-        function EditInstructions(container) {
+        function EditInstructions(container, hoare) {
             this.container = container;
+            this.hoare = hoare;
             this.statements = [];
             this.verificationFormulas = [];
             this.verificationFormulas.push(new EditVerificationFormula_1.EditVerificationFormula());
@@ -16,14 +17,32 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], f
             configurable: true
         });
         EditInstructions.prototype.removeInstruction = function (index) {
-            this.verificationFormulas.splice(index, 1);
+            this.verificationFormulas.splice(index + 1, 1);
             this.statements.splice(index, 1);
             this.updateGUI();
         };
         EditInstructions.prototype.insertInstruction = function (index) {
-            this.verificationFormulas.splice(index, 0, new EditVerificationFormula_1.EditVerificationFormula());
+            this.verificationFormulas.splice(index + 1, 0, new EditVerificationFormula_1.EditVerificationFormula());
             this.statements.splice(index, 0, new EditStatement_1.EditStatement());
             this.updateGUI();
+        };
+        EditInstructions.prototype.checkStatement = function (index) {
+            var s = this.statements[index].getStatement();
+            var pre = this.verificationFormulas[index].getFormula().staticFormula;
+            var post = this.verificationFormulas[index + 1].getFormula().staticFormula;
+            return this.hoare.validate(s, pre, post);
+        };
+        EditInstructions.prototype.btnCheckAll = function () {
+            for (var i = 0; i < this.numInstructions; ++i)
+                this.btnCheck(i);
+        };
+        EditInstructions.prototype.btnCheck = function (index) {
+            var ins = this.statements[index].stmtContainer;
+            var errs = this.checkStatement(index);
+            if (errs == null)
+                GUIHelpers_1.GUIHelpers.flashCorrect(ins);
+            else
+                GUIHelpers_1.GUIHelpers.flashError(ins, errs[0]);
         };
         EditInstructions.prototype.updateGUI = function () {
             var _this = this;
@@ -40,14 +59,32 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula"], f
             for (var i = 0; i <= n; ++i)
                 (function (i) {
                     _this.container.append(createRightButton("+").click(function () { return _this.insertInstruction(i); }));
-                    _this.container.append(createRightButton("⇳").click(function () { }));
-                    // this.container.append(createRightButton("↲").click(() => {}));
-                    // this.container.append(createRightButton("↰").click(() => {}));
+                    if (i != 0)
+                        _this.container.append(createRightButton("↲").click(function () {
+                            var stmt = _this.statements[i - 1].getStatement();
+                            var pre = _this.verificationFormulas[i - 1].getFormula().staticFormula;
+                            var post = _this.verificationFormulas[i].getFormula().staticFormula;
+                            var npost = _this.hoare.genPost(stmt, pre, post);
+                            _this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npost));
+                        }));
+                    if (i != n)
+                        _this.container.append(createRightButton("↰").click(function () {
+                            var stmt = _this.statements[i].getStatement();
+                            var pre = _this.verificationFormulas[i].getFormula().staticFormula;
+                            var post = _this.verificationFormulas[i + 1].getFormula().staticFormula;
+                            var npre = _this.hoare.genPre(stmt, pre, post);
+                            _this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npre));
+                        }));
                     _this.container.append(_this.verificationFormulas[i].createHTML());
                     if (i != n) {
+                        var ins = _this.statements[i].createHTML();
                         _this.container.append(createRightButton("-").click(function () { return _this.removeInstruction(i); }));
-                        _this.container.append(createRightButton("✓").click(function () { }));
-                        _this.container.append(_this.statements[i].createHTML());
+                        _this.container.append(createRightButton("✓").click(function () {
+                            _this.btnCheck(i);
+                        }));
+                        // this.container.append(createRightButton("⇳").click(() => {
+                        // }));
+                        _this.container.append(ins);
                     }
                 })(i);
         };

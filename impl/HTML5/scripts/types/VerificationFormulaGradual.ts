@@ -8,6 +8,15 @@ export class VerificationFormulaGradual
     public gradual: boolean;
     public staticFormula: VerificationFormula;
 
+    public static create(gradual: boolean, staticFormula: VerificationFormula): VerificationFormulaGradual
+    {
+        var res = new VerificationFormulaGradual();
+        res.gradual = gradual;
+        res.staticFormula = staticFormula;
+        res.updateHTML();
+        return res;
+    }
+
     public constructor(
         source: string = "?"
     )

@@ -51,4 +51,12 @@ export class EditVerificationFormula extends EditableElement
                 eo.stopPropagation();
             });
     }
+
+    public getFormula(): VerificationFormulaGradual { return this.verForm; }
+    public setFormula(frm: VerificationFormulaGradual): void
+    {
+        this.verForm = frm;
+        this.source = frm.createHTML().text();
+        this.rerender();
+    }
 }

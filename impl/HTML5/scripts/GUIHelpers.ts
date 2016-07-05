@@ -23,4 +23,35 @@ export class GUIHelpers
 
         $("body").append(overlay);
     }
+
+    private static flash(html: JQuery, color: string, timeMS: number = 500): void
+    {
+        html.css("box-shadow", "0px 0px 3px 2px " + color);
+        html.css("background", color);
+
+        var handle: number;
+        var reset = () => {
+            clearTimeout(handle);
+            html.css("box-shadow", "none");
+            html.css("background", "none");
+        };
+        handle = setTimeout(() => reset(), timeMS);
+    }
+
+    public static flashCorrect(html: JQuery): void
+    {
+        GUIHelpers.flash(html, "#8F8");
+
+        html.children(".err").remove();
+    }
+
+    public static flashError(html: JQuery, err: string): void
+    {
+        GUIHelpers.flash(html, "#F88");
+
+        html.children(".err").remove();
+        var errHtml = $("<span>").addClass("err").text(err);
+        html.append(errHtml);
+        errHtml.mouseenter(() => errHtml.remove());
+    }
 }

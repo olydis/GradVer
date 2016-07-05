@@ -32,6 +32,7 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
                 eo.stopPropagation();
             });
         };
+        EditStatement.prototype.getStatement = function () { return this.stmt; };
         return EditStatement;
     }(EditableElement_1.EditableElement));
     exports.EditStatement = EditStatement;

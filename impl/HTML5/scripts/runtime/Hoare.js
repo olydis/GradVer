@@ -256,6 +256,33 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             var phiPost = this.guessPhiFromPost(s, pre, post);
             return VerificationFormula_1.VerificationFormula.intersect(phiPre, phiPost);
         };
+        Hoare.prototype.genPost = function (s, pre, post) {
+            var rule = this.getRule(s);
+            var params = rule.params(s, pre, function () { });
+            var phi = this.guessPhi(s, pre, post);
+            return rule.post(s, phi, params);
+        };
+        Hoare.prototype.genPre = function (s, pre, post) {
+            var rule = this.getRule(s);
+            var params = rule.params(s, pre, function () { });
+            var phi = this.guessPhi(s, pre, post);
+            return rule.pre(s, phi, params);
+        };
+        Hoare.prototype.validate = function (s, pre, post) {
+            var check = this.check(s, pre);
+            if (check)
+                return check;
+            var rule = this.getRule(s);
+            var params = rule.params(s, pre, function () { });
+            var phi = this.guessPhiFromPost(s, pre, post);
+            var xpre = rule.pre(s, phi, params);
+            var xpost = rule.post(s, phi, params);
+            if (!pre.impliesApprox(xpre))
+                return ["couldn't prove pre implication"];
+            if (!VerificationFormula_1.VerificationFormula.eq(post, xpost))
+                return ["post-condition mismatch"];
+            return null;
+        };
         Hoare.prototype.unfoldTypeFormula = function (e, coreType) {
             if (e instanceof Expression_1.ExpressionV)
                 return [];
@@ -267,4 +294,5 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
         };
         return Hoare;
     }());
+    exports.Hoare = Hoare;
 });

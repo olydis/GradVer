@@ -277,7 +277,13 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         VerificationFormula.intersect = function (p1, p2) {
             var parts = p1.parts;
             parts.push.apply(parts, p2.parts.filter(function (x) { return !parts.some(function (y) { return FormulaPart.eq(x, y); }); }));
+            parts = parts.filter(function (p) { return !(p instanceof FormulaPartTrue); });
             return new VerificationFormula(null, parts);
+        };
+        VerificationFormula.eq = function (p1, p2) {
+            if (p1.parts.length != p2.parts.length)
+                return false;
+            return p1.parts.every(function (p, i) { return FormulaPart.eq(p, p2.parts[i]); });
         };
         VerificationFormula.prototype.isEmpty = function () {
             return this.parts.length == 0;

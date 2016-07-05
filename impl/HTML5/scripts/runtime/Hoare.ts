@@ -25,7 +25,7 @@ type Rule = {
         post: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
     };
 
-class Hoare
+export class Hoare
 {
     private ruleHandlers: Rule[];
 
@@ -56,7 +56,7 @@ class Hoare
                 return rule;
         throw "unknown statement type";
     }
-    private check(s: Statement, pre: VerificationFormula): string[]
+    public check(s: Statement, pre: VerificationFormula): string[]
     {
         var rule = this.getRule(s);
         var errs: string[] = [];
@@ -90,11 +90,46 @@ class Hoare
         remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
         return new VerificationFormula(null, remaining);
     }
-    private guessPhi(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    public guessPhi(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
     {
         var phiPre = this.guessPhiFromPre(s, pre);
         var phiPost = this.guessPhiFromPost(s, pre, post);
         return VerificationFormula.intersect(phiPre, phiPost);
+    }
+
+    public genPost(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    {
+        var rule = this.getRule(s);
+        var params = rule.params(s, pre, () => {});
+
+        var phi = this.guessPhi(s, pre, post);
+        return rule.post(s, phi, params);
+    }
+    public genPre(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    {
+        var rule = this.getRule(s);
+        var params = rule.params(s, pre, () => {});
+
+        var phi = this.guessPhi(s, pre, post);
+        return rule.pre(s, phi, params);
+    }
+
+
+    public validate(s: Statement, pre: VerificationFormula, post: VerificationFormula): string[]
+    {
+        var check = this.check(s, pre);
+        if (check) return check;
+        var rule = this.getRule(s);
+        var params = rule.params(s, pre, () => {});
+
+        var phi = this.guessPhiFromPost(s, pre, post);
+        var xpre = rule.pre(s, phi, params);
+        var xpost = rule.post(s, phi, params);
+        if (!pre.impliesApprox(xpre))
+            return ["couldn't prove pre implication"];
+        if (!VerificationFormula.eq(post, xpost))
+            return ["post-condition mismatch"];
+        return null;
     }
 
     private unfoldTypeFormula(e: Expression, coreType: Type): FormulaPart[]
