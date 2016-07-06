@@ -42,4 +42,14 @@ export class EditStatement extends EditableElement
     }
 
     public getStatement(): Statement { return this.stmt; }
+    public setStatement(stmt: Statement): void
+    {
+        this.stmt = stmt;
+        this.source = stmt.createHTML().text();
+        this.rerender();
+    }
+    public setStatementX(s: string): void
+    {
+        this.setStatement(Statement.parse(s));
+    }
 }

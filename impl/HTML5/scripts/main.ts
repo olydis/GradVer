@@ -4,8 +4,6 @@ import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
 import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 
-window.onerror = err => alert(JSON.stringify(err));
-
 $(() =>
 {
     $(window).click(() => EditableElement.editEndAll());
@@ -20,4 +18,7 @@ $(() =>
     var editor = new EditInstructions($("#codeContainer"), hoare);
     $("#btnVerify").click(() => editor.btnCheckAll());
     $("#btnHammer").click(() => editor.btnPropDownAll());
+    $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
+    $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
+    $("#btnE1").click(() => editor.loadEx1());
 });

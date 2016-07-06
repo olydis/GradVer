@@ -98,21 +98,27 @@ export class Hoare
         return VerificationFormula.intersect(phiPre, phiPost);
     }
 
-    public genPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
+    public genPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormulaGradual
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
 
+        if (params == null)
+            return VerificationFormulaGradual.create(pre.gradual, VerificationFormula.empty());
+
         var phi = this.guessPhi(s, pre, post);
-        return rule.post(s, phi, params);
+        return VerificationFormulaGradual.create(pre.gradual, rule.post(s, phi, params));
     }
-    public genPre(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
+    public genPre(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormulaGradual
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
 
+        if (params == null)
+            return VerificationFormulaGradual.create(post.gradual, VerificationFormula.empty());
+
         var phi = this.guessPhi(s, pre, post);
-        return rule.pre(s, phi, params);
+        return VerificationFormulaGradual.create(post.gradual, rule.pre(s, phi, params));
     }
 
 

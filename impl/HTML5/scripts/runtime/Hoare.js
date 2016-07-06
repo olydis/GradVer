@@ -1,4 +1,4 @@
-define(["require", "exports", "../types/VerificationFormula", "../types/Statement", "../types/Type", "../types/Expression"], function (require, exports, VerificationFormula_1, Statement_1, Type_1, Expression_1) {
+define(["require", "exports", "../types/VerificationFormula", "../types/VerificationFormulaGradual", "../types/Statement", "../types/Type", "../types/Expression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Statement_1, Type_1, Expression_1) {
     "use strict";
     var Hoare = (function () {
         function Hoare(env) {
@@ -274,14 +274,18 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
         Hoare.prototype.genPost = function (s, pre, post) {
             var rule = this.getRule(s);
             var params = rule.params(s, pre, function () { });
+            if (params == null)
+                return VerificationFormulaGradual_1.VerificationFormulaGradual.create(pre.gradual, VerificationFormula_1.VerificationFormula.empty());
             var phi = this.guessPhi(s, pre, post);
-            return rule.post(s, phi, params);
+            return VerificationFormulaGradual_1.VerificationFormulaGradual.create(pre.gradual, rule.post(s, phi, params));
         };
         Hoare.prototype.genPre = function (s, pre, post) {
             var rule = this.getRule(s);
             var params = rule.params(s, pre, function () { });
+            if (params == null)
+                return VerificationFormulaGradual_1.VerificationFormulaGradual.create(post.gradual, VerificationFormula_1.VerificationFormula.empty());
             var phi = this.guessPhi(s, pre, post);
-            return rule.pre(s, phi, params);
+            return VerificationFormulaGradual_1.VerificationFormulaGradual.create(post.gradual, rule.pre(s, phi, params));
         };
         Hoare.prototype.validate = function (s, pre, post) {
             var check = this.check(s, pre);

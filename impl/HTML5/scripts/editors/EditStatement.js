@@ -33,6 +33,14 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
             });
         };
         EditStatement.prototype.getStatement = function () { return this.stmt; };
+        EditStatement.prototype.setStatement = function (stmt) {
+            this.stmt = stmt;
+            this.source = stmt.createHTML().text();
+            this.rerender();
+        };
+        EditStatement.prototype.setStatementX = function (s) {
+            this.setStatement(Statement_1.Statement.parse(s));
+        };
         return EditStatement;
     }(EditableElement_1.EditableElement));
     exports.EditStatement = EditStatement;

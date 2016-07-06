@@ -1,4 +1,4 @@
-define(["require", "exports", "./EditStatement", "./EditVerificationFormula", "../GUIHelpers", "../types/VerificationFormulaGradual"], function (require, exports, EditStatement_1, EditVerificationFormula_1, GUIHelpers_1, VerificationFormulaGradual_1) {
+define(["require", "exports", "./EditStatement", "./EditVerificationFormula", "../GUIHelpers", "../types/VerificationFormulaGradual", "../types/VerificationFormula"], function (require, exports, EditStatement_1, EditVerificationFormula_1, GUIHelpers_1, VerificationFormulaGradual_1, VerificationFormula_1) {
     "use strict";
     var EditInstructions = (function () {
         function EditInstructions(container, hoare) {
@@ -9,6 +9,17 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
             this.verificationFormulas.push(new EditVerificationFormula_1.EditVerificationFormula());
             this.insertInstruction(0);
         }
+        EditInstructions.prototype.loadEx1 = function () {
+            while (this.numInstructions > 5)
+                this.removeInstruction(0);
+            while (this.numInstructions < 5)
+                this.insertInstruction(0);
+            this.statements[0].setStatementX("int x;");
+            this.statements[1].setStatementX("int y;");
+            this.statements[2].setStatementX("y = 3;");
+            this.statements[3].setStatementX("x = y;");
+            this.statements[4].setStatementX("assert (x = 3);");
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;
@@ -43,18 +54,25 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
                 GUIHelpers_1.GUIHelpers.flashCorrect(ins);
             else
                 GUIHelpers_1.GUIHelpers.flashError(ins, errs[0]);
+            return errs == null;
         };
         EditInstructions.prototype.btnPropDownAll = function () {
             for (var i = 0; i < this.numInstructions; ++i)
                 this.btnPropDown(i);
         };
         EditInstructions.prototype.btnPropDown = function (index) {
-            var i = index + 1;
-            var stmt = this.statements[i - 1].getStatement();
-            var pre = this.verificationFormulas[i - 1].getFormula();
-            var post = this.verificationFormulas[i].getFormula();
+            var stmt = this.statements[index].getStatement();
+            var pre = this.verificationFormulas[index].getFormula();
+            var post = this.verificationFormulas[index + 1].getFormula();
             var npost = this.hoare.genPost(stmt, pre, post);
-            this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npost));
+            this.verificationFormulas[index + 1].setFormula(npost);
+        };
+        EditInstructions.prototype.btnResetAssertionsAll = function (grad) {
+            for (var i = 0; i <= this.numInstructions; ++i)
+                this.btnResetAssertions(grad, i);
+        };
+        EditInstructions.prototype.btnResetAssertions = function (grad, index) {
+            this.verificationFormulas[index].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(grad, new VerificationFormula_1.VerificationFormula()));
         };
         EditInstructions.prototype.updateGUI = function () {
             var _this = this;
@@ -79,7 +97,7 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
                             var pre = _this.verificationFormulas[i].getFormula();
                             var post = _this.verificationFormulas[i + 1].getFormula();
                             var npre = _this.hoare.genPre(stmt, pre, post);
-                            _this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npre));
+                            _this.verificationFormulas[i].setFormula(npre);
                         }));
                     _this.container.append(_this.verificationFormulas[i].createHTML());
                     if (i != n) {
