@@ -623,6 +623,7 @@ Fixpoint unfoldTypeJudjFormula (e : e) (T T' : T) : phi :=
   | edot e f => unfoldTypeJudjFormula e T T' ++ [phiAcc e f]
   end.
 
+(*coq2latex: NotInFV #x #p := #x \not \in FV(#p) *)
 Definition NotInFV (x : x) (p : phi) : Prop := NotIn x (FV p).
 
 (*coq2latex: hoareSingle #p1 #s #p2 := \hoare #p1 #s #p2 *)
