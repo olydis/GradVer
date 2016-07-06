@@ -44,8 +44,8 @@ export class EditInstructions
     private checkStatement(index: number): string[]
     {
         var s = this.statements[index].getStatement();
-        var pre = this.verificationFormulas[index].getFormula().staticFormula;
-        var post = this.verificationFormulas[index + 1].getFormula().staticFormula;
+        var pre = this.verificationFormulas[index].getFormula();
+        var post = this.verificationFormulas[index + 1].getFormula();
 
         return this.hoare.validate(s, pre, post);
     }
@@ -55,7 +55,6 @@ export class EditInstructions
         for (var i = 0; i < this.numInstructions; ++i)
             this.btnCheck(i);
     }
-
     public btnCheck(index: number): void
     {
         var ins = this.statements[index].stmtContainer;
@@ -64,6 +63,21 @@ export class EditInstructions
             GUIHelpers.flashCorrect(ins);
         else
             GUIHelpers.flashError(ins, errs[0]);
+    }
+
+    public btnPropDownAll(): void
+    {
+        for (var i = 0; i < this.numInstructions; ++i)
+            this.btnPropDown(i);
+    }
+    public btnPropDown(index: number): void
+    {
+        var i = index + 1;
+        var stmt = this.statements[i - 1].getStatement();
+        var pre = this.verificationFormulas[i - 1].getFormula();
+        var post = this.verificationFormulas[i].getFormula();
+        var npost = this.hoare.genPost(stmt, pre, post);
+        this.verificationFormulas[i].setFormula(VerificationFormulaGradual.create(false, npost));
     }
 
     private updateGUI(): void
@@ -83,18 +97,12 @@ export class EditInstructions
             {
                 this.container.append(createRightButton("+").click(() => this.insertInstruction(i)));
                 if (i != 0)
-                    this.container.append(createRightButton("↲").click(() => {
-                        var stmt = this.statements[i - 1].getStatement();
-                        var pre = this.verificationFormulas[i - 1].getFormula().staticFormula;
-                        var post = this.verificationFormulas[i].getFormula().staticFormula;
-                        var npost = this.hoare.genPost(stmt, pre, post);
-                        this.verificationFormulas[i].setFormula(VerificationFormulaGradual.create(false, npost));
-                    }));
+                    this.container.append(createRightButton("↲").click(() => this.btnPropDown(i - 1)));
                 if (i != n)
                     this.container.append(createRightButton("↰").click(() => {
                         var stmt = this.statements[i].getStatement();
-                        var pre = this.verificationFormulas[i].getFormula().staticFormula;
-                        var post = this.verificationFormulas[i + 1].getFormula().staticFormula;
+                        var pre = this.verificationFormulas[i].getFormula();
+                        var post = this.verificationFormulas[i + 1].getFormula();
                         var npre = this.hoare.genPre(stmt, pre, post);
                         this.verificationFormulas[i].setFormula(VerificationFormulaGradual.create(false, npre));
                     }));

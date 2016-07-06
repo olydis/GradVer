@@ -28,13 +28,11 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 return new VerificationFormula_1.VerificationFormula(null, res);
             });
             this.addHandler("FieldAssign", Statement_1.StatementMemberSet, function (s, pre, onErr) {
-                var Tx = pre.tryGetType(s.x);
-                if (Tx == null) {
-                    onErr("couldn't determine type of '" + s.x + "'");
-                    return null;
-                }
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (!(Tx instanceof Type_1.TypeClass)) {
-                    onErr("'" + s.x + "' must have class type");
+                    if (pre.gradual)
+                        return { C: null, T: null };
+                    onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
                 var Cx = Tx;
@@ -48,32 +46,39 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }, function (s) { return []; }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
-                res.push(new VerificationFormula_1.FormulaPartType(s.y, params.T));
+                if (params.C)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
+                if (params.T)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.y, params.T));
                 res.push.apply(res, phi.parts);
                 res.push(new VerificationFormula_1.FormulaPartAcc(ex, s.f));
                 return new VerificationFormula_1.VerificationFormula(null, res);
             }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
+                if (params.C)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
                 res.push(new VerificationFormula_1.FormulaPartAcc(ex, s.f));
                 res.push(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(ex, s.f), new Expression_1.ExpressionX(s.y)));
                 res.push.apply(res, phi.parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             });
             this.addHandler("VarAssign", Statement_1.StatementAssign, function (s, pre, onErr) {
-                var Tx = pre.tryGetType(s.x);
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (Tx == null) {
+                    if (pre.gradual)
+                        return { T: null, Tx: null };
                     onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
-                var Te = _this.env.tryGetType(pre, s.e);
+                var Te = _this.env.tryGetType(pre.staticFormula, s.e);
                 if (Te == null) {
+                    if (pre.gradual)
+                        return { T: null, Tx: null };
                     onErr("couldn't determine type of RHS expression");
                     return null;
                 }
-                var TeCore = _this.env.tryGetCoreType(pre, s.e);
+                var TeCore = _this.env.tryGetCoreType(pre.staticFormula, s.e);
                 // check
                 if (s.e.FV().some(function (x) { return x == s.x; })) {
                     onErr("RHS expression cannot contain variable '" + s.x + "'");
@@ -87,21 +92,26 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }, function (s) { return [s.x]; }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
-                res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
+                if (params.T)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
+                if (params.Tx)
+                    res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
                 res.push.apply(res, phi.parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
+                if (params.Tx)
+                    res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
                 res.push.apply(res, phi.parts);
                 res.push(new VerificationFormula_1.FormulaPartEq(ex, s.e));
                 return new VerificationFormula_1.VerificationFormula(null, res);
             });
             this.addHandler("Return", Statement_1.StatementReturn, function (s, pre, onErr) {
-                var Tx = pre.tryGetType(s.x);
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (Tx == null) {
+                    if (pre.gradual)
+                        return { T: null };
                     onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
@@ -109,25 +119,25 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }, function (s) { return [Expression_1.Expression.getResult()]; }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
+                if (params.T)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
                 res.push(new VerificationFormula_1.FormulaPartType(Expression_1.Expression.getResult(), params.T));
                 res.push.apply(res, phi.parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(Expression_1.Expression.getResult(), params.T));
+                if (params.T)
+                    res.push(new VerificationFormula_1.FormulaPartType(Expression_1.Expression.getResult(), params.T));
                 res.push(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionX(Expression_1.Expression.getResult()), ex));
                 res.push.apply(res, phi.parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             });
             this.addHandler("Call", Statement_1.StatementCall, function (s, pre, onErr) {
-                var Ty = pre.tryGetType(s.y);
-                if (Ty == null) {
-                    onErr("couldn't determine type of '" + s.y + "'");
-                    return null;
-                }
+                var Ty = pre.staticFormula.tryGetType(s.y);
                 if (!(Ty instanceof Type_1.TypeClass)) {
+                    if (pre.gradual)
+                        return { m: null, C: null };
                     onErr("'" + s.y + "' must have class type");
                     return null;
                 }
@@ -146,32 +156,37 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }, function (s) { return [s.x]; }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, params.m.retType));
-                res.push(new VerificationFormula_1.FormulaPartType(s.y, params.C));
-                res.push(new VerificationFormula_1.FormulaPartType(s.z, params.m.argType));
+                if (params.m)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.m.retType));
+                if (params.C)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.y, params.C));
+                if (params.m)
+                    res.push(new VerificationFormula_1.FormulaPartType(s.z, params.m.argType));
                 res.push.apply(res, phi.parts);
                 res.push(new VerificationFormula_1.FormulaPartNeq(new Expression_1.ExpressionX(s.y), Expression_1.Expression.getNull()));
-                res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
-                    if (x == Expression_1.Expression.getThis())
-                        return s.y;
-                    if (x == params.m.argName)
-                        return s.z;
-                    return x;
-                }).parts);
+                if (params.m)
+                    res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
+                        if (x == Expression_1.Expression.getThis())
+                            return s.y;
+                        if (x == params.m.argName)
+                            return s.z;
+                        return x;
+                    }).parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             }, function (s, phi, params) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var res = [];
                 res.push.apply(res, phi.parts);
-                res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
-                    if (x == Expression_1.Expression.getThis())
-                        return s.y;
-                    if (x == params.m.argName)
-                        return s.z;
-                    if (x == Expression_1.Expression.getResult())
-                        return s.x;
-                    return x;
-                }).parts);
+                if (params.m)
+                    res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
+                        if (x == Expression_1.Expression.getThis())
+                            return s.y;
+                        if (x == params.m.argName)
+                            return s.z;
+                        if (x == Expression_1.Expression.getResult())
+                            return s.x;
+                        return x;
+                    }).parts);
                 return new VerificationFormula_1.VerificationFormula(null, res);
             });
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, onErr) {
@@ -236,7 +251,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             var barePre = rule.pre(s, VerificationFormula_1.VerificationFormula.empty(), params);
             var nonos = rule.notInPhi(s);
             var isNono = function (x) { return nonos.indexOf(x) != -1; };
-            var remaining = pre.parts.filter(function (p1) { return !(p1 instanceof VerificationFormula_1.FormulaPartAcc &&
+            var remaining = pre.staticFormula.parts.filter(function (p1) { return !(p1 instanceof VerificationFormula_1.FormulaPartAcc &&
                 barePre.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
             remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
             return new VerificationFormula_1.VerificationFormula(null, remaining);
@@ -247,7 +262,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             var barePost = rule.post(s, VerificationFormula_1.VerificationFormula.empty(), params);
             var nonos = rule.notInPhi(s);
             var isNono = function (x) { return nonos.indexOf(x) != -1; };
-            var remaining = post.parts.filter(function (p1) { return !(barePost.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
+            var remaining = post.staticFormula.parts.filter(function (p1) { return !(barePost.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
             remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
             return new VerificationFormula_1.VerificationFormula(null, remaining);
         };
@@ -279,8 +294,8 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             var xpost = rule.post(s, phi, params);
             if (!pre.impliesApprox(xpre))
                 return ["couldn't prove pre implication"];
-            if (!VerificationFormula_1.VerificationFormula.eq(post, xpost))
-                return ["post-condition mismatch"];
+            if (!post.containsApprox(xpost))
+                return ["couldn't prove post membership"];
             return null;
         };
         Hoare.prototype.unfoldTypeFormula = function (e, coreType) {

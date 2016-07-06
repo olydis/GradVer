@@ -43,6 +43,23 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             frm.staticFormula = this.staticFormula.substs(m);
             return frm;
         };
+        // may produce false negatives
+        VerificationFormulaGradual.prototype.impliesApprox = function (phi) {
+            if (this.gradual)
+                return VerificationFormula_1.VerificationFormula.intersect(this.staticFormula, phi).satisfiableApprox();
+            else
+                return this.staticFormula.impliesApprox(phi);
+        };
+        VerificationFormulaGradual.prototype.containsApprox = function (phi) {
+            if (!this.gradual)
+                return VerificationFormula_1.VerificationFormula.eq(this.staticFormula, phi);
+            // gradual
+            if (!phi.satisfiableApprox())
+                return false;
+            if (!phi.sfrm([]))
+                return false;
+            return phi.impliesApprox(this.staticFormula);
+        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;

@@ -338,6 +338,9 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         VerificationFormula.prototype.impliesApprox = function (phi) {
             return VerificationFormulaDataServices_1.vfdImpliesApprox(this.collectData(), phi.collectData());
         };
+        VerificationFormula.prototype.satisfiableApprox = function () {
+            return VerificationFormulaDataServices_1.vfdSatisfiableApprox(this.collectData());
+        };
         return VerificationFormula;
     }());
     exports.VerificationFormula = VerificationFormula;

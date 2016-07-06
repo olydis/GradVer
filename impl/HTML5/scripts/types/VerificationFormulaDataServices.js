@@ -197,6 +197,16 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
             var neq2 = _c[_b];
             if (data1.inEqualities.some(function (neq1) { return ExpressionPairEq(neq1, neq2); }))
                 continue; // found exact match
+            // try simple arithmetic
+            if (neq2.e2.depth() == 0) {
+                var val2 = neq2.e2;
+                var data1s = data1.equalities.filter(function (eq1) { return Expression_1.Expression.eq(neq2.e1, eq1.e1) && eq1.e2.depth() == 0; });
+                if (data1s.length != 0) {
+                    var val1 = data1s[0].e2;
+                    if (!Expression_1.Expression.eq(val1, val2))
+                        continue; // found witness for arithmetic inequality
+                }
+            }
             return false;
         }
         // here: inEqualities GUARANTEED to be implied
@@ -226,4 +236,10 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
         return true;
     }
     exports.vfdImpliesApprox = vfdImpliesApprox;
+    function vfdSatisfiableApprox(data) {
+        if (data.knownToBeFalse)
+            return false;
+        return true; // WRONG!
+    }
+    exports.vfdSatisfiableApprox = vfdSatisfiableApprox;
 });

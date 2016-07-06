@@ -22,8 +22,8 @@ type Rule = {
         statementMatch: (s: Statement) => boolean,
         params: (s: Statement, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => any,
         notInPhi: (s: Statement) => string[],
-        pre: (s: Statement, phi: VerificationFormulaGradual, params: any) => VerificationFormulaGradual,
-        post: (s: Statement, phi: VerificationFormulaGradual, params: any) => VerificationFormulaGradual,
+        pre: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
+        post: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
     };
 
 export class Hoare
@@ -35,8 +35,8 @@ export class Hoare
         SS: Ctor<S>,
         getParams: (s: S, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => P,
         notInPhi: (s: S) => string[],
-        getPre: (s: S, phi: VerificationFormulaGradual, params: P) => VerificationFormulaGradual,
-        getPost: (s: S, phi: VerificationFormulaGradual, params: P) => VerificationFormulaGradual): void
+        getPre: (s: S, phi: VerificationFormula, params: P) => VerificationFormula,
+        getPost: (s: S, phi: VerificationFormula, params: P) => VerificationFormula): void
     {
         var y = StatementAlloc;
         var x: typeof y;
@@ -64,7 +64,7 @@ export class Hoare
         var res = rule.params(s, pre, msg => errs.push(msg));
         return res == null ? errs : null;
     }
-    private guessPhiFromPre(s: Statement, pre: VerificationFormula): VerificationFormula
+    private guessPhiFromPre(s: Statement, pre: VerificationFormulaGradual): VerificationFormula
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
@@ -72,13 +72,13 @@ export class Hoare
         var nonos = rule.notInPhi(s);
         var isNono = (x : string) => nonos.indexOf(x) != -1;
 
-        var remaining = pre.parts.filter(p1 => !(
+        var remaining = pre.staticFormula.parts.filter(p1 => !(
             p1 instanceof FormulaPartAcc &&
             barePre.parts.some(p2 => FormulaPart.eq(p1, p2))));
         remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
         return new VerificationFormula(null, remaining);
     }
-    private guessPhiFromPost(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    private guessPhiFromPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
@@ -86,19 +86,19 @@ export class Hoare
         var nonos = rule.notInPhi(s);
         var isNono = (x : string) => nonos.indexOf(x) != -1;
 
-        var remaining = post.parts.filter(p1 => !(
+        var remaining = post.staticFormula.parts.filter(p1 => !(
             barePost.parts.some(p2 => FormulaPart.eq(p1, p2))));
         remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
         return new VerificationFormula(null, remaining);
     }
-    public guessPhi(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    public guessPhi(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
     {
         var phiPre = this.guessPhiFromPre(s, pre);
         var phiPost = this.guessPhiFromPost(s, pre, post);
         return VerificationFormula.intersect(phiPre, phiPost);
     }
 
-    public genPost(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    public genPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
@@ -106,7 +106,7 @@ export class Hoare
         var phi = this.guessPhi(s, pre, post);
         return rule.post(s, phi, params);
     }
-    public genPre(s: Statement, pre: VerificationFormula, post: VerificationFormula): VerificationFormula
+    public genPre(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
     {
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
@@ -116,7 +116,7 @@ export class Hoare
     }
 
 
-    public validate(s: Statement, pre: VerificationFormula, post: VerificationFormula): string[]
+    public validate(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string[]
     {
         var check = this.check(s, pre);
         if (check) return check;
@@ -128,8 +128,8 @@ export class Hoare
         var xpost = rule.post(s, phi, params);
         if (!pre.impliesApprox(xpre))
             return ["couldn't prove pre implication"];
-        if (!VerificationFormula.eq(post, xpost))
-            return ["post-condition mismatch"];
+        if (!post.containsApprox(xpost))
+            return ["couldn't prove post membership"];
         return null;
     }
 
@@ -147,7 +147,7 @@ export class Hoare
     constructor(private env: ExecutionEnvironment) {
         this.ruleHandlers = [];
 
-        this.addHandler<StatementAlloc, { fs: Field[],  }>("NewObject", StatementAlloc,
+        this.addHandler<StatementAlloc, { fs: Field[] }>("NewObject", StatementAlloc,
             (s, pre, onErr) => {
                 var fs = this.env.fields(s.C);
                 // check
@@ -176,15 +176,11 @@ export class Hoare
             });
         this.addHandler<StatementMemberSet, {C: TypeClass, T: Type}>("FieldAssign", StatementMemberSet,
             (s, pre, onErr) => {
-                var Tx = pre.tryGetType(s.x);
-                if (Tx == null)
-                {
-                    onErr("couldn't determine type of '" + s.x + "'");
-                    return null;
-                }
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (!(Tx instanceof TypeClass))
                 {
-                    onErr("'" + s.x + "' must have class type");
+                    if (pre.gradual) return { C: null, T: null };
+                    onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
                 var Cx = <TypeClass>Tx;
@@ -201,8 +197,10 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(s.x, params.C));
-                res.push(new FormulaPartType(s.y, params.T));
+                if (params.C)
+                    res.push(new FormulaPartType(s.x, params.C));
+                if (params.T)
+                    res.push(new FormulaPartType(s.y, params.T));
                 res.push(...phi.parts);
                 res.push(new FormulaPartAcc(ex, s.f));
                 return new VerificationFormula(null, res);
@@ -210,7 +208,8 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(s.x, params.C));
+                if (params.C)
+                    res.push(new FormulaPartType(s.x, params.C));
                 res.push(new FormulaPartAcc(ex, s.f));
                 res.push(new FormulaPartEq(new ExpressionDot(ex, s.f), new ExpressionX(s.y)));
                 res.push(...phi.parts);
@@ -218,19 +217,21 @@ export class Hoare
             });
         this.addHandler<StatementAssign, {T: Type, Tx: Type}>("VarAssign", StatementAssign,
             (s, pre, onErr) => {
-                var Tx = pre.tryGetType(s.x);
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (Tx == null)
                 {
+                    if (pre.gradual) return { T: null, Tx: null };
                     onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
-                var Te = this.env.tryGetType(pre, s.e);
+                var Te = this.env.tryGetType(pre.staticFormula, s.e);
                 if (Te == null)
                 {
+                    if (pre.gradual) return { T: null, Tx: null };
                     onErr("couldn't determine type of RHS expression");
                     return null;
                 }
-                var TeCore = this.env.tryGetCoreType(pre, s.e);
+                var TeCore = this.env.tryGetCoreType(pre.staticFormula, s.e);
 
                 // check
                 if (s.e.FV().some(x => x == s.x))
@@ -250,24 +251,28 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(s.x, params.T));
-                res.push(...this.unfoldTypeFormula(s.e, params.Tx));
+                if (params.T)
+                    res.push(new FormulaPartType(s.x, params.T));
+                if (params.Tx)
+                    res.push(...this.unfoldTypeFormula(s.e, params.Tx));
                 res.push(...phi.parts);
                 return new VerificationFormula(null, res);
             },
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(...this.unfoldTypeFormula(s.e, params.Tx));
+                if (params.Tx)
+                    res.push(...this.unfoldTypeFormula(s.e, params.Tx));
                 res.push(...phi.parts);
                 res.push(new FormulaPartEq(ex, s.e));
                 return new VerificationFormula(null, res);
             });
         this.addHandler<StatementReturn, {T: Type}>("Return", StatementReturn,
             (s, pre, onErr) => {
-                var Tx = pre.tryGetType(s.x);
+                var Tx = pre.staticFormula.tryGetType(s.x);
                 if (Tx == null)
                 {
+                    if (pre.gradual) return {T: null};
                     onErr("couldn't determine type of '" + s.x + "'");
                     return null;
                 }
@@ -277,7 +282,8 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(s.x, params.T));
+                if (params.T)
+                    res.push(new FormulaPartType(s.x, params.T));
                 res.push(new FormulaPartType(Expression.getResult(), params.T));
                 res.push(...phi.parts);
                 return new VerificationFormula(null, res);
@@ -285,21 +291,18 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(Expression.getResult(), params.T));
+                if (params.T)
+                    res.push(new FormulaPartType(Expression.getResult(), params.T));
                 res.push(new FormulaPartEq(new ExpressionX(Expression.getResult()), ex));
                 res.push(...phi.parts);
                 return new VerificationFormula(null, res);
             });
         this.addHandler<StatementCall, {m: Method, C: TypeClass}>("Call", StatementCall,
             (s, pre, onErr) => {
-                var Ty = pre.tryGetType(s.y);
-                if (Ty == null)
-                {
-                    onErr("couldn't determine type of '" + s.y + "'");
-                    return null;
-                }
+                var Ty = pre.staticFormula.tryGetType(s.y);
                 if (!(Ty instanceof TypeClass))
                 {
+                    if (pre.gradual) return {m: null, C: null};
                     onErr("'" + s.y + "' must have class type");
                     return null;
                 }
@@ -323,30 +326,35 @@ export class Hoare
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
-                res.push(new FormulaPartType(s.x, params.m.retType));
-                res.push(new FormulaPartType(s.y, params.C));
-                res.push(new FormulaPartType(s.z, params.m.argType));
+                if (params.m)
+                    res.push(new FormulaPartType(s.x, params.m.retType));
+                if (params.C)
+                    res.push(new FormulaPartType(s.y, params.C));
+                if (params.m)
+                    res.push(new FormulaPartType(s.z, params.m.argType));
                 res.push(...phi.parts);
                 res.push(new FormulaPartNeq(new ExpressionX(s.y), Expression.getNull()));
-                res.push(...params.m.frmPre.staticFormula.substs(x =>
-                {
-                    if (x == Expression.getThis()) return s.y;
-                    if (x == params.m.argName) return s.z;
-                    return x;
-                }).parts);
+                if (params.m)
+                    res.push(...params.m.frmPre.staticFormula.substs(x =>
+                    {
+                        if (x == Expression.getThis()) return s.y;
+                        if (x == params.m.argName) return s.z;
+                        return x;
+                    }).parts);
                 return new VerificationFormula(null, res);
             },
             (s, phi, params) => {
                 var ex = new ExpressionX(s.x);
                 var res: FormulaPart[] = [];
                 res.push(...phi.parts);
-                res.push(...params.m.frmPre.staticFormula.substs(x =>
-                {
-                    if (x == Expression.getThis()) return s.y;
-                    if (x == params.m.argName) return s.z;
-                    if (x == Expression.getResult()) return s.x;
-                    return x;
-                }).parts);
+                if (params.m)
+                    res.push(...params.m.frmPre.staticFormula.substs(x =>
+                    {
+                        if (x == Expression.getThis()) return s.y;
+                        if (x == params.m.argName) return s.z;
+                        if (x == Expression.getResult()) return s.x;
+                        return x;
+                    }).parts);
                 return new VerificationFormula(null, res);
             });
         this.addHandler<StatementAssert, {}>("Assert", StatementAssert,

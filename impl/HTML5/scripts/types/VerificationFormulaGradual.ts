@@ -61,4 +61,24 @@ export class VerificationFormulaGradual
         frm.staticFormula = this.staticFormula.substs(m);
         return frm;
     }
+
+    // may produce false negatives
+    public impliesApprox(phi: VerificationFormula): boolean
+    {
+        if (this.gradual)
+            return VerificationFormula.intersect(this.staticFormula, phi).satisfiableApprox();
+        else
+            return this.staticFormula.impliesApprox(phi);
+    }
+    public containsApprox(phi: VerificationFormula): boolean
+    {
+        if (!this.gradual)
+            return VerificationFormula.eq(this.staticFormula, phi);
+        // gradual
+        if (!phi.satisfiableApprox())
+            return false;
+        if (!phi.sfrm([]))
+            return false;
+        return phi.impliesApprox(this.staticFormula);
+    }
 }

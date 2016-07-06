@@ -226,6 +226,18 @@ export function vfdImpliesApprox(
     {   // prove neq2!
         if (data1.inEqualities.some(neq1 => ExpressionPairEq(neq1, neq2)))
             continue; // found exact match
+        // try simple arithmetic
+        if (neq2.e2.depth() == 0)
+        {
+            var val2 = neq2.e2;
+            var data1s = data1.equalities.filter(eq1 => Expression.eq(neq2.e1, eq1.e1) && eq1.e2.depth() == 0);
+            if (data1s.length != 0)
+            {
+                var val1 = data1s[0].e2;
+                if (!Expression.eq(val1, val2))
+                    continue; // found witness for arithmetic inequality
+            }
+        }
         return false;
     }
     // here: inEqualities GUARANTEED to be implied
@@ -258,4 +270,11 @@ export function vfdImpliesApprox(
     // here: types GUARANTEED to be implied
 
     return true;
+}
+
+export function vfdSatisfiableApprox(
+    data: VerificationFormulaData): boolean
+{
+    if (data.knownToBeFalse) return false;
+    return true; // WRONG!
 }

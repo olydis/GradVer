@@ -2,7 +2,7 @@ import { Expression } from "./Expression";
 import { Type } from "./Type";
 import { FootprintStatic } from "./FootprintStatic";
 import { VerificationFormulaData } from "./VerificationFormulaData";
-import { vfdTrue, vfdNormalize, vfdImpliesApprox } from "./VerificationFormulaDataServices";
+import { vfdTrue, vfdNormalize, vfdImpliesApprox, vfdSatisfiableApprox } from "./VerificationFormulaDataServices";
 
 export abstract class FormulaPart
 {
@@ -376,8 +376,12 @@ export class VerificationFormula
     }
 
     // may produce false negatives
-    public impliesApprox(phi: VerificationFormula)
+    public impliesApprox(phi: VerificationFormula): boolean
     {
         return vfdImpliesApprox(this.collectData(), phi.collectData());
+    }
+    public satisfiableApprox(): boolean
+    {
+        return vfdSatisfiableApprox(this.collectData());
     }
 }

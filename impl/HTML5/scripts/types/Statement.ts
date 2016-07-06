@@ -14,10 +14,10 @@ export abstract class Statement
         source = source.replace(/\s/g, "");
         if (!result) result = StatementCall.parse(source);
         if (!result) result = StatementAlloc.parse(source);
-        if (!result) result = StatementMemberSet.parse(source);
-        if (!result) result = StatementAssign.parse(source);
         if (!result) result = StatementAssert.parse(source);
         if (!result) result = StatementRelease.parse(source);
+        if (!result) result = StatementMemberSet.parse(source);
+        if (!result) result = StatementAssign.parse(source);
         if (!result) result = StatementDeclare.parse(sourceWS);
         return result;
     }

@@ -492,12 +492,7 @@ But maybe not even necessary with smarter hoare rules?
 {\grad{\phi_1} \approx \grad{\phi_2}}
 \end{mathpar}
 
-\subsubsection{Hoare and evidence}
-Discussion/Considerations:
-\begin{itemize}
-\item The post-condition-$\phi$ seems to inherit its gradual-ness from implication, which itself does not care about whether its second argument is gradual or not...
-\item Gradual
-\end{itemize}
+\subsection{Gradual Hoare: minimal static rule approach}
 
 \newcommand{\imp}[1]{\textcolor{red}{#1}}
 Example:
@@ -585,9 +580,46 @@ $\hasTypePremise {y.a.b.c} T C =
 {\ghoare {\grad{\phi_p}} {s_1;s_2} {\grad{\phi_r}}}
 \end{mathpar}
 
+\subsection{Gradual Hoare: minimal HSec approach (implications per rule)}
+
+\begin{mathpar}
+\inferrule* [Right=HFieldAssign]
+{
+\sfrmphi \phi \\
+\vdash C.f : T \\\\
+\phi_1 \implies {(x : C) * (y : T) * \phi * \acc(x.f)} \\
+\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi}
+}
+{\hoare
+{\phi_1}
+{x.f := y}
+{\phi_2}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=GHFieldAssign]
+{
+\sfrmphi \phi \\
+\vdash C.f : T \\\\
+\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * \phi * \acc(x.f)} \\
+\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x.f = y) * \phi}
+}
+{\ghoare
+{\grad{\phi_1}}
+{x.f := y}
+{\grad{\phi_2}}}
+\end{mathpar}
+
+Note: With this alternative rule design $\grad{\implies}$ is consistently used with static formulas as second argument. 
+This plays nicely with the fact that $\grad{\implies}$ does not care about the gradualness of that argument.
+Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.\\
+
+\textbf{Minimum runtime checks}: For $\grad{\phi_1} \grad{\implies} \grad{\phi_2}$ to hold at runtime, practically just $\phi_2$ needs to hold. So that would be a valid assertion to check. Yet, we know statically that $\phi_1$ holds, so we can remove everything from the runtime check that is implied by $\phi_1$.
+So in a sense, we only need to check $\phi_2 \backslash \phi_1$ at runtime (the operator can be an approximation).
 
 
-\subsubsection{HFieldAssign (deterministic alternative)}
+\subsection{Gradual Hoare: deterministic approach}
+\subsubsection{HFieldAssign}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
@@ -617,8 +649,9 @@ Example:
 \item \textbf{provable} with all other versions
 \end{itemize}
 
+Probably it's possible to apply the operator without information loss after expanding formula using equalities (transitive hull).
 
-\subsubsection{GHFieldAssign (deterministic alternative)}
+\subsubsection{GHFieldAssign}
 (= gradual lifting of GHFieldAssign as function)
 
 \begin{mathpar}
@@ -688,46 +721,9 @@ Which should be summarizable as this:
 Observations:
 \begin{itemize}
 \item $\grad{\phi_m}$ is the interior (first argument) of the implication, effectively the meet of first and second argument.
-\item for the gradual rules to work, the \textbf{w/o}-operator must be defined with minimal information loss (i.e. not syntactically - or maybe after some transitive-hull operation?)
+\item for the gradual rules to work, the \textbf{w/o}-operator \textbf{must} be implemented with minimal information loss
 \end{itemize}
 
-
-\subsubsection{GHFieldAssign (implication alternative)}
-
-\begin{mathpar}
-\inferrule* [Right=HFieldAssign]
-{
-\sfrmphi \phi \\
-\vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * \phi * \acc(x.f)} \\
-\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi}
-}
-{\hoare
-{\phi_1}
-{x.f := y}
-{\phi_2}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=GHFieldAssign]
-{
-\sfrmphi \phi \\
-\vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * \phi * \acc(x.f)} \\
-\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x.f = y) * \phi}
-}
-{\ghoare
-{\grad{\phi_1}}
-{x.f := y}
-{\grad{\phi_2}}}
-\end{mathpar}
-
-Note: With this alternative rule design $\grad{\implies}$ is consistently used with static formulas as second argument. 
-This plays nicely with the fact that $\grad{\implies}$ does not care about the gradualness of that argument.
-Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.\\
-
-\textbf{Minimum runtime checks}: For $\grad{\phi_1} \grad{\implies} \grad{\phi_2}$ to hold at runtime, practically just $\phi_2$ needs to hold. So that would be a valid assertion to check. Yet, we know statically that $\phi_1$ holds, so we can remove everything from the runtime check that is implied by $\phi_1$.
-So in a sense, we only need to check $\phi_2 \backslash \phi_1$ at runtime (the operator can be an approximation).
 
 \subsection{Theorems}
 \subsubsection{Soundness of $\alpha$}

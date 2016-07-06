@@ -28,8 +28,8 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
         };
         EditInstructions.prototype.checkStatement = function (index) {
             var s = this.statements[index].getStatement();
-            var pre = this.verificationFormulas[index].getFormula().staticFormula;
-            var post = this.verificationFormulas[index + 1].getFormula().staticFormula;
+            var pre = this.verificationFormulas[index].getFormula();
+            var post = this.verificationFormulas[index + 1].getFormula();
             return this.hoare.validate(s, pre, post);
         };
         EditInstructions.prototype.btnCheckAll = function () {
@@ -43,6 +43,18 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
                 GUIHelpers_1.GUIHelpers.flashCorrect(ins);
             else
                 GUIHelpers_1.GUIHelpers.flashError(ins, errs[0]);
+        };
+        EditInstructions.prototype.btnPropDownAll = function () {
+            for (var i = 0; i < this.numInstructions; ++i)
+                this.btnPropDown(i);
+        };
+        EditInstructions.prototype.btnPropDown = function (index) {
+            var i = index + 1;
+            var stmt = this.statements[i - 1].getStatement();
+            var pre = this.verificationFormulas[i - 1].getFormula();
+            var post = this.verificationFormulas[i].getFormula();
+            var npost = this.hoare.genPost(stmt, pre, post);
+            this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npost));
         };
         EditInstructions.prototype.updateGUI = function () {
             var _this = this;
@@ -60,18 +72,12 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
                 (function (i) {
                     _this.container.append(createRightButton("+").click(function () { return _this.insertInstruction(i); }));
                     if (i != 0)
-                        _this.container.append(createRightButton("↲").click(function () {
-                            var stmt = _this.statements[i - 1].getStatement();
-                            var pre = _this.verificationFormulas[i - 1].getFormula().staticFormula;
-                            var post = _this.verificationFormulas[i].getFormula().staticFormula;
-                            var npost = _this.hoare.genPost(stmt, pre, post);
-                            _this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npost));
-                        }));
+                        _this.container.append(createRightButton("↲").click(function () { return _this.btnPropDown(i - 1); }));
                     if (i != n)
                         _this.container.append(createRightButton("↰").click(function () {
                             var stmt = _this.statements[i].getStatement();
-                            var pre = _this.verificationFormulas[i].getFormula().staticFormula;
-                            var post = _this.verificationFormulas[i + 1].getFormula().staticFormula;
+                            var pre = _this.verificationFormulas[i].getFormula();
+                            var post = _this.verificationFormulas[i + 1].getFormula();
                             var npre = _this.hoare.genPre(stmt, pre, post);
                             _this.verificationFormulas[i].setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, npre));
                         }));
