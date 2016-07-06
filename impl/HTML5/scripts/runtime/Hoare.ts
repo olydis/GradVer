@@ -1,4 +1,5 @@
 import { VerificationFormula, FormulaPart, FormulaPartAcc, FormulaPartType, FormulaPartNeq, FormulaPartEq } from "../types/VerificationFormula";
+import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual"
 import { Statement,
     StatementAlloc,
     StatementMemberSet,
@@ -19,10 +20,10 @@ type Ctor<T> = { new(... args: any[]): T };
 type Rule = {
         name: string,
         statementMatch: (s: Statement) => boolean,
-        params: (s: Statement, pre: VerificationFormula, onErr: (msg: string) => void) => any,
+        params: (s: Statement, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => any,
         notInPhi: (s: Statement) => string[],
-        pre: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
-        post: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
+        pre: (s: Statement, phi: VerificationFormulaGradual, params: any) => VerificationFormulaGradual,
+        post: (s: Statement, phi: VerificationFormulaGradual, params: any) => VerificationFormulaGradual,
     };
 
 export class Hoare
@@ -32,10 +33,10 @@ export class Hoare
     private addHandler<S extends Statement, P>(
         rule: string,
         SS: Ctor<S>,
-        getParams: (s: S, pre: VerificationFormula, onErr: (msg: string) => void) => P,
+        getParams: (s: S, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => P,
         notInPhi: (s: S) => string[],
-        getPre: (s: S, phi: VerificationFormula, params: P) => VerificationFormula,
-        getPost: (s: S, phi: VerificationFormula, params: P) => VerificationFormula): void
+        getPre: (s: S, phi: VerificationFormulaGradual, params: P) => VerificationFormulaGradual,
+        getPost: (s: S, phi: VerificationFormulaGradual, params: P) => VerificationFormulaGradual): void
     {
         var y = StatementAlloc;
         var x: typeof y;
@@ -56,7 +57,7 @@ export class Hoare
                 return rule;
         throw "unknown statement type";
     }
-    public check(s: Statement, pre: VerificationFormula): string[]
+    public check(s: Statement, pre: VerificationFormulaGradual): string[]
     {
         var rule = this.getRule(s);
         var errs: string[] = [];
