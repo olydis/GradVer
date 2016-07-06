@@ -34,13 +34,19 @@ define(["require", "exports"], function (require, exports) {
             };
             handle = setTimeout(function () { return reset(); }, timeMS);
         };
-        GUIHelpers.flashCorrect = function (html) {
+        GUIHelpers.flashCorrect = function (html, msg) {
+            if (msg === void 0) { msg = ""; }
             GUIHelpers.flash(html, "#8F8");
             html.children(".err").remove();
+            html.children(".succ").remove();
+            var succHtml = $("<span>").addClass("succ").text(msg);
+            html.append(succHtml);
+            succHtml.mouseenter(function () { return succHtml.remove(); });
         };
         GUIHelpers.flashError = function (html, err) {
             GUIHelpers.flash(html, "#F88");
             html.children(".err").remove();
+            html.children(".succ").remove();
             var errHtml = $("<span>").addClass("err").text(err);
             html.append(errHtml);
             errHtml.mouseenter(function () { return errHtml.remove(); });

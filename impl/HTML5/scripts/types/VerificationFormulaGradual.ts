@@ -70,6 +70,10 @@ export class VerificationFormulaGradual
         else
             return this.staticFormula.impliesApprox(phi);
     }
+    public impliesApproxMissing(phi: VerificationFormula): VerificationFormula
+    {
+        return this.staticFormula.impliesApproxMissing(phi);
+    }
     public containsApprox(phi: VerificationFormula): boolean
     {
         if (!this.gradual)

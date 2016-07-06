@@ -1,6 +1,12 @@
 import { VerificationFormulaData, ExpressionPair } from "./VerificationFormulaData";
 import { Expression } from "./Expression";
 import { Type } from "./Type";
+import { FormulaPart,
+        FormulaPartAcc,
+        FormulaPartEq,
+        FormulaPartNeq,
+        FormulaPartType
+    } from "./VerificationFormula";
 
 export function vfdTrue(): VerificationFormulaData
 {
@@ -204,20 +210,33 @@ export function vfdNormalize(data: VerificationFormulaData): VerificationFormula
     };
 }
 
-// pot. false negatives!
-export function vfdImpliesApprox(
+function vfdMaterialize(data: VerificationFormulaData): FormulaPart[]
+{
+    if (data.knownToBeFalse) return [new FormulaPartNeq(Expression.getNull(), Expression.getNull())];
+    var res: FormulaPart[] = [];
+    res.push(...data.access.map(x => new FormulaPartAcc(x.e, x.f)));
+    res.push(...data.equalities.map(x => new FormulaPartEq(x.e1, x.e2)));
+    res.push(...data.inEqualities.map(x => new FormulaPartNeq(x.e1, x.e2)));
+    res.push(...data.types.filter(x => x.T != null).map(x => new FormulaPartType(x.x, x.T)));
+    return res;
+}
+
+// potentially too many items (returns data2/data1)
+export function vfdExceptRevApprox(
     data1: VerificationFormulaData,
-    data2: VerificationFormulaData): boolean
+    data2: VerificationFormulaData): FormulaPart[]
 {
     if (data1.knownToBeFalse)
-        return true;
+        return vfdMaterialize(data2);
+    
+    var res: FormulaPart[] = [];
 
     // --equalities
     for (var eq2 of data2.equalities)
     {   // prove eq2!
         if (data1.equalities.some(eq1 => ExpressionPairEq(eq1, eq2)))
             continue; // found exact match
-        return false;
+        res.push(new FormulaPartEq(eq2.e1, eq2.e2));
     }
     // here: equalities GUARANTEED to be implied
 
@@ -238,7 +257,7 @@ export function vfdImpliesApprox(
                     continue; // found witness for arithmetic inequality
             }
         }
-        return false;
+        res.push(new FormulaPartNeq(neq2.e1, neq2.e2));
     }
     // here: inEqualities GUARANTEED to be implied
     
@@ -251,7 +270,7 @@ export function vfdImpliesApprox(
             acc1s = acc1s.filter(acc1 => !(Expression.eq(acc1.e, acc2.e) && acc1.f == acc2.f));
             continue; // found exact match
         }
-        return false;
+        res.push(new FormulaPartAcc(acc2.e, acc2.f));
     }
     // here: access GUARANTEED to be implied
     
@@ -265,11 +284,20 @@ export function vfdImpliesApprox(
             if (Type.implies(ty1.T, ty2.T))
                 continue; // found compatible match
         }
-        return false;
+        if (ty2.T != null)
+            res.push(new FormulaPartType(ty2.x, ty2.T));
     }
     // here: types GUARANTEED to be implied
 
-    return true;
+    return res;
+}
+
+// pot. false negatives!
+export function vfdImpliesApprox(
+    data1: VerificationFormulaData,
+    data2: VerificationFormulaData): boolean
+{
+    return vfdExceptRevApprox(data1, data2).length == 0;
 }
 
 export function vfdSatisfiableApprox(

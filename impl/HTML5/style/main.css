@@ -119,6 +119,13 @@ input
     color: red;
 }
 */
+.succ
+{
+    vertical-align: bottom;
+    padding-left: 8px;
+    color: forestgreen;
+    font-size: 0.7em;
+}
 .err
 {
     vertical-align: bottom;

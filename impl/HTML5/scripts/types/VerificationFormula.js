@@ -275,7 +275,7 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             return new VerificationFormula(null, []);
         };
         VerificationFormula.intersect = function (p1, p2) {
-            var parts = p1.parts;
+            var parts = p1.parts.slice();
             parts.push.apply(parts, p2.parts.filter(function (x) { return !parts.some(function (y) { return FormulaPart.eq(x, y); }); }));
             parts = parts.filter(function (p) { return !(p instanceof FormulaPartTrue); });
             return new VerificationFormula(null, parts);
@@ -337,6 +337,9 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         // may produce false negatives
         VerificationFormula.prototype.impliesApprox = function (phi) {
             return VerificationFormulaDataServices_1.vfdImpliesApprox(this.collectData(), phi.collectData());
+        };
+        VerificationFormula.prototype.impliesApproxMissing = function (phi) {
+            return new VerificationFormula(null, VerificationFormulaDataServices_1.vfdExceptRevApprox(this.collectData(), phi.collectData()));
         };
         VerificationFormula.prototype.satisfiableApprox = function () {
             return VerificationFormulaDataServices_1.vfdSatisfiableApprox(this.collectData());

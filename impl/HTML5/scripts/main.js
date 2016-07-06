@@ -14,5 +14,6 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditableE
         $("#btnReset").click(function () { return editor.btnResetAssertionsAll(false); });
         $("#btnResetQ").click(function () { return editor.btnResetAssertionsAll(true); });
         $("#btnE1").click(function () { return editor.loadEx1(); });
+        editor.loadEx1();
     });
 });

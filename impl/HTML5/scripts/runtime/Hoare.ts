@@ -122,10 +122,10 @@ export class Hoare
     }
 
 
-    public validate(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string[]
+    public validate(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): { errs: string[], runtimeCheck: VerificationFormula }
     {
         var check = this.check(s, pre);
-        if (check) return check;
+        if (check) return { errs: check, runtimeCheck: VerificationFormula.empty() };
         var rule = this.getRule(s);
         var params = rule.params(s, pre, () => {});
 
@@ -133,10 +133,10 @@ export class Hoare
         var xpre = rule.pre(s, phi, params);
         var xpost = rule.post(s, phi, params);
         if (!pre.impliesApprox(xpre))
-            return ["couldn't prove pre implication"];
+            return { errs: ["couldn't prove pre implication"], runtimeCheck: VerificationFormula.empty() };
         if (!post.containsApprox(xpost))
-            return ["couldn't prove post membership"];
-        return null;
+            return { errs: ["couldn't prove post membership"], runtimeCheck: VerificationFormula.empty() };
+        return { errs: null, runtimeCheck: pre.impliesApproxMissing(xpre) };
     }
 
     private unfoldTypeFormula(e: Expression, coreType: Type): FormulaPart[]

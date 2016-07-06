@@ -2,7 +2,7 @@ import { Expression } from "./Expression";
 import { Type } from "./Type";
 import { FootprintStatic } from "./FootprintStatic";
 import { VerificationFormulaData } from "./VerificationFormulaData";
-import { vfdTrue, vfdNormalize, vfdImpliesApprox, vfdSatisfiableApprox } from "./VerificationFormulaDataServices";
+import { vfdTrue, vfdNormalize, vfdImpliesApprox, vfdSatisfiableApprox, vfdExceptRevApprox } from "./VerificationFormulaDataServices";
 
 export abstract class FormulaPart
 {
@@ -286,7 +286,7 @@ export class VerificationFormula
     }
     public static intersect(p1: VerificationFormula, p2: VerificationFormula): VerificationFormula
     {
-        var parts = p1.parts;
+        var parts = p1.parts.slice();
         parts.push(...p2.parts.filter(x => !parts.some(y => FormulaPart.eq(x, y))));
         parts = parts.filter(p => !(p instanceof FormulaPartTrue));
         return new VerificationFormula(null, parts);
@@ -379,6 +379,11 @@ export class VerificationFormula
     public impliesApprox(phi: VerificationFormula): boolean
     {
         return vfdImpliesApprox(this.collectData(), phi.collectData());
+    }
+    public impliesApproxMissing(phi: VerificationFormula): VerificationFormula
+    {
+        return new VerificationFormula(null, 
+            vfdExceptRevApprox(this.collectData(), phi.collectData()));
     }
     public satisfiableApprox(): boolean
     {

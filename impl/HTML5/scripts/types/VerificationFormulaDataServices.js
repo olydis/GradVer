@@ -1,4 +1,4 @@
-define(["require", "exports", "./Expression", "./Type"], function (require, exports, Expression_1, Type_1) {
+define(["require", "exports", "./Expression", "./Type", "./VerificationFormula"], function (require, exports, Expression_1, Type_1, VerificationFormula_1) {
     "use strict";
     function vfdTrue() {
         return {
@@ -180,16 +180,27 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
         };
     }
     exports.vfdNormalize = vfdNormalize;
-    // pot. false negatives!
-    function vfdImpliesApprox(data1, data2) {
+    function vfdMaterialize(data) {
+        if (data.knownToBeFalse)
+            return [new VerificationFormula_1.FormulaPartNeq(Expression_1.Expression.getNull(), Expression_1.Expression.getNull())];
+        var res = [];
+        res.push.apply(res, data.access.map(function (x) { return new VerificationFormula_1.FormulaPartAcc(x.e, x.f); }));
+        res.push.apply(res, data.equalities.map(function (x) { return new VerificationFormula_1.FormulaPartEq(x.e1, x.e2); }));
+        res.push.apply(res, data.inEqualities.map(function (x) { return new VerificationFormula_1.FormulaPartNeq(x.e1, x.e2); }));
+        res.push.apply(res, data.types.filter(function (x) { return x.T != null; }).map(function (x) { return new VerificationFormula_1.FormulaPartType(x.x, x.T); }));
+        return res;
+    }
+    // potentially too many items (returns data2/data1)
+    function vfdExceptRevApprox(data1, data2) {
         if (data1.knownToBeFalse)
-            return true;
+            return vfdMaterialize(data2);
+        var res = [];
         // --equalities
         for (var _i = 0, _a = data2.equalities; _i < _a.length; _i++) {
             var eq2 = _a[_i];
             if (data1.equalities.some(function (eq1) { return ExpressionPairEq(eq1, eq2); }))
                 continue; // found exact match
-            return false;
+            res.push(new VerificationFormula_1.FormulaPartEq(eq2.e1, eq2.e2));
         }
         // here: equalities GUARANTEED to be implied
         // --inEqualities
@@ -207,7 +218,7 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
                         continue; // found witness for arithmetic inequality
                 }
             }
-            return false;
+            res.push(new VerificationFormula_1.FormulaPartNeq(neq2.e1, neq2.e2));
         }
         // here: inEqualities GUARANTEED to be implied
         // --access
@@ -218,7 +229,7 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
                 acc1s = acc1s.filter(function (acc1) { return !(Expression_1.Expression.eq(acc1.e, acc2.e) && acc1.f == acc2.f); });
                 continue; // found exact match
             }
-            return false;
+            res.push(new VerificationFormula_1.FormulaPartAcc(acc2.e, acc2.f));
         }
         // here: access GUARANTEED to be implied
         // --type
@@ -230,10 +241,16 @@ define(["require", "exports", "./Expression", "./Type"], function (require, expo
                 if (Type_1.Type.implies(ty1.T, ty2.T))
                     continue; // found compatible match
             }
-            return false;
+            if (ty2.T != null)
+                res.push(new VerificationFormula_1.FormulaPartType(ty2.x, ty2.T));
         }
         // here: types GUARANTEED to be implied
-        return true;
+        return res;
+    }
+    exports.vfdExceptRevApprox = vfdExceptRevApprox;
+    // pot. false negatives!
+    function vfdImpliesApprox(data1, data2) {
+        return vfdExceptRevApprox(data1, data2).length == 0;
     }
     exports.vfdImpliesApprox = vfdImpliesApprox;
     function vfdSatisfiableApprox(data) {

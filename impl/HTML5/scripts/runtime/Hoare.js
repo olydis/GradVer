@@ -290,17 +290,17 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
         Hoare.prototype.validate = function (s, pre, post) {
             var check = this.check(s, pre);
             if (check)
-                return check;
+                return { errs: check, runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
             var rule = this.getRule(s);
             var params = rule.params(s, pre, function () { });
             var phi = this.guessPhiFromPost(s, pre, post);
             var xpre = rule.pre(s, phi, params);
             var xpost = rule.post(s, phi, params);
             if (!pre.impliesApprox(xpre))
-                return ["couldn't prove pre implication"];
+                return { errs: ["couldn't prove pre implication"], runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
             if (!post.containsApprox(xpost))
-                return ["couldn't prove post membership"];
-            return null;
+                return { errs: ["couldn't prove post membership"], runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
+            return { errs: null, runtimeCheck: pre.impliesApproxMissing(xpre) };
         };
         Hoare.prototype.unfoldTypeFormula = function (e, coreType) {
             if (e instanceof Expression_1.ExpressionV)

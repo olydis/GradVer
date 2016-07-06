@@ -38,11 +38,15 @@ export class GUIHelpers
         handle = setTimeout(() => reset(), timeMS);
     }
 
-    public static flashCorrect(html: JQuery): void
+    public static flashCorrect(html: JQuery, msg: string = ""): void
     {
         GUIHelpers.flash(html, "#8F8");
 
         html.children(".err").remove();
+        html.children(".succ").remove();
+        var succHtml = $("<span>").addClass("succ").text(msg);
+        html.append(succHtml);
+        succHtml.mouseenter(() => succHtml.remove());
     }
 
     public static flashError(html: JQuery, err: string): void
@@ -50,6 +54,7 @@ export class GUIHelpers
         GUIHelpers.flash(html, "#F88");
 
         html.children(".err").remove();
+        html.children(".succ").remove();
         var errHtml = $("<span>").addClass("err").text(err);
         html.append(errHtml);
         errHtml.mouseenter(() => errHtml.remove());

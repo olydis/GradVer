@@ -55,7 +55,7 @@ export class EditInstructions
         this.updateGUI();
     }
 
-    private checkStatement(index: number): string[]
+    private checkStatement(index: number): { errs: string[], runtimeCheck: VerificationFormula }
     {
         var s = this.statements[index].getStatement();
         var pre = this.verificationFormulas[index].getFormula();
@@ -72,9 +72,9 @@ export class EditInstructions
     public btnCheck(index: number): boolean
     {
         var ins = this.statements[index].stmtContainer;
-        var errs = this.checkStatement(index);
+        var { errs, runtimeCheck } = this.checkStatement(index);
         if (errs == null)
-            GUIHelpers.flashCorrect(ins);
+            GUIHelpers.flashCorrect(ins/*, runtimeCheck.createHTML().text()*/);
         else
             GUIHelpers.flashError(ins, errs[0]);
         return errs == null;

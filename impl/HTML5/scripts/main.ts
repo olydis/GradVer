@@ -21,4 +21,5 @@ $(() =>
     $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
     $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
     $("#btnE1").click(() => editor.loadEx1());
+    editor.loadEx1();
 });

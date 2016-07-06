@@ -49,9 +49,9 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
         };
         EditInstructions.prototype.btnCheck = function (index) {
             var ins = this.statements[index].stmtContainer;
-            var errs = this.checkStatement(index);
+            var _a = this.checkStatement(index), errs = _a.errs, runtimeCheck = _a.runtimeCheck;
             if (errs == null)
-                GUIHelpers_1.GUIHelpers.flashCorrect(ins);
+                GUIHelpers_1.GUIHelpers.flashCorrect(ins /*, runtimeCheck.createHTML().text()*/);
             else
                 GUIHelpers_1.GUIHelpers.flashError(ins, errs[0]);
             return errs == null;

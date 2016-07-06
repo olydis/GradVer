@@ -50,6 +50,9 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             else
                 return this.staticFormula.impliesApprox(phi);
         };
+        VerificationFormulaGradual.prototype.impliesApproxMissing = function (phi) {
+            return this.staticFormula.impliesApproxMissing(phi);
+        };
         VerificationFormulaGradual.prototype.containsApprox = function (phi) {
             if (!this.gradual)
                 return VerificationFormula_1.VerificationFormula.eq(this.staticFormula, phi);

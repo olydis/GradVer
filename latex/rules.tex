@@ -682,8 +682,8 @@ Which should be equivalent to this:
 \inferrule* [Right=GHFA1]
 {
 \vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * \acc(x.f)} \\
-\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi_1[\textbf{w/o } \acc(x.f)]}
+\phi_1 \implies {(x : C) * (y : T) * \acc(x.f)} \\\\
+\phi_2 = {(x : C) * (y : T) * \acc(x.f) * (x.f = y) * \phi_1[\textbf{w/o } \acc(x.f)]}
 }
 {\ghoare
 {\phi_1}
@@ -695,7 +695,7 @@ Which should be equivalent to this:
 \inferrule* [Right=GHFA2]
 {
 \vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies}_{\phi_m} {(x : C) * (y : T) * \acc(x.f)} \\
+\withqm{\phi_1} \grad{\implies}_{\phi_m} {(x : C) * \acc(x.f)} \\\\
 \phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi_m[\textbf{w/o } \acc(x.f)]}
 }
 {\ghoare
@@ -706,11 +706,26 @@ Which should be equivalent to this:
 
 Which should be summarizable as this:
 \begin{mathpar}
-\inferrule* [Right=GHFA2]
+\inferrule* [Right=GHFA]
 {
 \vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies}_{\grad{\phi_m}} {(x : C) * (y : T) * \acc(x.f)} \\
+\grad{\phi_1} \grad{\implies}_{\grad{\phi_m}} {(x : C) * (y : T) * \acc(x.f)} \\\\
 \grad{\phi_2} = {(x : C) * \acc(x.f) * (x.f = y) * \grad{\phi_m}[\textbf{w/o } \acc(x.f)]}
+}
+{\ghoare
+{\grad{\phi_1}}
+{x.f := y}
+{\grad{\phi_2}}}
+\end{mathpar}
+
+Which for well-formed programs is equivalent to:
+\begin{mathpar}
+\inferrule* [Right=GHFA]
+{
+\vdash C.f : T \\\\
+\phi_1 \implies {(x : C) * (y : T)} \\
+\grad{\phi_1} \grad{\implies} {\acc(x.f)} \\\\
+\grad{\phi_2} = {(x : C) * (y : T) * \acc(x.f) * (x.f = y) * \grad{\phi_1}[\textbf{w/o } \acc(x.f)]}
 }
 {\ghoare
 {\grad{\phi_1}}
