@@ -8,56 +8,56 @@ Notation "'ρ'" := rho.
 (* determinism? *)
 
 Definition invPhiHolds
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     sfrmphi [] phi /\ evalphi Heap rho A phi.
 Definition invTypesHold
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall e T,
          match e with
          | edot e _ => phiImplies phi [phiNeq e (ev vnull)]
          | _ => True
          end
-      -> hasStaticType phi e T
+      -> hasStaticType G e T
       -> ehasDynamicType Heap rho e T.
 Definition invHeapConsistent
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall o C m f T,
       Heap o = Some (C, m) ->
       fieldType C f = Some T ->
       exists v, m f = Some v /\ hasDynamicType Heap v T.
 Definition invHeapNotTotal
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     ∃ omin : o,
     forall o' : o,
       (omin <= o') -> Heap o' = None /\ (forall f, ~ In (o', f) A).
 Definition invAevals
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     forall A', In A' A -> exists v, Heap (fst A') = Some v.
 
 Definition invAll
-  (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
+  (G : Gamma) (Heap : H) (rho : rho) (A : A_d) (phi : phi) : Prop :=
     invPhiHolds
-      Heap rho A phi /\
+      G Heap rho A phi /\
     invTypesHold
-      Heap rho A phi /\
+      G Heap rho A phi /\
     invHeapConsistent
-      Heap rho A phi /\
+      G Heap rho A phi /\
     invHeapNotTotal
-      Heap rho A phi /\
+      G Heap rho A phi /\
     invAevals
-      Heap rho A phi.
+      G Heap rho A phi.
 
 Ltac emagicProgress :=
   repeat eexists;
   econstructor; econstructor;
   unfold evale; simpl; eauto.
 
-Definition soundness pre s post initialHeap initialRho initialAccess S : Prop :=
-  hoare pre s post ->
-  invAll initialHeap initialRho initialAccess pre ->
+Definition soundness G pre s post initialHeap initialRho initialAccess S : Prop :=
+  hoare G pre s post ->
+  invAll G initialHeap initialRho initialAccess pre ->
   exists finalHeap finalRho finalAccess,
     dynSemStar (initialHeap, (initialRho, initialAccess, s) :: S) (finalHeap, (finalRho, finalAccess, []) :: S) /\
-    invAll finalHeap finalRho finalAccess post.
+    invAll G finalHeap finalRho finalAccess post.
 
 Ltac uninv :=
   unfold invAll in *;
@@ -107,22 +107,205 @@ Proof.
   discriminate.
 Qed.
 
-Theorem staSemSoundness : forall (s'' : s) (s' : list s) (pre post : phi) initialHeap initialRho initialAccess,
-  hoareSingle pre s'' post ->
-  invAll initialHeap initialRho initialAccess pre ->
+Theorem staSemSoundness : forall G (s' s'' : list s) (pre post : phi) initialHeap initialRho initialAccess,
+  hoare G pre s'' post ->
+  invAll G initialHeap initialRho initialAccess pre ->
   exists finalHeap finalRho finalAccess,
-    dynSemStar (initialHeap, [(initialRho, initialAccess, s'' :: s')]) (finalHeap, [(finalRho, finalAccess, s')]) /\
-    invAll finalHeap finalRho finalAccess post
+    dynSemStar (initialHeap, [(initialRho, initialAccess, s'' ++ s')]) (finalHeap, [(finalRho, finalAccess, s')]) /\
+    invAll G finalHeap finalRho finalAccess post
 .
 Proof.
-  destruct s'';
-  do 6 intro;
+  do 8 intro;
   intro HO;
   intro INV;
-  inversionx HO.
+  induction HO.
+  - unfoldINV INV.
+    (*sAlloc*)
+    pose proof (INVheapNT omin) as newHeap.
+    assert (omin ≤ omin). auto.
+    apply newHeap in H5. unf.
+    set (x1 := omin) in *.
+    
+    unfold fieldsNames in *.
+    common.
+    
+    do 4 eexists; try emagicProgress. (*progress*)
+    assert (evalphi (Halloc x1 C0 initialHeap) (rhoSubst x0 (vo x1) initialRho)
+      (initialAccess ++ map (λ cf' : T * f, (x1, snd cf')) l)
+      (accListApp x0 (map snd l)
+         (phiNeq (ex x0) (ev vnull) :: phi'0)))
+          as eph.
+      assert (listDistinct (map snd l)) as fd.
+        eapp fieldsDistinct.
+      assert (forall l,
+          listDistinct (map snd l) ->
+          (evalphi
+            (Halloc x1 C0 initialHeap)
+            (rhoSubst x0 (vo x1) initialRho)
+            (initialAccess)
+            (phiNeq (ex x0) (ev vnull) :: phi'0))
+          ->
+          (evalphi
+            (Halloc x1 C0 initialHeap)
+            (rhoSubst x0 (vo x1) initialRho)
+            (initialAccess ++ map (λ cf' : T * f, (x1, snd cf')) l)
+            (accListApp x0 (map snd l)
+               (phiNeq (ex x0) (ev vnull) :: phi'0)))
+         ) as remAccList.
+        induction l0; intros; simpl in *.
+          rewrite app_nil_r. assumption.
+        unf.
+        apply IHl0 in H9; auto.
+        eca; simpl; rewrite rhoSubstId.
+          apply inclSingle. intuition.
+          eca; unfold evale; simpl; try rewrite rhoSubstId; eauto.
+        rewrite AexceptAppFirst.
+        rewrite AexceptReduceSecond; auto.
+        common.
+        remember (Aexcept
+              ((x1, snd a) :: map (fun cf' => (x1, snd cf')) l0)
+              ([@pair o f x1 (snd a)]))
+               as AE.
+        assert (AE = map (λ cf' : T * f, (x1, snd cf')) l0).
+          subst. simpl.
+          undecb.
+          simpl.
+          dec (o_dec x1 x1). simpl.
+          dec (string_dec (snd a) (snd a)). simpl.
+          rewrite AexceptReduceSecond. apply AexceptEmpty.
+          intuition.
+          contradict H8.
+          apply in_map_iff.
+          apply in_map_iff in H4.
+          unf.
+          inversionx H4.
+          eex.
+        rewrite H4.
+        assumption.
+      apply remAccList; auto.
+      eca; simpl; try apply inclEmpty.
+        eca; unfold evale; simpl; try rewrite rhoSubstId; eauto. 
+        discriminate.
+      common.
+      eapp evalphiRemoveHalloc.
+      eapp evalphiRemoveRhoSubst.
+    assert (∀ (o0 : o) (m0 : f → option v) (f0 : f) 
+      (T0 : T),
+      Halloc x1 C0 initialHeap o0 = Some (C0, m0)
+      → fieldType C0 f0 = Some T0
+        → ∃ v0 : v,
+          m0 f0 = Some v0 ∧ hasDynamicType (Halloc x1 C0 initialHeap) v0 T0) as hlp.
+      intros.
+      unfold Halloc in H4.
+      rewrite Heqo0 in *.
+      dec (o_dec x1 o0).
+        inversionx H4.
+        assert ((find
+           (λ fs' : T * string, if string_dec f0 (snd fs') then true else false)
+           l) = Some (T0, f0)) as fi.
+          unfold fieldType, fields in *.
+          destruct (class C0); try discriminate.
+          destruct c.
+          common.
+          inversionx Heqo0.
+          generalize l0 Heqo1.
+            induction l2; intros; simpl in *; try discriminate.
+            destruct a. simpl in *.
+            dec (string_dec f2 f0); simpl in *.
+              inversionx Heqo0. dec (string_dec f0 f0). tauto.
+              apply IHl2 in Heqo0. rewrite Heqo0. destruct (string_dec f0 f2); subst; tauto.
+        rewrite fi.
+        simpl.
+        eex.
+        apply hasDynamicTypeDefault.
+        
+        eapply INVHELPER in H4; eauto. unf.
+        eex.
+        unfold Halloc. rewrite Heqo0.
+        inversionx H9; try constructor.
+        rename de2 into ung.
+        eca.
+        dec (o_dec x1 o1); eauto.
+        rewrite H6 in *.
+        discriminate.
+    repeat split; repeat constructor.
+    * generalize l H1. clear.
+      induction l; intros; simpl in *.
+      + repeat constructor.
+        assumption.
+      + repeat constructor.
+        eapply sfrmIncl; eauto.
+        apply inclEmpty.
+    * apply eph.
+    * induction e0; intros; inversionx H5; simpl in *.
+      + eex. eca.
+      + eex. eca.
+      + apply H10 in eph.
+        inversionx eph. inversionx H17.
+        eex.
+      + apply H0 in eph.
+        inversionx eph. inversionx H18.
+      
+        apply IHe0 in H11.
+          inversionx H11. unf.
+          common.
+          inversionx H8.
+          rewrite H10 in *.
+          inversionx H17. inversionx H11.
+          inversionx H9; try tauto.
+        
+          eapply hlp in H13; eauto. unf.
+          eex.
+          unfold evale.
+          simpl.
+          rewrite H10.
+          rewrite H15.
+          simpl.
+          assumption.
+        destruct e0; auto.
+        eapp phiImpliesTrans.
+        apply phiImpliesEdotNeq.
+    * apply hlp.
+    * exists (Datatypes.S x1).
+      intros.
+      assert (omin <= o').
+        apply le_S_n.
+        eapp le_trans.
+      apply INVheapNT in H7. unf.
+      split.
+      + unfold Halloc.
+        rewrite Heqo0.
+        dec (o_dec x1 o'). contradict H0. auto with arith.
+        assumption.
+      + intros.
+        specialize (H9 f0).
+        intuition.
+        apply in_app_iff in H7.
+        inversionx H7; try tauto.
+        apply in_map_iff in H10.
+        unf.
+        inversionx H10.
+        subst.
+        contradict H0. auto with arith.
+    * intros. destruct A'.
+      apply in_app_iff in H0. inversionx H0.
+      + apply INVAevals in H7.
+        unf.
+        eex.
+        simpl in *.
+        unfold Halloc.
+        rewrite Heqo0.
+        dec (o_dec x1 o0). rewrite H1 in H0. discriminate.
+        eauto.
+      + apply in_map_iff in H7.
+        unf.
+        inversionx H7. subst.
+        unfold Halloc.
+        rewrite Heqo0. simpl.
+        dec (o_dec o0 o0). eex.
   - unfoldINV INV.
     (*sMemberSet*)
-    rename H6 into hstX0.
+    rename H into hstX0.
     rename H8 into hstX1.
     rename H3 into im.
     rename H9 into fht.
@@ -323,190 +506,6 @@ Proof.
     * apply INVHELPER.
     * eax.
     * apply INVAevals.
-  - unfoldINV INV.
-    (*sAlloc*)
-    pose proof (INVheapNT omin) as newHeap.
-    assert (omin ≤ omin). auto.
-    apply newHeap in H0. unf.
-    set (x1 := omin) in *.
-    
-    unfold fieldsNames in *.
-    common.
-    
-    do 4 eexists; try emagicProgress. (*progress*)
-    assert (evalphi (Halloc x1 c initialHeap) (rhoSubst x0 (vo x1) initialRho)
-      (initialAccess ++ map (λ cf' : T * f, (x1, snd cf')) l)
-      (accListApp x0 (map snd l)
-         (phiType x0 (TClass c) :: phiNeq (ex x0) (ev vnull) :: phi'0)))
-          as eph.
-      assert (listDistinct (map snd l)) as fd.
-        eapp fieldsDistinct.
-      assert (forall l,
-          listDistinct (map snd l) ->
-          (evalphi
-            (Halloc x1 c initialHeap)
-            (rhoSubst x0 (vo x1) initialRho)
-            (initialAccess)
-            (phiType x0 (TClass c) :: phiNeq (ex x0) (ev vnull) :: phi'0))
-          ->
-          (evalphi
-            (Halloc x1 c initialHeap)
-            (rhoSubst x0 (vo x1) initialRho)
-            (initialAccess ++ map (λ cf' : T * f, (x1, snd cf')) l)
-            (accListApp x0 (map snd l)
-               (phiType x0 (TClass c) :: phiNeq (ex x0) (ev vnull) :: phi'0)))
-         ) as remAccList.
-        induction l0; intros; simpl in *.
-          rewrite app_nil_r. assumption.
-        unf.
-        apply IHl0 in H7; auto.
-        eca; simpl; rewrite rhoSubstId.
-          apply inclSingle. intuition.
-          eca; unfold evale; simpl; try rewrite rhoSubstId; eauto.
-        rewrite AexceptAppFirst.
-        rewrite AexceptReduceSecond; auto.
-        common.
-        remember (Aexcept
-              ((x1, snd a) :: map (fun cf' => (x1, snd cf')) l0)
-              ([@pair o f x1 (snd a)]))
-               as AE.
-        assert (AE = map (λ cf' : T * f, (x1, snd cf')) l0).
-          subst. simpl.
-          undecb.
-          simpl.
-          dec (o_dec x1 x1). simpl.
-          dec (string_dec (snd a) (snd a)). simpl.
-          rewrite AexceptReduceSecond. apply AexceptEmpty.
-          intuition.
-          contradict H8.
-          apply in_map_iff.
-          apply in_map_iff in H0.
-          unf.
-          inversionx H0.
-          eex.
-        rewrite H0.
-        assumption.
-      apply remAccList; auto.
-      eca; simpl; try apply inclEmpty. eca; try rewrite rhoSubstId; eauto. eapply hasDynamicTypeHalloc; eauto.
-      common.
-      eca; simpl; try apply inclEmpty. eca; unfold evale; simpl; try rewrite rhoSubstId; eauto. discriminate.
-      common.
-      eapp evalphiRemoveHalloc.
-      eapp evalphiRemoveRhoSubst.
-    assert (∀ (o0 : o) (C0 : C) (m0 : f → option v) (f0 : f) 
-      (T0 : T),
-      Halloc x1 c initialHeap o0 = Some (C0, m0)
-      → fieldType C0 f0 = Some T0
-        → ∃ v0 : v,
-          m0 f0 = Some v0 ∧ hasDynamicType (Halloc x1 c initialHeap) v0 T0) as hlp.
-      intros.
-      unfold Halloc in H0.
-      rewrite Heqo0 in *.
-      dec (o_dec x1 o0).
-        inversionx H0.
-        assert ((find
-           (λ fs' : T * string, if string_dec f0 (snd fs') then true else false)
-           l) = Some (T0, f0)) as fi.
-          unfold fieldType, fields in *.
-          destruct (class C0); try discriminate.
-          destruct c.
-          common.
-          inversionx Heqo0.
-          generalize l0 Heqo1.
-            induction l2; intros; simpl in *; try discriminate.
-            destruct a. simpl in *.
-            dec (string_dec f2 f0); simpl in *.
-              inversionx Heqo0. dec (string_dec f0 f0). tauto.
-              apply IHl2 in Heqo0. rewrite Heqo0. destruct (string_dec f0 f2); subst; tauto.
-        rewrite fi.
-        simpl.
-        eex.
-        apply hasDynamicTypeDefault.
-        
-        eapply INVHELPER in H0; eauto. unf.
-        eex.
-        unfold Halloc. rewrite Heqo0.
-        inversionx H9; try constructor.
-        rename de2 into ung.
-        eca.
-        dec (o_dec x1 o1); eauto.
-        rewrite H1 in *.
-        discriminate.
-    repeat split; repeat constructor.
-    * generalize l H3. clear.
-      induction l; intros; simpl in *.
-      + repeat constructor.
-        assumption.
-      + repeat constructor.
-        eapply sfrmIncl; eauto.
-        apply inclEmpty.
-    * apply eph.
-    * induction e0; intros; inversionx H7; simpl in *.
-      + eex. eca.
-      + eex. eca.
-      + apply H10 in eph.
-        inversionx eph. inversionx H17.
-        eex.
-      + apply H0 in eph.
-        inversionx eph. inversionx H18.
-      
-        apply IHe0 in H11.
-          inversionx H11. unf.
-          common.
-          inversionx H8.
-          rewrite H10 in *.
-          inversionx H17. inversionx H11.
-          inversionx H9; try tauto.
-        
-          eapply hlp in H13; eauto. unf.
-          eex.
-          unfold evale.
-          simpl.
-          rewrite H10.
-          rewrite H15.
-          simpl.
-          assumption.
-        destruct e0; auto.
-        eapp phiImpliesTrans.
-        apply phiImpliesEdotNeq.
-    * apply hlp.
-    * exists (Datatypes.S x1).
-      intros.
-      assert (omin <= o').
-        apply le_S_n.
-        eapp le_trans.
-      apply INVheapNT in H7. unf.
-      split.
-      + unfold Halloc.
-        rewrite Heqo0.
-        dec (o_dec x1 o'). contradict H0. auto with arith.
-        assumption.
-      + intros.
-        specialize (H9 f0).
-        intuition.
-        apply in_app_iff in H7.
-        inversionx H7; try tauto.
-        apply in_map_iff in H10.
-        unf.
-        inversionx H10.
-        subst.
-        contradict H0. auto with arith.
-    * intros. destruct A'.
-      apply in_app_iff in H0. inversionx H0.
-      + apply INVAevals in H7.
-        unf.
-        eex.
-        simpl in *.
-        unfold Halloc.
-        rewrite Heqo0.
-        dec (o_dec x1 o0). rewrite H1 in H0. discriminate.
-        eauto.
-      + apply in_map_iff in H7.
-        unf.
-        inversionx H7. subst.
-        unfold Halloc.
-        rewrite Heqo0. simpl.
-        dec (o_dec o0 o0). eex.
   - (*sCall*)
     rename INV into INV0.
     rename H6 into hstX0.

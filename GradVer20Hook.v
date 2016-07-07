@@ -11,15 +11,7 @@ Definition wrapHoare (hoare : phi -> s -> phi -> Prop) p1 s p2 : Prop :=
   phiImplies p2x p2 /\
   hoare p1x s p2x.
 
-Lemma unfoldTypeJudjFormulaTirrel : forall T1 T2 e T',
-  unfoldTypeJudjFormula e T1 T' = unfoldTypeJudjFormula e T2 T'.
-Proof.
-  induction e0; intros; simpl in *; try tauto.
-  rewrite IHe0.
-  tauto.
-Qed.
-
-Lemma sfrmphiUnfoldType : forall e T T' f,
+(* Lemma sfrmphiUnfoldType : forall e T T' f,
   sfrmphi [] (unfoldTypeJudjFormula e T T' ++ [phiAcc e f]).
 Proof.
   induction e0; intros; simpl in *.
@@ -39,7 +31,7 @@ Proof.
         rewrite staticFootprintApp.
         simpl.
         intuition.
-Qed.
+Qed. *)
 
 Lemma sfrmphiChain : forall p e f0 f1 A,
   sfrmphi A p ->
@@ -59,7 +51,7 @@ Proof.
   auto.
 Qed.
 
-Lemma footprintUnfoldTypeJudjASfpx : forall h r e T' T,
+(* Lemma footprintUnfoldTypeJudjASfpx : forall h r e T' T,
   footprint h r (unfoldTypeJudjFormula e T' T) = rev (footprintXe h r e).
 Proof.
   unfold footprintXe.
@@ -71,7 +63,7 @@ Proof.
   simpl.
   destruct (evale' h r e0); try tauto.
   destruct v0; tauto.
-Qed.
+Qed. *)
 
 Lemma footprintXeDot : forall e f e' f',
   In (edot e f, f') (staticFootprintXe e') ->
@@ -143,7 +135,7 @@ Proof.
   assumption.
 Qed.
 
-Lemma unfoldTypeJudjLemma : forall e T p,
+(* Lemma unfoldTypeJudjLemma : forall e T p,
   (hasStaticType p e T /\ (exists p', phiImplies p p' /\ sfrmphi [] p' /\ sfrme (staticFootprint p') e))
   <->
   (exists T', unfoldTypeJudjPremise e T T' /\ phiImplies p (unfoldTypeJudjFormula e T T')).
@@ -256,9 +248,9 @@ Proof.
       ++  rewrite flat_map_app.
           eapp sfrmeIncl.
           intuition.
-Qed.
+Qed. *)
 
-Theorem hoareMiniEquals : forall p1 p2 s,
+(* Theorem hoareMiniEquals : forall p1 p2 s,
   wrapHoare hoareSinglePreMini p1 s p2 <->
   wrapHoare hoareSingle        p1 s p2.
 Proof.
@@ -544,7 +536,7 @@ Proof.
       + apply sfrmphiApp in sf.
         tauto.
     * repeat eex. eca.
-Admitted.
+Admitted. *)
 
 (* 
 Definition dfrme H r (A : A_d) (e : e) := 

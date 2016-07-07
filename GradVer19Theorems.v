@@ -298,11 +298,6 @@ Proof.
   try rewrite in_app_iff in H3;
   unfold evale in *;
   try (rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition).
-  
-  inversionx H7; try constructor.
-  eappIn HeapGetsMoreSpecific H5.
-  unf.
-  eca.
 Qed.
 
 Lemma evalphiChangeHeap : forall H1 H2 S1 S2 r p A,
@@ -372,9 +367,6 @@ Proof.
     eca; unfold evale in *;
     erewrite evale'ChangeRho in H4; eauto;
     intros; intuition.
-  - simpl in *.
-    eca.
-    rewrite H1 in H4; auto.
 Qed.
 
 Lemma evalphiChangeRho : forall r1 r2 H p A,
@@ -457,10 +449,6 @@ Proof.
     inversionx H2; eca; unfold evale in *;
     try rewriteRev evale'RemoveHSubst; eauto;
     try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca.
-    * rewriteRev hasDynamicTypeHSubst. eauto.
-    * eapp hasDynamicTypeHSubst.
 Qed.
 
 Lemma evalphiRemoveHSubst : forall o f v H r p A,

@@ -115,7 +115,6 @@
 				  ~|~ e = e
 				  ~|~ e \neq e
 				  ~|~ \acc(e.f)
-				  ~|~ x : T
 				  ~|~ \phi * \phi
 \\ &e			&&::= v
 				  ~|~ x
@@ -126,6 +125,7 @@
 \\				  
 \\ &H			&&\in~~ (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
 \\ &\rho		&&\in~~ (x \rightharpoonup v)
+\\ &\Gamma		&&\in~~ (x \rightharpoonup T)
 \\ &A_s			&&::= \overline{(e, f)}
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
@@ -162,7 +162,7 @@ All the rules in the following sections are implicitly parameterized over a $pro
 {
 FV(\phi_1) \subseteq \{ x, \xthis \} \\
 FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
-\hoare {x : T_x * \xthis : C * \phi_1} {\overline{s}} {x : T_x * \xthis : C * \xresult : T_m * \phi_2} \\
+x : T_x, \xthis : C, \xresult : T_m \hoare {\phi_1} {\overline{s}} {\phi_2} \\
 \emptyset \sfrmphi {\phi_1} \\
 \emptyset \sfrmphi {\phi_2} \\
 \overline{\neg writesTo(s_i, x)}
@@ -230,18 +230,18 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 {\sType {\phi} {e.f} {T}}
 \end{mathpar}
 
-\subsection{Hoare ($\hoare {\phi} {\overline s} {\phi}$)}
+\subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
 \begin{mathpar}
 \inferrule* [Right=HSec]
 {
 %\hoare {\phi_p} {s_1} {\phi_{q}} \\ 
 %\hoare {\phi_{q}} {s_2} {\phi_r}
- \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
+ \Gamma \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
  \phi_{q1} \implies \phi_{q2} \\
  \emptyset \sfrmphi \phi_{q2} \\
- \hoare {\phi_{q2}} {s_2} {\phi_r}
+ \Gamma \hoare {\phi_{q2}} {s_2} {\phi_r}
 }
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+{\Gamma \hoare {\phi_p} {s_1;s_2} {\phi_r}}
 \end{mathpar}
 
 \input{staticSemanticsPreMini}
@@ -250,12 +250,12 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \begin{mathpar}
 \inferrule* [Right=HSec]
 {
- \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
+ \Gamma \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
  \phi_{q1} \implies \phi_{q2} \\
  \emptyset \sfrmphi \phi_{q2} \\
- \hoare {\phi_{q2}} {s_2} {\phi_r}
+ \Gamma \hoare {\phi_{q2}} {s_2} {\phi_r}
 }
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+{\Gamma \hoare {\phi_p} {s_1;s_2} {\phi_r}}
 \end{mathpar}
 
 \input{staticSemantics}

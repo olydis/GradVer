@@ -9,29 +9,6 @@ Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 
-
-Lemma phiImpliesType : forall T' p x T H,
-  In (phiType x T') p ->
-  phiSatisfiable p ->
-  phiImplies p [phiType x T] ->
-  hasDynamicType H (defaultValue T') T.
-Proof.
-  intros.
-  unfold phiImplies, phiSatisfiable in *.
-  unf.
-  assert (H4' := H4).
-  apply H3 in H4'. clear H3.
-  eapply evalphiTypeUnlift in H1; eauto.
-  inversionx H4'.
-  simpl in *.
-  inversionx H1.
-  inversionx H12.
-  rewrite H9 in H10. clear H9. inversionx H10.
-  inversionx H11;
-  inversionx H14;
-  constructor.
-Qed.
-
 Lemma phiImpliesSatisfiable : forall p1 p2,
   phiImplies p1 p2 ->
   phiSatisfiable p1 ->

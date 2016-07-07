@@ -99,12 +99,6 @@ Proof.
     inversionx H12;
     eca;
     try eapp evaleRemoveHalloc.
-    unfold Halloc.
-    destruct (fields C0); auto.
-    inversionx H4; eca.
-    dec (o_dec o0 o1); eauto.
-    rewrite H1 in *.
-    discriminate.
   - rewriteRev footprint'Halloc; auto.
 Qed.
 
