@@ -237,31 +237,34 @@ Proof.
         eapply sfrmIncl; eauto.
         apply inclEmpty.
     * apply eph.
-    * induction e0; intros; inversionx H5; simpl in *.
-      + eex. eca.
-      + eex. eca.
-      + apply H10 in eph.
-        inversionx eph. inversionx H17.
-        eex.
-      + apply H0 in eph.
-        inversionx eph. inversionx H18.
-      
-        apply IHe0 in H11.
-          inversionx H11. unf.
-          common.
-          inversionx H8.
-          rewrite H10 in *.
-          inversionx H17. inversionx H11.
-          inversionx H9; try tauto.
+    * induction e0; intros.
+      + apply INVtypes in H5; auto; inversionx H5; unf; common.
+        inversionx H5. eex. inversionx H9; eca.
+      + dec (x_dec x0 x2).
+          assert (T0 = TClass C0) as TT. inversionx H5. inversionx H3. rewrite H9 in *. inversionx H10. tauto.
+          subst.
+          apply INVtypes in H5; auto. inversionx H5. unf. common.
+          eex. unfold evale. simpl. rewrite rhoSubstId. auto.
+          eca. unfold Halloc. rewrite Heqo0. dec (o_dec x1 x1). eauto.
         
-          eapply hlp in H13; eauto. unf.
-          eex.
-          unfold evale.
-          simpl.
-          rewrite H10.
-          rewrite H15.
-          simpl.
-          assumption.
+        apply INVtypes in H5; auto.
+        inversionx H5. unf. common.
+        eex.
+          unfold evale. simpl. unfold rhoSubst. rename de2 into de. dec (x_dec x2 x0). contradict de. tauto. eauto.
+        
+        inversionx H9; eca.
+        admit.
+      + apply H4 in eph.
+        inversionx eph. inversionx H17. common. inversionx H16.
+        inversionx H5.
+        apply IHe0 in H13.
+          inversionx H13. unf. common. rewrite H11 in *. inversionx H8.
+          eex. unfold evale. simpl. rewrite H11.
+          inversionx H9; try tauto.
+          rewrite H14. simpl.
+          admit.
+          admit.
+        
         destruct e0; auto.
         eapp phiImpliesTrans.
         apply phiImpliesEdotNeq.
