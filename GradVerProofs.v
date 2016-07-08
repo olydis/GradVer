@@ -1320,15 +1320,14 @@ Admitted.
 
 
 Theorem initialINV : 
-  invAll newHeap newRho newAccess [].
+  invAll GammaEmpty newHeap newRho newAccess [].
 Proof.
-  uninv. intuition; try (eca; fail).
-  - unfold ehasDynamicType, evale.
+  uninv; intuition.
+  - eca.
+  - eca.
+  - unfold GammaEmpty, ehasDynamicType, evale in *.
     inversionx H1; simpl; try (eex; eca).
-    * apply (phiImpliesTauto newHeap newRho newAccess) in H2.
-      inversionx H2.
-      inversionx H11.
-      discriminate.
+    * discriminate.
     * apply (phiImpliesTauto newHeap newRho newAccess) in H0.
       inversionx H0.
       inversionx H12.
@@ -1340,4 +1339,6 @@ Proof.
       + destruct (evale' newHeap newRho e0); try discriminate.
         destruct v0; try discriminate.
   - discriminate.
+  - exists 0.
+    eca.
 Qed.
