@@ -243,30 +243,33 @@ Proof.
     * induction e0; intros.
       + apply INVtypes in H5; auto; inversionx H5; unf; common.
         inversionx H5. eex. inversionx H9; eca.
-      + dec (x_dec x0 x2).
+      + unfold ehasDynamicType, evale, rhoSubst. simpl.
+        dec (x_dec x2 x0).
           assert (T0 = TClass C0) as TT. inversionx H5. inversionx H3. rewrite H9 in *. inversionx H10. tauto.
           subst.
           apply INVtypes in H5; auto. inversionx H5. unf. common.
-          eex. unfold evale. simpl. rewrite rhoSubstId. auto.
+          eex.
           eca. unfold Halloc. rewrite Heqo0. dec (o_dec x1 x1). eauto.
         
         apply INVtypes in H5; auto.
         inversionx H5. unf. common.
         eex.
-          unfold evale. simpl. unfold rhoSubst. rename de2 into de. dec (x_dec x2 x0). contradict de. tauto. eauto.
         
         inversionx H9; eca.
-        admit.
-      + apply H4 in eph.
+        unfold Halloc. rewrite Heqo0.
+        rename de2 into de.
+        dec (o_dec x1 o0). rewrite H6 in H10. discriminate.
+        eauto.
+      + apply H4 in eph. rename H4 into tra.
         inversionx eph. inversionx H17. common. inversionx H16.
         inversionx H5.
-        apply IHe0 in H13.
-          inversionx H13. unf. common. rewrite H11 in *. inversionx H8.
-          eex. unfold evale. simpl. rewrite H11.
-          inversionx H9; try tauto.
-          rewrite H14. simpl.
-          admit.
-          admit.
+        apply IHe0 in H12. clear IHe0.
+          inversionx H12. unf. common. rewrite H10 in *. inversionx H5. inversionx H15.
+          unfold ehasDynamicType, evale. simpl.
+          rewrite H10.
+          inversionx H8; try tauto.
+          rewrite H13. simpl.
+          eapp hlp.
         
         destruct e0; auto.
         eapp phiImpliesTrans.
