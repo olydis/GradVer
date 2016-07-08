@@ -437,32 +437,28 @@ Proof.
       rewrite H1. destruct x1. eex.
   - unfoldINV INV.
     (*sAssign*)
-    rename H6 into hstX0.
-    rename H8 into hstE0.
-    rename H10 into sfe.
-    rename H4 into niFVphi.
-    rename H5 into niFVe0.
+    rename H4 into hstX0.
+    rename H5 into hstE0.
+    rename H6 into sfe.
+    rename H2 into niFVphi.
+    rename H3 into niFVe0.
     
-    applyINVphi2 INVphi2 H2.
+    applyINVphi2 INVphi2 H0.
     apply INVtypes in hstE0.
     Focus 2.
       destruct e0; auto.
-      apply sfrmeVSsfpX in sfe.
-      simpl in sfe.
-      apply incl_cons_reverse in sfe. unf.
-      
-      repeat intro. apply H2 in H4.
-      unfold staticFootprint in H1.
-      apply in_flat_map in H1. unf.
-      destruct x1; try tauto.
-      inversionx H6; try tauto.
-      inversionx H5.
-      eappIn evalphiIn H1.
-      inversionx H1.
-      eca; try eca; try apply inclEmpty.
-        unfold evale. simpl. eauto.
-      discriminate.
-    
+      simpl in *.
+      apply inclSingle in sfe.
+      eapp phiImpliesTrans.
+      unfold phiImplies. intros.
+      eappIn evalphiIn H2.
+      inversionx H2. common.
+      eca.
+        apply inclEmpty.
+        eca; unfold evale; simpl.
+          eauto.
+          discriminate.
+      eca.
     inversionx hstE0. unf.
     
     do 4 eexists; try emagicProgress. (*progress*)
@@ -480,19 +476,43 @@ Proof.
       common.
       apply evalphiRemoveRhoSubst; auto.
     repeat split; repeat constructor.
-    * apply sfrmphiApp; try assumption.
-      repeat constructor;
-      assumption.
+    * apply sfrmphiApp. split; try assumption.
+      repeat constructor.
+      generalize e0 H1 sfe. clear.
+      induction e0; intros; try eca; 
+      simpl in *;
+      apply inclSingle in sfe.
+      + apply in_flat_map.
+        eex. apply in_eq.
+      + apply IHe0; auto.
+        destruct e0; try apply inclEmpty.
+        simpl.
+        apply inclSingle.
+        eapply sfrmphiChain in H1.
+          simpl in *.
+          unfold staticFootprint in *.
+          apply in_flat_map in H1. unf.
+          destruct x0; try tauto.
+          inversionx H2; try tauto.
+          inversionx H0.
+          eauto.
+        apply in_flat_map.
+        eex.
+        apply in_eq.
     * apply eph.
     * induction e1; intros; unfold ehasDynamicType, evale; 
       inversionx H5; simpl in *.
       + eex. eca.
       + eex. eca.
-      + apply H8 in eph.
-        inversionx eph.
-        inversionx H15.
+      + unfold rhoSubst.
+        dec (x_dec x2 x0).
+          eex. inversionx hstX0. rewrite H7 in *. inversionx H8. assumption.
+        assert (ehasDynamicType initialHeap initialRho (ex x2) T1) as hdt.
+          apply INVtypes; auto.
+          eca.
+        inversionx hdt. unf. common.
         eex.
-      + apply H0 in eph.
+      + apply H2 in eph.
         inversionx eph. inversionx H16. common. inversionx H15.
         unfold ehasDynamicType, evale. simpl.
         apply IHe1 in H9.
@@ -503,6 +523,63 @@ Proof.
           simpl.
           eapp INVHELPER.
         destruct e1; auto.
+        eapp phiImpliesTrans.
+        apply phiImpliesEdotNeq.
+    * apply INVHELPER.
+    * eax.
+    * apply INVAevals.
+  - unfoldINV INV.
+    (*sReturn*)
+    applyINVtypes INVtypes H3.
+    
+    do 4 eexists; try emagicProgress. (*progress*)
+    assert (evalphi 
+        initialHeap 
+        (rhoSubst xresult x1 initialRho) 
+        initialAccess
+        (phiEq (ex xresult) (ex x0) :: phi'0))
+          as eph.
+      eca; simpl.
+        apply inclEmpty.
+        eca; unfold evale; simpl.
+          rewrite rhoSubstId. eauto.
+          unfold rhoSubst. dec (x_dec x0 xresult); tauto.
+      common.
+      apply H0 in INVphi2.
+      eapp evalphiRemoveRhoSubst.
+    repeat split; repeat constructor.
+    * simpl. assumption.
+    * apply eph.
+    * induction e0; intros.
+      + inversionx H6; eex; eca.
+      + unfold ehasDynamicType, evale, rhoSubst.
+        simpl.
+        dec (x_dec x2 xresult).
+          eex.
+          inversionx H6. inversionx H4.
+          rewrite H8 in H9. inversionx H9.
+          assumption.
+        apply INVtypes in H6; auto.
+      + inversionx H6.
+        apply H3 in eph. rename H3 into pi.
+        apply IHe0 in H10. clear IHe0.
+          inversionx H10.
+          unf.
+          inversionx eph. simpl in *. clear H11 H18.
+          inversionx H17.
+          common.
+          inversionx H15.
+          rewrite H10 in H6. inversionx H6.
+          inversionx H7; try tauto. clear H16.
+          eapply INVHELPER in H12; eauto. unf.
+          eex.
+          unfold evale.
+          simpl.
+          rewrite H10.
+          rewrite H11.
+          simpl.
+          assumption.
+        destruct e0; auto.
         eapp phiImpliesTrans.
         apply phiImpliesEdotNeq.
     * apply INVHELPER.
@@ -1105,63 +1182,6 @@ Proof.
     
     eex.
     
-  - unfoldINV INV.
-    (*sReturn*)
-    applyINVtypes INVtypes H4.
-    
-    do 4 eexists; try emagicProgress. (*progress*)
-    assert (evalphi 
-        initialHeap 
-        (rhoSubst xresult x1 initialRho) 
-        initialAccess
-        (phiType xresult T0 :: phiEq (ex xresult) (ex x0) :: phi'0))
-          as eph.
-      eca; simpl.
-        apply inclEmpty.
-        eca. rewrite rhoSubstId. tauto.
-      eca; simpl.
-        apply inclEmpty.
-        eca; unfold evale; simpl.
-          rewrite rhoSubstId. eauto.
-          unfold rhoSubst. dec (x_dec x0 xresult); tauto.
-      common.
-      apply H1 in INVphi2.
-      eapp evalphiRemoveRhoSubst.
-    repeat split; repeat constructor.
-    * simpl. assumption.
-    * apply eph.
-    * induction e0; intros.
-      + inversionx H5; eex; eca.
-      + inversionx H5.
-        apply H9 in eph.
-        inversionx eph.
-        inversionx H16.
-        eca.
-      + inversionx H5.
-        apply H0 in eph. rename H0 into pi.
-        apply IHe0 in H10. clear IHe0.
-          inversionx H10.
-          unf.
-          inversionx eph. simpl in *. clear H11 H18.
-          inversionx H17.
-          common.
-          inversionx H15.
-          rewrite H10 in H5. inversionx H5.
-          inversionx H7; try tauto. clear H16.
-          eapply INVHELPER in H12; eauto. unf.
-          eex.
-          unfold evale.
-          simpl.
-          rewrite H10.
-          rewrite H11.
-          simpl.
-          assumption.
-        destruct e0; auto.
-        eapp phiImpliesTrans.
-        apply phiImpliesEdotNeq.
-    * apply INVHELPER.
-    * eax.
-    * apply INVAevals.
   - unfoldINV INV.
     (*sAssert*)
     do 4 eexists; try emagicProgress. (*progress*)
