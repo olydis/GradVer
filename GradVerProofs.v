@@ -115,10 +115,13 @@ Theorem staSemSoundness : forall G (s' s'' : list s) (pre post : phi) initialHea
     invAll G finalHeap finalRho finalAccess post
 .
 Proof.
-  do 8 intro;
-  intro HO;
-  intro INV;
-  induction HO.
+  do 8 intro.
+  intro HO.
+  generalize s' initialHeap initialRho initialAccess.
+  clear s' initialHeap initialRho initialAccess.
+  induction HO;
+  do 4 intro;
+  intro INV.
   - unfoldINV INV.
     (*sAlloc*)
     pose proof (INVheapNT omin) as newHeap.
@@ -586,21 +589,23 @@ Proof.
     * eax.
     * apply INVAevals.
   - (*sCall*)
+    rename y into x1.
+    rename z' into x2.
     rename INV into INV0.
-    rename H6 into hstX0.
-    rename H4 into hstX1.
-    rename H7 into hstX2.
-    rename H13 into xDist.
-    rename H9 into phi_r_sf.
-    rename H11 into phi_r_x0.
-    rename H8 into impl.
-    rename H5 into mme.
+    rename H2 into hstX0.
+    rename H0 into hstX1.
+    rename H3 into hstX2.
+    rename H7 into xDist.
+    rename H5 into phi_r_sf.
+    rename H6 into phi_r_x0.
+    rename H4 into impl.
+    rename H1 into mme.
     set (mm := Method T_r m0 T_p z (Contract phi_pre phi_post) underscore) in *.
     set (preI := (phiNeq (ex x1) (ev vnull) :: phiSubsts2 xthis x1 (xUserDef z) x2 phi_pre ++ phi_r)) in *.
     
     assert (evalphi initialHeap initialRho initialAccess preI)
     as ep_preI.
-      unfoldINV INV0. eapp impl.
+      unfoldINV INV0. subst. eapp impl.
     
     assert (evalphi initialHeap initialRho 
       (Aexcept initialAccess
@@ -642,7 +647,7 @@ Proof.
     
     assert (exists vo1, v1 = vo vo1) as tmp.
       inversionx ep_preI.
-      inversionx H9.
+      inversionx H11.
       inversionx hdtX1.
       common.
       rewrite H0 in *. inversionx H3. inversionx H8.
@@ -662,10 +667,11 @@ Proof.
     (*aliases*)
     set (r' := rhoFrom3 xresult (defaultValue T_r) xthis (vo vo1) (xUserDef z) v2).
     set (fp := footprint initialHeap r' phi_pre).
-    set (phi_pre' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phi_pre) in *.
-    set (phi_post' := phiType (xUserDef z) T_p :: phiType xthis (TClass C0) :: phiType xresult T_r :: phi_post) in *.
     set (S'' := [(initialRho, Aexcept initialAccess fp, sCall x0 x1 m0 x2 :: s')]).
     set (phi_end := phiSubsts3 xthis x1 (xUserDef z) x2 xresult x0 phi_post ++ phi_r).
+    set (GG := (GammaSet (xUserDef z) T_p
+                (GammaSet xthis (TClass C0)
+                   (GammaSet xresult T_r GammaEmpty)))) in *.
     
     assert (r' xresult = Some (defaultValue T_r))
     as r'xresult.
@@ -688,16 +694,8 @@ Proof.
     as ep_phi_pre_rho.
       unf. eapp evalphiPhiSubsts2RhoFrom3.
     
-    assert (evalphi initialHeap r' fp phi_pre')
+    assert (evalphi initialHeap r' fp phi_pre)
     as ep_phi_pre'.
-      eca; simpl.
-        apply inclEmpty.
-        eca; try apply hdtX2.
-      common.
-      eca; simpl.
-        apply inclEmpty.
-        eca; try apply hdtX1.
-      common.
       eapp evalphiFootprintAccess.
     
     assert (incl fp initialAccess)
@@ -714,7 +712,7 @@ Proof.
         inversionx hdtX2. eauto.
         tauto.
     
-    assert (invAll initialHeap r' fp phi_pre')
+    assert (invAll GG initialHeap r' fp phi_pre)
     as INV1.
       uninv. repeat split; simpl; try constructor. (*6*)
         unf. assumption.
@@ -722,10 +720,24 @@ Proof.
         induction e0; intros; inversionx H1; simpl in *. (*4*)
           eex. eca.
           eex. eca.
-          apply H4 in ep_phi_pre'.
-            inversionx ep_phi_pre'.
-            inversionx H11.
-            eex.
+          subst GG.
+            unfold GammaSet, GammaEmpty in *.
+            unfold equiv_decb in *.
+            unfold equiv_dec in *.
+            unfold x_EqDec in *.
+            dec (x_dec (xUserDef z) x3).
+              inversionx H4. inversionx hdtX2.
+              eex.
+            clear de2.
+            dec (x_dec xthis x3).
+              inversionx H4. inversionx hdtX1.
+              eex.
+            clear de2.
+            dec (x_dec xresult x3).
+              inversionx H4. inversionx hdtX0.
+              eex.
+              apply hasDynamicTypeDefault.
+            discriminate.
           apply IHe0 in H5.
             inversionE H5. inversionx H1.
             apply H0 in ep_phi_pre'. inversionx ep_phi_pre'. inversionx H13.
@@ -736,7 +748,7 @@ Proof.
           eapp phiImpliesTrans.
           apply phiImpliesEdotNeq.
         unf. assumption.
-        unf. exists x3. intros. apply H21 in H16. split; try apply H16. unfold not. intro f0. intro ifp. apply fp_incl_ia in ifp. apply H16 in ifp. tauto.
+        unf. exists x3. intros. apply H17 in H22. split; try apply H22. unfold not. intro f0. intro ifp. apply fp_incl_ia in ifp. apply H22 in ifp. tauto.
         intros. eapp INV0.
     
     (*Part 2: method body*)
@@ -744,9 +756,9 @@ Proof.
           dynSemStar 
             (initialHeap, [(r', fp, underscore)])
             (finalHeap, [(finalRho, finalAccess, [])]) ∧
-          invAll finalHeap finalRho finalAccess phi_post')
+          invAll GG finalHeap finalRho finalAccess phi_post)
     as call_finished.
-      assert (soundness phi_pre' underscore phi_post' initialHeap r' fp []) as sdn.
+      assert (soundness GG phi_pre underscore phi_post initialHeap r' fp []) as sdn.
         admit. (*assume that for method body*)
       intuition.
     
@@ -882,17 +894,11 @@ Proof.
     as frx2.
       subst finalRho. unfold rhoSubst. dec (x_dec x2 x0); try tauto.
 
-    assert (evalphi finalHeap' finalRho' finalAccess' phi_post')
+    assert (evalphi finalHeap' finalRho' finalAccess' phi_post)
     as eph_phi_post'.
       apply INV2.
     
-    assert (evalphi finalHeap' finalRho' finalAccess' phi_post)
-    as eph_phi_post.
-      inversionx eph_phi_post'.
-      inversionx H10.
-      inversionx H13.
-      simpl in H15. common.
-      apply H15.
+    assert (eph_phi_post := eph_phi_post').
     
     assert (dynSem
               (finalHeap', (finalRho', finalAccess', []) 
@@ -1113,12 +1119,13 @@ Proof.
 
     (*CONT...*)
     assert (invAll
+        G
         finalHeap'
         finalRho
         (Aexcept initialAccess fp ++ footprint finalHeap' finalRho' phi_post)
         phi_end)
     as INV3.
-      assert (sfrmphi [] phi_post') as tmp_sfrm. apply INV2.
+      assert (sfrmphi [] phi_post) as tmp_sfrm. apply INV2.
       uninv. repeat split. (*6*)
    (**) subst phi_end.
         apply sfrmphiApp. split.
@@ -1127,13 +1134,37 @@ Proof.
           eapp sfrmIncl. apply inclEmpty.
       (*inversionx tmp_sfrm. inversionx H1. inversionx H3. apply H4. *)
    (**) apply eph_phi_end.
-   (**) induction e0; intros; inversionx H1; simpl in *. (*4*)
+   (**) assert (∀ (e0 : e) (T : T),
+          match e0 with
+          | ev _ => True
+          | ex _ => True
+          | edot e1 _ => phiImplies phi_i [phiNeq e1 (ev vnull)]
+          end
+          → hasStaticType G e0 T
+            → ehasDynamicType initialHeap initialRho e0 T) as invty.
+          apply INV0.
+        induction e0; intros; inversionx H1; simpl in *. (*4*)
           eex. eca.
           eex. eca.
-          apply H4 in eph_phi_end.
-            inversionx eph_phi_end.
-            inversionx H11.
-            eex.
+          subst finalRho.
+            unfold rhoSubst, ehasDynamicType, evale. simpl.
+            dec (x_dec x3 x0).
+              eex.
+              assert (T0 = T_r) as Teq.
+                inversionx hstX0. rewrite H3 in H4. inversionx H4. tauto.
+              subst.
+              assert (ehasDynamicType finalHeap' finalRho' (ex xresult) T_r) as tt.
+                apply INV2; auto. eca.
+              inversionx tt. inversionx H1. common.
+              rewrite vres in H2. inversionx H2.
+              assumption.
+            specialize (invty (ex x3) T0).
+            apply invty in H0.
+              inversionx H0. inversionx H1. eex.
+              inversionx H2; try (eca; fail).
+              eappIn HeapGetsMoreSpecific H3.
+              invE H3 mmx. eca.
+            eca.
           apply H0 in eph_phi_end.
             inversionx eph_phi_end.
             inversionx H12.
@@ -1194,88 +1225,97 @@ Proof.
     * apply INVAevals.
   - unfoldINV INV.
     (*sRelease*)
-    applyINVphi2 INVphi2 H1.
+    applyINVphi2 INVphi2 H0.
     do 4 eexists; try emagicProgress; 
     try (apply evalphiPrefix in evp; assumption). (*progress*)
     repeat split; repeat constructor.
     * assumption.
     * apply evalphiApp in evp. intuition.
     * intros.
-      apply phiImpliesSuffix in H1.
-      eapply phiImpliesStaticType in H2; eauto.
       eapp INVtypes.
       destruct e0; auto.
       eapp phiImpliesTrans.
+      eappIn phiImpliesTrans H2.
+      eapp phiImpliesSuffix.
     * apply INVHELPER.
     * eexists omin.
       intros.
-      apply INVheapNT in H0. unf.
+      apply INVheapNT in H2. unf.
       split; auto.
       intros.
       unfold not in *.
       specialize (H4 f0).
       intros.
       contradict H4.
-      apply InAexcept in H0.
+      apply InAexcept in H2.
       assumption.
     * intros.
-      apply InAexcept in H0.
+      apply InAexcept in H2.
       eapp INVAevals.
   - unfoldINV INV.
     (*sDeclare*)
-    do 4 eexists; try emagicProgress. (*progress*)
-    assert (evalphi
-        initialHeap
-        (rhoSubst x0 (defaultValue t) initialRho)
-        initialAccess
-        (phiType x0 t :: phiEq (ex x0) (ev (defaultValue' t)) :: phi'0)) as eph.
-      apply H2 in INVphi2.
-      econstructor; simpl; eauto.
-        apply inclEmpty.
-        econstructor; eauto.
-          rewrite rhoSubstId.
-          eauto.
-          apply hasDynamicTypeDefault.
-        common.
-        econstructor; eauto.
-          apply inclEmpty.
-          eca; unfold evale; simpl; eauto.
-          rewrite rhoSubstId. tauto.
-          simpl.
-          common.
-          erewrite evalphiRemoveRhoSubst; intuition.
-    repeat split; repeat constructor.
-    * assumption.
-    * apply eph.
-    * induction e0; intros; inversionx H1; simpl in *.
-      + eex. eca.
-      + eex. eca.
-      + apply H7 in eph.
-        inversionx eph. inversionx H14.
-        eex.
-      + apply H0 in eph.
-        inversionx eph. inversionx H15.
-        
-        apply IHe0 in H8. 
-          inversionx H8. unf.
-          common.
-          rewrite H7 in *.
-          inversionx H3. inversionx H14.
-          inversionx H5; try tauto.
-          
-          eapply INVHELPER in H10; eauto. unf.
-          eex.
-          unfold evale.
-          simpl.
-          rewrite H7.
-          rewrite H12.
-          auto.
-        destruct e0; auto.
-        eapp phiImpliesTrans.
-        apply phiImpliesEdotNeq.
-    * apply INVHELPER.
-    * eax.
-    * apply INVAevals.
+    assert (evalphi initialHeap (rhoSubst x0 (defaultValue T0) initialRho)
+      initialAccess (phiEq (ex x0) (ev (defaultValue' T0)) :: phi0)) 
+    as eph.
+      eca. apply inclEmpty. eca; unfold evale; simpl; eauto. eapp rhoSubstId.
+      common. admit.
+    assert (invAll (GammaSet x0 T0 G) initialHeap (rhoSubst x0 (defaultValue T0) initialRho) initialAccess
+         (phiEq (ex x0) (ev (defaultValue' T0)) :: phi0)) as IH.
+      uninv.
+      repeat split; repeat constructor.
+        eapp sfrmIncl. apply inclEmpty.
+        assumption.
+        induction e0; intros.
+          inversionx H2; repeat eca.
+          inversionx H2.
+            unfold ehasDynamicType, rhoSubst, evale, GammaSet in *. simpl.
+            dec (x_dec x1 x0).
+              dec (x_dec x0 x0). inversionx H5. eex. apply hasDynamicTypeDefault.
+            rename de2 into de. dec (x_dec x0 x1). contradict de. tauto.
+            assert (hasStaticType G (ex x1) T1) as tt. eca.
+            eappIn INVtypes tt.
+          inversionx H2. apply H1 in eph.
+            inversionx eph.
+            inversionx H13.
+            apply IHe0 in H6.
+              inversionE H6. inversionx H2.
+              common.
+              rewrite H3 in *. inversionx H5. inversionx H12.
+              inversionx H4; try tauto.
+              eapply INVHELPER in H8; eauto. inversionx H8. inversionx H2.
+              eex.
+              unfold evale. simpl. rewrite H3, H10. simpl. assumption.
+            destruct e0; auto.
+            eapp phiImpliesTrans.
+            apply phiImpliesEdotNeq.
+        apply INVHELPER.
+        exists omin. apply INVheapNT.
+        apply INVAevals.
+    eapply IHHO in IH. clear IHHO.
+    invE IH fH.
+    invE IH fR.
+    invE IH fA.
+    
+    rewriteRev app_comm_cons.
+    
+    do 4 eexists. (*progress*)
+      eca. eca.
+      apply IH.
+    repeat split; repeat constructor; try apply IH.
+    intros.
+    apply IH; auto.
+    generalize e0 T1 H0 H2. clear.
+    induction e0; intros; inversionx H2; eca.
+    unfold GammaSet.
+    dec (x_dec x0 x1); auto.
+    rewrite H0 in *.
+    discriminate.
+  - (*HSEC*)
+    eapply IHHO1 in INV. unf.
+    eapply IHHO2 in H2. unf.
+    do 4 eexists; eauto.
+    rewrite app_assoc_reverse.
+    eapp dynSemStarTrans.
 Admitted.
 
 

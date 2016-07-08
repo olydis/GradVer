@@ -168,13 +168,22 @@ Hint Resolve list_eq_dec A'_d_dec.
 
 Ltac undecb :=
   unfold
+    equiv_decb,
+    equiv_dec,
     A'_s_decb,
+    A'_s_EqDec,
     A'_d_decb,
+    A'_d_EqDec,
     vex_decb,
+    vex_EqDec,
     v_decb,
+    v_EqDec,
     T_decb,
+    T_EqDec,
     x_decb,
+    x_EqDec,
     o_decb,
+    o_EqDec,
     m_decb,
     f_decb,
     C_decb,
@@ -600,8 +609,6 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     sfrmphi [] phi_r ->
     hoare G phi_1 [sRelease phi_2] phi_r
 | HDeclare : forall ss G(*\Gamma*) phi(*\*) phi'(*\*) x T,
-    phiImplies phi phi' ->
-    sfrmphi [] phi' ->
     G x = None ->
     hoare (GammaSet x T G)
       (phiEq (ex x) (ev (defaultValue' T)) :: phi)
@@ -707,6 +714,15 @@ Proof.
   induction H0.
   - econstructor; eauto; constructor.
   - intuition. econstructor; eauto.
+Qed.
+Lemma dynSemStarTrans : forall a b c,
+  dynSemStar a b -> dynSemStar b c -> dynSemStar a c.
+Proof.
+  intros.
+  induction H0.
+  - assumption.
+  - intuition.
+    eapply ESSStep; eauto.
 Qed.
 
 (*Definition dynSemFull (initial final : execState) : Prop := dynSemStar initial final /\ isFinished final.
