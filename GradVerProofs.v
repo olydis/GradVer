@@ -189,10 +189,10 @@ Proof.
       common.
       eapp evalphiRemoveHalloc.
       eapp evalphiRemoveRhoSubst.
-    assert (∀ (o0 : o) (m0 : f → option v) (f0 : f) 
+    assert (∀ (o0 : o) (C1 : C) (m0 : f → option v) (f0 : f) 
       (T0 : T),
-      Halloc x1 C0 initialHeap o0 = Some (C0, m0)
-      → fieldType C0 f0 = Some T0
+      Halloc x1 C0 initialHeap o0 = Some (C1, m0)
+      → fieldType C1 f0 = Some T0
         → ∃ v0 : v,
           m0 f0 = Some v0 ∧ hasDynamicType (Halloc x1 C0 initialHeap) v0 T0) as hlp.
       intros.
@@ -204,7 +204,7 @@ Proof.
            (λ fs' : T * string, if string_dec f0 (snd fs') then true else false)
            l) = Some (T0, f0)) as fi.
           unfold fieldType, fields in *.
-          destruct (class C0); try discriminate.
+          destruct (class C1); try discriminate.
           destruct c.
           common.
           inversionx Heqo0.
@@ -274,53 +274,53 @@ Proof.
       assert (omin <= o').
         apply le_S_n.
         eapp le_trans.
-      apply INVheapNT in H7. unf.
+      apply INVheapNT in H5. unf.
       split.
       + unfold Halloc.
         rewrite Heqo0.
-        dec (o_dec x1 o'). contradict H0. auto with arith.
+        dec (o_dec x1 o'). contradict H4. auto with arith.
         assumption.
       + intros.
         specialize (H9 f0).
         intuition.
-        apply in_app_iff in H7.
-        inversionx H7; try tauto.
+        apply in_app_iff in H5.
+        inversionx H5; try tauto.
         apply in_map_iff in H10.
         unf.
         inversionx H10.
         subst.
-        contradict H0. auto with arith.
+        contradict H4. auto with arith.
     * intros. destruct A'.
-      apply in_app_iff in H0. inversionx H0.
-      + apply INVAevals in H7.
+      apply in_app_iff in H4. inversionx H4.
+      + apply INVAevals in H5.
         unf.
         eex.
         simpl in *.
         unfold Halloc.
         rewrite Heqo0.
-        dec (o_dec x1 o0). rewrite H1 in H0. discriminate.
+        dec (o_dec x1 o0). rewrite H6 in H4. discriminate.
         eauto.
-      + apply in_map_iff in H7.
+      + apply in_map_iff in H5.
         unf.
-        inversionx H7. subst.
+        inversionx H5. subst.
         unfold Halloc.
         rewrite Heqo0. simpl.
         dec (o_dec o0 o0). eex.
   - unfoldINV INV.
     (*sMemberSet*)
-    rename H into hstX0.
-    rename H8 into hstX1.
-    rename H3 into im.
-    rename H9 into fht.
-    rename H4 into sf.
+    rename H2 into hstX0.
+    rename H3 into hstX1.
+    rename H0 into im.
+    rename H4 into fht.
+    rename H1 into sf.
     assert (temp := hstX0).
       applyINVtypes INVtypes temp.
-      rename x2 into v0.
+      rename x1 into v0.
       rename xd into hdtV0.
       rename H1 into irX0.
     assert (temp := hstX1).
       applyINVtypes INVtypes temp.
-      rename x2 into v1.
+      rename x1 into v1.
       rename xd into hdtV1.
       rename H1 into irX1.
     applyINVphi2 INVphi2 im.
@@ -347,18 +347,9 @@ Proof.
               (HSubst o0 f0 v1 initialHeap)
               initialRho
               initialAccess
-              (phiType x0 (TClass C0) :: phiAcc (ex x0) f0 :: 
-                phiNeq (ex x0) (ev vnull) :: phiEq (edot (ex x0) f0) (ex x1) :: 
+              (phiAcc (ex x0) f0 :: 
+                phiNeq (ex x0) (ev vnull) :: phiEq (edot (ex x0) f0) (ex y) :: 
                 phi'0)) as eph.
-      eca; simpl.
-        apply inclEmpty.
-        eca. econstructor.
-          unfold HSubst.
-          unfold o_decb, f_decb, string_decb, dec2decb.
-          des (o_dec o0 o0).
-          rewrite H5.
-          eauto.
-      common.
       eca; simpl; rewrite H8.
         apply inclSingle. assumption.
         eca. constructor. tauto.
@@ -411,9 +402,17 @@ Proof.
     * induction e0; intros; inversionx H1; simpl in *.
       + eex. eca.
       + eex. eca.
-      + apply H6 in eph.
-        inversionx eph. inversionx H15.
-        eex.
+      + specialize (INVtypes (ex x1) T1). simpl in *.
+        apply INVtypes in H0.
+          inversionx H0. unf.
+          eca. eca. inversionx H2; try (eca; fail).
+          unfold HSubst.
+          dec (o_dec o1 o0); eca; rewrite H3.
+            dec (o_dec o0 o0). eauto.
+            rename de2 into de. dec (o_dec o1 o0).
+              contradict de. eauto.
+              eauto.
+        eca.
       + apply H0 in eph.
         inversionx eph. inversionx H16. common. inversionx H15.
         unfold ehasDynamicType, evale. simpl.
@@ -435,7 +434,7 @@ Proof.
     * intros. apply INVAevals in H0. unf. destruct A'.
       unfold evalA'_d, HSubst in *. simpl in *.
       dec (o_dec o1 o0); try (eex; fail).
-      rewrite H1. destruct x2. eex.
+      rewrite H1. destruct x1. eex.
   - unfoldINV INV.
     (*sAssign*)
     rename H6 into hstX0.
