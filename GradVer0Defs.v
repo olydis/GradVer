@@ -587,20 +587,18 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi 
       [sReturn x]
       (phiEq (ex xresult) (ex x) :: phi')
-| HApp : forall G(*\Gamma*) underscore(*\_*) phi_i(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HApp : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    phiImplies phi_i (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
-    (* NotIn y (FV phi_r) ->
-    NotIn z' (FV phi_r) -> *)
     listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    hoare G phi_i [sCall x y m z'] (phi_q ++ phi_r)
+    hoare G phi [sCall x y m z'] (phi_q ++ phi_r)
 | HAssert : forall G(*\Gamma*) phi_1(*\*) phi_2(*\*),
     phiImplies phi_1 phi_2 ->
     hoare G phi_1 [sAssert phi_2] phi_1
@@ -714,15 +712,6 @@ Proof.
   induction H0.
   - econstructor; eauto; constructor.
   - intuition. econstructor; eauto.
-Qed.
-Lemma dynSemStarTrans : forall a b c,
-  dynSemStar a b -> dynSemStar b c -> dynSemStar a c.
-Proof.
-  intros.
-  induction H0.
-  - assumption.
-  - intuition.
-    eapply ESSStep; eauto.
 Qed.
 
 (*Definition dynSemFull (initial final : execState) : Prop := dynSemStar initial final /\ isFinished final.
