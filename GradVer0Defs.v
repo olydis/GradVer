@@ -622,6 +622,8 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     hoare G p (s1 ++ s2) r
 .
 
+
+
 (*coq2latex: NotInFV #x #p := #x \not \in FV(#p) *)
 Definition NotInFV (x : x) (p : phi) : Prop := NotIn x (FV p).
 
