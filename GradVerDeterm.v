@@ -48,9 +48,6 @@ Definition accTransExpand (a : A'_s) (eqs : equs) : list A'_s :=
 Definition accsTransExpand (a : A_s) (eqs : equs) : A_s :=
   flat_map (fun a => accTransExpand a eqs) a.
 
-Definition staticWorstCaseFootprint (p : phi) : A_s :=
-  accsTransExpand (staticFootprint p) (phiEqualities p).
-
 (* tests *)
 Open Scope string_scope.
 Eval compute in (phiEqualities [phiTrue]).
@@ -89,7 +86,131 @@ Definition withoutAcc (A : A'_s) (p : phi) : phi :=
 Definition withoutAccs (A : A_s) (p : phi) : phi :=
   fold_right withoutAcc p A.
 Definition divide (a : phi) (b : phi) : phi :=
-  withoutAcc (staticWorstCaseFootprint b) a.
+  withoutAccs (accsTransExpand (staticFootprint b) (phiEqualities a)) a.
+
+Lemma withoutAccsAlt : forall A p,
+  withoutAccs A p = filter (fun p => negb (existsb (fun a => existsb (A'_s_decb a) A) (staticFootprint' p))) p.
+Proof.
+  induction A; simpl.
+  - induction p0; simpl; auto.
+    symmetry in IHp0.
+    rewrite IHp0.
+    destruct a; auto.
+  - intros.
+    rewrite IHA. clear IHA.
+    unfold withoutAcc.
+    generalize p0. clear.
+    induction p0; simpl; auto.
+    symmetry in IHp0.
+    rewrite IHp0. clear IHp0.
+    destruct a0; auto.
+    simpl.
+    destruct (existsb (A'_s_decb (e, f)) A) eqn: exx.
+    * rewrite orb_true_r.
+      auto.
+    * simpl.
+      dec (A'_s_dec a (e, f)).
+      + dec (A'_s_dec (e, f) (e, f)).
+        auto.
+      + rename de2 into de.
+        dec (A'_s_dec (e, f) a). tauto.
+        auto.
+Qed.
+
+Lemma phiImpliesFilter : forall p f,
+  phiImplies p (filter f p).
+Proof.
+  unfold phiImplies.
+  induction p0;
+  intros. eca.
+  simpl.
+  inversionx H.
+  destruct (f a).
+  - eca.
+  - eapp IHp0.
+    eapp evalphiAexcept.
+Qed.
+
+Lemma divideImplies : forall a b,
+  phiImplies a (divide a b).
+Proof.
+  intros.
+  unfold divide.
+  rewrite withoutAccsAlt.
+  apply phiImpliesFilter.
+Qed.
+
+Lemma divideDistinctFootprint : forall h r a b,
+  disjoint (footprint h r (divide a b)) (footprint h r b).
+Proof.
+  induction b; simpl.
+  - unfold disjoint.
+    intuition.
+  - unfold disjoint in *.
+    intuition.
+    specialize (IHb x).
+    inversionx IHb.
+    * apply or_introl.
+      intro HH.
+      contradict H.
+      unfold footprint in *.
+      apply in_flat_map in HH.
+      apply in_flat_map.
+      unf. eex.
+      unfold divide in *.
+      rewrite withoutAccsAlt in *.
+      apply filter_In in H0.
+      apply filter_In.
+      unf. split; auto.
+      apply not_false_iff_true.
+      apply not_false_iff_true in H2.
+      intuition.
+      contradict H2.
+      rewrite negb_false_iff in *.
+      apply existsb_exists.
+      apply existsb_exists in H0.
+      unf. eex.
+      apply existsb_exists.
+      apply existsb_exists in H3.
+      unf. eex.
+      simpl.
+      unfold accsTransExpand in *.
+      apply in_flat_map.
+      apply in_flat_map in H3.
+      unf. eex.
+      intuition.
+    * apply not_and_or.
+      intuition.
+      apply in_app_iff in H2.
+      inversionx H2; auto. clear H.
+      unfold footprint in *. apply in_flat_map in H1. unf.
+      destruct a0; auto.
+      destruct x0; auto.
+      simpl in *.
+      destruct (evale' h r e) eqn: eve; auto.
+      destruct (evale' h r e0) eqn: eve0; auto.
+      destruct v; auto.
+      destruct v0; auto.
+      apply InSingle in H0.
+      apply InSingle in H2.
+      subst.
+      inversionx H2.
+      intros.
+      apply
+Admitted.
+
+Lemma divideIsValidDivision :
+  isValidDivision divide.
+Proof.
+  unfold isValidDivision.
+  intros.
+  unfold phiImplies.
+  intros.
+  eapp evalphiAppRev.
+  eapply divideImplies in H0.
+  eapp evalphiRemoveAexcept.
+  apply divideDistinctFootprint.
+Qed.
 
 Lemma isWithoutAccsSFP : forall p1 p2,
   isWithoutAccs (staticFootprint p1) p2 <->
