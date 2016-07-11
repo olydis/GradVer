@@ -93,3 +93,9 @@ Definition PLIFT2 (prop : phi -> phi -> Prop) : (pphi -> pphi -> Prop) :=
 Definition GLIFT2 (prop : phi -> phi -> Prop) : (gphi -> gphi -> Prop) :=
   fun gp1 gp2 => exists pp1 pp2, gGamma gp1 pp1 /\ gGamma gp2 pp2 /\ PLIFT2 prop pp1 pp2.
 
+Definition PLIFT4 (prop : phi -> phi -> phi -> phi -> Prop) : (pphi -> pphi -> pphi -> pphi -> Prop) :=
+  fun pp1 pp2 pp3 pp4 => exists p1' p2' p3' p4', pp1 p1' /\ pp2 p2' /\ pp3 p3' /\ pp4 p4' /\ prop p1' p2' p3' p4'.
+
+Definition GLIFT4 (prop : phi -> phi -> phi -> phi -> Prop) : (gphi -> gphi -> gphi -> gphi -> Prop) :=
+  fun gp1 gp2 gp3 gp4 => exists pp1 pp2 pp3 pp4, gGamma gp1 pp1 /\ gGamma gp2 pp2 /\ gGamma gp3 pp3 /\ gGamma gp4 pp4 /\ PLIFT4 prop pp1 pp2 pp3 pp4.
+

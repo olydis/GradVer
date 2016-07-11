@@ -385,6 +385,18 @@ Proof.
   eapp divideDistinctFootprint.
 Qed.
 
+Definition divideTrue (a : phi) (b : phi) : phi := [].
+
+Lemma divideTrueIsValidDivision :
+  isValidDivision divideTrue.
+Proof.
+  unfold isValidDivision.
+  intros.
+  unfold divideTrue.
+  rewrite app_nil_r.
+  assumption.
+Qed.
+
 Lemma isWithoutAccsSFP : forall p1 p2,
   isWithoutAccs (staticFootprint p1) p2 <->
   disjoint (staticFootprint p1) (staticFootprint p2).
@@ -407,6 +419,10 @@ Qed.
 
 (* HOARE *)
 
+Definition dividex := divideTrue.
+Lemma dividexISD : isValidDivision dividex.
+Proof. eapp divideTrueIsValidDivision. Qed.
+
 Inductive hoareApp : Gamma -> phi -> list s -> phi -> Prop :=
 | H'App : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
@@ -415,7 +431,7 @@ Inductive hoareApp : Gamma -> phi -> list s -> phi -> Prop :=
     hasStaticType G (ex z') T_p ->
     phiImplies phi [phiNeq (ex y) (ev vnull)] ->
     phiImplies phi phi_p ->
-    phi_r = divide phi phi_p ->
+    phi_r = dividex phi phi_p ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
     listDistinct [x ; y ; z'] ->
@@ -424,7 +440,7 @@ Inductive hoareApp : Gamma -> phi -> list s -> phi -> Prop :=
     hoareApp G phi [sCall x y m z'] (phi_q ++ phi_r)
 .
 
-Theorem hoareAppEquals : forall G p1 p2 s,
+Theorem hoareAppWorks : forall G p1 p2 s,
   hoareApp G p1 s p2 ->
   hoare    G p1 s p2.
 Proof.
@@ -438,5 +454,5 @@ Proof.
     apply inclEmpty.
     eappIn H4 H. inversionx H. auto.
   common.
-  eapp divideIsValidDivision.
+  eapp dividexISD.
 Qed.

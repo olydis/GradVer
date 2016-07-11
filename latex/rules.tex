@@ -89,6 +89,8 @@
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
+\newcommand{\grad}[1]{\widetilde{#1}}
+\newcommand{\withqm}[1]{?\:*\:#1}
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}
@@ -200,7 +202,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \end{align*}
 
 \newcommand{\sType}[3]{#1 \vdash #2 : #3}
-\subsection{Type ($\sType {\phi} {e} {T}$)}
+\subsection{Type ($\sType {\Gamma} {e} {T}$)}
 %\begin{mathpar}
 %\inferrule* [Right=STValue]
 %{~}
@@ -209,68 +211,72 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \begin{mathpar}
 \inferrule* [Right=STValNum]
 {~}
-{\sType {\phi} {n} {\Tint}}
+{\sType {\Gamma} {n} {\Tint}}
 \end{mathpar}
 \begin{mathpar}
 \inferrule* [Right=STValNull]
 {~}
-{\sType {\phi} {\vnull} {T}}
+{\sType {\Gamma} {\vnull} {T}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=STVar]
-{\phi \implies (x : T)}
-{\sType {\phi} {x} {T}}
+{\Gamma(x) = T}
+{\sType {\Gamma} {x} {T}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=STField]
-{ \sType {\phi} {e} {C}
+{ \sType {\Gamma} {e} {C}
 \\ \vdash C.f : T}
-{\sType {\phi} {e.f} {T}}
+{\sType {\Gamma} {e.f} {T}}
 \end{mathpar}
 
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
+
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
-%\hoare {\phi_p} {s_1} {\phi_{q}} \\ 
-%\hoare {\phi_{q}} {s_2} {\phi_r}
- \Gamma \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
- \phi_{q1} \implies \phi_{q2} \\
- \emptyset \sfrmphi \phi_{q2} \\
- \Gamma \hoare {\phi_{q2}} {s_2} {\phi_r}
-}
-{\Gamma \hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=HApp]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\
+{\emptyset} \sfrmphi {\phi_r}\\
+{x} \not \in {FV(\phi_r)}\\
+x \neq y \wedge x \neq z'\\
+{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
-\input{staticSemanticsPreMini}
-
-\subsubsection{Hoare revisited - pre-grad minification}
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
- \Gamma \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
- \phi_{q1} \implies \phi_{q2} \\
- \emptyset \sfrmphi \phi_{q2} \\
- \Gamma \hoare {\phi_{q2}} {s_2} {\phi_r}
-}
-{\Gamma \hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=HAppD]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
+\phi_r = \phi / \phi_p / x\\
+x \neq y \wedge x \neq z'\\
+{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
-\input{staticSemantics}
-
-\subsubsection{Hoare revisited - pre-grad minification with simple HSec}
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
- \hoare {\phi_p} {s_1} {\phi_{q}} \\ 
- \hoare {\phi_{q}} {s_2} {\phi_r}
-}
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=GHAppD]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\grad{\phi_{pre}}};~\ensures {\grad{\phi_{post}}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\grad{\phi}} \grad{\implies} {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
+\grad{\phi_r} = \grad{\phi} /_{y : C, z' : T_p, x : T_r} \grad{\phi_p} / x\\
+x \neq y \wedge x \neq z'\\
+\grad{\phi_p} = {{\grad{\phi_{pre}}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+\grad{\phi_q} = {{\grad{\phi_{post}}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma~ \ghoare {\grad{\phi}} {{x} := {y}.{m}({z'})} {\grad{\phi_q} * \grad{\phi_r}}}
 \end{mathpar}
 
-(other rules not printed here: think of previous subsection, but with self-framed implication on every pre-condition)
+What is the criterion of a correct gradual lifting of HCall?
+
+%\input{staticSemanticsPreMini}
 
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
@@ -351,8 +357,6 @@ Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equir
 \input{dynamicSemantics}
 %\input{dynamicSemanticsX}
 
-\newcommand{\grad}[1]{\widetilde{#1}}
-\newcommand{\withqm}[1]{?\:*\:#1}
 \section{Gradualization}
 \subsection{Syntax}
 \subsubsection{Gradual formula}

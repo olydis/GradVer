@@ -1,5 +1,181 @@
-Load GradVer20Hook_import.
+Load GradVerDeterm.
 Import Semantics.
+
+(* hasWellFormedSubtype *)
+Theorem hasWellFormedSubtype : forall p,
+  phiSatisfiable p ->
+  ∃ p' : phi, phiSatisfiable p' ∧ sfrmphi [] p' ∧ FV p = FV p' ∧ phiImplies p' p.
+Proof.
+  induction p0; intros; simpl.
+  - exists [].
+    split; auto.
+    repeat eex.
+  - admit.
+Admitted.
+
+(* APP *)
+Inductive hoareAppX : Gamma -> T -> T -> x -> phi -> phi -> phi -> phi -> Prop :=
+| HX'App : forall ppp G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+        incl (FV phi_pre) [xUserDef z ; xthis] ->
+        incl (FV phi_post) [xUserDef z ; xthis ; xresult] ->
+        sfrmphi [] phi_pre ->
+        sfrmphi [] phi_post ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    phiImplies phi [phiNeq (ex y) (ev vnull)] ->
+    phiImplies phi phi_p ->
+    phi_r = dividex phi phi_p ->
+    sfrmphi [] phi_r ->
+    NotIn x (FV phi_r) ->
+    listDistinct [x ; y ; z'] ->
+    phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
+    phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
+    phiImplies (phi_q ++ phi_r) ppp ->
+    hoareAppX G T_r T_p z' phi_pre phi_post phi ppp
+.
+
+Definition gdividex (a : gphi) (b : gphi) : gphi := (fst a || fst b, []).
+
+Inductive hoareGAppX : Gamma -> T -> T -> x -> gphi -> gphi -> gphi -> gphi -> Prop :=
+| HX'GApp : forall ppp G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+        incl (FV (snd phi_pre)) [xUserDef z ; xthis] ->
+        incl (FV (snd phi_post)) [xUserDef z ; xthis ; xresult] ->
+        sfrmgphi [] phi_pre ->
+        sfrmgphi [] phi_post ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    gphiImplies phi (false, [phiNeq (ex y) (ev vnull)]) ->
+    gphiImplies phi phi_p ->
+    phi_r = gdividex phi phi_p ->
+    sfrmgphi [] phi_r ->
+    NotIn x (FV (snd phi_r)) ->
+    listDistinct [x ; y ; z'] ->
+    phi_p = (fst phi_pre, phiSubsts2 xthis y (xUserDef z) z' (snd phi_pre)) ->
+    phi_q = (fst phi_post, phiSubsts3 xthis y (xUserDef z) z' xresult x (snd phi_post)) ->
+    gphiImplies (fst phi_q || fst phi_r, snd phi_q ++ snd phi_r) ppp ->
+    hoareGAppX G T_r T_p z' phi_pre phi_post phi ppp
+.
+
+Theorem GLIFT_eq : forall G Tr Tp p p1 p2 p3 p4,
+  gGood p1 ->
+  gGood p2 ->
+  gGood p3 ->
+  gGood p4 ->
+  hoareGAppX G Tr Tp p p1 p2 p3 p4 <-> GLIFT4 (hoareAppX G Tr Tp p) p1 p2 p3 p4.
+Proof.
+  unfold
+    GLIFT4, PLIFT4, gGamma', sfrmgphi,
+    gphiSatisfiable, NotIn,
+    phiIsIndependentVar.
+  split;
+  rename H into gps1;
+  rename H0 into gps2;
+  rename H1 into gps3;
+  rename H2 into gps4;
+  intros.
+  - inversionx H.
+    do 4 eexists. simpl in *.
+    split. eca.
+    split. eca.
+    split. eca.
+    split. eca.
+    rewrite app_nil_r in *.
+    clear H10.
+    inversionx gps1.
+    apply hasWellFormedSubtype in H.
+    inversionx gps2.
+    apply hasWellFormedSubtype in H10.
+    inversionx gps3.
+    apply hasWellFormedSubtype in H13.
+    inversionx gps4.
+    apply hasWellFormedSubtype in H16.
+    unf.
+    exists (if fst p1 then x3 else snd p1).
+    exists (if fst p2 then x2 else snd p2).
+    exists (if fst p3 then phiNeq (ex y) (ev vnull) :: x1 else snd p3).
+    exists (if fst p4 then x0 else snd p4).
+    unfold gGamma'.
+    destruct p1, p2, p3, p4. simpl in *.
+    split. destruct b; auto. split; auto. eca.
+    split. destruct b0; auto. split; auto. eca.
+    split. destruct b1; auto. split.
+      eca. admit. repeat eca.
+      eappIn phiImpliesTrans H27.
+      rewrite cons2app. eapp phiImpliesSuffix.
+    split. destruct b2; auto. split; auto. eca.
+    eca.
+    * destruct b;
+      try rewriteRev H19;
+      eauto.
+    * destruct b0;
+      try rewriteRev H22;
+      eauto.
+    * destruct b;
+      eauto.
+      inversionx H2; try tauto; try discriminate.
+    * destruct b0;
+      eauto.
+      inversionx H3; try tauto; try discriminate.
+    * destruct b1; auto.
+      rewrite cons2app. eapp phiImpliesPrefix.
+      admit.
+    * repeat eca.
+    * admit.
+    * admit.
+  - unf.
+    inversionx H8.
+    inversionx H0.
+    inversionx H.
+    inversionx H1.
+    inversionx H2.
+    eca.
+    * admit.
+    * admit.
+    * apply H8.
+    * apply H0.
+    * destruct p3.
+      destruct b; unfold gphiImplies; simpl.
+      + exists x5.
+        inversionx H5.
+        auto.
+      + inversionx H5.
+        auto.
+    * destruct p3.
+      destruct b; unfold gphiImplies; simpl.
+      + exists x5.
+        inversionx H5.
+        split; auto.
+        split; auto.
+        eauto.
+        destruct p1.
+        simpl in *.
+        destruct b; inversionx H3;
+        unfold dividex, divideTrue in *; simpl in *; eauto.
+        admit.
+      + inversionx H5.
+        destruct p1.
+        simpl in *.
+        destruct b; inversionx H3;
+        unfold dividex, divideTrue in *; simpl in *; eauto.
+        admit.
+    * unfold gdividex.
+      simpl.
+      unfold sfrmgphi.
+      destruct (fst p3 || fst p1); auto.
+    * simpl in *.
+      unfold dividex, divideTrue in *.
+      rewrite app_nil_r in *.
+      destruct p2, p3, p1, p4.
+      simpl in *.
+      unfold gphiImplies.
+      destruct (b || (b0 || b1)) eqn: ee; simpl.
+      + exists x6.
+        destruct b2;
+        inversionx H6; simpl in *.
+          split; auto.
+Admitted.
+
+
 
 (* INTERIORS *)
 Definition interior : Type := phi -> phi -> Prop.
