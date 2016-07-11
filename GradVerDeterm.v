@@ -26,11 +26,25 @@ Definition eqsTransExpandSingle (e : equ) (es : equs) : equs :=
     ;(es'a', es'b')]
     )
     es.
+(* enriches e using es *)
+Definition eqTransExpand (e : equ) (es : equs) : equs :=
+  flat_map (fun es' =>
+    let es'a := fst e in
+    let es'b := snd e in
+    let es'a' := eSubste es' es'a in
+    let es'b' := eSubste es' es'b in
+    [(es'a , es'b )
+    ;(es'a , es'b')
+    ;(es'a', es'b )
+    ;(es'a', es'b')]
+    )
+    es.
 
 Fixpoint eqTransHull (es : equs) : equs :=
   match es with
   | [] => []
-  | (e :: es) => e :: eqsTransExpandSingle e (eqTransHull es)
+  | (e :: es) => let es' := eqTransHull es in
+                 e :: eqTransExpand e es' ++ eqsTransExpandSingle e es'
   end.
 
 Definition phiEqualities' (p : phi) : equs :=
@@ -152,18 +166,41 @@ Lemma phiEqualitiesInclCons : forall p' p,
 Proof.
   unfold incl.
   intros.
+  destruct a.
   destruct p'; try apply H.
   simpl.
   repeat apply or_intror.
-  destruct a.
-  
+  apply in_app_iff. apply or_intror.
+  simpl.
+  repeat apply or_intror.
   apply in_flat_map.
-  exists (e1, e2). split; simpl; auto.
+  exists (e, e0). split; simpl; auto.
+  apply in_app_iff. apply or_intror.
   apply in_flat_map.
-  exists (e1, e2). split; simpl; auto.
+  exists (e, e0). split; simpl; auto.
 Qed.
 
-Lemma phiImplesAccHelper : forall e1 e2 f o h r a p0,
+Lemma phiEqualitiesInclEq : forall p' p,
+  (forall e1 e2, p' <> phiEq e1 e2) ->
+  phiEqualities (p' :: p) = phiEqualities p.
+Proof.
+  intros.
+  unfold phiEqualities.
+  simpl.
+  destruct p'; auto.
+  specialize (H e e0).
+  tauto.
+Qed.
+
+Require Import Coq.Logic.Classical_Pred_Type.
+
+(* Lemma eSubstseChain : forall e eq1 eq2,
+  eSubste eq2 (eSubste eq1 e) =
+  eSubste (eSubste eq2 (fst eq1), eSubste eq2 (snd eq1)) e.
+Proof.
+  induction e; intros. *)
+
+Lemma phiImplesAccHelper : forall f o h r a p0 e1 e2,
   let ff := filter (λ p : phi', negb (phi'_decb (phiAcc e2 f) p)) p0 in
   evale' h r e1 = Some (vo o) ->
   evale' h r e2 = Some (vo o) ->
@@ -183,15 +220,35 @@ Proof.
     set (ff' := filter
                (λ p : phi', negb (dec2decb phi'_dec (phiAcc e2 f) p))
                p0) in *.
-    dec (phi'_dec (phiAcc e2 f) a0); simpl in ff; subst ff.
-    * apply IHp0 in H1; auto.
-      inversionx H1; auto.
-      apply or_intror.
-      apply in_map_iff in H4.
-      apply in_map_iff.
-      unf. eex.
-      eapp phiEqualitiesInclCons.
-    * admit.
+    unfold dec2decb in ff.
+    destruct (phi'_dec (phiAcc e2 f) a0);
+    simpl in ff;
+    subst ff.
+    * specialize (IHp0 e1 e2). subst.
+      apply IHp0 in H1; auto.
+    * assert (phiImplies (a0 :: phiAcc e2 f :: ff') [phiAcc e1 f]) as pi.
+        unfold phiImplies. intros.
+        eapp H2.
+        inversionx H4. inversionx H15.
+        eca. eapp inclAexcept.
+        eca. eapp inclAexceptTriple.
+        rewrite AexceptComm.
+        assumption.
+      clear H2.
+      destruct (classic (∀ e1 e2 : e, a0 ≠ phiEq e1 e2)).
+      + rewrite phiEqualitiesInclEq; auto.
+        eapp IHp0.
+        admit.
+        inversionx H3.
+        eapp evalphiAexcept.
+      + apply not_all_ex_not in H2. invE H2 ee1.
+        apply not_all_ex_not in H2. invE H2 ee2.
+        apply NNPP in H2. subst.
+        clear n.
+        unfold phiEqualities.
+        simpl.
+        specialize (IHp0 (eSubste (ee1, ee2) e1) e2).
+        admit.
 Admitted.
 
 Lemma phiImpliesAcc : forall h r a e2 f p e1,
