@@ -1,66 +1,6 @@
-Load GradVer20Hook.
+Load GradVer20Hook_import.
 Import Semantics.
 
-
-Definition gphi := prod bool phi.
-Definition pphi := phi -> Prop.
-
-Definition gphiSatisfiable (gp : gphi) := phiSatisfiable (snd gp).
-
-Definition gUnknown : gphi := (true, []).
-Definition gThat (p : phi) : gphi := (false, p).
-Definition gThatOrSub (p : phi) : gphi := (true, p).
-
-Definition pFromList (ps : list phi) := fun p => In p ps.
-Definition pSingleton (p' : phi) := fun p => p' = p.
-
-Definition pincl (pp1 pp2 : pphi) :=
-  forall p, pp1 p -> pp2 p.
-
-Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
-Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
-
-Definition good (p : phi) := phiSatisfiable p /\ sfrmphi [] p.
-
-(* concretization *)
-Inductive gGamma : gphi -> pphi -> Prop :=
-| GammaNonGradual : forall (p : phi),
-  good p ->
-  gGamma (false, p) (pSingleton p)
-| GammaGradual : forall (p : phi),
-  phiSatisfiable p ->
-  gGamma (true, p) (fun p' => good p' /\ phiImplies p' p)
-.
-
-Definition ppGood (pp : pphi) :=
-  (exists p, pp p) /\
-  (forall p, pp p -> good p).
-
-Definition ppIsSingleton (p : phi) (pp : pphi) :=
-  pp p /\ (forall p', pp p' -> p' = p).
-
-Definition ppHasMaximum (p : phi) (pp : pphi) :=
-  pp p /\ (forall p', pp p' -> phiImplies p' p).
-
-Inductive gAlpha : pphi -> gphi -> Prop :=
-| AlphaNonGradual : forall (pp : pphi) (p : phi),
-  ppGood pp ->
-  
-  ppIsSingleton p pp ->
-  gAlpha pp (false, p)
-| AlphaGradual : forall (pp : pphi) (p : phi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  
-  ppHasMaximum p pp ->
-  gAlpha pp (true, p)
-| AlphaTotal : forall (pp : pphi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  (forall p, ~ ppHasMaximum p pp) ->
-  
-  gAlpha pp (true, [])
-.
 
 Theorem alphaSound : forall pp1 gp pp2,
   gAlpha pp1 gp ->
@@ -68,42 +8,132 @@ Theorem alphaSound : forall pp1 gp pp2,
   pincl pp1 pp2.
 Proof.
   intros.
-  inversionx H0.
-  - inversionx H1.
+  inversionx H.
+  - inversionx H0.
+    inversionx H1.
     unfold
       pincl,
-      pSingleton,
+      gGamma',
       ppIsSingleton
     in *. unf.
     intros.
-    apply H1 in H3.
-    subst.
-    congruence.
-  - inversionx H1.
+    simpl.
+    eapp H4.
+  - inversionx H0.
+    inversionx H1.
     unfold
       pincl,
-      ppHasMaximum,
+      ppHasUpperBound,
+      ppHasSupremum,
       ppIsSingleton
     in *. unf.
     intros.
     split.
-    * eapp H2.
-    * eapp H1.
-  - inversionx H1.
+    * eapp H4.
+    * eapp H0.
+  - inversionx H0.
+    inversionx H1.
     unfold
       pincl,
-      ppHasMaximum,
+      ppHasSupremum,
       ppIsSingleton
     in *.
     intros.
     split.
-    * eapp H2.
+    * eapp H4.
     * unfold phiImplies.
       intros.
       constructor.
 Qed.
 
 Require Import Coq.Logic.Classical_Pred_Type.
+
+Definition phiFalse : phi' := phiNeq (ev vnull) (ev vnull).
+Lemma phiFalseNotSat : ~ phiSatisfiable [phiFalse].
+Proof.
+  intuition.
+  inversionx H. unf.
+  inversionx H0.
+  inversionx H9.
+  common.
+  inversionx H2. inversionx H7.
+  tauto.
+Qed.
+
+Definition joinExists : forall p1 p2,
+  exists p, phiImplies p1 p /\ phiImplies p2 p /\
+  forall p', (phiImplies p1 p' /\ phiImplies p2 p') -> phiImplies p p'.
+Proof.
+  induction p1; intros.
+  - exists [].
+    split. eapp phiImpliesRefl.
+    split. eapp phiImpliesPrefix. eapp phiImpliesRefl.
+    intros. unf.
+    auto.
+  - destruct (classic (exists e f, a = phiAcc e f)).
+    * unf. subst.
+      admit.
+    * destruct (classic (phiImplies p1 [a])).
+        specialize (IHp1 p2). unf.
+        exists x.
+        split.
+          unfold phiImplies. intros.
+          inversionx H3. eapp H2.
+          eapp evalphiAexcept.
+        split. auto.
+        intros.
+        unf.
+        eapp H4.
+        admit. (* yes *)
+      destruct (classic (phiImplies p2 [a])).
+        specialize (IHp1 p2). unf.
+        exists (a :: x).
+        split.
+          unfold phiImplies. intros.
+          inversionx H4. eca.
+        split.
+          unfold phiImplies. intros.
+          assert (footprint' h r a = []) as fp.
+            destruct a; auto. contradict H. eex.
+          eca.
+            rewrite fp. apply inclEmpty.
+            apply H1 in H4. inversionx H4. assumption.
+          rewrite fp. common.
+          eapp H2.
+        intros. unf.
+        unfold phiImplies. intros.
+        destruct (classic (phiImplies p1 p')).
+          eapp H5.
+          rewrite cons2app in H4.
+          eapp phiImpliesSuffix.
+        
+        
+        inversionx H4.
+        split. auto.
+        intros. unf.
+        eapp H4.
+        admit.
+Qed.
+
+
+Theorem supremumWD : forall pp,
+  exists p, ppHasSupremum p (pFromList pp).
+Proof.
+  induction pp.
+  - exists [phiFalse].
+    unfold ppHasSupremum.
+    unfold ppHasUpperBound.
+    split.
+    * intros.
+      inversionx H.
+    * unfold phiImplies.
+      intros.
+      exfalso.
+      eapp phiFalseNotSat.
+      eex.
+  - unfold ppHasSupremum in *.
+    unfold ppHasUpperBound in *.
+    unf.
 
 Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
   gAlpha pp1 gp2 ->
@@ -113,94 +143,72 @@ Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
   pincl pp3 pp2.
 Proof.
   intros.
-  inversionx H0; inversionx H2.
+  inversionx H;
+  inversionx H0;
+  inversionx H1.
   - unfold
       pincl,
-      pSingleton,
-      ppIsSingleton
-    in *. unf.
-    intros. subst.
-    apply H3.
-    assumption.
-  - inversionx H1.
-    * (* contradict *)
-      specialize (H5 p0).
-      contradict H5.
-      unfold
-        pincl,
-        pSingleton,
-        ppHasMaximum,
-        ppIsSingleton
-      in *. unf.
-      split; auto.
-      intros.
-      apply H3 in H1.
-      apply H3 in H5.
-      subst.
-      congruence.
-    * unfold
-        pincl,
-        ppHasMaximum,
-        ppIsSingleton
-      in *.
-      intros. unf.
-      split; auto.
-      apply (phiImpliesTrans p2 p0 p1); auto.
-      apply H3 in H1.
-      unf.
-      auto.
-  - inversionx H1.
-    * (* contradict *)
-      specialize (H5 p0).
-      contradict H5.
-      unfold
-        pincl,
-        pSingleton,
-        ppGood,
-        ppHasMaximum,
-        ppIsSingleton
-      in *. unf.
-      assert (p0 = x0). eapp H3. subst.
-      split; auto.
-      intros.
-      apply H3 in H1. subst.
-      congruence.
-    * (* contradict everything but phi = true *)
-      unfold
-        pincl,
-        ppHasMaximum,
-        ppIsSingleton
-      in *.
-      intros. unf.
-      destruct (classic (phiImplies [] p0)).
-      + split; auto.
-        apply (phiImpliesTrans p1 [] p0); auto.
-      + (* contradict *)
-        assert (~ phiImplies [] p).
-        
-        unfold phiImplies in H1.
-        
-        rewrite not_all_ex_not in H1.
-      destruct p0; try tauto.
-      intros. unf.
-      split; auto.
-      apply (phiImpliesTrans p2 p0 p1); auto.
-      apply H3 in H1.
-      unf.
-      auto.
-      
-      inversionx H1.
-    unfold
-      pincl,
-      ppHasMaximum,
+      gGamma',
       ppIsSingleton
     in *.
-    intros.
-    split.
-    * eapp H2.
-    * unfold phiImplies.
+    simpl. unf.
+    intros. subst.
+    eapp H2.
+  - unfold pincl, gGamma' in *.
+    simpl. intros. unf.
+    destruct gp1.
+    destruct b; simpl in *.
+    * unfold
+        ppHasSupremum,
+        ppIsSingleton
+      in *.
+      unf.
+      split; auto.
+      apply (phiImpliesTrans p1 p0 p2); auto.
+      eapp H8.
+      unfold ppHasUpperBound.
       intros.
-      constructor.
+      eapp H2.
+    * (* contradict *)
+      unfold
+        pincl,
+        ppHasSupremum,
+        ppIsSingleton
+      in *. unf.
+      inversionx H3. unf.
+      assert (x = p2). eapp H2. subst.
+      specialize (H4 p2). contradict H4.
+      split; auto.
+  - unfold pincl, gGamma' in *.
+    simpl. intros. unf.
+    destruct gp1.
+    destruct b; simpl in *.
+    * (* contradict everything but phi = true *)
+      split; auto.
+      destruct (classic (phiImplies [] p1)).
+        eapp phiImpliesTrans.
+      contradict H1.
+      clear H0 H7.
+      unfold phiImplies. intros. clear H0.
+      inversionx H3. unf. clear H1.
+      unfold ppIsSingleton in *.
+        specialize (H4 x).
+        apply not_and_or in H4.
+        inversionx H4; try tauto.
+        apply not_all_ex_not in H0. unf.
+        assert (pp1 x0). eapp not_imply_elim.
+        apply not_imply_elim2 in H1.
+      unfold ppHasSupremum in H5.
+    * (* contradict *)
+      unfold
+        pincl,
+        ppHasSupremum,
+        ppIsSingleton
+      in *.
+      inversionx H3. unf.
+      assert (x = p1). eapp H2. subst.
+      specialize (H4 p1). contradict H4.
+      split; auto.
 Qed.
 
 

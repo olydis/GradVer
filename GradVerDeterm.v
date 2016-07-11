@@ -39,12 +39,12 @@ Definition phiEqualities' (p : phi) : equs :=
     | phiEq a b => [(a, b); (b, a)]
     | _ => []
     end) p.
-Fixpoint phiEqualities (p : phi) : equs := eqTransHull (phiEqualities' p).
+Definition phiEqualities (p : phi) : equs := eqTransHull (phiEqualities' p).
 
 Definition eTransExpand (e' : e) (eqs : equs) : list e :=
-  map (fun eq => eSubste eq e') eqs.
+  e' :: map (fun eq => eSubste eq e') eqs.
 Definition accTransExpand (a : A'_s) (eqs : equs) : list A'_s :=
-  map (fun eq => (eSubste eq (fst a), snd a)) eqs.
+  a :: map (fun eq => (eSubste eq (fst a), snd a)) eqs.
 Definition accsTransExpand (a : A_s) (eqs : equs) : A_s :=
   flat_map (fun a => accTransExpand a eqs) a.
 
@@ -140,16 +140,113 @@ Proof.
   apply phiImpliesFilter.
 Qed.
 
-Lemma divideDistinctFootprint : forall h r a b,
+Lemma phiImpliesAccReorder : forall e f p,
+  phiSatisfiable p ->
+  In (phiAcc e f) p ->
+  forall h r a, evalphi h r a p <-> evalphi h r a ((phiAcc e f) :: (filter (fun p => negb (phi'_decb (phiAcc e f) p)) p)).
+Proof.
+Admitted.
+
+Lemma phiEqualitiesInclCons : forall p' p,
+  incl (phiEqualities p) (phiEqualities (p' :: p)).
+Proof.
+  unfold incl.
+  intros.
+  destruct p'; try apply H.
+  simpl.
+  repeat apply or_intror.
+  destruct a.
+  
+  apply in_flat_map.
+  exists (e1, e2). split; simpl; auto.
+  apply in_flat_map.
+  exists (e1, e2). split; simpl; auto.
+Qed.
+
+Lemma phiImplesAccHelper : forall e1 e2 f o h r a p0,
+  let ff := filter (λ p : phi', negb (phi'_decb (phiAcc e2 f) p)) p0 in
+  evale' h r e1 = Some (vo o) ->
+  evale' h r e2 = Some (vo o) ->
+  In (o, f) a ->
+  phiImplies (phiAcc e2 f :: ff) [phiAcc e1 f] ->
+  evalphi h r (Aexcept a [(o, f)]) ff ->
+  (e1, f) = (e2, f)
+    ∨ In (e2, f) (map (λ eq : equ, (eSubste eq e1, f)) (phiEqualities p0)).
+Proof.
+  induction p0; intros; simpl in *.
+  - subst ff.
+    destruct (classic (e1 = e2)). subst. auto.
+    contradict H4.
+    unfold phiImplies in *.
+    admit.
+  - unfold phi'_decb in *.
+    set (ff' := filter
+               (λ p : phi', negb (dec2decb phi'_dec (phiAcc e2 f) p))
+               p0) in *.
+    dec (phi'_dec (phiAcc e2 f) a0); simpl in ff; subst ff.
+    * apply IHp0 in H1; auto.
+      inversionx H1; auto.
+      apply or_intror.
+      apply in_map_iff in H4.
+      apply in_map_iff.
+      unf. eex.
+      eapp phiEqualitiesInclCons.
+    * admit.
+Admitted.
+
+Lemma phiImpliesAcc : forall h r a e2 f p e1,
+  evale' h r e1 = evale' h r e2 ->
+  evalphi h r a p ->
+  phiImplies p [phiAcc e1 f] ->
+  In (phiAcc e2 f) p ->
+  In (e2, f) (accTransExpand (e1, f) (phiEqualities p)).
+Proof.
+  intros.
+  (*in*)
+  assert (HH := H0).
+  eappIn evalphiIn HH.
+  inversionx HH.
+  (*done*)
+  common.
+  set (p1 := (phiAcc e2 f) :: (filter (fun p => negb (phi'_decb (phiAcc e2 f) p)) p0)).
+  assert (phiImplies p1 [phiAcc e1 f]) as H1'.
+    eappIn phiImpliesTrans H1.
+    subst p1.
+    unfold phiImplies.
+    intros.
+    eapp phiImpliesAccReorder.
+    eex.
+  assert (evalphi h r a p1) as H0'.
+    subst p1.
+    rewriteRev phiImpliesAccReorder; auto.
+    eex.
+  clear H0 H1 H2.
+  subst p1.
+  inversionx H0'.
+  simpl in *.
+  rewrite H9 in *.
+  clear H4 H11.
+  eapp phiImplesAccHelper.
+Qed.
+
+Lemma divideDistinctFootprint : forall h r A a b,
+  evalphi h r A a ->
+  phiImplies a b ->
   disjoint (footprint h r (divide a b)) (footprint h r b).
 Proof.
-  induction b; simpl.
+  induction b; simpl; intros;
+  rename H0 into im;
+  rename H into sat.
   - unfold disjoint.
     intuition.
   - unfold disjoint in *.
     intuition.
-    specialize (IHb x).
-    inversionx IHb.
+    assert (phiImplies a b) as IH.
+      rewrite cons2app in im.
+      eapp phiImpliesTrans.
+      eapp phiImpliesSuffix.
+    eapply H in IH. clear H.
+    inversionx IH.
     * apply or_introl.
       intro HH.
       contradict H.
@@ -187,17 +284,35 @@ Proof.
       destruct a0; auto.
       destruct x0; auto.
       simpl in *.
-      destruct (evale' h r e) eqn: eve; auto.
-      destruct (evale' h r e0) eqn: eve0; auto.
+      destruct (evale' h r e) eqn: ee1; auto.
+      destruct (evale' h r e0) eqn: ee2; auto.
       destruct v; auto.
       destruct v0; auto.
       apply InSingle in H0.
       apply InSingle in H2.
       subst.
       inversionx H2.
-      intros.
-      apply
-Admitted.
+      unfold divide in *.
+      rewrite withoutAccsAlt in H1.
+      apply filter_In in H1. unf.
+      apply not_false_iff_true in H0.
+      contradict H0.
+      apply negb_false_iff.
+      apply existsb_exists.
+      eapply phiImpliesAcc in H.
+        Focus 2. rewrite ee1, ee2. auto.
+        Focus 2. eauto.
+        Focus 2. rewrite cons2app in im. eapp phiImpliesTrans. eapp phiImpliesPrefix.
+      
+      simpl. exists (e0, f0). split; auto.
+      apply orb_true_intro.
+      inversionx H. inversionx H0. constructor. dec (A'_s_dec (e0, f0) (e0, f0)). auto.
+      apply or_intror.
+      apply existsb_exists.
+      exists (e0, f0). split. Focus 2. dec (A'_s_dec (e0, f0) (e0, f0)). auto.
+      apply in_app_iff.
+      auto.
+Qed.
 
 Lemma divideIsValidDivision :
   isValidDivision divide.
@@ -207,9 +322,10 @@ Proof.
   unfold phiImplies.
   intros.
   eapp evalphiAppRev.
+  assert (sat := H0).
   eapply divideImplies in H0.
   eapp evalphiRemoveAexcept.
-  apply divideDistinctFootprint.
+  eapp divideDistinctFootprint.
 Qed.
 
 Lemma isWithoutAccsSFP : forall p1 p2,
@@ -242,8 +358,7 @@ Inductive hoareApp : Gamma -> phi -> list s -> phi -> Prop :=
     hasStaticType G (ex z') T_p ->
     phiImplies phi [phiNeq (ex y) (ev vnull)] ->
     phiImplies phi phi_p ->
-    phiImplies phi phi_r ->
-    isWithoutAccs (staticFootprint phi_p) phi_r ->
+    phi_r = divide phi phi_p ->
     sfrmphi [] phi_r ->
     NotIn x (FV phi_r) ->
     listDistinct [x ; y ; z'] ->
@@ -262,28 +377,9 @@ Proof.
   unfold phiImplies.
   intros.
   
-  assert (evalsIn h r (staticFootprint phi_r) (footprint h r phi_r))
-  as ev_phi_r.
-    eapp evalphiVSfp.
-  assert (evalsIn h r (staticFootprint (phiSubsts2 xthis y (xUserDef z) z' phi_pre)) (footprint h r (phiSubsts2 xthis y (xUserDef z) z' phi_pre)))
-  as ev_phi_pre.
-    eapp evalphiVSfp.
-  
   eca.
     apply inclEmpty.
     eappIn H4 H. inversionx H. auto.
   common.
-  eapp evalphiAppRev.
-  eappIn H6 H.
-  eapp evalphiRemoveAexcept.
-  unfold evalsIn in *.
-  apply isWithoutAccsSFP in H7.
-  
-  unfold disjoint in *.
-  intros.
-  apply not_and_or. intuition.
-  eappIn evalsInInRev H12.
-  eappIn evalsInInRev H13.
-  unf.
-  specialize (H7 x1). inversionx H7; auto.
-  
+  eapp divideIsValidDivision.
+Qed.
