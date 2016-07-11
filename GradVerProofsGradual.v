@@ -60,6 +60,245 @@ Proof.
   tauto.
 Qed.
 
+Fixpoint eSubste (eq : prod e e) (e' : e) : e :=
+	  if e_dec e' (fst eq)
+	  then (snd eq)
+	  else match e' with
+	       | edot e f => edot (eSubste eq e) f
+	       | _ => e'
+	       end.
+
+Definition eSubstsEnum (e1 e2 : e) (e' : e) : list e :=
+  [ e'
+  ; eSubste (e1, e2) e'
+  ; eSubste (e2, e1) e'
+  ].
+
+Definition phi'SubstsEnum (a b : e) (p : phi') : list phi' :=
+  match p with
+  | phiTrue => [phiTrue]
+  | phiEq e1 e2 => map (fun p => phiEq (fst p) (snd p)) 
+                       (list_prod (eSubstsEnum a b e1)
+                                  (eSubstsEnum a b e2))
+  | phiNeq e1 e2 => map (fun p => phiNeq (fst p) (snd p)) 
+                       (list_prod (eSubstsEnum a b e1)
+                                  (eSubstsEnum a b e2))
+  | phiAcc e f => map (fun e => phiAcc e f)
+                       (eSubstsEnum a b e)
+  end.
+
+Fixpoint phiSubstsEnum (a b : e) (p : phi) : list phi :=
+  match p with
+  | [] => [[]]
+  | p :: ps => flat_map (fun ps => map (fun p => p :: ps) 
+                                  (phi'SubstsEnum a b p))
+                        (phiSubstsEnum a b ps)
+  end.
+
+Definition phiImpliesConsEqHelper : forall p p' px a e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) (a :: p') ->
+  In px (phiSubstsEnum e1 e2 p') ->
+  phiImplies p px ->
+  exists x,
+    In x (phi'SubstsEnum e1 e2 a) /\
+    phiImplies p (x :: px).
+Proof.
+  (* induction p0; intros.
+    assert (∀ H r A, evalphi H r A px) as tt.
+      eapp phiImpliesTauto.
+    admit.
+  specialize *)
+  destruct a; simpl.
+  - eex.
+    eapp phiImpliesTrans.
+    admit.
+  - admit.
+  - admit.
+  - intros.
+    
+Admitted.
+
+Definition phiImpliesConsEq : forall p p' e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) p'
+  -> 
+  exists px,
+  In px (phiSubstsEnum e1 e2 p') /\
+  phiImplies p px.
+Proof.
+  induction p'; intros; simpl in *.
+    eex.
+    eapp phiImpliesPrefix. eapp phiImpliesRefl.
+  assert (phiImplies (phiEq e1 e2 :: p0) p') as IH.
+    eapp phiImpliesTrans.
+    rewrite cons2app. eapp phiImpliesSuffix.
+  apply IHp' in IH; auto.
+  invE IH px. unf.
+  eappIn phiImpliesConsEqHelper H.
+  unf.
+  eexists (x :: px).
+  split; auto.
+  apply in_flat_map.
+  eex.
+  apply in_map_iff.
+  eex.
+Qed.
+
+Definition phiImpliesAccessHelper : forall p e f e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) [phiAcc e f]
+  -> 
+    phiImplies p [phiAcc e f]
+  ∨ phiImplies p [phiAcc (eSubste (e1, e2) e) f]
+  ∨ phiImplies p [phiAcc (eSubste (e2, e1) e) f].
+Proof.
+  induction p0; intros.
+  - contradict H0.
+    invE H h.
+    invE H r.
+    invE H a.
+    apply evalphiFootprintAccess in H. simpl in *.
+    
+    unfold phiImplies.
+    apply ex_not_not_all.
+    exists h.
+    apply ex_not_not_all.
+    exists r.
+    apply ex_not_not_all.
+    exists [].
+    apply ex_not_not_all.
+    eexists. assumption.
+    intuition.
+    inversionx H0.
+    inversionx H10.
+    simpl in *. rewrite H7 in *.
+    apply inclEmptyFalse in H5.
+    tauto.
+  - assert (phiSatisfiable (phiEq e1 e2 :: p0)) as IH.
+      invE H h'.
+      invE H r'.
+      invE H a'.
+      exists h'. exists r'. exists a'.
+      inversionx H. eca.
+      inversionx H11. common.
+      eapp evalphiAexcept.
+    
+Admitted.
+
+(* Definition phiImpliesAccessHelper2 : forall *)
+
+Lemma evalphiInclFootprint : forall p1 p2,
+  phiImplies p1 p2 ->
+  forall H r,
+    evalphi H r (footprint H r p1) p1 ->
+    incl (footprint H r p2) (footprint H r p1).
+Proof.
+  intros.
+  apply H in H1.
+  eapp evalphiImpliesAccess.
+Qed.
+
+Definition phiImpliesAccess : forall p e f,
+  phiSatisfiable p ->
+  phiImplies p [phiAcc e f] ->
+  exists e', In (phiAcc e' f) p /\ phiImplies p [phiEq e e'].
+Proof.
+  intros.
+  assert (forall H r A, 
+      evalphi H r A p0 ->
+      exists o,
+        evale' H r e = Some (vo o) /\
+        In (o, f) A).
+    intros.
+    apply H0 in H2.
+    inversionx H2.
+    inversionx H12.
+    eex.
+  
+  Check evalphiVSfp.
+  
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    evalsIn H r (staticFootprint p0) (footprint H r p0) /\
+    evalsIn H r (staticFootprint [phiAcc e f]) (footprint H r [phiAcc e f]) /\
+    incl (footprint H r [phiAcc e f]) (footprint H r p0)) as HH.
+    intros.
+    split. eapp evalphiVSfp.
+    split. apply H0 in H3. eapp evalphiVSfp.
+    eapp evalphiInclFootprint.
+  Check dynamicASstaticFP.
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    incl (footprint H r [phiAcc e f]) 
+         (oflatten (map (A'_s2A'_d H r) (staticFootprint p0))) /\
+    exists o, evale' H r e = Some (vo o)) as HHH.
+    intros.
+    repeat rewriteRev dynamicASstaticFP.
+    split. eapp evalphiInclFootprint.
+    apply H0 in H3.
+    inversionx H3. inversionx H13.
+    eex.
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    exists e' o,
+    In (phiAcc e' f) p0 /\
+    evale' H r e' = Some (vo o) /\
+    evale' H r e = Some (vo o)
+    ) as HHHH.
+    intros.
+    apply HHH in H3.
+    unf.
+    simpl in *.
+    rewrite H3 in H4.
+    rewrite app_nil_r in *.
+    apply inclSingle in H4.
+    apply InOflatten in H4.
+    apply in_map_iff in H4.
+    unf.
+    unfold staticFootprint in H6.
+    apply in_flat_map in H6.
+    unf.
+    destruct x1; try tauto.
+    simpl in *.
+    inversionx H7; try tauto.
+    unfold A'_s2A'_d in H4.
+    simpl in *.
+    destruct (evale' H2 r e0) eqn: H3'; try discriminate.
+    destruct v; try discriminate.
+    simpl in *.
+    inversionx H4.
+    eex.
+  assert (forall H r a,
+    evalphi H r a p0 ->
+    exists e',
+    In (phiAcc e' f) p0 /\
+    evalphi H r [] [phiEq e e']
+    ) as HHHHH.
+    intros.
+    apply evalphiFootprintAccess in H3.
+    apply HHHH in H3.
+    unf.
+    eex.
+    repeat eca.
+    apply inclEmpty.
+
+  invE H h.
+  invE H r.
+  invE H a.
+  assert (H' := H).
+  apply HHHHH in H'. invE H' e'. unf.
+  eex.
+  unfold phiImplies.
+  intros.
+  apply HHHHH in H4. invE H4 e''. unf.
+  assert (e' = e'').
+  Focus 2. subst. eapp evalphiIncl. apply inclEmpty.
+  
+  
+Admitted.
+
+
 Definition joinExists : forall p1 p2,
   exists p, phiImplies p1 p /\ phiImplies p2 p /\
   forall p', (phiImplies p1 p' /\ phiImplies p2 p') -> phiImplies p p'.

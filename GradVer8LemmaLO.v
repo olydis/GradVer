@@ -73,12 +73,12 @@ Proof.
   eapp dynSemLift.
 Qed.
 
-Lemma phiImpliesTauto : forall H r A p,
+Lemma phiImpliesTauto : forall p,
   phiImplies [] p ->
-  evalphi H r A p.
+  forall H r A,  evalphi H r A p.
 Proof.
   intros.
-  apply H1.
+  apply H0.
   constructor.
 Qed.
 

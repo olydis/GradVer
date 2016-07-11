@@ -15,45 +15,33 @@ Admitted.
 
 (* APP *)
 Inductive hoareAppX : Gamma -> T -> T -> x -> phi -> phi -> phi -> phi -> Prop :=
-| HX'App : forall ppp G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HX'App : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
         incl (FV phi_pre) [xUserDef z ; xthis] ->
         incl (FV phi_post) [xUserDef z ; xthis ; xresult] ->
         sfrmphi [] phi_pre ->
         sfrmphi [] phi_post ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    phiImplies phi [phiNeq (ex y) (ev vnull)] ->
-    phiImplies phi phi_p ->
-    phi_r = dividex phi phi_p ->
-    sfrmphi [] phi_r ->
-    NotIn x (FV phi_r) ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
     listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    phiImplies (phi_q ++ phi_r) ppp ->
-    hoareAppX G T_r T_p z' phi_pre phi_post phi ppp
+    hoareAppX G T_r T_p z' phi_pre phi_post phi phi_q
 .
 
-Definition gdividex (a : gphi) (b : gphi) : gphi := (fst a || fst b, []).
-
 Inductive hoareGAppX : Gamma -> T -> T -> x -> gphi -> gphi -> gphi -> gphi -> Prop :=
-| HX'GApp : forall ppp G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HX'GApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
         incl (FV (snd phi_pre)) [xUserDef z ; xthis] ->
         incl (FV (snd phi_post)) [xUserDef z ; xthis ; xresult] ->
         sfrmgphi [] phi_pre ->
         sfrmgphi [] phi_post ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    gphiImplies phi (false, [phiNeq (ex y) (ev vnull)]) ->
-    gphiImplies phi phi_p ->
-    phi_r = gdividex phi phi_p ->
-    sfrmgphi [] phi_r ->
-    NotIn x (FV (snd phi_r)) ->
+    gphiImplies phi (fst phi_p, phiNeq (ex y) (ev vnull) :: snd phi_p) ->
     listDistinct [x ; y ; z'] ->
     phi_p = (fst phi_pre, phiSubsts2 xthis y (xUserDef z) z' (snd phi_pre)) ->
     phi_q = (fst phi_post, phiSubsts3 xthis y (xUserDef z) z' xresult x (snd phi_post)) ->
-    gphiImplies (fst phi_q || fst phi_r, snd phi_q ++ snd phi_r) ppp ->
-    hoareGAppX G T_r T_p z' phi_pre phi_post phi ppp
+    hoareGAppX G T_r T_p z' phi_pre phi_post phi phi_q
 .
 
 Theorem GLIFT_eq : forall G Tr Tp p p1 p2 p3 p4,
@@ -61,7 +49,8 @@ Theorem GLIFT_eq : forall G Tr Tp p p1 p2 p3 p4,
   gGood p2 ->
   gGood p3 ->
   gGood p4 ->
-  hoareGAppX G Tr Tp p p1 p2 p3 p4 <-> GLIFT4 (hoareAppX G Tr Tp p) p1 p2 p3 p4.
+  hoareGAppX        G Tr Tp p  p1 p2 p3 p4 <-> 
+  GLIFT4 (hoareAppX G Tr Tp p) p1 p2 p3 p4.
 Proof.
   unfold
     GLIFT4, PLIFT4, gGamma', sfrmgphi,
@@ -79,21 +68,20 @@ Proof.
     split. eca.
     split. eca.
     split. eca.
-    rewrite app_nil_r in *.
-    clear H10.
     inversionx gps1.
     apply hasWellFormedSubtype in H.
     inversionx gps2.
-    apply hasWellFormedSubtype in H10.
+    apply hasWellFormedSubtype in H9.
     inversionx gps3.
-    apply hasWellFormedSubtype in H13.
+    apply hasWellFormedSubtype in H11.
     inversionx gps4.
-    apply hasWellFormedSubtype in H16.
+    apply hasWellFormedSubtype in H13.
     unf.
+    simpl in *.
     exists (if fst p1 then x3 else snd p1).
     exists (if fst p2 then x2 else snd p2).
-    exists (if fst p3 then phiNeq (ex y) (ev vnull) :: x1 else snd p3).
-    exists (if fst p4 then x0 else snd p4).
+    exists (if fst p3 then x1 else snd p3).
+    exists (if fst p2 then x0 else snd p4).
     unfold gGamma'.
     destruct p1, p2, p3, p4. simpl in *.
     split. destruct b; auto. split; auto. eca.
