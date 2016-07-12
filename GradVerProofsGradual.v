@@ -60,6 +60,296 @@ Proof.
   tauto.
 Qed.
 
+Open Scope string_scope.
+Definition x2string (x : x) : string :=
+  match x with
+  | xUserDef x => "1" ++ x
+  | xthis => "2"
+  | xresult => "3"
+  end.
+Close Scope string_scope.
+
+(* generic ENV *)
+(* 
+Definition genericRho : rho := fun x => Some (vo [x2string x]).
+Definition genericHeap : H := fun o => Some (EmptyString, 
+                             (fun f => Some (vo (f :: o)))).
+Definition genericAccess : A_d := [].
+
+no good idea: merge of two objects already needs infinite submerges
+ *)
+
+Definition dEnv : Type := prod (list o) (prod (prod H rho) A_d).
+
+Definition dEnvGetHeap (env : dEnv) : H := fst (fst (snd env)).
+Definition dEnvGetRho (env : dEnv) : rho := snd (fst (snd env)).
+Definition dEnvGetAccess (env : dEnv) : A_d := snd (snd env).
+Definition dEnvGetKnown (env : dEnv) : list o := fst env.
+
+Ltac dEnvGetUnf :=
+  try unfold dEnvGetHeap in *;
+  try unfold dEnvGetRho in *;
+  try unfold dEnvGetAccess in *;
+  try unfold dEnvGetKnown in *.
+
+Definition dEnvConsistent (env : dEnv) : Prop :=
+  forall o,
+  (
+  (exists x, dEnvGetRho env x = Some (vo o)) \/
+  (exists h, dEnvGetHeap env o = Some h) \/
+  (exists o' C fs f, dEnvGetHeap env o' = Some (C, fs) /\ fs f = Some (vo o)) \/
+  (exists f, In (o, f) (dEnvGetAccess env))
+  ) -> In o (dEnvGetKnown env).
+
+Definition dEnvNew : dEnv := ([], (newHeap, newRho, newAccess)).
+Lemma dEnvNewConsistent : dEnvConsistent dEnvNew.
+Proof.
+  repeat intro.
+  inversionx H.
+    unf. discriminate.
+  inversionx H0.
+    unf. discriminate.
+  inversionx H.
+    unf. discriminate.
+  unf.
+  tauto.
+Qed.
+
+Definition dEnvEval (e : e) (env : dEnv) : option v :=
+  evale' (dEnvGetHeap env) (dEnvGetRho env) e.
+Fixpoint dEnvEnsure (e : e) (env : dEnv) : option (prod dEnv v) :=
+  match e with
+  | ev v => Some (env, ve v)
+  | ex x => Some (
+            match dEnvGetRho env x with
+            | None => let newObj := [x2string x] in
+                      ((newObj :: dEnvGetKnown env,
+                       (dEnvGetHeap env,
+                        fun x' => if x_decb x x'
+                                  then Some (vo newObj)
+                                  else dEnvGetRho env x',
+                        dEnvGetAccess env)),
+                        vo newObj)
+            | Some v => (env, v)
+            end)
+  | edot e f => 
+      match dEnvEnsure e env with
+      | None => None
+      | Some (env, v) =>
+            match v with
+            | vo o => Some (
+              match dEnvGetHeap env o with
+              | None => 
+                let newObj := f :: o in
+                ((newObj :: dEnvGetKnown env,
+                 (fun o' => if o_decb o o'
+                            then Some (EmptyString, fun f' =>
+                                 if f_decb f f'
+                                 then Some (vo newObj)
+                                 else None)
+                            else dEnvGetHeap env o',
+                  dEnvGetRho env,
+                  dEnvGetAccess env)),
+                  vo newObj)
+              | Some (C, fs) =>
+                match fs f with
+                | None => let newObj := f :: o in
+                          ((newObj :: dEnvGetKnown env,
+                           (fun o' => if o_decb o o'
+                                      then Some (C, fun f' =>
+                                           if f_decb f f'
+                                           then Some (vo newObj)
+                                           else fs f')
+                                      else dEnvGetHeap env o',
+                            dEnvGetRho env,
+                            dEnvGetAccess env)),
+                            vo newObj)
+                | Some v => (env, v)
+                end
+              end)
+            | ve _ => None
+            end
+      end
+  end.
+
+Ltac or_l := apply or_introl.
+Ltac or_r := apply or_intror.
+Ltac or1 := try or_l.
+Ltac or2 := or_r; try or_l.
+Ltac or3 := or_r; or_r; try or_l.
+Ltac or4 := or_r; or_r; or_r; try or_l.
+
+Lemma dEnvEnsureConsistent : forall env,
+  dEnvConsistent env ->
+  forall e env' v,
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvConsistent env'.
+Proof.
+  intro. intro.
+  induction e; intros; simpl in *.
+  - inversionx H0.
+    assumption.
+  - inversionx H0.
+    destruct (dEnvGetRho env x);
+    inversionx H2; try assumption.
+    unfold dEnvConsistent in *.
+    destruct env.
+    destruct p0.
+    destruct p0.
+    dEnvGetUnf.
+    simpl in *.
+    intros.
+    inversionx H0; unf.
+      dec (x_dec x x0). inversionx H0. auto.
+      or_r.
+      apply H.
+      or1.
+      eex.
+    or_r.
+    apply H.
+    inversionx H1; unf.
+      or2.
+      eex.
+    inversionx H0; unf.
+      or3.
+      eex.
+    or4.
+    eex.
+  - destruct (dEnvEnsure e env); try discriminate.
+    destruct p0.
+    specialize (IHe d v0).
+    assert (dEnvConsistent d) as IH.
+      eapp IHe.
+      clear IHe.
+    destruct d.
+    destruct p0.
+    destruct p0.
+    dEnvGetUnf.
+    simpl in *.
+    destruct v0; try discriminate.
+    inversionx H0.
+    destruct (h o) eqn: hh.
+    * destruct p0.
+      destruct (o0 f) eqn: ff;
+      inversionx H2; auto.
+      unfold dEnvConsistent in *.
+      dEnvGetUnf.
+      simpl in *.
+      intros.
+      inversionx H0.
+        unf.
+        or_r.
+        apply IH.
+        or1.
+        eex.
+      inversionx H1; unf.
+        assert (exists x, h o1 = Some x).
+          dec (o_dec o o1); eex.
+        or_r.
+        apply IH.
+        or2.
+        assumption.
+      inversionx H0; unf.
+        dec (o_dec o x).
+          inversionx H0.
+          dec (string_dec f x2).
+            inversionx H2.
+            auto.
+          or_r.
+          apply IH.
+          or3.
+          eex.
+        or_r.
+        apply IH.
+        or3.
+        eex.
+      or_r.
+      apply IH.
+      or4.
+      eex.
+    * inversionx H2.
+      unfold dEnvConsistent in *.
+      dEnvGetUnf.
+      simpl in *.
+      intros.
+      inversionx H0.
+        unf.
+        or_r.
+        apply IH.
+        or1.
+        eex.
+      inversionx H1; unf.
+        destruct x.
+        dec (o_dec o o0).
+          or_r.
+          apply IH.
+          or3.
+          exists o1.
+          inversionx H1.
+        or_r.
+        apply IH.
+        or2.
+        assumption.
+      inversionx H0; unf.
+        dec (o_dec o x).
+          inversionx H0.
+          dec (string_dec f x2).
+            inversionx H2.
+            auto.
+          or_r.
+          apply IH.
+          or3.
+          eex.
+        or_r.
+        apply IH.
+        or3.
+        eex.
+      or_r.
+      apply IH.
+      or4.
+      eex.
+      
+      apply or_intror.
+      inversionx H0.
+      + unf.
+        apply IH.
+        constructor.
+        eex.
+      + inversionx H1; unf.
+      ++  dec (o_dec o o0).
+            inversionx H1.
+          apply IH.
+          apply or_intror.
+          constructor.
+          assumption.
+      ++  apply IH.
+          apply or_intror.
+          apply or_intror.
+          eex.
+      
+      
+      
+      
+        apply or_intror.
+        apply IH.
+        constructor.
+        eex.
+    
+  simpl in *.
+  unfold dEnvEnsure in H0.
+  inversionx H.
+    unf. discriminate.
+  inversionx H0.
+    unf. discriminate.
+  unf.
+  tauto.
+Qed.
+
+
+Definition dEnvMerge
+
+
+
 Fixpoint eSubste (eq : prod e e) (e' : e) : e :=
 	  if e_dec e' (fst eq)
 	  then (snd eq)
@@ -564,6 +854,52 @@ Proof.
     
 Admitted.
 
+Fixpoint exprse (p : e) : list e :=
+  p :: match p with
+       | edot e _ => exprse e
+       | _ => []
+       end.
+
+Definition exprsphi' (p : phi') : list e :=
+  match p with
+  | phiTrue => []
+  | phiEq e1 e2 => exprse e1 ++ exprse e2
+  | phiNeq e1 e2 => exprse e1 ++ exprse e2
+  | phiAcc e _ => exprse e
+  end.
+
+Definition exprsphi (p : phi) : list e :=
+  flat_map exprsphi' p.
+
+(* Definition phiImpliesConsEqRemove : forall e1 e2 p1 p2,
+  ~ In e1 (exprsphi p1) ->
+  ~ In e1 (exprsphi p2) ->
+  phiImplies (phiEq e1 e2 :: p1) p2 ->
+  phiImplies p1 p2.
+Proof.
+  induction p2; intros.
+    eapp phiImpliesPrefix. 
+    eapp phiImpliesRefl.
+  simpl in *.
+  rewrite in_app_iff in H0.
+  apply not_or_and in H0. unf.
+  eappIn IHp2 H3.
+  Focus 2.
+    eapp phiImpliesTrans.
+    rewrite cons2app.
+    eapp phiImpliesSuffix.
+  unfold phiImplies. intros. *)
+  
+(*   wrong 
+
+a.f.x = b.g.y * a.f = c * b.g = d * d.y = 3  => c.x = 3
+                a.f = c * b.g = d * d.y = 3 !=> c.x = 3
+
+=> need ORDER!
+
+*)
+  
+
 Definition phiImpliesConsEq : forall p p' e1 e2,
   phiSatisfiable (phiEq e1 e2 :: p) ->
   phiImplies (phiEq e1 e2 :: p) p'
@@ -573,7 +909,7 @@ Definition phiImpliesConsEq : forall p p' e1 e2,
   phiImplies p px.
 Proof.
   intros.
-  Check phiSubstsEnumImplies.
+  Check phiSubstsEnumImpliesBack.
   assert (forall px,
       In px (phiSubstsEnum e1 e2 p') ->
       phiImplies (phiEq e1 e2 :: p0) px).

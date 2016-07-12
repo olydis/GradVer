@@ -94,7 +94,7 @@ Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
            (vWithOmap omap)
            (r x).
 
-Definition colocateH (H0 H1 : H) := λ o : nat,
+(* Definition colocateH (H0 H1 : H) := λ o : nat,
        match modulo o 2 with
        | 0 => H0 (div o 2)
        | Datatypes.S _ => H1 (div (o - 1) 2)
@@ -107,10 +107,10 @@ Definition colocateRho (xs0 : list x) (r0 r1 : rho) := λ x,
 
 Definition colocateAccess (A0 A1 : A_d) :=
     map (fun x => (2 * (fst x)    , snd x)) A0 ++ 
-    map (fun x => (2 * (fst x) + 1, snd x)) A1.
+    map (fun x => (2 * (fst x) + 1, snd x)) A1. *)
 
 
-Require Import Coq.Logic.FunctionalExtensionality.
+(* Require Import Coq.Logic.FunctionalExtensionality.
 
 Lemma colocateRhoEmpty : forall r0 r1,
   colocateRho [] r0 r1 = rhoWithOmap (λ o, 2 * o + 1) r1.
@@ -120,7 +120,7 @@ Proof.
   apply functional_extensionality.
   simpl.
   tauto.
-Qed.
+Qed. *)
 
 (*
 Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,

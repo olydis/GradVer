@@ -9,7 +9,7 @@ Definition NotIn {T : Type} (x : T) (xs : list T) : Prop := ~(In x xs).
 Definition C := string.
 Definition f := string.
 Definition m := string.
-Definition o := nat.
+Definition o := list string.
 Definition x' := string.
 Inductive x :=
 (*coq2latex: xUserDef #x := #x *)
@@ -111,6 +111,7 @@ Definition f_dec := string_dec.
 Definition f_decb := string_decb.
 Definition m_dec := string_dec.
 Definition m_decb := string_decb.
+Hint Resolve list_eq_dec string_dec.
 
 Definition o_dec : ∀ n m : o, {n = m} + {n ≠ m}. decide equality. Defined.
 Program Instance o_EqDec : EqDec o eq := o_dec.
