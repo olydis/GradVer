@@ -95,6 +95,343 @@ Fixpoint phiSubstsEnum (a b : e) (p : phi) : list phi :=
                         (phiSubstsEnum a b ps)
   end.
 
+Inductive phiImplySplit : phi -> phi -> phi -> phi -> Prop :=
+| PIS : forall p1,
+  phiImplySplit p1 [] [] []
+| PIS1 : forall p1 p p2 p2a p2b,
+  phiImplySplit p1 p2 p2a p2b ->
+  phiImplies p1 [p] ->
+  phiImplySplit p1 (p :: p2) (p :: p2a) p2b
+| PIS2 : forall p1 p p2 p2a p2b,
+  phiImplySplit p1 p2 p2a p2b ->
+  ~ phiImplies p1 [p] ->
+  phiImplySplit p1 (p :: p2) p2a (p :: p2b)
+.
+
+Definition phiJoin (a b c : phi) : Prop :=
+  exists b1 b2 a1 a2, phiImplySplit a b b1 b2
+                   /\ phiImplySplit b2 a a1 a2
+                   /\ c = b1 ++ a1.
+
+Lemma phiJoinTest1 : forall x y f g,
+  x <> y ->
+  f <> g ->
+  phiJoin
+    [phiAcc x f; phiAcc y g; phiEq x y; phiEq (edot x f) (ev (vn 3)); phiNeq (edot x f) (ev (vn 5))]
+    [phiAcc y f; phiNeq (edot x f) (ev (vn 4))]
+    [phiAcc y f; phiNeq (edot x f) (ev (vn 4))].
+Proof.
+  intros.
+  exists [phiAcc y f; phiNeq (edot x f) (ev (vn 4))].
+  exists [].
+  exists [].
+  exists [phiAcc x f; phiAcc y g; phiEq x y; phiEq (edot x f) (ev (vn 3)); phiNeq (edot x f) (ev (vn 5))].
+  repeat split.
+  - eca. eca. eca.
+    * repeat intro.
+      inversionx H1.
+      inversionx H12.
+      inversionx H14.
+      inversionx H16.
+      inversionx H17.
+      common. inversionx H14.
+      repeat eca.
+      + apply inclEmpty.
+      + discriminate.
+    * repeat intro.
+      inversionx H1.
+      inversionx H12.
+      inversionx H14.
+      inversionx H11.
+      inversionx H15.
+      common. rewrite H10 in *. inversionx H4.
+      repeat eca;
+      simpl in *;
+      rewrite H10, H14 in *.
+      + assumption.
+      + apply in_eq.
+  - eca. eca. eca. eca. eca. eca.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct (evale' newHeap newRho x); inversionx H5.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct (evale' newHeap newRho x); inversionx H5.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct x, y; simpl in *; try discriminate.
+      + inversionx H10.
+        inversionx H5.
+        tauto.
+      + destruct (evale' newHeap newRho y); inversionx H10.
+        destruct v0; inversionx H3.
+      + destruct (evale' newHeap newRho x); inversionx H5.
+        destruct v0; inversionx H3.
+      + destruct (evale' newHeap newRho y); inversionx H10.
+        destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct y; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho y); inversionx H9.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct x; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho x); inversionx H9.
+      destruct v; inversionx H3.
+Qed.
+
+Lemma phiJoinTest2 : forall x y f,
+  x <> y ->
+  phiJoin
+    [phiAcc x f]
+    [phiAcc y f]
+    [].
+Proof.
+  intros.
+  exists [].
+  exists [phiAcc y f].
+  exists [].
+  exists [phiAcc x f].
+  repeat split.
+  - eca. eca.
+    intuition.
+    admit.
+  - eca. eca.
+    intuition.
+    admit.
+Admitted.
+
+Lemma phiJoinTest3 : forall x y f,
+  x <> y ->
+  phiJoin
+    [phiAcc x f; phiEq x y]
+    [phiAcc y f; phiEq x y]
+    [phiAcc y f; phiEq x y].
+Proof.
+  intros. rename H into ug.
+  exists [phiAcc y f; phiEq x y].
+  exists [].
+  exists [].
+  exists [phiAcc x f; phiEq x y].
+  repeat split.
+  - eca. eca. eca.
+    * repeat intro.
+      inversionx H.
+      eapp evalphiAexcept.
+    * repeat intro.
+      inversionx H.
+      inversionx H10.
+      inversionx H9.
+      inversionx H11.
+      common. rewrite H7 in *. inversionx H2.
+      repeat eca;
+      simpl in *;
+      rewrite H7, H10 in *.
+      + assumption.
+      + apply in_eq.
+  - eca. eca. eca.
+    * intuition.
+      specialize (H newHeap newRho newAccess).
+      lapply H; try constructor.
+      intro.
+      inversionx H0.
+      inversionx H10.
+      unfold evale in *.
+      destruct x, y; simpl in *; try discriminate.
+      + inversionx H8.
+        inversionx H3.
+        tauto.
+      + destruct (evale' newHeap newRho y); inversionx H8.
+        destruct v0; inversionx H1.
+      + destruct (evale' newHeap newRho x); inversionx H3.
+        destruct v0; inversionx H1.
+      + destruct (evale' newHeap newRho y); inversionx H8.
+        destruct v; inversionx H1.
+    * intuition.
+      specialize (H newHeap newRho newAccess).
+      lapply H; try constructor.
+      intro.
+      inversionx H0.
+      inversionx H10.
+      unfold evale in *.
+      simpl in *.
+      destruct x; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho x); inversionx H7.
+      destruct v; inversionx H1.
+Qed.
+
+Lemma phiJoinSound : forall p2 p1 p3,
+  phiJoin p1 p2 p3 ->
+  phiImplies p1 p3 /\
+  phiImplies p2 p3.
+Proof.
+  induction p2; induction p1; intros.
+  - inversionx H. unf.
+    inversionx H0.
+    inversionx H.
+    split; apply phiImpliesRefl.
+  - unfold phiJoin in *. unf.
+    inversionx H0.
+    inversionx H.
+    * specialize (IHp1 p2a).
+      lapply IHp1; intros.
+      + unf.
+        simpl in *.
+        split.
+          repeat intro.
+          inversionx H.
+          eca.
+        repeat intro.
+        rewrite cons2app.
+        apply evalphiAppRev.
+          eapp H6.
+        eapp H1. eca.
+      + eexists.
+        exists [].
+        exists p2a.
+        exists x2.
+        split. eca.
+        split. auto.
+        auto.
+    * specialize (IHp1 x1).
+      lapply IHp1; intros.
+      + unf.
+        simpl in *.
+        split.
+          repeat intro.
+          eapp H0.
+          inversionx H.
+          eapp evalphiAexcept.
+        assumption.
+      + eexists.
+        exists [].
+        exists x1.
+        exists p2b.
+        split. eca.
+        split. auto.
+        auto.
+  - unfold phiJoin in *. unf.
+    inversionx H.
+    repeat rewrite app_nil_r in *.
+    inversionx H0.
+    * specialize (IHp2 [] p2a).
+      lapply IHp2; intros.
+      + unf.
+        split.
+          repeat intro.
+          rewrite cons2app.
+          apply evalphiAppRev.
+            eapp H6.
+          eapp H0.
+          eca.
+        repeat intro.
+        inversionx H.
+        eca.
+      + exists p2a.
+        exists x0.
+        eexists.
+        eexists.
+        split. auto.
+        split. eca.
+        rewrite app_nil_r.
+        auto.
+    * specialize (IHp2 [] x).
+      lapply IHp2; intros.
+      + unf.
+        split.
+          auto.
+        repeat intro.
+        eapp H1.
+        inversionx H.
+        eapp evalphiAexcept.
+      + exists x.
+        exists p2b.
+        eexists.
+        eexists.
+        split. auto.
+        split. eca.
+        rewrite app_nil_r.
+        auto.
+  - unfold phiJoin in *. unf.
+    inversionx H0.
+    * specialize (IHp2 (a0 :: p1) (p2a ++ x1)).
+      lapply IHp2; intros.
+      + unf.
+        split.
+          repeat intro.
+          rewriteRev app_comm_cons.
+          rewrite cons2app.
+          apply evalphiAppRev.
+            eapp H8.
+          eapp H1.
+          eca.
+          
+          auto.
+        repeat intro.
+        eapp H1.
+        inversionx H.
+        eapp evalphiAexcept.
+      + exists x.
+        exists p2b.
+        eexists.
+        eexists.
+        split. auto.
+        split. eca.
+        rewrite app_nil_r.
+        auto.
+    repeat rewrite app_nil_r in *.
+    inversionx H0.
+    * subst.
+      (* assert (x0 = p2). admit.
+      subst.
+       *)
+      specialize (IHp3 p1 p2).
+      lapply IHp3; intros.
+        admit.
+      exists [].
+      exists x0.
+        
+      + specialize (IHp3 (a :: p5) p2).
+        lapply IHp3; intros.
+        admit.
+        exists [].
+        exists x0.
+        exists x0.
+      + .
+    
 Definition phiImpliesConsEqHelper : forall p p' px a e1 e2,
   phiSatisfiable (phiEq e1 e2 :: p) ->
   phiImplies (phiEq e1 e2 :: p) (a :: p') ->
@@ -283,6 +620,14 @@ Proof.
     repeat eca.
     apply inclEmpty.
 
+  destruct (classic (In (phiAcc e f) p0)).
+    eex. unfold phiImplies. intros.
+    assert (H3' := H3).
+    eappIn evalphiIn H2. inversionx H2.
+    repeat eca.
+    apply inclEmpty.
+  rename H2 into ni.
+
   invE H h.
   invE H r.
   invE H a.
@@ -291,7 +636,11 @@ Proof.
   eex.
   unfold phiImplies.
   intros.
-  apply HHHHH in H4. invE H4 e''. unf.
+  assert (H4' := H4).
+  apply HHHHH in H4'. invE H4' e''. unf.
+  apply H0 in H.
+  apply H0 in H4.
+  
   assert (e' = e'').
   Focus 2. subst. eapp evalphiIncl. apply inclEmpty.
   
