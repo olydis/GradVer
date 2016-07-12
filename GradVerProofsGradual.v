@@ -68,11 +68,43 @@ Fixpoint eSubste (eq : prod e e) (e' : e) : e :=
 	       | _ => e'
 	       end.
 
+Lemma eSubstseEval : forall H r e a b,
+  evale' H r a = evale' H r b ->
+  evale' H r (eSubste (a, b) e) = evale' H r e.
+Proof.
+  induction e; intros;
+  unfold eSubste;
+  fold eSubste.
+  - dec (e_dec (ev v) (fst (a, b)));
+    auto.
+  - dec (e_dec (ex x) (fst (a, b)));
+    auto.
+  - dec (e_dec (edot e f) (fst (a, b)));
+    auto.
+    apply IHe in H0.
+    simpl.
+    rewrite H0.
+    auto.
+Qed.
+
 Definition eSubstsEnum (e1 e2 : e) (e' : e) : list e :=
   [ e'
   ; eSubste (e1, e2) e'
   ; eSubste (e2, e1) e'
   ].
+
+Lemma eSubstsEnumEval : forall H r e a b,
+  evale' H r a = evale' H r b ->
+  forall e', In e' (eSubstsEnum a b e) ->
+  evale' H r e' = evale' H r e.
+Proof.
+  intros.
+  unfold eSubstsEnum in *.
+  inversionx H1; auto.
+  inversionx H2; try eapp eSubstseEval.
+  inversionx H1; try eapp eSubstseEval.
+  inversionx H2.
+Qed.
 
 Definition phi'SubstsEnum (a b : e) (p : phi') : list phi' :=
   match p with
@@ -87,6 +119,93 @@ Definition phi'SubstsEnum (a b : e) (p : phi') : list phi' :=
                        (eSubstsEnum a b e)
   end.
 
+Lemma in_list_prod : forall {T : Type} (a b : T) aa bb,
+  In (a, b) (list_prod aa bb) <->
+  In a aa /\ In b bb.
+Proof.
+  induction aa;
+  intros;
+  simpl in *.
+  - tauto.
+  - split; intros.
+    * apply in_app_iff in H.
+      inversionx H.
+      + apply in_map_iff in H0. unf.
+        inversionx H0.
+        auto.
+      + apply IHaa in H0.
+        unf.
+        auto.
+    * unf.
+      apply in_app_iff.
+      rewrite IHaa.
+      inversionx H0; auto.
+      constructor.
+      apply in_map_iff.
+      eex.
+Qed.
+
+
+Lemma phi'SubstsEnumFP : forall H r p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phi'SubstsEnum a b p) ->
+  footprint' H r p' = footprint' H r p.
+Proof.
+  intros.
+  destruct p0;
+  unfold phi'SubstsEnum in *.
+  - inversionx H1; tauto.
+  - apply in_map_iff in H1. unf. subst.
+    tauto.
+  - apply in_map_iff in H1. unf. subst.
+    tauto.
+  - apply in_map_iff in H1. unf. subst.
+    eappIn eSubstsEnumEval H3.
+    simpl.
+    rewrite H3.
+    tauto.
+Qed.
+
+Lemma phi'SubstsEnumEval : forall H r A p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phi'SubstsEnum a b p) ->
+  evalphi' H r A p' <-> evalphi' H r A p.
+Proof.
+  intros.
+  destruct p0;
+  unfold phi'SubstsEnum in *.
+  - inversionx H1; tauto.
+  - apply in_map_iff in H1. unf. subst.
+    destruct x. simpl.
+    apply in_list_prod in H3. unf.
+    eappIn eSubstsEnumEval H1;
+    eappIn eSubstsEnumEval H2;
+    intro;
+    inversionx H3; eca;
+    unfold evale in *;
+    try rewrite H1 in *;
+    try rewrite H2 in *;
+    eauto.
+  - apply in_map_iff in H1. unf. subst.
+    destruct x. simpl.
+    apply in_list_prod in H3. unf.
+    eappIn eSubstsEnumEval H1;
+    eappIn eSubstsEnumEval H2;
+    intro;
+    inversionx H3; eca;
+    unfold evale in *;
+    try rewrite H1 in *;
+    try rewrite H2 in *;
+    eauto.
+  - apply in_map_iff in H1. unf. subst.
+    eappIn eSubstsEnumEval H3;
+    intro;
+    inversionx H1; eca;
+    unfold evale in *;
+    try rewrite H3 in *;
+    eauto.
+Qed.
+
 Fixpoint phiSubstsEnum (a b : e) (p : phi) : list phi :=
   match p with
   | [] => [[]]
@@ -94,6 +213,126 @@ Fixpoint phiSubstsEnum (a b : e) (p : phi) : list phi :=
                                   (phi'SubstsEnum a b p))
                         (phiSubstsEnum a b ps)
   end.
+
+
+Lemma phiSubstsEnumFP : forall H r p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phiSubstsEnum a b p) ->
+  footprint H r p' = footprint H r p.
+Proof.
+  induction p0;
+  intros;
+  simpl in *.
+  - inversionx H1; tauto.
+  - apply in_flat_map in H1. unf.
+    apply in_map_iff in H3. unf. subst.
+    apply IHp0 in H1; auto.
+    eappIn phi'SubstsEnumFP H4.
+    simpl.
+    rewrite H1, H4.
+    tauto.
+Qed.
+
+Lemma phiSubstsEnumEval : forall H r A p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phiSubstsEnum a b p) ->
+  evalphi H r A p' <-> evalphi H r A p.
+Proof.
+  induction p0;
+  intros.
+  - inversionx H1;
+    tauto.
+  - simpl in *.
+    apply in_flat_map in H1. unf.
+    apply in_map_iff in H3. unf.
+    subst.
+    assert (footprint' H r x0 = footprint' H r a) as fp'Eq.
+      eappIn phi'SubstsEnumFP H0.
+    assert (footprint H r x = footprint H r p0) as fpEq.
+      eappIn phiSubstsEnumFP H0.
+    eapply phi'SubstsEnumEval in H4; eauto.
+    eapply IHp0 in H1; eauto.
+    rewrite (cons2app x0).
+    rewrite (cons2app a).
+    split; intros;
+    apply evalphiSymm in H2;
+    apply evalphiSymm;
+    eappIn evalphiApp H2; inversionx H2;
+    eapp evalphiAppRev;
+    try eapp H1;
+    inversionx H5; eca;
+    try rewrite fp'Eq in *;
+    try rewrite fpEq in *;
+    auto;
+    eapp H4.
+Qed.
+
+
+Definition eSubstsEnumContainsOrig : forall p e1 e2,
+  In p (eSubstsEnum e1 e2 p).
+Proof.
+  unfold eSubstsEnum.
+  intros.
+  apply in_eq.
+Qed.
+Definition phi'SubstsEnumContainsOrig : forall p e1 e2,
+  In p (phi'SubstsEnum e1 e2 p).
+Proof.
+  unfold phi'SubstsEnum.
+  intros.
+  destruct p0.
+  - apply in_eq.
+  - apply in_map_iff.
+    exists (e, e0).
+    split; auto.
+    apply in_list_prod.
+    split; apply eSubstsEnumContainsOrig.
+  - apply in_map_iff.
+    exists (e, e0).
+    split; auto.
+    apply in_list_prod.
+    split; apply eSubstsEnumContainsOrig.
+  - apply in_map_iff.
+    eex.
+    apply eSubstsEnumContainsOrig.
+Qed.
+Definition phiSubstsEnumContainsOrig : forall p e1 e2,
+  In p (phiSubstsEnum e1 e2 p).
+Proof.
+  induction p0; intros; simpl; auto.
+  apply in_flat_map. exists p0.
+  split. apply IHp0.
+  apply in_map_iff.
+  eex.
+  apply phi'SubstsEnumContainsOrig.
+Qed.
+
+Definition phiSubstsEnumImplies : forall p e1 e2,
+  forall p',
+  In p' (phiSubstsEnum e1 e2 p) ->
+  phiImplies (phiEq e1 e2 :: p) p'.
+Proof.
+  unfold phiImplies.
+  intros.
+  inversionx H0.
+  eappIn phiSubstsEnumEval H.
+    eapp H. eapp evalphiAexcept.
+  inversionx H10.
+  rewrite H3, H8.
+  auto.
+Qed.
+
+Definition phiSubstsEnumImpliesBack : forall p e1 e2,
+  exists p',
+  In p' (phiSubstsEnum e1 e2 p) /\
+  phiImplies p' p.
+Proof.
+  unfold phiImplies.
+  intros.
+  exists p0.
+  split. apply phiSubstsEnumContainsOrig.
+  tauto.
+Qed.
 
 Inductive phiImplySplit : phi -> phi -> phi -> phi -> Prop :=
 | PIS : forall p1,
@@ -113,6 +352,14 @@ Definition phiJoin (a b c : phi) : Prop :=
                    /\ phiImplySplit b2 a a1 a2
                    /\ c = b1 ++ a1.
 
+(* wrong!
+Case:
+a = x * x = b
+\/
+a = y * y = b
+->
+a = b
+ *)
 Lemma phiJoinTest1 : forall x y f g,
   x <> y ->
   f <> g ->
@@ -293,145 +540,6 @@ Proof.
       destruct v; inversionx H1.
 Qed.
 
-Lemma phiJoinSound : forall p2 p1 p3,
-  phiJoin p1 p2 p3 ->
-  phiImplies p1 p3 /\
-  phiImplies p2 p3.
-Proof.
-  induction p2; induction p1; intros.
-  - inversionx H. unf.
-    inversionx H0.
-    inversionx H.
-    split; apply phiImpliesRefl.
-  - unfold phiJoin in *. unf.
-    inversionx H0.
-    inversionx H.
-    * specialize (IHp1 p2a).
-      lapply IHp1; intros.
-      + unf.
-        simpl in *.
-        split.
-          repeat intro.
-          inversionx H.
-          eca.
-        repeat intro.
-        rewrite cons2app.
-        apply evalphiAppRev.
-          eapp H6.
-        eapp H1. eca.
-      + eexists.
-        exists [].
-        exists p2a.
-        exists x2.
-        split. eca.
-        split. auto.
-        auto.
-    * specialize (IHp1 x1).
-      lapply IHp1; intros.
-      + unf.
-        simpl in *.
-        split.
-          repeat intro.
-          eapp H0.
-          inversionx H.
-          eapp evalphiAexcept.
-        assumption.
-      + eexists.
-        exists [].
-        exists x1.
-        exists p2b.
-        split. eca.
-        split. auto.
-        auto.
-  - unfold phiJoin in *. unf.
-    inversionx H.
-    repeat rewrite app_nil_r in *.
-    inversionx H0.
-    * specialize (IHp2 [] p2a).
-      lapply IHp2; intros.
-      + unf.
-        split.
-          repeat intro.
-          rewrite cons2app.
-          apply evalphiAppRev.
-            eapp H6.
-          eapp H0.
-          eca.
-        repeat intro.
-        inversionx H.
-        eca.
-      + exists p2a.
-        exists x0.
-        eexists.
-        eexists.
-        split. auto.
-        split. eca.
-        rewrite app_nil_r.
-        auto.
-    * specialize (IHp2 [] x).
-      lapply IHp2; intros.
-      + unf.
-        split.
-          auto.
-        repeat intro.
-        eapp H1.
-        inversionx H.
-        eapp evalphiAexcept.
-      + exists x.
-        exists p2b.
-        eexists.
-        eexists.
-        split. auto.
-        split. eca.
-        rewrite app_nil_r.
-        auto.
-  - unfold phiJoin in *. unf.
-    inversionx H0.
-    * specialize (IHp2 (a0 :: p1) (p2a ++ x1)).
-      lapply IHp2; intros.
-      + unf.
-        split.
-          repeat intro.
-          rewriteRev app_comm_cons.
-          rewrite cons2app.
-          apply evalphiAppRev.
-            eapp H8.
-          eapp H1.
-          eca.
-          
-          auto.
-        repeat intro.
-        eapp H1.
-        inversionx H.
-        eapp evalphiAexcept.
-      + exists x.
-        exists p2b.
-        eexists.
-        eexists.
-        split. auto.
-        split. eca.
-        rewrite app_nil_r.
-        auto.
-    repeat rewrite app_nil_r in *.
-    inversionx H0.
-    * subst.
-      (* assert (x0 = p2). admit.
-      subst.
-       *)
-      specialize (IHp3 p1 p2).
-      lapply IHp3; intros.
-        admit.
-      exists [].
-      exists x0.
-        
-      + specialize (IHp3 (a :: p5) p2).
-        lapply IHp3; intros.
-        admit.
-        exists [].
-        exists x0.
-        exists x0.
-      + .
-    
 Definition phiImpliesConsEqHelper : forall p p' px a e1 e2,
   phiSatisfiable (phiEq e1 e2 :: p) ->
   phiImplies (phiEq e1 e2 :: p) (a :: p') ->
@@ -464,6 +572,19 @@ Definition phiImpliesConsEq : forall p p' e1 e2,
   In px (phiSubstsEnum e1 e2 p') /\
   phiImplies p px.
 Proof.
+  intros.
+  Check phiSubstsEnumImplies.
+  assert (forall px,
+      In px (phiSubstsEnum e1 e2 p') ->
+      phiImplies (phiEq e1 e2 :: p0) px).
+    unfold phiImplies.
+    intros.
+    eappIn phiSubstsEnumEval H1.
+      eapp H1.
+    inversionx H2. inversionx H12.
+    rewrite H5, H10.
+    auto.
+
   induction p'; intros; simpl in *.
     eex.
     eapp phiImpliesPrefix. eapp phiImpliesRefl.
@@ -472,6 +593,17 @@ Proof.
     rewrite cons2app. eapp phiImpliesSuffix.
   apply IHp' in IH; auto.
   invE IH px. unf.
+  assert (forall H r A,
+      evale' H r e1 = evale' H r e2 ->
+      evalphi H r A px <-> evalphi H r A p') as eph.
+    intros.
+    eappIn phiSubstsEnumEval H4; inversionx H4;
+    eauto.
+  clear H1.
+
+  
+  
+  
   eappIn phiImpliesConsEqHelper H.
   unf.
   eexists (x :: px).
