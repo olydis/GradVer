@@ -509,7 +509,10 @@ Qed.
 
 Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) : option (prod H (list (prod v v))) :=
   match v' with
-  | vo o => 
+  | vo o => match Heap o
+            | None => Some (Heap, [])
+            | _ => None
+            end
   | ve v => match Heap o'
             | None => Some (Heap, [])
             | _ => None
