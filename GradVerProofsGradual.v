@@ -171,6 +171,145 @@ Fixpoint dEnvEnsure (e : e) (env : dEnv) : option (prod dEnv v) :=
             end
       end
   end.
+  
+Lemma dEnvConsistentEvals : forall env' e o,
+  dEnvConsistent env' ->
+  evale' (dEnvGetHeap env') (dEnvGetRho env') e = Some (vo o) ->
+  In o (dEnvGetKnown env').
+Proof.
+  induction e;
+  intros;
+  simpl in *.
+  - discriminate.
+  - destruct env'.
+    destruct p0.
+    destruct p0.
+    unfold dEnvConsistent in *.
+    dEnvGetUnf.
+    simpl in *.
+    apply H.
+    constructor.
+    eex.
+  - destruct (evale' (dEnvGetHeap env') (dEnvGetRho env') e);
+    try discriminate.
+    destruct v; try discriminate.
+    assert (In o0 (dEnvGetKnown env')) as ii.
+      eapp IHe.
+      clear IHe.
+    destruct env'.
+    destruct p0.
+    destruct p0.
+    unfold dEnvConsistent in *.
+    dEnvGetUnf.
+    simpl in *.
+    apply H.
+    apply or_intror.
+    apply or_intror.
+    constructor.
+    exists o0.
+    destruct (h o0); try discriminate.
+    destruct p0.
+    simpl in *.
+    eex.
+Qed.
+
+Lemma dEnvEnsureEvals : forall e v env env',
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvConsistent env ->
+  evale' (dEnvGetHeap env') (dEnvGetRho env') e = Some v.
+Proof.
+  induction e; intros; simpl in *.
+  - inversionx H.
+    auto.
+  - inversionx H.
+    destruct (dEnvGetRho env x) eqn: ee.
+    * inversionx H2.
+      assumption.
+    * inversionx H2.
+      dEnvGetUnf.
+      simpl in *.
+      dec (x_dec x x).
+      auto.
+  - destruct (dEnvEnsure e env) eqn: ee; try discriminate.
+    destruct p0.
+    eappIn IHe ee.
+    specialize (IHe v0).
+    destruct v0; try discriminate.
+    inversionx H.
+    destruct (dEnvGetHeap d o) eqn: eeh.
+    * destruct p0.
+      destruct (o0 f) eqn: eeo; inversionx H2.
+      + rewrite ee.
+        rewrite eeh.
+        simpl.
+        assumption.
+      + (* unfold dEnvConsistent in H0. *)
+        dEnvGetUnf.
+        destruct d.
+        destruct p0.
+        destruct p0.
+        simpl in *.
+        set (h' := (λ o' : GradVer20Hook.o,
+           if o_decb o o'
+           then
+            Some
+              (c, λ f' : string, if f_decb f f' then Some (vo (f :: o)) else o0 f')
+           else h o')) in *.
+        assert (forall e o, evale' h  r e = Some (vo o) ->
+                            evale' h' r e = Some (vo o)) as eva.
+          induction e0; intros; simpl in *; auto.
+          destruct (evale' h r e0); try discriminate.
+          destruct v; try discriminate.
+          lapply (IHe0 o2); intros; auto.
+          rewrite H1. clear H1.
+          subst h'. simpl.
+          destruct (h o2) eqn: htmp; try discriminate.
+          destruct p0.
+          simpl in *.
+          dec (o_dec o o2); simpl; auto.
+          rewrite eeh in htmp. inversionx htmp.
+          dec (string_dec f f0); auto.
+          rewrite eeo in H.
+          discriminate.
+        apply eva in ee.
+        rewrite ee.
+        dec (o_dec o o).
+        simpl.
+        dec (string_dec f f).
+        auto.
+    * inversionx H2.
+      dEnvGetUnf.
+      destruct d.
+      destruct p0.
+      destruct p0.
+      simpl in *.
+      set (h' := (λ o' : GradVer20Hook.o,
+         if o_decb o o'
+         then
+          Some
+            (EmptyString, λ f' : string, if f_decb f f' then Some (vo (f :: o)) else None)
+         else h o')) in *.
+      assert (forall e o, evale' h  r e = Some (vo o) ->
+                          evale' h' r e = Some (vo o)) as eva.
+        induction e0; intros; simpl in *; auto.
+        destruct (evale' h r e0); try discriminate.
+        destruct v; try discriminate.
+        lapply (IHe0 o1); intros; auto.
+        rewrite H1. clear H1.
+        subst h'. simpl.
+        destruct (h o1) eqn: htmp; try discriminate.
+        destruct p0.
+        simpl in *.
+        dec (o_dec o o1); simpl; auto.
+        rewrite eeh in htmp.
+        discriminate.
+      apply eva in ee.
+      rewrite ee.
+      dec (o_dec o o).
+      simpl.
+      dec (string_dec f f).
+      auto.
+Qed.
 
 Ltac or_l := apply or_introl.
 Ltac or_r := apply or_intror.
@@ -215,7 +354,7 @@ Proof.
       eex.
     or4.
     eex.
-  - destruct (dEnvEnsure e env); try discriminate.
+  - destruct (dEnvEnsure e env) eqn: ee; try discriminate.
     destruct p0.
     specialize (IHe d v0).
     assert (dEnvConsistent d) as IH.
@@ -226,7 +365,12 @@ Proof.
     destruct p0.
     dEnvGetUnf.
     simpl in *.
+    assert (evale' h r e = Some v0) as eva.
+      eappIn dEnvEnsureEvals H.
+      dEnvGetUnf. assumption.
     destruct v0; try discriminate.
+    assert (In o l) as ii.
+      eappIn dEnvConsistentEvals IH.
     inversionx H0.
     destruct (h o) eqn: hh.
     * destruct p0.
@@ -280,26 +424,17 @@ Proof.
         eex.
       inversionx H1; unf.
         destruct x.
-        dec (o_dec o o0).
-          or_r.
-          apply IH.
-          or3.
-          exists o1.
-          inversionx H1.
+        dec (o_dec o o0); auto.
         or_r.
         apply IH.
         or2.
-        assumption.
+        eex.
       inversionx H0; unf.
         dec (o_dec o x).
           inversionx H0.
-          dec (string_dec f x2).
-            inversionx H2.
-            auto.
-          or_r.
-          apply IH.
-          or3.
-          eex.
+          dec (string_dec f x2); try discriminate.
+          inversionx H2.
+          auto.
         or_r.
         apply IH.
         or3.
@@ -308,41 +443,6 @@ Proof.
       apply IH.
       or4.
       eex.
-      
-      apply or_intror.
-      inversionx H0.
-      + unf.
-        apply IH.
-        constructor.
-        eex.
-      + inversionx H1; unf.
-      ++  dec (o_dec o o0).
-            inversionx H1.
-          apply IH.
-          apply or_intror.
-          constructor.
-          assumption.
-      ++  apply IH.
-          apply or_intror.
-          apply or_intror.
-          eex.
-      
-      
-      
-      
-        apply or_intror.
-        apply IH.
-        constructor.
-        eex.
-    
-  simpl in *.
-  unfold dEnvEnsure in H0.
-  inversionx H.
-    unf. discriminate.
-  inversionx H0.
-    unf. discriminate.
-  unf.
-  tauto.
 Qed.
 
 
