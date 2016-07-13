@@ -507,17 +507,103 @@ Proof.
         eex.
 Qed.
 
-Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) : option (prod H (list (prod v v))) :=
-  match v' with
-  | vo o => 
-  | ve v => match Heap o'
-            | None => Some (Heap, [])
-            | _ => None
-            end
+Definition dEnvMergeObjHeapFields (fs1 fs2 : f -> option v) (fs : list f) : list (prod v v) :=
+  flat_map
+  (fun f => match fs1 f with
+            | None => []
+            | Some v1 =>
+              match fs2 f with
+              | None => []
+              | Some v2 => [(v1, v2)]
+              end
+            end)
+  fs.
+
+(* removes o' from dom(heap) *)
+Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) (fsx : list f) : option (prod H (list (prod v v))) :=
+  match Heap o' with
+  | None => Some (Heap, [])
+  | Some (C', fs') =>
+      match v' with
+      | vo o => let HeapMoveo'TOo : H := fun oo => if o_dec o' oo
+                                                   then None
+                                                   else
+                                                    (if o_dec o oo
+                                                     then Some (C', fs')
+                                                     else Heap oo)
+                in
+                match Heap o with
+                | None => (* can move Heap o' here *)
+                    Some (HeapMoveo'TOo, [])
+                | Some (C, fs) => (* merge required *)
+                    if C_dec C C'
+                    then Some (HeapMoveo'TOo, dEnvMergeObjHeapFields fs' fs fsx)
+                    else None (* incompatible types *)
+                end
+      | ve v => None (* o' has fields BUT now has to be a vex (cannot have fields) *)
+      end
   end.
 
+(* remove vo' from codom(heap) *)
+Definition dEnvMergeObjHeapC (vo' : v) (v' : v) (Heap : H) : H :=
+  fun o => match Heap o with
+           | None =>
+             None
+           | Some (C, fs) =>
+             Some (C, fun f => match fs f with
+                               | None =>
+                                 None
+                               | Some v =>
+                                 Some (if v_dec vo' v
+                                       then v'
+                                       else v)
+                               end)
+           end.
+
+Definition dEnvMergeObjAccess (o' : o) (v' : v) (A : A_d) : option A_d :=
+  match v' with
+  | vo o => Some
+           (map (fun A => ( if o_dec o' (fst A)
+                            then o
+                            else (fst A)
+                          , snd A)) A)
+  | _ => if existsb (fun A => o_decb o' (fst A)) A
+         then None
+         else Some A
+  end.
+
+(* removes o' from env *)
 Definition dEnvMergeObj (o' : o) (v' : v) (env : dEnv) : option (prod dEnv (list (prod v v))) :=
-  match .
+  let vo' := vo o' in
+  if v_dec vo' v'
+  then Some (env, [])
+  else (
+    match dEnvMergeObjAccess o' v' (dEnvGetAccess env) with
+    | None =>
+      None
+    | Some A =>
+      match dEnvMergeObjHeap o' v' (dEnvMergeObjHeapC vo' v' (dEnvGetHeap env)) (dEnvGetKnownF env) with
+      | None =>
+        None
+      | Some (H', merge) =>
+        Some 
+        ( ( ( filter (fun o => negb (o_decb o' o)) (dEnvGetKnownO env)
+            , dEnvGetKnownF env)
+          , ( H'
+            , fun x =>
+                  match dEnvGetRho env x with
+                  | None =>
+                    None
+                  | Some v =>
+                    Some (if v_dec vo' v
+                          then v'
+                          else v)
+                  end
+            , A))
+        , merge)
+      end
+    end
+  ).
 
 Definition dEnvMerge (v1 v2 : v) (env : dEnv) : option (prod dEnv (list (prod v v))) :=
   match v1 with
@@ -530,6 +616,10 @@ Definition dEnvMerge (v1 v2 : v) (env : dEnv) : option (prod dEnv (list (prod v 
            else None
     end
   end.
+
+
+
+
 
 Fixpoint eSubste (eq : prod e e) (e' : e) : e :=
 	  if e_dec e' (fst eq)
