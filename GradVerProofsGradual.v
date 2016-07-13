@@ -617,7 +617,12 @@ Definition dEnvMerge (v1 v2 : v) (env : dEnv) : option (prod dEnv (list (prod v 
     end
   end.
 
-
+Lemma dEnvMergeConsistent : forall env v1 v2 merge env',
+  dEnvConsistent env ->
+  dEnvMerge v1 v2 env = Some (env', merge) ->
+  dEnvConsistent env'.
+Proof.
+  intros.
 
 
 
