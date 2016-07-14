@@ -48,3 +48,14 @@ Ltac des P :=
     try (clear de1).
 Ltac dec P := undecb; des P.
 
+
+
+Ltac cut :=
+  try discriminate;
+  try congruence;
+  try tauto;
+  try (eca; fail);
+  try (eex; fail);
+  auto.
+Ltac inv H := inversionx H.
+Ltac splau := split; eauto.

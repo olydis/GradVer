@@ -100,7 +100,7 @@ Lemma evale'RemoveRhoSubst : forall H r x v e,
 Proof.
   induction e0; intros; simpl in *.
   - tauto.
-  - unfold rhoSubst. dec (x_dec x1 x0); tauto.
+  - unfold rhoSubst. dec (x_dec x1 x0); cut. contradict H1. auto.
   - apply IHe0 in H1. rewrite H1. tauto.
 Qed.
 
@@ -916,7 +916,7 @@ Proof.
     - eca.
       unfold HSubst.
       rename de2 into des.
-      dec (o_dec o1 o0); try tauto.
+      dec (o_dec o1 o0). congruence.
       eauto.
   * inversionx H1; try constructor.
     unfold HSubst in *.
@@ -980,7 +980,7 @@ Proof.
   undecb.
   destruct a0, a. simpl.
   dec (o_dec o0 o1); try tauto.
-  dec (string_dec f0 f1); try tauto.
+  dec (string_dec f0 f1); cut.
 Qed.
 
 Lemma fieldsDistinct : forall c l,

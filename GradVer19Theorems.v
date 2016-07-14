@@ -405,9 +405,11 @@ Proof.
   destruct v1; try tauto.
   simpl in *.
   unfold HSubst.
-  dec (o_dec o1 o0); try tauto.
-  destruct (H0 o0); try tauto. destruct p0. simpl.
-  dec (string_dec f1 f0); try tauto.
+  dec (o_dec o1 o0); try cut.
+  destruct (H0 o0); try cut. destruct p0. simpl.
+  dec (string_dec f1 f0); cut.
+  contradict H2.
+  auto.
 Qed.
 
 Lemma footprint'RemoveHSubst : forall o f v H r p,

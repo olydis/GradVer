@@ -11,15 +11,17 @@ Proof.
   induction e0; intros; simpl in *; try tauto.
   destruct (evale' H0 r e0) eqn: ee1;
   destruct (evale' (Halloc o0 C0 H0) r e0) eqn: ee2;
+  try assert (Some v0 = Some v0) as vv0; auto;
+  try assert (Some v1 = Some v1) as vv1; auto;
   try destruct v0;
   try destruct v1;
-  try tauto;
+  try cut;
   specialize (IHe0 o1);
   intuition;
   try discriminate.
-  - inversionx H2.
+  - inv H2.
     unfold Halloc.
-    destruct (fields C0); auto.
+    destruct (fields C0); cut.
     dec (o_dec o0 o1); auto.
     rewrite H1 in *.
     simpl in *.
@@ -64,7 +66,6 @@ Proof.
     discriminate.
 Qed.
 
-
 Lemma evaleRemoveHalloc : forall H r o C e v,
   H o = None ->
   evale H r e v ->
@@ -76,8 +77,9 @@ Proof.
   destruct (evale' H0 r e0); try discriminate.
   destruct v1; try discriminate.
   specialize (IHe0 (vo o1)).
+  rewrite eqImpl in IHe0.
   intuition.
-  rewrite H3.
+  rewrite H2.
   unfold Halloc.
   destruct (fields C0); try tauto.
   dec (o_dec o0 o1); try tauto.

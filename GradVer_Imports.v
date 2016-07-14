@@ -28,7 +28,7 @@ Definition modulo x y :=
   end.
 
 (*list*)
-Fixpoint listDistinct {T : Type} (xs : list T) :=
+Fixpoint listDistinct {T : Type} (xs : list T) : Prop :=
   match xs with
   | [] => True
   | x :: xs => (~ In x xs) /\ listDistinct xs
@@ -53,6 +53,12 @@ Proof.
     intuition.
     constructor; intuition.
 Qed.
+
+Fixpoint is_nodup {T : Type} (eq_decb : T -> T -> bool) (l : list T) : bool :=
+  match l with
+  | [] => true
+  | x :: xs => negb (existsb (eq_decb x) xs) && is_nodup eq_decb xs
+  end.
 
 (*option*)
 Definition option_bind {A B : Type} (f : A -> option B) (x : option A) : option B :=
@@ -119,3 +125,29 @@ Program Instance string_EqDec : EqDec string eq := string_dec.
 Definition string_decb := dec2decb string_dec.
 Hint Resolve string_dec.
 Hint Resolve list_eq_dec string_dec.
+
+
+
+
+
+(* WTF (some built-in tactics suddenly got weaker...) *)
+
+Lemma eqTrue : forall {T : Type} (a : T),
+  a = a <-> True.
+Proof.
+  tauto.
+Qed.
+
+Lemma trueImpl : forall (p : Prop),
+  (True -> p) ->
+  p.
+Proof.
+  tauto.
+Qed.
+
+Lemma eqImpl : forall {T : Type} (a : T) (p : Prop),
+  (a = a -> p) <->
+  p.
+Proof.
+  tauto.
+Qed.

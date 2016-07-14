@@ -116,7 +116,7 @@ Proof.
     rewrite H1 in *.
     simpl in *.
     inversionx H3. contradict H7.
-    inversionx H5. inversionx H3. tauto.
+    inversionx H5. inversionx H3. cut.
     rewrite dynamicASstaticFP.
     rewrite InOflatten, in_map_iff.
     eex. unfold A'_s2A'_d. simpl. rewrite H2. tauto.

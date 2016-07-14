@@ -47,7 +47,8 @@ Proof.
   dec (o_dec o1 o0); try tauto.
   destruct (H0 o0); try tauto.
   destruct p0. simpl in *.
-  dec (string_dec f1 f0); try tauto.
+  dec (string_dec f1 f0); cut.
+  contradict H2. auto.
 Qed.
 
 Lemma HSubstHasDynamicType : forall H v v' t o f,
@@ -63,7 +64,7 @@ Proof.
       rewrite H3.
       eauto.
     * rename de2 into dex.
-      dec (o_dec o1 o0); try tauto.
+      dec (o_dec o1 o0); try cut.
       rewrite H3.
       eauto.
   - dec (o_dec o1 o0); try (eca; fail).
@@ -373,6 +374,17 @@ Proof.
   tauto.
 Qed.
 
+Lemma evalphi'FootprintAccess : ∀ p H r A,
+       evalphi' H r A p ->
+       evalphi' H r (footprint' H r p) p.
+Proof.
+  intros.
+  inversionx H1; eca.
+  simpl.
+  rewrite H3.
+  apply in_eq.
+Qed.
+
 Lemma evalphiFootprintAccess : ∀ p H r A,
        evalphi H r A p ->
        evalphi H r (footprint H r p) p.
@@ -539,15 +551,15 @@ Proof.
       rewrite H4.
       unfold xSubsts, rhoSubst. simpl.
       rewrite xd3.
-      dec (x_dec x2 x0); tauto.
+      dec (x_dec x2 x0); cut.
     inversionx H8.
       rewrite H3.
       unfold xSubsts, rhoSubst. simpl.
-      dec (x_dec x1 x0); tauto.
+      dec (x_dec x1 x0); cut.
     inversionx H0.
       rewrite H5.
       unfold xSubsts, rhoSubst. simpl.
-      dec (x_dec x0 x0); tauto.
+      dec (x_dec x0 x0); cut.
     tauto.
   - subst fR xUDz.
     erewrite IHe0; eauto.
@@ -587,13 +599,13 @@ Proof.
       dec (x_dec (xUserDef z) xthis). clear de2.
       dec (x_dec (xUserDef z) (xUserDef z)).
       rewrite H4.
-      dec (x_dec x2 x0); tauto.
+      dec (x_dec x2 x0); cut.
     inversionx H9; simpl.
       rewrite H3.
-      dec (x_dec x1 x0); tauto.
+      dec (x_dec x1 x0); cut.
     inversionx H0; simpl.
       rewrite H5.
-      dec (x_dec x0 x0); tauto.
+      dec (x_dec x0 x0); cut.
     tauto.
   - subst fR.
     erewrite IHe0; eauto.
@@ -660,7 +672,7 @@ Proof.
     destruct a, x0. simpl in *.
     dec (o_dec o0 o1); simpl; try discriminate.
     dec (string_dec f0 f1); simpl; try discriminate.
-    tauto.
+    cut.
   apply not_true_is_false in H1.
   rewrite H1. simpl.
   rewrite IHA1; try tauto.
