@@ -270,6 +270,34 @@ Proof.
     eex.
 Qed.
 
+Lemma dEnvEnsureEvalsForwardAccess : forall env e v env',
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvGetAccess env = dEnvGetAccess env'.
+Proof.
+  induction e; simpl in *; intros.
+  * inv H.
+    auto.
+  * inv H.
+    destruct (dEnvGetRho env x) eqn: ee;
+    inv H1;
+    cut.
+  * destruct dEnvEnsure; cut.
+    destruct p0.
+    destruct v0; cut.
+    inv H.
+    destruct dEnvGetHeap.
+    + destruct p0.
+      destruct (o0 f); inv H1.
+      - eapp IHe.
+      - unfold dEnvGetAccess in *.
+        simpl.
+        eapp IHe.
+    + inv H1.
+      dEnvGetUnf.
+      simpl.
+      eapp IHe.
+Qed.
+
 Lemma dEnvEnsureEvalsForwardRho : forall env e v' x v env',
   dEnvEnsure e env = Some (env', v') ->
   dEnvGetRho env x = Some v ->
@@ -1712,29 +1740,184 @@ Proof.
     apply dEnvAddPhi'Consistent in H; auto.
 Qed.
 
+Lemma evalsInCons : forall h r a p,
+  evalsIn h r (staticFootprint (a :: p)) (footprint h r (a :: p)) ->
+  evalsIn h r (staticFootprint p) (footprint h r p).
+Proof.
+  unfold evalsIn.
+  intros.
+  destruct a; cut.
+  simpl in *.
+  rewrite map_app in H.
+  
+  remember (A'_s2A'_d h r (e, f)) as aa.
+  unfold A'_s2A'_d in Heqaa. subst.
+  
+  simpl in *.
+  destruct evale';
+  simpl in *.
+  - destruct v.
+    * destruct (footprint h r p0); cut.
+    * simpl in *. inv H. auto.
+  - destruct (footprint h r p0); cut.
+Qed.
+
 Lemma dEnvFromPhiWorks : forall p env,
   dEnvFromPhi p = Some env ->
-  dEnvEvalPhi p env.
+  dEnvEvalPhi p env /\
+  dEnvGetAccess env = footprint (dEnvGetHeap env) (dEnvGetRho env) p.
 Proof.
-  induction p0; intros. constructor.
+  induction p0; intros.
+    simpl in *.
+    inv H.
+    repeat constructor.
   simpl in *.
   destruct dEnvFromPhi eqn: ee; cut.
-  assert (dEnvEvalPhi p0 d) as HH.
-    eapp IHp0.
-    clear IHp0.
-  eappIn dEnvAddPhi'Forward HH.
-  eappIn dEnvFromPhiConsistent ee.
-  apply dEnvAddPhi'Works in H; auto. unf.
+  specialize (IHp0 d).
+  apply eqImpl in IHp0.
+  unf.
+  assert (evalsIn (dEnvGetHeap d) (dEnvGetRho d)
+          (staticFootprint p0)
+          (footprint (dEnvGetHeap d) (dEnvGetRho d) p0))
+  as evalsIn_d.
+    eapp evalphiVSfp.
+  eapply dEnvAddPhi'Forward in H0; eauto.
+  assert (evalsIn (dEnvGetHeap env) (dEnvGetRho env)
+          (staticFootprint p0)
+          (footprint (dEnvGetHeap env) (dEnvGetRho env) p0))
+  as evalsIn_env.
+    eapp evalphiVSfp.
+  eapply dEnvFromPhiConsistent in ee; eauto.
+  assert (H' := H).
+  apply dEnvAddPhi'Works in H'; auto. unf.
   
-  eca.
-  unfold dEnvEvalPhi' in *.
-  Check evalphiFootprintAccess.
-  - 
+  split.
+  * eca.
+    - eapp evalphi'FootprintAccess.
+    - eapp evalphiRemoveAexcept.
+      destruct a; cut.
+      simpl in *.
+      destruct dEnvEnsure eqn: eva; cut.
+      destruct p1.
+      assert (forall e v, dEnvEval e d = Some v → dEnvEval e d0 = Some v)
+      as fw.
+        intros.
+        eapp dEnvEnsureEvalsForward.
+      unfold dEnvEval in fw.
+      (* forward H1 *)
+      erewrite dEnvEnsureEvalsForwardAccess in H1; eauto.
+      assert (footprint (dEnvGetHeap d) (dEnvGetRho d) p0 = footprint (dEnvGetHeap d0) (dEnvGetRho d0) p0)
+      as accx.
+        generalize p0 evalsIn_d evalsIn_env.
+        clear p0 evalsIn_d evalsIn_env H0 H1 H H2 H3 eva.
+        induction p0; cut.
+        intros.
+        destruct a; cut.
+        simpl.
+        rewrite IHp0.
+          Focus 2. eapp evalsInCons.
+          Focus 2. eapp evalsInCons.
+        assert (In (e0, f0) (staticFootprint (phiAcc e0 f0 :: p0))) as inn. apply in_eq.
+        eappIn evalsInIn evalsIn_d.
+        unfold A'_s2A'_d in evalsIn_d.
+        simpl in evalsIn_d.
+        unf.
+        destruct evale' eqn: eva; cut.
+        apply fw in eva; eauto.
+        rewrite eva. auto.
+      rewrite accx in H1. clear accx.
+      apply dEnvEnsureEvals in eva; auto.
+      unfold dEnvAddAcc in *.
+      destruct v; cut.
+      destruct dEnvValidateAcc eqn: val; cut.
+      inv H.
+      unfold dEnvEval in *.
+      dEnvGetUnf.
+      destruct d0.
+      destruct p1, p2.
+      destruct p1, p2.
+      simpl in *.
+      rewrite eva in *.
+      subst.
+      unfold dEnvValidateAcc, dEnvValidateAccB in *.
+      simpl in val.
+      destruct existsb eqn: ex; cut.
+      apply not_true_iff_false in ex.
+      rewrite existsb_exists in ex.
+      unfold disjoint.
+      intros.
+      eapply not_ex_all_not in ex.
+      apply not_and_or in ex.
+      inv ex; eauto.
+      apply or_intror. intro. contradict H.
+      apply InSingle in H1. subst.
+      dec A'_d_dec; cut.
+  * destruct a; simpl in *.
+    - inv H.
+      assumption.
+    - admit.
+    - admit.
+    - admit.
+Admitted.
+
+Definition o2b {T:Type} (x : option T) : bool := match x with
+                                                 | None => false
+                                                 | _ => true
+                                                 end.
+Definition phiSatisfiableB (p : phi) : bool := o2b (dEnvFromPhi p).
+
+Theorem phiSatisfiableDec : forall p,
+  phiSatisfiable p <->
+  phiSatisfiableB p = true.
+Proof.
+  split; intros.
+  - invE H h.
+    invE H r.
+    invE H a.
+    admit.
+  - unfold phiSatisfiableB, o2b in *.
+    destruct dEnvFromPhi eqn: ee; cut.
+    destruct d.
+    destruct p1, p2.
+    destruct p1, p2.
+    exists h.
+    exists r.
+    exists a.
+    apply dEnvFromPhiWorks in ee.
+    cut.
+Admitted.
+
+(* IMPLICATION *)
+Check dEnvEvalPhi'.
+Definition dEnvImplies' ()
 
 
-
-
-
+(* test *)
+(* unsat: a.f.x = b.g.y * a.f = c * b.g = d * d.y = 3 * c.x <> 3 *)
+Open Scope string.
+Definition t_ea : e := ex (xUserDef "a").
+Definition t_eb : e := ex (xUserDef "b").
+Definition t_ec : e := ex (xUserDef "c").
+Definition t_ed : e := ex (xUserDef "d").
+Eval compute in phiSatisfiableB
+  [ phiAcc t_ea "f"
+  ; phiAcc t_eb "f"].
+Eval compute in o2b (dEnvFromPhi 
+  [ phiAcc t_ea "f"
+  ; phiAcc t_eb "f"
+  ; phiEq t_ea t_eb]).
+Eval compute in phiSatisfiableB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))].
+Eval compute in phiSatisfiableB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 4))].
+Close Scope string.
 
 
 

@@ -450,6 +450,7 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     In (o, f) A ->
     evalphi' H rho A (phiAcc e f)
 .
+
 (*coq2latex: evalphi #H #rho #A #p := \evalphix #H #rho #A #p *)
 Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
 | EAEmpty : forall H r A, evalphi H r A []
