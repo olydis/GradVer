@@ -124,8 +124,7 @@ Definition dEnvConsistent (env : dEnv) : Prop :=
   ) -> In o (dEnvGetKnownO env)) /\
   (forall f,
   (
-  (exists o' C fs o, dEnvGetHeap env o' = Some (C, fs) /\ fs f = Some (vo o)) \/
-  (exists o, In (o, f) (dEnvGetAccess env))
+  (exists o' C fs o, dEnvGetHeap env o' = Some (C, fs) /\ fs f = Some (vo o))
   ) -> In f (dEnvGetKnownF env)) /\
   dEnvValidateAccB (dEnvGetAccess env) = true /\
   dEnvValidateIneqB (dEnvGetKnownIneq env) = true.
@@ -159,10 +158,7 @@ Proof.
     tauto.
   split.
     repeat intro.
-    inversionx H.
-      unf. discriminate.
-    unf.
-    tauto.
+    unf. discriminate.
   split.
     auto.
   auto.
@@ -225,7 +221,7 @@ Fixpoint dEnvEnsure (e : e) (env : dEnv) : option (prod dEnv v) :=
       end
   end.
   
-Lemma dEnvConsistentEvals : forall env' e v,
+Lemma dEnvEvalsKnown : forall env' e v,
   dEnvConsistent env' ->
   evale' (dEnvGetHeap env') (dEnvGetRho env') e = Some v ->
   dEnvKnownTo v env' = true.
@@ -426,12 +422,8 @@ Proof.
       eex.
     split.
       intros.
-      inversionx H0; unf.
-        apply H.
-        or1.
-        eex.
+      unf.
       apply H.
-      or2.
       eex.
     split; apply H.
   - destruct (dEnvEnsure e env) eqn: ee; try discriminate.
@@ -452,7 +444,7 @@ Proof.
       dEnvGetUnf. assumption.
     destruct v0; try discriminate.
     assert (In o l0) as ii.
-      eappIn dEnvConsistentEvals IH.
+      eappIn dEnvEvalsKnown IH.
       simpl in IH. apply existsb_exists in IH. unf.
       dec o_dec; cut.
     inversionx H0.
@@ -500,22 +492,17 @@ Proof.
         eex.
       split.
         intros.
-        inversionx H0; unf.
-          dec (o_dec o x).
-            inversionx H0.
-            dec (string_dec f f0).
-              auto.
-            or_r.
-            apply IH2.
-            or1.
-            eex.
+        unf.
+        dec (o_dec o x).
+          inv H1.
+          dec (string_dec f f0).
+            auto.
           or_r.
           apply IH2.
           or1.
           eex.
         or_r.
         apply IH2.
-        or2.
         eex.
       split; auto.
     * inversionx H2.
@@ -555,19 +542,14 @@ Proof.
         eex.
       split.
         intros.
-        inversionx H0; unf.
-          dec (o_dec o x).
-            inversionx H0.
-            dec (string_dec f f0).
-              auto.
-            discriminate.
-          or_r.
-          apply IH2.
-          or1.
-          eex.
+        unf.
+        dec (o_dec o x).
+          inv H1.
+          dec (string_dec f f0).
+            auto.
+          discriminate.
         or_r.
         apply IH2.
-        or2.
         eex.
       split; auto.
 Qed.
@@ -987,71 +969,55 @@ Proof.
     apply IH1. or4. eex.
   split.
     intros.
-    inv H; unf.
-      apply IH2. or1.
-      unfold dEnvMergeObjHeap,
-             dEnvMergeObjHeapC in deHeap.
-      destruct (h o) eqn: ho.
+    unf.
+    apply IH2. or1.
+    unfold dEnvMergeObjHeap,
+           dEnvMergeObjHeapC in deHeap.
+    destruct (h o) eqn: ho.
+      destruct p0.
+      destruct v; cut.
+      destruct (h o1) eqn: ho1.
         destruct p0.
-        destruct v; cut.
-        destruct (h o1) eqn: ho1.
-          destruct p0.
-          dec (string_dec c0 c); cut.
-          inv deHeap.
-          dec (o_dec o x); cut.
-          inv H.
-          rename de2 into de.
-          dec (o_dec o1 x).
-            inv H2.
-            destruct (o0 f) eqn: o1f; cut.
-            inv H1.
-            destruct v; cut.
-            eex.
-          destruct (h x) eqn: hx; cut.
-          destruct p0.
-          inv H2.
-          destruct (o3 f) eqn: o3f; cut.
-          inv H1.
-          destruct v; cut.
-          eex.
+        dec (string_dec c0 c); cut.
         inv deHeap.
         dec (o_dec o x); cut.
         rename de2 into de.
         dec (o_dec o1 x).
-          inv H.
-          destruct (o0 f) eqn: o0f; cut.
+          inv H0.
+          destruct (o0 f) eqn: o1f; cut.
           inv H1.
           destruct v; cut.
           eex.
         destruct (h x) eqn: hx; cut.
         destruct p0.
-        inv H.
-        destruct (o2 f) eqn: o2f; cut.
+        inv H0.
+        destruct (o3 f) eqn: o3f; cut.
         inv H1.
         destruct v; cut.
         eex.
       inv deHeap.
+      dec (o_dec o x); cut.
+      rename de2 into de.
+      dec (o_dec o1 x).
+        inv H0.
+        destruct (o0 f) eqn: o0f; cut.
+        inv H1.
+        destruct v; cut.
+        eex.
       destruct (h x) eqn: hx; cut.
       destruct p0.
-      inv H.
-      destruct (o0 f) eqn: o0f; cut.
+      inv H0.
+      destruct (o2 f) eqn: o2f; cut.
       inv H1.
-      destruct v0; cut.
+      destruct v; cut.
       eex.
-    apply IH2.
-    or2.
-    unfold dEnvMergeObjAccess in deAccess.
-    destruct v.
-      destruct (existsb (λ A, o_decb o (fst A)) a) eqn: ee; cut.
-      inv deAccess.
-      eex.
-    inv deAccess.
-    unfold dEnvValidateAcc in H1.
-    destruct dEnvValidateAccB in H1; cut.
+    inv deHeap.
+    destruct (h x) eqn: hx; cut.
+    destruct p0.
+    inv H0.
+    destruct (o0 f) eqn: o0f; cut.
     inv H1.
-    apply in_map_iff in H. unf.
-    inv H.
-    destruct x0. simpl.
+    destruct v0; cut.
     eex.
   split.
     unfold dEnvMergeObjAccess in deAccess.
@@ -1072,7 +1038,6 @@ Proof.
   assumption.
 Qed.
 
-SearchAbout dEnvKnownTo.
 Lemma dEnvMergeObjMergeKnown : forall env o v merge env',
   dEnvKnownTo v env = true ->
   In o (dEnvGetKnownO env) ->
@@ -1468,7 +1433,63 @@ Lemma dEnvAddIneqConsistent : ∀ env v1 v2 env',
        dEnvConsistent env'.
 Proof.
   intros.
-  simpl.
+  unfold dEnvAddIneq
+       , dEnvValidateIneq
+       , dEnvValidateIneqB in *.
+  simpl in *.
+  destruct negb eqn: ee; cut.
+  inv H0.
+  destruct env.
+  destruct p0, p1.
+  destruct p0, p1.
+  unfold dEnvConsistent in *.
+  dEnvGetUnf.
+  simpl in *.
+  unf.
+  splau.
+Qed.
+
+Lemma dEnvAddAccConsistent : ∀ env v f env',
+      dEnvKnownTo v env = true ->
+      dEnvConsistent env ->
+      dEnvAddAcc v f env = Some env' ->
+      dEnvConsistent env'.
+Proof.
+  intros.
+  unfold dEnvAddAcc in *.
+  simpl in *.
+  destruct v; cut.
+  destruct dEnvValidateAcc eqn: ee; cut.
+  unfold dEnvValidateAcc in ee.
+  destruct dEnvValidateAccB eqn: eeb; cut.
+  inv ee.
+  inv H1.
+  destruct env.
+  destruct p0, p1.
+  destruct p0, p1.
+  simpl in *.
+  apply existsb_exists in H. unf. dec o_dec; cut.
+  unfold dEnvConsistent in *.
+  dEnvGetUnf.
+  simpl in *.
+  unf.
+  split.
+    intros.
+    inv H4; cut.
+    inv H6; cut.
+    inv H4; cut.
+    unf. inv H4.
+      inv H6. assumption.
+    apply H1. or4. eex.
+  split.
+    intros.
+    inv H4; cut.
+    inv H6; cut.
+    unf.
+    apply H0. eex.
+  splau.
+Qed.
+
 
 Lemma dEnvAddPhi'Consistent : forall p env env',
   dEnvConsistent env ->
@@ -1492,7 +1513,15 @@ Proof.
     destruct p0.
     eapply dEnvEnsureConsistent in ee1; eauto.
     eapply dEnvEnsureConsistent in ee2; eauto.
-    eapply dEnvMergeRecConsistent in H0; eauto.
+    eapply dEnvAddIneqConsistent in H0; eauto.
+  - destruct (dEnvEnsure e env) eqn: ee; cut.
+    destruct p0.
+    assert (dEnvConsistent d) as cons.
+      eapply dEnvEnsureConsistent in ee; eauto.
+    eapply dEnvEnsureEvals in ee; eauto.
+    eapply dEnvEvalsKnown in ee; eauto.
+    eapply dEnvAddAccConsistent in H0; eauto.
+Qed.
 
 Lemma dEnvAddPhi'Works : forall p env env',
   dEnvConsistent env ->
