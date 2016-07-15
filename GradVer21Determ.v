@@ -15,6 +15,29 @@ Proof.
   split; cut.
 Qed.
 
+Definition inclB {T:Type} (eq_dec : ∀ n m : T, {n = m} + {n ≠ m}) (xs1 xs2 : list T) : bool :=
+  forallb (fun x => inB eq_dec x xs2) xs1.
+
+Lemma inclB_incl : forall {T:Type} ed (xs2 xs1 : list T),
+  inclB ed xs1 xs2 = true <-> incl xs1 xs2.
+Proof.
+  unfold inclB.
+  induction xs1;
+  intros; simpl in *;
+  split; intros.
+  - apply inclEmpty.
+  - auto.
+  - apply andb_true_iff in H. unf.
+    apply inB_In in H0.
+    apply incl_cons; cut.
+  - apply andb_true_iff.
+    rewrite inB_In.
+    rewrite IHxs1.
+    apply incl_cons_reverse in H.
+    cut.
+Qed.
+
+
 Definition evalphi'B (h : H) (r : rho) (a : A_d) (p : phi') : bool :=
   match p with
   | phiTrue => true
@@ -38,6 +61,13 @@ Definition evalphi'B (h : H) (r : rho) (a : A_d) (p : phi') : bool :=
                    | Some (vo o) => inB A'_d_dec (o, f) a
                    | _ => false
                    end
+  end.
+
+Fixpoint evalphiB (h : H) (r : rho) (a : A_d) (p : phi) : bool :=
+  match p with
+  | [] => true
+  | p' :: p => evalphi'B h r a p'
+            && evalphiB h r (Aexcept a (footprint' h r p')) p
   end.
 
 Lemma evalphi'B_works : forall h r a p,
@@ -75,8 +105,24 @@ Proof.
       auto.
 Qed.
 
-
-  
+Lemma evalphiB_works : forall h r p a,
+  evalphiB h r a p = true <->
+  evalphi  h r a p.
+Proof.
+  induction p0; intros; simpl in *. split; cut.
+  rewrite andb_true_iff.
+  rewrite IHp0.
+  rewrite evalphi'B_works.
+  split; intros.
+  - unf.
+    eca.
+    * eapp evalphi'ImpliesIncl.
+    * eapp evalphi'FootprintAccess.
+  - inv H.
+    splau.
+    inv H9;
+    eca.
+Qed.
   
   
   

@@ -1,4 +1,4 @@
-Load GradVer20Hook_import.
+Load GradVer21Determ.
 Import Semantics.
 
 
@@ -1889,7 +1889,35 @@ Admitted.
 
 (* IMPLICATION *)
 Check dEnvEvalPhi'.
-Definition dEnvImplies' ()
+
+Definition dEnvGuaranteesIneq (e1 e2 : e) (env : dEnv) : bool :=
+  match dEnvEval e1 env with
+  | None => false
+  | Some v1 =>
+    match dEnvEval e2 env with
+    | None => false
+    | Some v2 =>
+      negb (o2b (dEnvMergeRec v1 v2 env))
+    end
+  end.
+
+Definition phiInequalities (p : phi) : list (prod e e) :=
+  flat_map
+  (fun p => match p with
+            | phiNeq e1 e2 => [(e1, e2)]
+            | _ => []
+            end)
+  p.
+
+Definition dEnvImplies' (env : dEnv) (p : phi) : bool :=
+  evalphiB (dEnvGetHeap env) (dEnvGetRho env) (dEnvGetAccess env) p &&
+  forallb (fun ineq => dEnvGuaranteesIneq (fst ineq) (snd ineq) env) (phiInequalities p).
+
+Definition phiImpliesB (p1 p2 : phi) : bool :=
+  match dEnvFromPhi p1 with
+  | None => true
+  | Some env => dEnvImplies' env p2
+  end.
 
 
 (* test *)
@@ -1917,6 +1945,35 @@ Eval compute in phiSatisfiableB
   ; phiEq (edot t_eb "g") t_ed
   ; phiEq (edot t_ed "y") (ev (vn 3))
   ; phiEq (edot t_ec "x") (ev (vn 4))].
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 4))]
+  [phiAcc t_ea "h"].
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 3))]
+  [phiAcc t_ea "h"].
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y") ]
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y") ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "f" ]
+  [ phiNeq t_ea t_eb ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g" ]
+  [ phiNeq t_ea t_eb ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g"; phiEq t_eb t_ea ]
+  [ phiAcc t_eb "f"; phiAcc t_ea "g" ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g"; phiEq t_eb t_ea ]
+  [ phiAcc t_eb "f"; phiAcc t_ea "f" ].
 Close Scope string.
 
 
