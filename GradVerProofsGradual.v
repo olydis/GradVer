@@ -1945,6 +1945,7 @@ Eval compute in phiSatisfiableB
   ; phiEq (edot t_eb "g") t_ed
   ; phiEq (edot t_ed "y") (ev (vn 3))
   ; phiEq (edot t_ec "x") (ev (vn 4))].
+
 Eval compute in phiImpliesB
   [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
   ; phiEq (edot t_ea "f") t_ec
@@ -1974,6 +1975,17 @@ Eval compute in phiImpliesB
 Eval compute in phiImpliesB
   [ phiAcc t_ea "f"; phiAcc t_eb "g"; phiEq t_eb t_ea ]
   [ phiAcc t_eb "f"; phiAcc t_ea "f" ].
+Eval compute in phiImpliesB
+  [ phiEq t_ea t_eb ]
+  [ phiEq (edot t_ea "x") (edot t_eb "x")].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "x";
+    phiEq t_ea t_eb ]
+  [ phiAcc t_ea "x";
+    phiEq (edot t_ea "x") (edot t_ea "x")].
+Eval compute in phiImpliesB
+  [ phiNeq (edot t_ea "x") (edot t_eb "x") ]
+  [ phiNeq t_ea t_eb].
 Close Scope string.
 
 
