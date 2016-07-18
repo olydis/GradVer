@@ -62,23 +62,12 @@ Definition ppHasMaximum (p : phi) (pp : pphi) :=
   pp p /\ (forall p', pp p' -> phiImplies p' p).
 
 Inductive gAlpha : pphi -> gphi -> Prop :=
-| AlphaNonGradual : forall (pp : pphi) (p : phi),
+| AlphaAll : forall gp pp,
   ppGood pp ->
-  
-  ppIsSingleton p pp ->
-  gAlpha pp (false, p)
-| AlphaGradual : forall (pp : pphi) (p : phi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  
-  ppHasSupremum p pp ->
-  gAlpha pp (true, p)
-| AlphaTotal : forall (pp : pphi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  (forall p, ~ ppHasSupremum p pp) ->
-  
-  gAlpha pp (true, [])
+  gGood gp ->
+  pincl pp (gGamma' gp) ->
+  (forall gp', gGood gp' -> pincl pp (gGamma' gp') -> pincl (gGamma' gp) (gGamma' gp')) ->
+  gAlpha pp gp
 .
 
 Definition PLIFT1 (prop : phi -> Prop) : (pphi -> Prop) :=
@@ -99,3 +88,16 @@ Definition PLIFT4 (prop : phi -> phi -> phi -> phi -> Prop) : (pphi -> pphi -> p
 Definition GLIFT4 (prop : phi -> phi -> phi -> phi -> Prop) : (gphi -> gphi -> gphi -> gphi -> Prop) :=
   fun gp1 gp2 gp3 gp4 => exists pp1 pp2 pp3 pp4, gGamma gp1 pp1 /\ gGamma gp2 pp2 /\ gGamma gp3 pp3 /\ gGamma gp4 pp4 /\ PLIFT4 prop pp1 pp2 pp3 pp4.
 
+
+(* hasWellFormedSubtype *)
+Axiom hasWellFormedSubtype : forall p,
+  phiSatisfiable p ->
+  ∃ p' : phi, phiSatisfiable p' ∧ sfrmphi [] p' ∧ FV p = FV p' ∧ phiImplies p' p.
+
+Definition pphiEquals (pp1 pp2 : pphi) :=
+    pincl pp1 pp2 /\ pincl pp2 pp1.
+
+Definition gphiEquals (gp1 gp2 : gphi) :=
+  exists pp1 pp2,
+    gGamma gp1 pp1 /\ gGamma gp2 pp2 /\
+    pphiEquals pp1 pp2.

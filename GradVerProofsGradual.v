@@ -1,6 +1,33 @@
 Load GradVer21Determ.
 Import Semantics.
 
+Require Import Coq.Logic.Classical_Pred_Type.
+
+
+Theorem alphaWD : forall pp gp1 gp2,
+  gAlpha pp gp1 ->
+  gAlpha pp gp2 ->
+  gphiEquals gp1 gp2.
+Proof.
+  intros.
+  inv H.
+  inv H0.
+  unfold gphiEquals.
+  exists (gGamma' gp1).
+  exists (gGamma' gp2).
+  repeat eca.
+Qed.
+
+Theorem gammaWD : forall gp pp1 pp2,
+  gGamma gp pp1 ->
+  gGamma gp pp2 ->
+  pphiEquals pp1 pp2.
+Proof.
+  intros.
+  inv H.
+  inv H0.
+  split; cut.
+Qed.
 
 Theorem alphaSound : forall pp1 gp pp2,
   gAlpha pp1 gp ->
@@ -8,45 +35,41 @@ Theorem alphaSound : forall pp1 gp pp2,
   pincl pp1 pp2.
 Proof.
   intros.
-  inversionx H.
-  - inversionx H0.
-    inversionx H1.
-    unfold
-      pincl,
-      gGamma',
-      ppIsSingleton
-    in *. unf.
-    intros.
-    simpl.
-    eapp H4.
-  - inversionx H0.
-    inversionx H1.
-    unfold
-      pincl,
-      ppHasUpperBound,
-      ppHasSupremum,
-      ppIsSingleton
-    in *. unf.
-    intros.
-    split.
-    * eapp H4.
-    * eapp H0.
-  - inversionx H0.
-    inversionx H1.
-    unfold
-      pincl,
-      ppHasSupremum,
-      ppIsSingleton
-    in *.
-    intros.
-    split.
-    * eapp H4.
-    * unfold phiImplies.
-      intros.
-      constructor.
+  inv H.
+  inv H0.
+  assumption.
 Qed.
 
-Require Import Coq.Logic.Classical_Pred_Type.
+Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
+  gAlpha pp1 gp2 ->
+  gGamma gp1 pp2 ->
+  gGamma gp2 pp3 ->
+  pincl pp1 pp2 ->
+  pincl pp3 pp2.
+Proof.
+  intros.
+  inv H.
+  inv H0.
+  inv H1.
+  apply H6; cut.
+Qed.
+
+Theorem alphaGammaId : forall pp gp1 gp2,
+  gGamma gp1 pp ->
+  gAlpha pp gp2 ->
+  gphiEquals gp1 gp2.
+Proof.
+  intros.
+  inv H. inv H0.
+  unfold gphiEquals.
+  exists (gGamma' gp1).
+  exists (gGamma' gp2).
+  split. cut.
+  split. cut.
+  split. assumption.
+  apply H4. assumption.
+  cut.
+Qed.
 
 Definition phiFalse : phi' := phiNeq (ev vnull) (ev vnull).
 Lemma phiFalseNotSat : ~ phiSatisfiable [phiFalse].
@@ -59,6 +82,7 @@ Proof.
   inversionx H2. inversionx H7.
   cut.
 Qed.
+
 
 Open Scope string_scope.
 Definition x2string (x : x) : string :=
@@ -1919,6 +1943,11 @@ Definition phiImpliesB (p1 p2 : phi) : bool :=
   | Some env => dEnvImplies' env p2
   end.
 
+(*
+note: dEnvEvalPhi is NOT the same!
+  More specifically: It does not GUARANTEE inequalities, but merely states that, so far, they are plausible
+  If dEnvImplies' agrees on an inequality, the environment CANNOT ever be enhanced to break the inequality
+ *)
 
 (* test *)
 (* unsat: a.f.x = b.g.y * a.f = c * b.g = d * d.y = 3 * c.x <> 3 *)
@@ -1986,6 +2015,12 @@ Eval compute in phiImpliesB
 Eval compute in phiImpliesB
   [ phiNeq (edot t_ea "x") (edot t_eb "x") ]
   [ phiNeq t_ea t_eb].
+Eval compute in phiImpliesB
+  [ phiEq t_ea (edot (edot (edot t_ea "f") "f") "f") ]
+  [ phiEq t_ea (edot (edot (edot (edot (edot (edot t_ea "f") "f") "f") "f") "f") "f") ].
+Eval compute in phiImpliesB
+  [ phiEq t_ea (edot (edot t_ea "f") "f") ]
+  [ phiEq t_ea (edot (edot (edot (edot (edot (edot t_ea "f") "f") "f") "f") "f") "f") ].
 Close Scope string.
 
 
