@@ -323,6 +323,10 @@ Proof.
       cut.
     clear ass1.
     admit.
+    (* component assassination:
+       Let 
+       - a = b
+     *)
   - admit.
   - admit.
   - inv H0.
