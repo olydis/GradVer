@@ -67,13 +67,12 @@ Qed.
 Definition gPhiApp (p : phi) (gp1 gp2 : gphi) : Prop :=
   fst gp2 = fst gp1 /\
   snd gp2 = snd gp1 ++ p /\
-  (sfrmphi [] (snd gp1)).
+  (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
+   exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p)).
 
 
-(* 
-Definition gPhiAppWorksFor (p1 : phi) (p2 : phi) := 
-  gPhiApp p1 (false, p2) (false, p2 ++ p1) /\ 
-  gPhiApp p1 (true, p2) (true, p2 ++ p1).
+Definition gPhiAppWorksFor (pAdd : phi) (pBase : phi) := 
+  gPhiApp pAdd (true, pBase) (true, pBase ++ pAdd).
   
 Open Scope string.
 Definition t_ea : e := ex (xUserDef "a").
@@ -85,18 +84,36 @@ Definition t_ed : e := ex (xUserDef "d").
 Lemma gPhiApp1 : gPhiAppWorksFor [phiAcc t_ea "f"] [phiAcc t_eb "f"].
 Proof.
   unfold gPhiAppWorksFor, gPhiApp. simpl.
-  split.
-  - splau. splau.
-    intros.
-    repeat intro.
-    apply H in H0.
-    admit.
-  - splau. splau.
-    intros.
-    
-  
+  splau. splau.
+  intros. unf.
+  exists [phiAcc t_eb "f"].
+  split. admit.
+  splau.
+Admitted.
 
-Close Scope string. *)
+Lemma gPhiApp2 : ~ gPhiAppWorksFor [phiAcc t_ea "f"] [phiEq (edot t_ea "f") t_eb].
+Proof.
+  unfold gPhiAppWorksFor, gPhiApp. simpl.
+  intro. unf.
+  specialize (H2 [phiAcc t_ea "f"; phiEq (edot t_ea "f") t_eb]).
+  lapply H2; intros.
+  - unf.
+    admit.
+  - split. admit.
+    cut.
+Admitted.
+
+Lemma gPhiApp3 : gPhiAppWorksFor [phiEq (edot t_ea "f") t_eb] [phiAcc t_ea "f"].
+Proof.
+  unfold gPhiAppWorksFor, gPhiApp. simpl.
+  splau. splau.
+  intros. unf.
+  exists [phiAcc t_ea "f"].
+  split. admit.
+  splau.
+Admitted.
+
+Close Scope string.
 
 
 (* partial galois connection *)
@@ -167,13 +184,13 @@ Proof.
           intros.
           apply H3. eex; apply H.
         clear H3.
-        specialize (H p2).
-        assert (phiImplies p2 p1). eappIn phiImpliesTrans H8. eapp phiImpliesPrefix.
-        assert (phiImplies p2 p0). eappIn phiImpliesTrans H8. eapp phiImpliesSuffix.
-        intuition.
-        eappIn phiImpliesTrans H11.
-        eapp phiImpliesAppB.
         
+(*         specialize (H (p2 WO p0)). *)
+        specialize (ass p2).
+        intuition. unf.
+        specialize (H x).
+        intuition.
+        apply (phiImpliesTrans p2 (x ++ p0) p3); auto.
       + assert (x0 ++ p0 = p3).
           apply H3.
           exists (x0).
