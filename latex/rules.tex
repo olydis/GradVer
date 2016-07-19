@@ -496,6 +496,18 @@ But maybe not even necessary with smarter hoare rules?
 {\grad{\phi_1} \approx \grad{\phi_2}}
 \end{mathpar}
 
+\subsubsection{Append}
+\begin{align*}
+&\grad{\phi} ~\grad{*}~ \phi_p = \grad{\phi} * \phi_p
+      && \text{if~} \forall \hat{\phi_1}, (\hat{\phi_1} \implies \phi * \phi_p) \implies 
+                    \exists \hat{\phi_2}, (\hat{\phi_2} \implies \phi \wedge \hat{\phi_1} \implies \hat{\phi_1} * \phi_p) \\
+&\grad{\phi} ~\grad{*}~ \phi_p \textit{~undefined}
+      && \text{otherwise}
+\end{align*}
+% (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
+% exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p))
+
+
 \subsection{Gradual Hoare: minimal static rule approach}
 
 \newcommand{\imp}[1]{\textcolor{red}{#1}}
