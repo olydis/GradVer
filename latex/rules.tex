@@ -335,6 +335,21 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 \end{equation*}
 Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equirecursive State Abstractions''.
 
+\subsubsection{Implying inequality}
+\begin{align*}
+\\   & \phi * (e_1 = e_1) * (e_2 = e_2) \implies (e_1 \neq e_2)
+\\ =~& \forall H, \rho, A:~ \evalphi \phi * (e_1 = e_1) * (e_2 = e_2) \implies \evalphi (e_1 \neq e_2)
+\\ =~& \forall H, \rho, A:~  (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge (v_1 \neq v2))
+\\ =~& \forall H, \rho, A, v_1, v_2:~  (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge (v_1 \neq v2))
+\\ =~& \forall H, \rho, A, v_1, v_2:~  (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (v_1 \neq v2)
+\\ =~& \forall H, \rho, A, v_1, v_2:~  \neg (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \vee (v_1 \neq v2)
+\\ =~& \forall H, \rho, A, v_1, v_2:~  \neg (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi \wedge (v_1 = v2))
+\\ =~& \forall H, \rho, A:~ \neg (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi \wedge (v_1 = v2))
+\\ =~& \forall H, \rho, A:~ \neg (\evalphi \phi \wedge \evalphi (e_1 = e_2))
+\\ =~& \forall H, \rho, A:~ \neg \evalphi \phi * (e_1 = e_2)
+\\ =~& \neg \text{sat~}(\phi * (e_1 = e_2))
+\end{align*}
+
 \subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
 \begin{align*}
  &\dynamicFP {H} {\rho} {\true}    		&&= \emptyset
