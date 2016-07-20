@@ -17,9 +17,8 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
                 if (!_this.verForm.sfrm())
                     html.addClass("errSfrm");
                 // DEBUG: normalized data
-                var data = _this.verForm.staticFormula.collectData();
-                console.log(JSON.stringify(data));
-                if (data.knownToBeFalse)
+                var phi = _this.verForm.staticFormula;
+                if (!phi.satisfiable())
                     html.addClass("errFalse");
                 // DEBUG end
                 return {

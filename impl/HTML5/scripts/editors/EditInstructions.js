@@ -1,9 +1,8 @@
 define(["require", "exports", "./EditStatement", "./EditVerificationFormula", "../GUIHelpers", "../types/VerificationFormulaGradual", "../types/VerificationFormula"], function (require, exports, EditStatement_1, EditVerificationFormula_1, GUIHelpers_1, VerificationFormulaGradual_1, VerificationFormula_1) {
     "use strict";
     var EditInstructions = (function () {
-        function EditInstructions(container, hoare) {
+        function EditInstructions(container) {
             this.container = container;
-            this.hoare = hoare;
             this.statements = [];
             this.verificationFormulas = [];
             this.verificationFormulas.push(new EditVerificationFormula_1.EditVerificationFormula());
@@ -41,7 +40,7 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
             var s = this.statements[index].getStatement();
             var pre = this.verificationFormulas[index].getFormula();
             var post = this.verificationFormulas[index + 1].getFormula();
-            return this.hoare.validate(s, pre, post);
+            return { errs: null, runtimeCheck: new VerificationFormula_1.VerificationFormula() }; //this.hoare.validate(s, pre, post);
         };
         EditInstructions.prototype.btnCheckAll = function () {
             for (var i = 0; i < this.numInstructions; ++i)
@@ -64,8 +63,8 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
             var stmt = this.statements[index].getStatement();
             var pre = this.verificationFormulas[index].getFormula();
             var post = this.verificationFormulas[index + 1].getFormula();
-            var npost = this.hoare.genPost(stmt, pre, post);
-            this.verificationFormulas[index + 1].setFormula(npost);
+            //var npost = this.hoare.genPost(stmt, pre, post);
+            //this.verificationFormulas[index + 1].setFormula(npost);
         };
         EditInstructions.prototype.btnResetAssertionsAll = function (grad) {
             for (var i = 0; i <= this.numInstructions; ++i)
@@ -96,8 +95,8 @@ define(["require", "exports", "./EditStatement", "./EditVerificationFormula", ".
                             var stmt = _this.statements[i].getStatement();
                             var pre = _this.verificationFormulas[i].getFormula();
                             var post = _this.verificationFormulas[i + 1].getFormula();
-                            var npre = _this.hoare.genPre(stmt, pre, post);
-                            _this.verificationFormulas[i].setFormula(npre);
+                            //var npre = this.hoare.genPre(stmt, pre, post);
+                            //this.verificationFormulas[i].setFormula(npre);
                         }));
                     _this.container.append(_this.verificationFormulas[i].createHTML());
                     if (i != n) {

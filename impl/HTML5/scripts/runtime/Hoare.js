@@ -1,317 +1,378 @@
-define(["require", "exports", "../types/VerificationFormula", "../types/VerificationFormulaGradual", "../types/Statement", "../types/Type", "../types/Expression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Statement_1, Type_1, Expression_1) {
-    "use strict";
-    var Hoare = (function () {
-        function Hoare(env) {
-            var _this = this;
-            this.env = env;
-            this.ruleHandlers = [];
-            this.addHandler("NewObject", Statement_1.StatementAlloc, function (s, pre, onErr) {
-                var fs = _this.env.fields(s.C);
-                // check
-                if (fs == null) {
-                    onErr("class '" + s.C + "' not found");
-                    return null;
-                }
-                return { fs: fs };
-            }, function (s) { return [s.x]; }, function (s, phi, params) {
-                var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, new Type_1.TypeClass(s.C)));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                res.push.apply(res, params.fs.map(function (f) { return new VerificationFormula_1.FormulaPartAcc(ex, f.name); }));
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, new Type_1.TypeClass(s.C)));
-                res.push(new VerificationFormula_1.FormulaPartNeq(ex, Expression_1.ExpressionX.getNull()));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-            this.addHandler("FieldAssign", Statement_1.StatementMemberSet, function (s, pre, onErr) {
-                var Tx = pre.staticFormula.tryGetType(s.x);
-                if (!(Tx instanceof Type_1.TypeClass)) {
-                    if (pre.gradual)
-                        return { C: null, T: null };
-                    onErr("couldn't determine type of '" + s.x + "'");
-                    return null;
-                }
-                var Cx = Tx;
-                var Cf = _this.env.fieldType(Cx.C, s.f);
-                // check
-                if (Cf == null) {
-                    onErr("class '" + Cx + "' doesn't have field '" + s.f + "'");
-                    return null;
-                }
-                return { C: Cx, T: Cf };
-            }, function (s) { return []; }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.C)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
-                if (params.T)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.y, params.T));
-                res.push.apply(res, phi.parts);
-                res.push(new VerificationFormula_1.FormulaPartAcc(ex, s.f));
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.C)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.C));
-                res.push(new VerificationFormula_1.FormulaPartAcc(ex, s.f));
-                res.push(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(ex, s.f), new Expression_1.ExpressionX(s.y)));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-            this.addHandler("VarAssign", Statement_1.StatementAssign, function (s, pre, onErr) {
-                var Tx = pre.staticFormula.tryGetType(s.x);
-                if (Tx == null) {
-                    if (pre.gradual)
-                        return { T: null, Tx: null };
-                    onErr("couldn't determine type of '" + s.x + "'");
-                    return null;
-                }
-                var Te = _this.env.tryGetType(pre.staticFormula, s.e);
-                if (Te == null) {
-                    if (pre.gradual)
-                        return { T: null, Tx: null };
-                    onErr("couldn't determine type of RHS expression");
-                    return null;
-                }
-                var TeCore = _this.env.tryGetCoreType(pre.staticFormula, s.e);
-                // check
-                if (s.e.FV().some(function (x) { return x == s.x; })) {
-                    onErr("RHS expression cannot contain variable '" + s.x + "'");
-                    return null;
-                }
-                if (!Type_1.Type.eq(Tx, Te)) {
-                    onErr("type mismatch");
-                    return null;
-                }
-                return { T: Te, Tx: TeCore };
-            }, function (s) { return [s.x]; }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.T)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
-                if (params.Tx)
-                    res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.Tx)
-                    res.push.apply(res, _this.unfoldTypeFormula(s.e, params.Tx));
-                res.push.apply(res, phi.parts);
-                res.push(new VerificationFormula_1.FormulaPartEq(ex, s.e));
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-            this.addHandler("Return", Statement_1.StatementReturn, function (s, pre, onErr) {
-                var Tx = pre.staticFormula.tryGetType(s.x);
-                if (Tx == null) {
-                    if (pre.gradual)
-                        return { T: null };
-                    onErr("couldn't determine type of '" + s.x + "'");
-                    return null;
-                }
-                return { T: Tx };
-            }, function (s) { return [Expression_1.Expression.getResult()]; }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.T)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.T));
-                res.push(new VerificationFormula_1.FormulaPartType(Expression_1.Expression.getResult(), params.T));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.T)
-                    res.push(new VerificationFormula_1.FormulaPartType(Expression_1.Expression.getResult(), params.T));
-                res.push(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionX(Expression_1.Expression.getResult()), ex));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-            this.addHandler("Call", Statement_1.StatementCall, function (s, pre, onErr) {
-                var Ty = pre.staticFormula.tryGetType(s.y);
-                if (!(Ty instanceof Type_1.TypeClass)) {
-                    if (pre.gradual)
-                        return { m: null, C: null };
-                    onErr("'" + s.y + "' must have class type");
-                    return null;
-                }
-                var Cy = Ty;
-                var m = _this.env.mmethod(Cy.C, s.m);
-                // check
-                if (m == null) {
-                    onErr("class '" + Cy + "' doesn't have method '" + s.m + "'");
-                    return null;
-                }
-                if (s.x == s.y || s.x == s.z) {
-                    onErr("'" + s.x + "' cannot appear both in LHS and RHS");
-                    return null;
-                }
-                return { m: m, C: Cy };
-            }, function (s) { return [s.x]; }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                if (params.m)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.x, params.m.retType));
-                if (params.C)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.y, params.C));
-                if (params.m)
-                    res.push(new VerificationFormula_1.FormulaPartType(s.z, params.m.argType));
-                res.push.apply(res, phi.parts);
-                res.push(new VerificationFormula_1.FormulaPartNeq(new Expression_1.ExpressionX(s.y), Expression_1.Expression.getNull()));
-                if (params.m)
-                    res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
-                        if (x == Expression_1.Expression.getThis())
-                            return s.y;
-                        if (x == params.m.argName)
-                            return s.z;
-                        return x;
-                    }).parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            }, function (s, phi, params) {
-                var ex = new Expression_1.ExpressionX(s.x);
-                var res = [];
-                res.push.apply(res, phi.parts);
-                if (params.m)
-                    res.push.apply(res, params.m.frmPre.staticFormula.substs(function (x) {
-                        if (x == Expression_1.Expression.getThis())
-                            return s.y;
-                        if (x == params.m.argName)
-                            return s.z;
-                        if (x == Expression_1.Expression.getResult())
-                            return s.x;
-                        return x;
-                    }).parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-            this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, onErr) {
-                if (!pre.impliesApprox(s.assertion)) {
-                    onErr("couldn't prove assertion");
-                    return null;
-                }
-                return {};
-            }, function (s) { return []; }, function (s, phi, params) {
-                return phi;
-            }, function (s, phi, params) {
-                return phi;
-            });
-            this.addHandler("Release", Statement_1.StatementRelease, function (s, pre, onErr) {
-                return {};
-            }, function (s) { return []; }, function (s, phi, params) {
-                return new VerificationFormula_1.VerificationFormula(null, phi.parts.concat(s.assertion.parts));
-            }, function (s, phi, params) {
-                return phi;
-            });
-            this.addHandler("Declare", Statement_1.StatementDeclare, function (s, pre, onErr) {
-                return {};
-            }, function (s) { return [s.x]; }, function (s, phi, params) {
-                return phi;
-            }, function (s, phi, params) {
-                var res = [];
-                res.push(new VerificationFormula_1.FormulaPartType(s.x, s.T));
-                res.push(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionX(s.x), s.T.defaultValue()));
-                res.push.apply(res, phi.parts);
-                return new VerificationFormula_1.VerificationFormula(null, res);
-            });
-        }
-        Hoare.prototype.addHandler = function (rule, SS, getParams, notInPhi, getPre, getPost) {
-            var y = Statement_1.StatementAlloc;
-            var x;
-            this.ruleHandlers.push({
-                name: rule,
-                statementMatch: function (s) { return s instanceof SS; },
-                params: getParams,
-                notInPhi: notInPhi,
-                pre: getPre,
-                post: getPost
-            });
-        };
-        Hoare.prototype.getRule = function (s) {
-            for (var _i = 0, _a = this.ruleHandlers; _i < _a.length; _i++) {
-                var rule = _a[_i];
-                if (rule.statementMatch(s))
-                    return rule;
-            }
-            throw "unknown statement type";
-        };
-        Hoare.prototype.check = function (s, pre) {
-            var rule = this.getRule(s);
-            var errs = [];
-            var res = rule.params(s, pre, function (msg) { return errs.push(msg); });
-            return res == null ? errs : null;
-        };
-        Hoare.prototype.guessPhiFromPre = function (s, pre) {
-            var rule = this.getRule(s);
-            var params = rule.params(s, pre, function () { });
-            var barePre = rule.pre(s, VerificationFormula_1.VerificationFormula.empty(), params);
-            var nonos = rule.notInPhi(s);
-            var isNono = function (x) { return nonos.indexOf(x) != -1; };
-            var remaining = pre.staticFormula.parts.filter(function (p1) { return !(p1 instanceof VerificationFormula_1.FormulaPartAcc &&
-                barePre.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
-            remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
-            return new VerificationFormula_1.VerificationFormula(null, remaining);
-        };
-        Hoare.prototype.guessPhiFromPost = function (s, pre, post) {
-            var rule = this.getRule(s);
-            var params = rule.params(s, pre, function () { });
-            var barePost = rule.post(s, VerificationFormula_1.VerificationFormula.empty(), params);
-            var nonos = rule.notInPhi(s);
-            var isNono = function (x) { return nonos.indexOf(x) != -1; };
-            var remaining = post.staticFormula.parts.filter(function (p1) { return !(barePost.parts.some(function (p2) { return VerificationFormula_1.FormulaPart.eq(p1, p2); })); });
-            remaining = remaining.filter(function (p) { return p.FV().every(function (x) { return !isNono(x); }); });
-            return new VerificationFormula_1.VerificationFormula(null, remaining);
-        };
-        Hoare.prototype.guessPhi = function (s, pre, post) {
-            var phiPre = this.guessPhiFromPre(s, pre);
-            var phiPost = this.guessPhiFromPost(s, pre, post);
-            return VerificationFormula_1.VerificationFormula.intersect(phiPre, phiPost);
-        };
-        Hoare.prototype.genPost = function (s, pre, post) {
-            var rule = this.getRule(s);
-            var params = rule.params(s, pre, function () { });
-            if (params == null)
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.create(pre.gradual, VerificationFormula_1.VerificationFormula.empty());
-            var phi = this.guessPhi(s, pre, post);
-            return VerificationFormulaGradual_1.VerificationFormulaGradual.create(pre.gradual, rule.post(s, phi, params));
-        };
-        Hoare.prototype.genPre = function (s, pre, post) {
-            var rule = this.getRule(s);
-            var params = rule.params(s, pre, function () { });
-            if (params == null)
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.create(post.gradual, VerificationFormula_1.VerificationFormula.empty());
-            var phi = this.guessPhi(s, pre, post);
-            return VerificationFormulaGradual_1.VerificationFormulaGradual.create(post.gradual, rule.pre(s, phi, params));
-        };
-        Hoare.prototype.validate = function (s, pre, post) {
-            var check = this.check(s, pre);
-            if (check)
-                return { errs: check, runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
-            var rule = this.getRule(s);
-            var params = rule.params(s, pre, function () { });
-            var phi = this.guessPhiFromPost(s, pre, post);
-            var xpre = rule.pre(s, phi, params);
-            var xpost = rule.post(s, phi, params);
-            if (!pre.impliesApprox(xpre))
-                return { errs: ["couldn't prove pre implication"], runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
-            if (!post.containsApprox(xpost))
-                return { errs: ["couldn't prove post membership"], runtimeCheck: VerificationFormula_1.VerificationFormula.empty() };
-            return { errs: null, runtimeCheck: pre.impliesApproxMissing(xpre) };
-        };
-        Hoare.prototype.unfoldTypeFormula = function (e, coreType) {
-            if (e instanceof Expression_1.ExpressionV)
-                return [];
-            if (e instanceof Expression_1.ExpressionX)
-                return [new VerificationFormula_1.FormulaPartType(e.x, coreType)];
-            if (e instanceof Expression_1.ExpressionDot)
-                return this.unfoldTypeFormula(e.e, coreType).concat([new VerificationFormula_1.FormulaPartAcc(e.e, e.f)]);
-            throw "unexpected subclass";
-        };
-        return Hoare;
-    }());
-    exports.Hoare = Hoare;
-});
+// import { VerificationFormula, FormulaPart, FormulaPartAcc, FormulaPartNeq, FormulaPartEq } from "../types/VerificationFormula";
+// import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual"
+// import { Statement,
+//     StatementAlloc,
+//     StatementMemberSet,
+//     StatementAssign,
+//     StatementReturn,
+//     StatementCall,
+//     StatementAssert,
+//     StatementRelease,
+//     StatementDeclare
+//     } from "../types/Statement";
+// import { Type, TypeClass } from "../types/Type";
+// import { ExpressionX, Expression, ExpressionDot, ExpressionV } from "../types/Expression";
+// import { ExecutionEnvironment } from "./ExecutionEnvironment";
+// import { Field, Method } from "./Program";
+// type Ctor<T> = { new(... args: any[]): T };
+// type Rule = {
+//         name: string,
+//         statementMatch: (s: Statement) => boolean,
+//         params: (s: Statement, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => any,
+//         notInPhi: (s: Statement) => string[],
+//         pre: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
+//         post: (s: Statement, phi: VerificationFormula, params: any) => VerificationFormula,
+//     };
+// export class Hoare
+// {
+//     private ruleHandlers: Rule[];
+//     private addHandler<S extends Statement, P>(
+//         rule: string,
+//         SS: Ctor<S>,
+//         getParams: (s: S, pre: VerificationFormulaGradual, onErr: (msg: string) => void) => P,
+//         notInPhi: (s: S) => string[],
+//         getPre: (s: S, phi: VerificationFormula, params: P) => VerificationFormula,
+//         getPost: (s: S, phi: VerificationFormula, params: P) => VerificationFormula): void
+//     {
+//         var y = StatementAlloc;
+//         var x: typeof y;
+//         this.ruleHandlers.push({
+//             name: rule,
+//             statementMatch: s => s instanceof SS,
+//             params: getParams, // check
+//             notInPhi: notInPhi,
+//             pre: getPre,
+//             post: getPost
+//         });
+//     }
+//     private getRule(s: Statement): Rule
+//     {
+//         for (var rule of this.ruleHandlers)
+//             if (rule.statementMatch(s))
+//                 return rule;
+//         throw "unknown statement type";
+//     }
+//     public check(s: Statement, pre: VerificationFormulaGradual): string[]
+//     {
+//         var rule = this.getRule(s);
+//         var errs: string[] = [];
+//         var res = rule.params(s, pre, msg => errs.push(msg));
+//         return res == null ? errs : null;
+//     }
+//     private guessPhiFromPre(s: Statement, pre: VerificationFormulaGradual): VerificationFormula
+//     {
+//         var rule = this.getRule(s);
+//         var params = rule.params(s, pre, () => {});
+//         var barePre = rule.pre(s, VerificationFormula.empty(), params);
+//         var nonos = rule.notInPhi(s);
+//         var isNono = (x : string) => nonos.indexOf(x) != -1;
+//         var remaining = pre.staticFormula.parts.filter(p1 => !(
+//             p1 instanceof FormulaPartAcc &&
+//             barePre.parts.some(p2 => FormulaPart.eq(p1, p2))));
+//         remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
+//         return new VerificationFormula(null, remaining);
+//     }
+//     private guessPhiFromPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
+//     {
+//         var rule = this.getRule(s);
+//         var params = rule.params(s, pre, () => {});
+//         var barePost = rule.post(s, VerificationFormula.empty(), params);
+//         var nonos = rule.notInPhi(s);
+//         var isNono = (x : string) => nonos.indexOf(x) != -1;
+//         var remaining = post.staticFormula.parts.filter(p1 => !(
+//             barePost.parts.some(p2 => FormulaPart.eq(p1, p2))));
+//         remaining = remaining.filter(p => p.FV().every(x => !isNono(x)));
+//         return new VerificationFormula(null, remaining);
+//     }
+//     public guessPhi(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormula
+//     {
+//         var phiPre = this.guessPhiFromPre(s, pre);
+//         var phiPost = this.guessPhiFromPost(s, pre, post);
+//         return VerificationFormula.intersect(phiPre, phiPost);
+//     }
+//     public genPost(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormulaGradual
+//     {
+//         var rule = this.getRule(s);
+//         var params = rule.params(s, pre, () => {});
+//         if (params == null)
+//             return VerificationFormulaGradual.create(pre.gradual, VerificationFormula.empty());
+//         var phi = this.guessPhi(s, pre, post);
+//         return VerificationFormulaGradual.create(pre.gradual, rule.post(s, phi, params));
+//     }
+//     public genPre(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): VerificationFormulaGradual
+//     {
+//         var rule = this.getRule(s);
+//         var params = rule.params(s, pre, () => {});
+//         if (params == null)
+//             return VerificationFormulaGradual.create(post.gradual, VerificationFormula.empty());
+//         var phi = this.guessPhi(s, pre, post);
+//         return VerificationFormulaGradual.create(post.gradual, rule.pre(s, phi, params));
+//     }
+//     // public validate(s: Statement, pre: VerificationFormulaGradual, post: VerificationFormulaGradual): { errs: string[], runtimeCheck: VerificationFormula }
+//     // {
+//     //     var check = this.check(s, pre);
+//     //     if (check) return { errs: check, runtimeCheck: VerificationFormula.empty() };
+//     //     var rule = this.getRule(s);
+//     //     var params = rule.params(s, pre, () => {});
+//     //     var phi = this.guessPhiFromPost(s, pre, post);
+//     //     var xpre = rule.pre(s, phi, params);
+//     //     var xpost = rule.post(s, phi, params);
+//     //     if (!pre.impliesApprox(xpre))
+//     //         return { errs: ["couldn't prove pre implication"], runtimeCheck: VerificationFormula.empty() };
+//     //     if (!post.containsApprox(xpost))
+//     //         return { errs: ["couldn't prove post membership"], runtimeCheck: VerificationFormula.empty() };
+//     //     return { errs: null, runtimeCheck: pre.impliesApproxMissing(xpre) };
+//     // }
+//     constructor(private env: ExecutionEnvironment) {
+//         this.ruleHandlers = [];
+//         this.addHandler<StatementAlloc, { fs: Field[] }>("NewObject", StatementAlloc,
+//             (s, pre, onErr) => {
+//                 var fs = this.env.fields(s.C);
+//                 // check
+//                 if (fs == null)
+//                 {
+//                     onErr("class '" + s.C + "' not found");
+//                     return null;
+//                 }
+//                 return {fs: fs};
+//             },
+//             s => [s.x],
+//             (s, phi, params) => {
+//                 var res: FormulaPart[] = [];
+//                 res.push(new FormulaPartType(s.x, new TypeClass(s.C)));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             },
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 res.push(...params.fs.map(f => new FormulaPartAcc(ex, f.name)));
+//                 res.push(new FormulaPartType(s.x, new TypeClass(s.C)));
+//                 res.push(new FormulaPartNeq(ex, ExpressionX.getNull()));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             });
+//         this.addHandler<StatementMemberSet, {C: TypeClass, T: Type}>("FieldAssign", StatementMemberSet,
+//             (s, pre, onErr) => {
+//                 var Tx = pre.staticFormula.tryGetType(s.x);
+//                 if (!(Tx instanceof TypeClass))
+//                 {
+//                     if (pre.gradual) return { C: null, T: null };
+//                     onErr("couldn't determine type of '" + s.x + "'");
+//                     return null;
+//                 }
+//                 var Cx = <TypeClass>Tx;
+//                 var Cf = this.env.fieldType(Cx.C, s.f);
+//                 // check
+//                 if (Cf == null)
+//                 {
+//                     onErr("class '" + Cx + "' doesn't have field '" + s.f + "'");
+//                     return null;
+//                 }
+//                 return {C: Cx, T: Cf};
+//             },
+//             s => [],
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.C)
+//                     res.push(new FormulaPartType(s.x, params.C));
+//                 if (params.T)
+//                     res.push(new FormulaPartType(s.y, params.T));
+//                 res.push(...phi.parts);
+//                 res.push(new FormulaPartAcc(ex, s.f));
+//                 return new VerificationFormula(null, res);
+//             },
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.C)
+//                     res.push(new FormulaPartType(s.x, params.C));
+//                 res.push(new FormulaPartAcc(ex, s.f));
+//                 res.push(new FormulaPartEq(new ExpressionDot(ex, s.f), new ExpressionX(s.y)));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             });
+//         this.addHandler<StatementAssign, {T: Type, Tx: Type}>("VarAssign", StatementAssign,
+//             (s, pre, onErr) => {
+//                 var Tx = pre.staticFormula.tryGetType(s.x);
+//                 if (Tx == null)
+//                 {
+//                     if (pre.gradual) return { T: null, Tx: null };
+//                     onErr("couldn't determine type of '" + s.x + "'");
+//                     return null;
+//                 }
+//                 var Te = this.env.tryGetType(pre.staticFormula, s.e);
+//                 if (Te == null)
+//                 {
+//                     if (pre.gradual) return { T: null, Tx: null };
+//                     onErr("couldn't determine type of RHS expression");
+//                     return null;
+//                 }
+//                 var TeCore = this.env.tryGetCoreType(pre.staticFormula, s.e);
+//                 // check
+//                 if (s.e.FV().some(x => x == s.x))
+//                 {
+//                     onErr("RHS expression cannot contain variable '" + s.x + "'");
+//                     return null;
+//                 }
+//                 if (!Type.eq(Tx, Te))
+//                 {
+//                     onErr("type mismatch");
+//                     return null;
+//                 }
+//                 return {T:Te, Tx: TeCore};
+//             },
+//             s => [s.x],
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.T)
+//                     res.push(new FormulaPartType(s.x, params.T));
+//                 if (params.Tx)
+//                     res.push(...this.unfoldTypeFormula(s.e, params.Tx));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             },
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.Tx)
+//                     res.push(...this.unfoldTypeFormula(s.e, params.Tx));
+//                 res.push(...phi.parts);
+//                 res.push(new FormulaPartEq(ex, s.e));
+//                 return new VerificationFormula(null, res);
+//             });
+//         this.addHandler<StatementReturn, {T: Type}>("Return", StatementReturn,
+//             (s, pre, onErr) => {
+//                 var Tx = pre.staticFormula.tryGetType(s.x);
+//                 if (Tx == null)
+//                 {
+//                     if (pre.gradual) return {T: null};
+//                     onErr("couldn't determine type of '" + s.x + "'");
+//                     return null;
+//                 }
+//                 return {T:Tx};
+//             },
+//             s => [Expression.getResult()],
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.T)
+//                     res.push(new FormulaPartType(s.x, params.T));
+//                 res.push(new FormulaPartType(Expression.getResult(), params.T));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             },
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.T)
+//                     res.push(new FormulaPartType(Expression.getResult(), params.T));
+//                 res.push(new FormulaPartEq(new ExpressionX(Expression.getResult()), ex));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             });
+//         this.addHandler<StatementCall, {m: Method, C: TypeClass}>("Call", StatementCall,
+//             (s, pre, onErr) => {
+//                 var Ty = pre.staticFormula.tryGetType(s.y);
+//                 if (!(Ty instanceof TypeClass))
+//                 {
+//                     if (pre.gradual) return {m: null, C: null};
+//                     onErr("'" + s.y + "' must have class type");
+//                     return null;
+//                 }
+//                 var Cy = <TypeClass>Ty;
+//                 var m = this.env.mmethod(Cy.C, s.m);
+//                 // check
+//                 if (m == null)
+//                 {
+//                     onErr("class '" + Cy + "' doesn't have method '" + s.m + "'");
+//                     return null;
+//                 }
+//                 if (s.x == s.y || s.x == s.z)
+//                 {
+//                     onErr("'" + s.x + "' cannot appear both in LHS and RHS");
+//                     return null;
+//                 }
+//                 return {m: m, C: Cy};
+//             },
+//             s => [s.x],
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 if (params.m)
+//                     res.push(new FormulaPartType(s.x, params.m.retType));
+//                 if (params.C)
+//                     res.push(new FormulaPartType(s.y, params.C));
+//                 if (params.m)
+//                     res.push(new FormulaPartType(s.z, params.m.argType));
+//                 res.push(...phi.parts);
+//                 res.push(new FormulaPartNeq(new ExpressionX(s.y), Expression.getNull()));
+//                 if (params.m)
+//                     res.push(...params.m.frmPre.staticFormula.substs(x =>
+//                     {
+//                         if (x == Expression.getThis()) return s.y;
+//                         if (x == params.m.argName) return s.z;
+//                         return x;
+//                     }).parts);
+//                 return new VerificationFormula(null, res);
+//             },
+//             (s, phi, params) => {
+//                 var ex = new ExpressionX(s.x);
+//                 var res: FormulaPart[] = [];
+//                 res.push(...phi.parts);
+//                 if (params.m)
+//                     res.push(...params.m.frmPre.staticFormula.substs(x =>
+//                     {
+//                         if (x == Expression.getThis()) return s.y;
+//                         if (x == params.m.argName) return s.z;
+//                         if (x == Expression.getResult()) return s.x;
+//                         return x;
+//                     }).parts);
+//                 return new VerificationFormula(null, res);
+//             });
+//         this.addHandler<StatementAssert, {}>("Assert", StatementAssert,
+//             (s, pre, onErr) => {
+//                 if (!pre.impliesApprox(s.assertion))
+//                 {
+//                     onErr("couldn't prove assertion");
+//                     return null;
+//                 }
+//                 return {};
+//             },
+//             s => [],
+//             (s, phi, params) => {
+//                 return phi;
+//             },
+//             (s, phi, params) => {
+//                 return phi;
+//             });
+//         this.addHandler<StatementRelease, {}>("Release", StatementRelease,
+//             (s, pre, onErr) => {
+//                 return {};
+//             },
+//             s => [],
+//             (s, phi, params) => {
+//                 return new VerificationFormula(null, phi.parts.concat(s.assertion.parts));
+//             },
+//             (s, phi, params) => {
+//                 return phi;
+//             });
+//         this.addHandler<StatementDeclare, {}>("Declare", StatementDeclare,
+//             (s, pre, onErr) => {
+//                 return {};
+//             },
+//             s => [s.x],
+//             (s, phi, params) => {
+//                 return phi;
+//             },
+//             (s, phi, params) => {
+//                 var res: FormulaPart[] = [];
+//                 res.push(new FormulaPartType(s.x, s.T));
+//                 res.push(new FormulaPartEq(new ExpressionX(s.x), s.T.defaultValue()));
+//                 res.push(...phi.parts);
+//                 return new VerificationFormula(null, res);
+//             });
+//     }
+// } 

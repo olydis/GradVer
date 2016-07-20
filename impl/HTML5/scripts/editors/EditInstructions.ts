@@ -1,7 +1,7 @@
 import { EditStatement } from "./EditStatement";
 import { EditVerificationFormula } from "./EditVerificationFormula";
 
-import { Hoare } from "./runtime/Hoare";
+//import { Hoare } from "./runtime/Hoare";
 import { GUIHelpers } from "../GUIHelpers";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
@@ -31,8 +31,8 @@ export class EditInstructions
     }
 
     public constructor(
-        private container: JQuery,
-        private hoare: Hoare
+        private container: JQuery
+        //,private hoare: Hoare
     )
     {
         this.statements = [];
@@ -61,7 +61,7 @@ export class EditInstructions
         var pre = this.verificationFormulas[index].getFormula();
         var post = this.verificationFormulas[index + 1].getFormula();
 
-        return this.hoare.validate(s, pre, post);
+        return {errs: null, runtimeCheck: new VerificationFormula()}; //this.hoare.validate(s, pre, post);
     }
 
     public btnCheckAll(): void
@@ -90,8 +90,8 @@ export class EditInstructions
         var stmt = this.statements[index].getStatement();
         var pre = this.verificationFormulas[index].getFormula();
         var post = this.verificationFormulas[index + 1].getFormula();
-        var npost = this.hoare.genPost(stmt, pre, post);
-        this.verificationFormulas[index + 1].setFormula(npost);
+        //var npost = this.hoare.genPost(stmt, pre, post);
+        //this.verificationFormulas[index + 1].setFormula(npost);
     }
 
     public btnResetAssertionsAll(grad: boolean): void
@@ -127,8 +127,8 @@ export class EditInstructions
                         var stmt = this.statements[i].getStatement();
                         var pre = this.verificationFormulas[i].getFormula();
                         var post = this.verificationFormulas[i + 1].getFormula();
-                        var npre = this.hoare.genPre(stmt, pre, post);
-                        this.verificationFormulas[i].setFormula(npre);
+                        //var npre = this.hoare.genPre(stmt, pre, post);
+                        //this.verificationFormulas[i].setFormula(npre);
                     }));
                 this.container.append(this.verificationFormulas[i].createHTML());
                 if (i != n)

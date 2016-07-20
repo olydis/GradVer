@@ -1,8 +1,6 @@
 import { EditableElement } from "./EditableElement";
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
 
-import { vfdNormalize } from "../types/VerificationFormulaDataServices";
-
 export class EditVerificationFormula extends EditableElement
 {
     private formulaContainer: JQuery;
@@ -23,9 +21,8 @@ export class EditVerificationFormula extends EditableElement
                 if (!this.verForm.sfrm())
                     html.addClass("errSfrm");
                 // DEBUG: normalized data
-                var data = this.verForm.staticFormula.collectData();
-                console.log(JSON.stringify(data));
-                if (data.knownToBeFalse)
+                var phi = this.verForm.staticFormula;
+                if (!phi.satisfiable())
                     html.addClass("errFalse");
                 // DEBUG end
                 return {

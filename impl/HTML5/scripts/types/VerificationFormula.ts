@@ -1,8 +1,9 @@
 import { Expression } from "./Expression";
+import { ValueObject } from "./ValueExpression";
 import { Type } from "./Type";
-import { FootprintStatic } from "./FootprintStatic";
-import { VerificationFormulaData } from "./VerificationFormulaData";
-import { vfdTrue, vfdNormalize, vfdImpliesApprox, vfdSatisfiableApprox, vfdExceptRevApprox } from "./VerificationFormulaDataServices";
+import { FootprintStatic, FootprintDynamic } from "./Footprint";
+
+import { NormalizedEnv, EvalEnv } from "../runtime/EvalEnv";
 
 export abstract class FormulaPart
 {
@@ -12,14 +13,19 @@ export abstract class FormulaPart
     {
         return [];
     }
+    public footprintDynamic(env: EvalEnv): FootprintDynamic
+    {
+        return [];
+    }
     public abstract sfrm(fp: FootprintStatic): boolean;
-    public abstract collectData(data: VerificationFormulaData): void;
     public abstract FV(): string[];
+    public abstract envAdd(env: NormalizedEnv): NormalizedEnv;
+    public envImpiledBy(env: NormalizedEnv): boolean { return this.eval(env.getEnv()); }
+    public abstract eval(env: EvalEnv): boolean;
 
     static get subs(): any[]
     {
         return [
-        	FormulaPartType,
             FormulaPartAcc,
             FormulaPartTrue,
             FormulaPartNeq,
@@ -69,10 +75,9 @@ export class FormulaPartTrue extends FormulaPart
     {
         return true;
     }
-    public collectData(data: VerificationFormulaData): void
-    {
-    }
     public FV(): string[] { return []; }
+    public envAdd(env: NormalizedEnv): NormalizedEnv { return env; }
+    public eval(env: EvalEnv): boolean { return true; }
 }
 
 export class FormulaPartEq extends FormulaPart
@@ -118,11 +123,13 @@ export class FormulaPartEq extends FormulaPart
         return this.e1.sfrm(fp)
             && this.e2.sfrm(fp);
     }
-    public collectData(data: VerificationFormulaData): void
-    {
-        data.equalities.push({e1: this.e1, e2: this.e2});
-    }
     public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
+    public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addEq(this.e1, this.e2); }
+    public eval(env: EvalEnv): boolean { 
+        var v1 = this.e1.eval(env); 
+        var v2 = this.e2.eval(env);
+        return v1 != null && v2 != null && v1.equalTo(v2); 
+    }
 }
 
 export class FormulaPartNeq extends FormulaPart
@@ -170,11 +177,19 @@ export class FormulaPartNeq extends FormulaPart
         return this.e1.sfrm(fp)
             && this.e2.sfrm(fp);
     }
-    public collectData(data: VerificationFormulaData): void
-    {
-        data.inEqualities.push({e1: this.e1, e2: this.e2});
-    }
     public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
+    public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addIneq(this.e1, this.e2); }
+    public envImpiledBy(env: NormalizedEnv): boolean {
+
+        if (!super.envImpiledBy(env))
+            return false;
+        return env.addEq(this.e1, this.e2) == null;
+    }
+    public eval(env: EvalEnv): boolean { 
+        var v1 = this.e1.eval(env); 
+        var v2 = this.e2.eval(env);
+        return v1 != null && v2 != null && !v1.equalTo(v2); 
+    }
 }
 
 export class FormulaPartAcc extends FormulaPart
@@ -220,62 +235,25 @@ export class FormulaPartAcc extends FormulaPart
     {
         return [{ e: this.e, f: this.f }];
     }
+    public FootprintDynamic(env: EvalEnv): FootprintDynamic
+    {
+        var v = this.e.eval(env);
+        if (v instanceof ValueObject)
+            return [{ o: v.UID, f: this.f }];
+        return [];
+    }
     public sfrm(fp: FootprintStatic): boolean
     {
         return this.e.sfrm(fp);
     }
-    public collectData(data: VerificationFormulaData): void
-    {
-        data.access.push({e: this.e, f: this.f});
-    }
     public FV(): string[] { return this.e.FV(); }
-}
-
-export class FormulaPartType extends FormulaPart
-{
-    public constructor(
-        private x: string,
-        private T: Type)
-    {
-        super();
-        if (!Expression.isValidX(x)) throw "null arg";
+    public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addAcc(this.e, this.f); }
+    public eval(env: EvalEnv): boolean { 
+        var v = this.e.eval(env);
+        if (v instanceof ValueObject)
+            return env.A.some(a => a.o == v.UID && a.f == this.f);
+        return false; 
     }
-
-    public static parse(source: string): FormulaPart
-    {
-        var dotIndex = source.lastIndexOf(":");
-        if (dotIndex == -1)
-            return null;
-        var x = source.substr(0, dotIndex);
-        var T = source.substr(dotIndex + 1);
-        var TT = Type.parse(T);
-        if (TT == null)
-            return null;
-        return new FormulaPartType(x, TT);
-    }
-
-    public createHTML(): JQuery
-    {
-        return $("<span>")
-            .append($("<span>").text("("))
-            .append($("<span>").text(this.x))
-            .append($("<span>").text(" : "))
-            .append(this.T.createHTML())
-            .append($("<span>").text(")"));
-    }
-    public substs(m: (x: string) => string): FormulaPart
-    {
-        return new FormulaPartType(m(this.x), this.T);
-    }
-    public sfrm(fp: FootprintStatic): boolean
-    {
-        return true;
-    }
-    public collectData(data: VerificationFormulaData): void
-    {
-        data.types.push({x: this.x, T: this.T});
-    }
-    public FV(): string[] { return [this.x]; }
 }
 
 export class VerificationFormula
@@ -354,39 +332,60 @@ export class VerificationFormula
         }
         return true;
     }
-    public collectData(): VerificationFormulaData
+    public footprintStatic(): FootprintStatic
     {
-        var data: VerificationFormulaData = vfdTrue();
-        for (var part of this.parts)
-            part.collectData(data);
-        return vfdNormalize(data);
+        var res: FootprintStatic = [];
+        this.parts.forEach(p => res.push(...p.footprintStatic()));
+        return res;
+    }
+    public footprintDynamic(env: EvalEnv): FootprintDynamic
+    {
+        var res: FootprintDynamic = [];
+        this.parts.forEach(p => res.push(...p.footprintDynamic(env)));
+        return res;
+    }
+    public eval(env: EvalEnv): boolean
+    {
+        if (!this.parts.every(p => p.eval(env)))
+            return false;
+        var fp = this.footprintDynamic(env);
+        // nodup
+        var a: FootprintDynamic = [];
+        for (var x of fp)
+        {
+            if (a.some(y => y.f == x.f && y.o == x.o))
+                return false;
+            a.push(x);
+        }
+        return true;
+    }
+
+    
+    public envImpliedBy(env: NormalizedEnv): boolean
+    {
+        if (env == null)
+            return true;
+        if (!this.parts.every(p => p.envImpiledBy(env)))
+            return false;
+        return this.eval(env.getEnv());
     }
     public FV(): string[] 
     {
         return this.parts.reduce((a, b) => a.concat(b.FV()), []);
     }
-
-    // conservative: might not find type, but WILL, if x:T exists
-    public tryGetType(x : string): Type
+    public createNormalizedEnv(): NormalizedEnv
     {
-        var data = this.collectData();
-        if (data.knownToBeFalse) return null;
-        var type = data.types.filter(y => y.x == x);
-        return type.length == 1 ? type[0].T : null;
+        var env = NormalizedEnv.create();
+        for (var part of this.parts)
+            env = env ? part.envAdd(env) : null;
+        return env;
     }
-
-    // may produce false negatives
-    public impliesApprox(phi: VerificationFormula): boolean
+    public satisfiable(): boolean
     {
-        return vfdImpliesApprox(this.collectData(), phi.collectData());
+        return this.createNormalizedEnv() != null;
     }
-    public impliesApproxMissing(phi: VerificationFormula): VerificationFormula
+    public implies(phi: VerificationFormula)
     {
-        return new VerificationFormula(null, 
-            vfdExceptRevApprox(this.collectData(), phi.collectData()));
-    }
-    public satisfiableApprox(): boolean
-    {
-        return vfdSatisfiableApprox(this.collectData());
+        return phi.envImpliedBy(this.createNormalizedEnv());
     }
 }

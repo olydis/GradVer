@@ -5,8 +5,37 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     "use strict";
-    var ValueExpression = (function () {
+    var Value = (function () {
+        function Value() {
+        }
+        return Value;
+    }());
+    exports.Value = Value;
+    var ValueObject = (function (_super) {
+        __extends(ValueObject, _super);
+        function ValueObject() {
+            _super.call(this);
+            this.uid = ValueObject._uid++;
+        }
+        ValueObject.prototype.equalTo = function (other) {
+            return other instanceof ValueObject && this.uid == other.uid;
+        };
+        Object.defineProperty(ValueObject.prototype, "UID", {
+            get: function () { return this.uid; },
+            enumerable: true,
+            configurable: true
+        });
+        ValueObject.prototype.toString = function () {
+            return "<" + this.uid + ">";
+        };
+        ValueObject._uid = 0;
+        return ValueObject;
+    }(Value));
+    exports.ValueObject = ValueObject;
+    var ValueExpression = (function (_super) {
+        __extends(ValueExpression, _super);
         function ValueExpression() {
+            _super.apply(this, arguments);
         }
         ValueExpression.parse = function (source) {
             source = source.replace(/\s/g, "");
@@ -24,7 +53,7 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
             return new ValueExpressionN(0);
         };
         return ValueExpression;
-    }());
+    }(Value));
     exports.ValueExpression = ValueExpression;
     var ValueExpressionN = (function (_super) {
         __extends(ValueExpressionN, _super);
@@ -40,6 +69,9 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
             return !isNaN(n)
                 ? new ValueExpressionN(n)
                 : null;
+        };
+        ValueExpressionN.prototype.equalTo = function (other) {
+            return other instanceof ValueExpressionN && other.n == this.n;
         };
         ValueExpressionN.prototype.createHTML = function () {
             return $("<span>").text(this.n.toString());
@@ -59,6 +91,9 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
             return source.toLocaleLowerCase() == "null"
                 ? new ValueExpressionNull()
                 : null;
+        };
+        ValueExpressionNull.prototype.equalTo = function (other) {
+            return other instanceof ValueExpressionNull;
         };
         ValueExpressionNull.prototype.createHTML = function () {
             return $("<span>").text("null");

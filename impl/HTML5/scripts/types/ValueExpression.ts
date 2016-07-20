@@ -1,10 +1,38 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { Type } from "./Type";
 
-export abstract class ValueExpression
+export abstract class Value {
+    public abstract equalTo(other: Value): boolean;
+
+}
+
+export class ValueObject extends Value {
+    private static _uid: number = 0;
+
+    private uid: number;
+    constructor() {
+        super();
+        this.uid = ValueObject._uid++;
+    }
+
+    public equalTo(other: Value): boolean
+    {
+        return other instanceof ValueObject && this.uid == other.uid;
+    }
+
+    public get UID(): number { return this.uid; }
+
+    public toString(): string {
+        return "<" + this.uid + ">";
+    }
+}
+
+export abstract class ValueExpression extends Value
 {
     abstract createHTML(): JQuery;
     abstract getType(): Type;
+
+    public abstract equalTo(other: ValueExpression): boolean;
 
     public static parse(source: string): ValueExpression
     {
@@ -42,6 +70,11 @@ export class ValueExpressionN extends ValueExpression
             : null;
     }
 
+    public equalTo(other: ValueExpression): boolean
+    {
+        return other instanceof ValueExpressionN && other.n == this.n;
+    }
+
     public createHTML(): JQuery
     {
         return $("<span>").text(this.n.toString());
@@ -59,6 +92,11 @@ export class ValueExpressionNull extends ValueExpression
         return source.toLocaleLowerCase() == "null"
             ? new ValueExpressionNull()
             : null;
+    }
+
+    public equalTo(other: ValueExpression): boolean
+    {
+        return other instanceof ValueExpressionNull;
     }
 
     public createHTML(): JQuery
