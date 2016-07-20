@@ -240,10 +240,41 @@ Proof.
     eapp evalphiAppRev.
 Qed.
 
+Definition minWith {T:Type} (pred : T -> Prop) (lt : T -> T -> Prop) : T -> Prop :=
+    fun x => pred x /\ (forall y, pred y -> lt x y).
+
 Definition nPhiWithout (x : x) (p1 p2 : phi) :=
-           good p1 /\
-           good p2 /\ phiImplies p1 p2 /\ ~ In x (FV p2) /\
-(forall p, good p  /\ phiImplies p1 p  /\ ~ In x (FV p) -> phiImplies p2 p).
+  phiSatisfiable p1 /\
+  minWith (fun p => phiImplies p1 p /\ ~ In x (FV p)) phiImplies p2.
+
+Lemma nPhiWithoutGoodSat : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  phiSatisfiable p1 ->
+  phiSatisfiable p2.
+Proof.
+  intros.
+  eapp (phiImpliesSatisfiable p1 p2).
+  apply H.
+Qed.
+Lemma nPhiWithoutGoodSfrm : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  sfrmphi [] p1 ->
+  sfrmphi [] p2.
+Proof.
+  intros.
+  admit.
+Admitted.
+Lemma nPhiWithoutGood : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  good p1 ->
+  good p2.
+Proof.
+  intros.
+  inv H0.
+  eca.
+  - eapply nPhiWithoutGoodSat; eauto.
+  - eapply nPhiWithoutGoodSfrm; eauto.
+Qed.
 
 Definition gPhiWithout (x : x) (gp1 gp2 : gphi) : Prop :=
   fst gp2 = fst gp1 /\
@@ -251,17 +282,23 @@ Definition gPhiWithout (x : x) (gp1 gp2 : gphi) : Prop :=
 
 Lemma gPhiWithoutGood : forall x p1 p2,
   gPhiWithout x p1 p2 ->
-  gGood p1 /\ gGood p2.
+  gGood p1 ->
+  gGood p2.
 Proof.
   intros.
   destruct p1, p2.
   inv H.
-  inv H1. unf.
-  unfold gGood, gphiSatisfiable, sfrmgphi.
+  inv H0.
+  unfold gGood, gphiSatisfiable, sfrmgphi in *.
   simpl in *. subst.
-  inv H.
-  inv H1.
-  splau.
+  destruct b.
+  - splau.
+    eapply nPhiWithoutGoodSat; eauto.
+  - split.
+    * eapply nPhiWithoutGoodSat; eauto.
+    * apply or_intror.
+      inv H3; cut.
+      eapply nPhiWithoutGoodSfrm; eauto.
 Qed.
 
 (* Lemma phiImpliesNarrowWithout : forall p1 p2 x,
@@ -284,7 +321,7 @@ Proof.
   inv H.
   unfold gphiEquals.
   eexists. eexists.
-  split. eca. apply gPhiWithoutGood in H1. cut.
+  split. eca. apply gPhiWithoutGood in H1; auto.
   split. inv H0. eca.
   unfold pphiEquals.
   unfold gPhiWithout in *.
@@ -314,25 +351,54 @@ Proof.
       admit. (*OK*)
 (*       eapply ass2; auto. *)
     * apply H5; clear H5.
-      + inv H3. unf.
+      + inv H3. inv H5. unf.
         eca; cut.
-        apply H3.
+        eapp phiImpliesSatisfiable.
       + repeat intro.
         unf.
-        unfold gGamma' in *. simpl in *.
-        inv H6. inv H3. unf.
-        splau.
-        apply H14.
-        splau.
-        splau.
-        eapp phiImpliesTrans.
+        admit.
   - (* CONTRADICT: a(MUCH) != static *)
+    exfalso.
     inv H0.
     clear H5.
     unfold pincl in *.
-    contradict H4.
-    apply ex_not_not_all.
+    pose proof (H4 (p2)) as ap1.
+    pose proof (H4 (phiTrue :: p2)) as ap2.
+    clear H4.
+    
+    apply imply_to_or in ap1.
+    apply imply_to_or in ap2.
+    inv ap1.
+      contradict H0.
+      admit.
+    inv ap2.
+      contradict H4.
+      admit.
+    
+    inv H0. inv H4.
+    apply infRecList in H0.
+    auto.
   - (* CONTRADICT: a(SINGLE) != gradual *)
+    exfalso.
+    unfold gGamma' in *. simpl in *.
+    inv H0.
+    unfold pincl in *.
+    specialize (H4 p2). lapply H4; intros. Focus 2. exists p0. cut. clear H4.
+    assert (∀ gp' : gphi,
+     gGood gp'
+     → (∀ p : phi, nPhiWithout x p0 p → gGamma' gp' p)
+     → ∀ p : phi, good p -> phiImplies p p1 → gGamma' gp' p)
+    as ass.
+      intros.
+      apply H5; auto.
+        intros.
+        apply H6. unf. subst. assumption.
+      eca.
+    clear H5.
+    inv H0. simpl in *.
+    
+    specialize (ass (false, p0)).
+    admit.
   - inv H0.
     clear H5.
     unfold pincl in H4.
