@@ -1,4 +1,4 @@
-define(["require", "exports", "../types/Expression", "../types/ValueExpression"], function (require, exports, Expression_1, ValueExpression_1) {
+define(["require", "exports", "../types/Expression", "../types/ValueExpression", "../types/VerificationFormula"], function (require, exports, Expression_1, ValueExpression_1, VerificationFormula_1) {
     "use strict";
     function cloneHeapEntry(He) {
         var res = { C: He.C, fs: {} };
@@ -46,25 +46,28 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression"]
         };
         NormalizedEnv.mergeObjHeapFields = function (fs1, fs2) {
             var res = [];
-            for (var f in fs1)
+            for (var f in fs1) {
                 if (fs2[f])
                     res.push({ v1: fs1[f], v2: fs2[f] });
+                fs2[f] = fs1[f];
+            }
             return res;
         };
         NormalizedEnv.mergeObjHeap = function (o, v, H) {
+            H = cloneHeap(H);
             var HEntry = H[o];
             if (!HEntry)
                 return { H: H, todo: [] };
             if (v instanceof ValueExpression_1.ValueObject) {
                 var oo = v.UID;
-                H = cloneHeap(H);
                 var todo = [];
                 if (H[oo]) {
                     if (HEntry.C != H[oo].C)
                         return null;
                     todo = NormalizedEnv.mergeObjHeapFields(HEntry.fs, H[oo].fs);
                 }
-                H[oo] = H[o];
+                else
+                    H[oo] = H[o];
                 delete H[o];
                 return { H: H, todo: todo };
             }
@@ -93,6 +96,76 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression"]
                     v1: a.v1 == vo ? v : a.v1,
                     v2: a.v2 == vo ? v : a.v2 };
             });
+        };
+        NormalizedEnv.prototype.createFormula = function () {
+            var _this = this;
+            var dfs = function (e, seen, todo) {
+                var v = e.eval(_this.env);
+                todo(e, v);
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (seen.indexOf(o) == -1) {
+                        seen = seen.concat([o]);
+                        var he = _this.env.H[o];
+                        if (he) {
+                            var fs = he.fs;
+                            for (var f in fs)
+                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
+                        }
+                    }
+                }
+            };
+            var dfsx = function (todo) {
+                for (var x in _this.env.r)
+                    dfs(new Expression_1.ExpressionX(x), [], todo);
+            };
+            // collect reachable objects
+            var reachableObjects = [];
+            dfsx(function (e, v) {
+                if (v instanceof ValueExpression_1.ValueObject)
+                    reachableObjects.push({ e: e, o: v.UID });
+            });
+            var os = reachableObjects.map(function (x) { return x.o; }).sort();
+            os = os.filter(function (x, i) { return i == 0 || os[i - 1] != x; });
+            var objs = {};
+            for (var _i = 0, os_1 = os; _i < os_1.length; _i++) {
+                var o = os_1[_i];
+                objs[o] = reachableObjects.filter(function (x) { return x.o == o; }).map(function (x) { return x.e; }).sort(function (a, b) { return a.depth() - b.depth(); });
+            }
+            // BUILD
+            var parts = [];
+            // accs
+            for (var _a = 0, _b = this.env.A; _a < _b.length; _a++) {
+                var acc = _b[_a];
+                if (objs[acc.o])
+                    parts.push(new VerificationFormula_1.FormulaPartAcc(objs[acc.o][0], acc.f));
+            }
+            // ineq
+            var getExpression = function (v) {
+                if (v instanceof ValueExpression_1.ValueExpression)
+                    return new Expression_1.ExpressionV(v);
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (objs[o])
+                        return objs[o][0];
+                    return null;
+                }
+                throw "unknown subtype";
+            };
+            for (var _c = 0, _d = this.ineq; _c < _d.length; _c++) {
+                var ineq = _d[_c];
+                var e1 = getExpression(ineq.v1);
+                var e2 = getExpression(ineq.v2);
+                if (e1 && e2)
+                    parts.push(new VerificationFormula_1.FormulaPartNeq(e1, e2));
+            }
+            // eq
+            dfsx(function (e, v) {
+                var ex = getExpression(v);
+                if (ex)
+                    parts.push(new VerificationFormula_1.FormulaPartEq(e, ex));
+            });
+            return new VerificationFormula_1.VerificationFormula(null, parts);
         };
         NormalizedEnv.prototype.getEnv = function () { return cloneEvalEnv(this.env); };
         // consistent
@@ -212,6 +285,11 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression"]
             if (!env)
                 return null;
             return env.addEqV(e1.eval(env.env), e2.eval(env.env));
+        };
+        NormalizedEnv.prototype.woVar = function (x) {
+            var env = cloneEvalEnv(this.env);
+            delete env.r[x];
+            return NormalizedEnv.create(this.ineq, env);
         };
         return NormalizedEnv;
     }());

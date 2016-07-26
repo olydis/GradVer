@@ -1,6 +1,11 @@
 import { Expression, ExpressionV, ExpressionX, ExpressionDot } from "../types/Expression";
 import { Value, ValueExpression, ValueObject } from "../types/ValueExpression";
 import { FootprintDynamic } from "../types/Footprint";
+import { VerificationFormula,
+        FormulaPart,
+        FormulaPartAcc,
+        FormulaPartEq,
+        FormulaPartNeq } from "../types/VerificationFormula";
 
 export type ValuePair = {v1: Value, v2: Value};
 
@@ -59,25 +64,29 @@ export class NormalizedEnv {
     {
         var res: ValuePair[] = [];
         for (var f in fs1)
+        {
             if (fs2[f])
                 res.push({v1: fs1[f], v2: fs2[f]});
+            fs2[f] = fs1[f];
+        }
         return res;
     }
     private static mergeObjHeap(o: number, v: Value, H: Heap): { H: Heap, todo: ValuePair[] }
     {
+        H = cloneHeap(H);
         var HEntry = H[o];
         if (!HEntry) return { H: H, todo: [] };
         if (v instanceof ValueObject)
         {
             var oo = v.UID;
-            H = cloneHeap(H);
             var todo: ValuePair[] = [];
             if (H[oo])
             {
                 if (HEntry.C != H[oo].C) return null;
                 todo = NormalizedEnv.mergeObjHeapFields(HEntry.fs, H[oo].fs);
             }
-            H[oo] = H[o];
+            else
+                H[oo] = H[o];
             delete H[o];
             return {H:H, todo: todo};
         }
@@ -114,6 +123,79 @@ export class NormalizedEnv {
         private ineq: ValuePair[] = [],
         private env: EvalEnv = { H: {}, r: {}, A: [] })
     { }
+
+    public createFormula(): VerificationFormula
+    {
+        var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
+        {
+            var v = e.eval(this.env);
+            todo(e, v);
+            if (v instanceof ValueObject)
+            {
+                var o = v.UID;
+                if (seen.indexOf(o) == -1)
+                {
+                    seen = seen.concat([o]);
+                    var he = this.env.H[o];
+                    if (he)
+                    {
+                        var fs = he.fs;
+                        for (var f in fs)
+                            dfs(new ExpressionDot(e, f), seen, todo);
+                    }
+                }
+            }
+        };
+        var dfsx: (todo: (e: Expression, v: Value) => void) => void = todo =>
+        {
+            for (var x in this.env.r)
+                dfs(new ExpressionX(x), [], todo);
+        };
+        // collect reachable objects
+        var reachableObjects: {e: Expression, o: number}[] = [];
+        dfsx((e, v) => {
+            if (v instanceof ValueObject)
+                reachableObjects.push({e: e, o: v.UID});
+        });
+        var os = reachableObjects.map(x => x.o).sort();
+        os = os.filter((x, i) => i == 0 || os[i - 1] != x);
+        var objs: { [o: number]: Expression[] } = {};
+        for (var o of os)
+            objs[o] = reachableObjects.filter(x => x.o == o).map(x => x.e).sort((a, b) => a.depth() - b.depth());
+        // BUILD
+        var parts: FormulaPart[] = [];
+        // accs
+        for (var acc of this.env.A)
+            if (objs[acc.o])
+                parts.push(new FormulaPartAcc(objs[acc.o][0], acc.f));
+        // ineq
+        var getExpression: (v: Value) => Expression = (v: Value) => {
+            if (v instanceof ValueExpression)
+                return new ExpressionV(v);
+            if (v instanceof ValueObject)
+            {
+                var o = v.UID;
+                if (objs[o])
+                    return objs[o][0];
+                return null;
+            }
+            throw "unknown subtype";
+        };
+        for (var ineq of this.ineq)
+        {
+            var e1 = getExpression(ineq.v1);
+            var e2 = getExpression(ineq.v2);
+            if (e1 && e2)
+                parts.push(new FormulaPartNeq(e1, e2));
+        }
+        // eq
+        dfsx((e, v) => {
+            var ex = getExpression(v);
+            if (ex)
+                parts.push(new FormulaPartEq(e, ex));
+        });
+        return new VerificationFormula(null, parts);
+    }
 
     public getEnv(): EvalEnv { return cloneEvalEnv(this.env); }
 
@@ -251,6 +333,13 @@ export class NormalizedEnv {
         env = env.ensure(e2);
         if (!env) return null;
         return env.addEqV(e1.eval(env.env), e2.eval(env.env));
+    }
+
+    public woVar(x: string): NormalizedEnv
+    {
+        var env = cloneEvalEnv(this.env);
+        delete env.r[x];
+        return NormalizedEnv.create(this.ineq, env);
     }
 }
 

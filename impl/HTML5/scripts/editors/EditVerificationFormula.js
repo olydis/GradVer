@@ -7,20 +7,22 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
     "use strict";
     var EditVerificationFormula = (function (_super) {
         __extends(EditVerificationFormula, _super);
-        function EditVerificationFormula(initialSource) {
+        function EditVerificationFormula(initialSource, onChange) {
             var _this = this;
             if (initialSource === void 0) { initialSource = ""; }
+            if (onChange === void 0) { onChange = function () { }; }
             var formulaContainer = $("<span>");
             _super.call(this, formulaContainer, initialSource, function (source) {
                 _this.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
+                onChange(_this.verForm);
                 var html = _this.verForm.createHTML();
-                if (!_this.verForm.sfrm())
-                    html.addClass("errSfrm");
-                // DEBUG: normalized data
-                var phi = _this.verForm.staticFormula;
-                if (!phi.satisfiable())
-                    html.addClass("errFalse");
-                // DEBUG end
+                // if (!this.verForm.sfrm())
+                //     html.addClass("errSfrm");
+                // // DEBUG: normalized data
+                // var phi = this.verForm.staticFormula;
+                // if (!phi.satisfiable())
+                //     html.addClass("errFalse");
+                // // DEBUG end
                 return {
                     source: html.text(),
                     html: html
@@ -33,9 +35,7 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
             return $("<p>")
                 .addClass("clickable")
                 .addClass("instructionVerForm")
-                .append("{")
                 .append(this.formulaContainer)
-                .append("}")
                 .click(function (eo) {
                 _this.editBegin();
                 eo.stopPropagation();

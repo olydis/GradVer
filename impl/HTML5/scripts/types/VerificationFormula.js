@@ -255,6 +255,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             }
             this.updateHTML();
         }
+        VerificationFormula.getFalse = function () {
+            return new VerificationFormula(null, [new FormulaPartNeq(Expression_1.Expression.getNull(), Expression_1.Expression.getNull())]);
+        };
         VerificationFormula.empty = function () {
             return new VerificationFormula(null, []);
         };
@@ -346,6 +349,18 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         };
         VerificationFormula.prototype.implies = function (phi) {
             return phi.envImpliedBy(this.createNormalizedEnv());
+        };
+        VerificationFormula.prototype.norm = function () {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? VerificationFormula.getFalse()
+                : nenv.createFormula();
+        };
+        VerificationFormula.prototype.woVar = function (x) {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? VerificationFormula.getFalse()
+                : nenv.woVar(x).createFormula();
         };
         return VerificationFormula;
     }());

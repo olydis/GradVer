@@ -258,6 +258,10 @@ export class FormulaPartAcc extends FormulaPart
 
 export class VerificationFormula
 {
+    public static getFalse(): VerificationFormula
+    {
+        return new VerificationFormula(null, [new FormulaPartNeq(Expression.getNull(), Expression.getNull())]);
+    }
     public static empty(): VerificationFormula
     {
         return new VerificationFormula(null, []);
@@ -387,5 +391,19 @@ export class VerificationFormula
     public implies(phi: VerificationFormula)
     {
         return phi.envImpliedBy(this.createNormalizedEnv());
+    }
+    public norm(): VerificationFormula
+    {
+        var nenv = this.createNormalizedEnv();
+        return nenv == null
+            ? VerificationFormula.getFalse()
+            : nenv.createFormula();
+    }
+    public woVar(x: string): VerificationFormula
+    {
+        var nenv = this.createNormalizedEnv();
+        return nenv == null
+            ? VerificationFormula.getFalse()
+            : nenv.woVar(x).createFormula();
     }
 }

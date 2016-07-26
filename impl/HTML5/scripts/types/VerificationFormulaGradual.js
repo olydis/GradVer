@@ -46,6 +46,12 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
         VerificationFormulaGradual.prototype.satisfiable = function () {
             return this.staticFormula.satisfiable();
         };
+        VerificationFormulaGradual.prototype.norm = function () {
+            return VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+        };
+        VerificationFormulaGradual.prototype.woVar = function (x) {
+            return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woVar(x));
+        };
         // may produce false negatives
         VerificationFormulaGradual.prototype.impliesApprox = function (phi) {
             if (this.gradual)

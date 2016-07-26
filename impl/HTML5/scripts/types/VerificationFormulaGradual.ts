@@ -66,6 +66,14 @@ export class VerificationFormulaGradual
     {
         return this.staticFormula.satisfiable();
     }
+    public norm(): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+    }
+    public woVar(x: string): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woVar(x));
+    }
 
     // may produce false negatives
     public impliesApprox(phi: VerificationFormula): boolean
