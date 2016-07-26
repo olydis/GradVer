@@ -2,6 +2,7 @@ import { EditInstructions } from "./editors/EditInstructions";
 import { EditVerificationFormula } from "./editors/EditVerificationFormula";
 import { EditableElement } from "./editors/EditableElement";
 import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
+import { Expression, ExpressionDot } from "./types/Expression";
 //import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 
@@ -24,7 +25,6 @@ $(() =>
             $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
         });
         $("#containerPropsInput").append(input.createHTML());
-        
     }
     // containerWoVar
     {
@@ -41,15 +41,34 @@ $(() =>
         $("#containerWoVarInput").append(input.createHTML());
         
     }
+    // containerWoAcc
+    {
+        var update = () => {};
+        var input = new EditVerificationFormula("", () => update());
+        var inputAcc = $("#containerWoAccInputAcc");
+        inputAcc.on("input", () => update());
+        update = () =>
+        {
+            var phi = input.getFormula();
+            var accText = inputAcc.val();
+            var accE = Expression.parse(accText);
+            if (accE instanceof ExpressionDot)
+                $("#containerWoAccOutput").text(phi.woAcc(accE.e, accE.f).createHTML().text());
+            else
+                $("#containerWoAccOutput").text("format error");
+        };
+        $("#containerWoAccInput").append(input.createHTML());
+        
+    }
 
-    var editor = new EditInstructions(
-        $("#codeContainer")
-        //, hoare
-    );
-    $("#btnVerify").click(() => editor.btnCheckAll());
-    $("#btnHammer").click(() => editor.btnPropDownAll());
-    $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
-    $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
-    $("#btnE1").click(() => editor.loadEx1());
-    editor.loadEx1();
+    // var editor = new EditInstructions(
+    //     $("#codeContainer")
+    //     //, hoare
+    // );
+    // $("#btnVerify").click(() => editor.btnCheckAll());
+    // $("#btnHammer").click(() => editor.btnPropDownAll());
+    // $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
+    // $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
+    // $("#btnE1").click(() => editor.loadEx1());
+    // editor.loadEx1();
 });

@@ -109,7 +109,7 @@ export class ExpressionX extends Expression
 
     public static parse(source: string): Expression
     {
-        return source != ""
+        return Expression.isValidX(source)
             ? new ExpressionX(source)
             : null;
     }
@@ -156,7 +156,7 @@ export class ExpressionDot extends Expression
             return null;
         var e = Expression.parse(source.substr(0, dotIndex));
         var f = source.substr(dotIndex + 1);
-        return e != null
+        return e != null && Expression.isValidX(f)
             ? new ExpressionDot(e, f)
             : null;
     }
