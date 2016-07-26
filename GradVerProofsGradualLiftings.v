@@ -1,5 +1,573 @@
-Load GradVer20Hook_import.
+Load GradVer21Determ.
 Import Semantics.
+
+Require Import Coq.Logic.Classical_Pred_Type.
+
+Definition PLIFTm1 (f : phi -> phi) : (pphi -> pphi) :=
+  fun pp1 => fun p2 => exists p1, pp1 p1 /\ f p1 = p2.
+Definition PLIFTp1 (f : phi -> phi -> Prop) : (pphi -> pphi) :=
+  fun pp1 => fun p2 => exists p1, pp1 p1 /\ f p1 p2.
+Definition GLIFTmp1 (f : phi -> phi) (gf : gphi -> gphi -> Prop) : Prop :=
+  forall gp1 gp2 pp gp2',
+  gGamma gp1 pp ->
+  gAlpha (PLIFTm1 f pp) gp2 ->
+  gf gp1 gp2' ->
+  gphiEquals gp2' gp2.
+Definition GLIFTm1 (f : phi -> phi) (gf : gphi -> gphi) : Prop :=
+  forall gp1 gp2 pp,
+  gGamma gp1 pp ->
+  gAlpha (PLIFTm1 f pp) gp2 ->
+  gphiEquals (gf gp1) gp2.
+Definition GLIFTpp1 (f : phi -> phi -> Prop) (gf : gphi -> gphi -> Prop) : Prop :=
+  forall gp1 gp2 pp gp2',
+  gGamma gp1 pp ->
+  gAlpha (PLIFTp1 f pp) gp2 ->
+  gf gp1 gp2' ->
+  gphiEquals gp2' gp2.
+
+(* Lemma gGammaContainsEquiv : forall gp p1 p2,
+  phiImplies p2 p1 ->
+  gGamma' (true, gp) p1 ->
+  gGamma' (true, gp) p2.
+Proof.
+  intros.
+  inv H0.
+  eca.
+  desturc tgp *)
+
+Lemma phiImpliesAppB : forall p p1 p2,
+  (forall H r A, evalphi H r A p -> disjoint (footprint H r p1) (footprint H r p2)) ->
+  phiImplies p p1 ->
+  phiImplies p p2 ->
+  phiImplies p (p1 ++ p2).
+Proof.
+  induction p1; intros; cut.
+  repeat intro.
+  simpl in *.
+  apply IHp1 in H1.
+  Focus 2. intros. apply H in H4. apply disjointAppA in H4. cut.
+  Focus 2. eapp (phiImpliesTrans p0 (a :: p1) p1). rewrite cons2app. eapp phiImpliesSuffix.
+  assert (H2' := H2).
+  assert (H2'' := H2).
+  apply H0 in H2.
+  apply H1 in H2'.
+  apply H in H2''.
+  apply disjointAppA in H2''. unf.
+  inv H2.
+  eca.
+  eapp evalphiRemoveAexcept.
+  rewrite footprintApp.
+  apply disjointAppA.
+  split.
+  - apply evalphiImpliesAccess in H15.
+    apply inclAexceptDisjoint in H15.
+    assumption.
+  - unfold disjoint in *. intros.
+    specialize (H3 x).
+    cut.
+Qed.
+
+(* Definition gPhiApp (p : phi) (gp1 gp2 : gphi) : Prop :=
+  fst gp2 = fst gp1 /\
+  snd gp2 = snd gp1 ++ p /\
+  (forall p', gGamma' gp2 p' -> phiImplies p' (p' ++ p)). *)
+
+Definition gPhiApp (p : phi) (gp1 gp2 : gphi) : Prop :=
+  fst gp2 = fst gp1 /\
+  snd gp2 = snd gp1 ++ p /\
+  (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
+   exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p)).
+
+
+Definition gPhiAppWorksFor (pAdd : phi) (pBase : phi) := 
+  gPhiApp pAdd (true, pBase) (true, pBase ++ pAdd).
+  
+Open Scope string.
+Definition t_ea : e := ex (xUserDef "a").
+Definition t_eb : e := ex (xUserDef "b").
+Definition t_ec : e := ex (xUserDef "c").
+Definition t_ed : e := ex (xUserDef "d").
+
+
+Lemma gPhiApp1 : gPhiAppWorksFor [phiAcc t_ea "f"] [phiAcc t_eb "f"].
+Proof.
+  unfold gPhiAppWorksFor, gPhiApp. simpl.
+  splau. splau.
+  intros. unf.
+  exists [phiAcc t_eb "f"].
+  split. admit.
+  splau.
+Admitted.
+
+Lemma gPhiApp2 : ~ gPhiAppWorksFor [phiAcc t_ea "f"] [phiEq (edot t_ea "f") t_eb].
+Proof.
+  unfold gPhiAppWorksFor, gPhiApp. simpl.
+  intro. unf.
+  specialize (H2 [phiAcc t_ea "f"; phiEq (edot t_ea "f") t_eb]).
+  lapply H2; intros.
+  - unf.
+    admit.
+  - split. admit.
+    cut.
+Admitted.
+
+Lemma gPhiApp3 : gPhiAppWorksFor [phiEq (edot t_ea "f") t_eb] [phiAcc t_ea "f"].
+Proof.
+  unfold gPhiAppWorksFor, gPhiApp. simpl.
+  splau. splau.
+  intros. unf.
+  exists [phiAcc t_ea "f"].
+  split. admit.
+  splau.
+Admitted.
+
+Close Scope string.
+
+
+(* partial galois connection *)
+Theorem GLIFT_concat : forall (p : phi),
+  GLIFTmp1 (fun p' => p' ++ p) (gPhiApp p).
+Proof.
+  unfold gPhiApp.
+  unfold GLIFTmp1.
+  unfold PLIFTm1.
+  intros. inv H1. inv H3.
+  
+  destruct gp1, gp2'. simpl in *. subst.
+  rename H4 into ass.
+  
+  inv H.
+  inv H0.
+  inv H.
+  
+  assert (gGood (b, p1 ++ p0)) as gg.
+    unf.
+    assert (good x). eapp H5. subst.
+    unfold gGamma' in H.
+    eca; simpl in *.
+      unfold gphiSatisfiable. simpl.
+      destruct b; simpl in *.
+        inv H0.
+        invE H6 h.
+        invE H6 r.
+        invE H6 a.
+        exists h.
+        exists r.
+        exists a.
+        apply evalphiSymm in H6.
+        apply evalphiSymm.
+        apply evalphiApp in H6. unf.
+        eapp evalphiAppRev.
+      subst.
+      apply H0.
+    unfold sfrmgphi.
+    destruct b. eca.
+    subst.
+    apply or_intror.
+    simpl.
+    apply H0.
+  
+  unf.
+  assert (good x). eapp H5. subst.
+  
+  simpl.
+  unfold gphiEquals.
+  eexists.
+  eexists.
+  split. eca.
+  split. eca.
+  split.
+  - destruct b.
+    * repeat intro.
+      inv H6. simpl in *.
+      destruct gp2.
+      destruct b.
+      + inv H1. inv H2. inv gg. unfold gphiSatisfiable in *.
+        clear H9 H10 H11.
+        clear H4 H5.
+        
+        unfold gGamma' in *. simpl in *. unf.
+        splau.
+        assert (∀ p2 : phi, (good p2 ∧ phiImplies p2 p1) → good (p2 ++ p0) ∧ phiImplies (p2 ++ p0) p3).
+          intros.
+          apply H3. eex; apply H.
+        clear H3.
+        
+(*         specialize (H (p2 WO p0)). *)
+        specialize (ass p2).
+        intuition. unf.
+        specialize (H x).
+        intuition.
+        apply (phiImpliesTrans p2 (x ++ p0) p3); auto.
+      + assert (x0 ++ p0 = p3).
+          apply H3.
+          exists (x0).
+          cut.
+        assert (phiTrue :: x0 ++ p0 = p3).
+          apply H3.
+          exists (phiTrue :: x0).
+          splau.
+          inv H0.
+          eca.
+            eca.
+              eappIn phiImpliesSatisfiable H9.
+              repeat intro. eca. apply inclEmpty. eca. common. eapp phiImpliesPrefix.
+            repeat eca. eapp sfrmphiApp.
+          inv H.
+          eappIn phiImpliesTrans H6.
+          rewrite cons2app. eapp phiImpliesSuffix.
+        subst.
+        apply infRecList in H9.
+        tauto.
+    * repeat intro.
+      apply H3.
+      inv H6.
+      exists p1.
+      splau.
+      eca.
+  - apply H4. assumption.
+    unfold pincl. intros.
+    unf. assert (good p2). eapp H5.
+    subst.
+    destruct b; inv H6; cut.
+    unfold gGamma'.
+    simpl in *.
+    splau.
+    repeat intro.
+    apply evalphiSymm in H6.
+    apply evalphiSymm.
+    apply evalphiApp in H6. unf.
+    eapp evalphiAppRev.
+Qed.
+
+Definition minWith {T:Type} (pred : T -> Prop) (lt : T -> T -> Prop) : T -> Prop :=
+    fun x => pred x /\ (forall y, pred y -> lt x y).
+
+Definition nPhiWithout (x : x) (p1 p2 : phi) :=
+  phiSatisfiable p1 /\
+  minWith (fun p => phiImplies p1 p /\ ~ In x (FV p)) phiImplies p2.
+
+Lemma nPhiWithoutGoodSat : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  phiSatisfiable p1 ->
+  phiSatisfiable p2.
+Proof.
+  intros.
+  eapp (phiImpliesSatisfiable p1 p2).
+  apply H.
+Qed.
+Lemma nPhiWithoutGoodSfrm : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  sfrmphi [] p1 ->
+  sfrmphi [] p2.
+Proof.
+  intros.
+  admit.
+Admitted.
+Lemma nPhiWithoutGood : forall x p1 p2,
+  nPhiWithout x p1 p2 ->
+  good p1 ->
+  good p2.
+Proof.
+  intros.
+  inv H0.
+  eca.
+  - eapply nPhiWithoutGoodSat; eauto.
+  - eapply nPhiWithoutGoodSfrm; eauto.
+Qed.
+
+Definition gPhiWithout (x : x) (gp1 gp2 : gphi) : Prop :=
+  fst gp2 = fst gp1 /\
+  nPhiWithout x (snd gp1) (snd gp2).
+
+Lemma gPhiWithoutGood : forall x p1 p2,
+  gPhiWithout x p1 p2 ->
+  gGood p1 ->
+  gGood p2.
+Proof.
+  intros.
+  destruct p1, p2.
+  inv H.
+  inv H0.
+  unfold gGood, gphiSatisfiable, sfrmgphi in *.
+  simpl in *. subst.
+  destruct b.
+  - splau.
+    eapply nPhiWithoutGoodSat; eauto.
+  - split.
+    * eapply nPhiWithoutGoodSat; eauto.
+    * apply or_intror.
+      inv H3; cut.
+      eapply nPhiWithoutGoodSfrm; eauto.
+Qed.
+
+(* Lemma phiImpliesNarrowWithout : forall p1 p2 x,
+  sfrmphi [] p2 ->
+  ~ In x (FV p2) ->
+  phiImplies p1 p2 ->
+  exists p',
+  sfrmphi [] p' /\
+  ~ In x (FV p') /\
+  phiImplies p1 p' /\ phiImplies p' p2.
+Proof.
+Admitted. *)
+
+Theorem GLIFT_Without : forall (x : x),
+  GLIFTpp1 (nPhiWithout x) (gPhiWithout x).
+Proof.
+  unfold GLIFTpp1.
+  unfold PLIFTp1.
+  intros.
+  inv H.
+  unfold gphiEquals.
+  eexists. eexists.
+  split. eca. apply gPhiWithoutGood in H1; auto.
+  split. inv H0. eca.
+  unfold pphiEquals.
+  unfold gPhiWithout in *.
+  destruct gp1, gp2, gp2'. simpl in *. unf. subst.
+  destruct b, b0.
+  - inv H0.
+    
+    split.
+    * repeat intro.
+      unfold pincl in H4.
+      assert (∀ p p', gGamma' (true, p0) p' ∧ nPhiWithout x p' p → gGamma' (true, p1) p)
+      as ass1.
+        intros.
+        apply H4.
+        exists p'.
+        assumption.
+      clear H4.
+      unfold gGamma' in *. simpl in *. unf.
+      splau.
+      eapp phiImpliesTrans.
+      assert (∀ p p', good p' -> phiImplies p' p0 -> nPhiWithout x p' p → phiImplies p p1)
+      as ass2.
+        intros.
+        lapply (ass1 p4 p'); intros; cut.
+      clear ass1.
+      specialize (ass2 p2).
+      admit. (*OK*)
+(*       eapply ass2; auto. *)
+    * apply H5; clear H5.
+      + inv H3. inv H5. unf.
+        eca; cut.
+        eapp phiImpliesSatisfiable.
+      + repeat intro.
+        unf.
+        admit.
+  - (* CONTRADICT: a(MUCH) != static *)
+    exfalso.
+    inv H0.
+    clear H5.
+    unfold pincl in *.
+    pose proof (H4 (p2)) as ap1.
+    pose proof (H4 (phiTrue :: p2)) as ap2.
+    clear H4.
+    
+    apply imply_to_or in ap1.
+    apply imply_to_or in ap2.
+    inv ap1.
+      contradict H0.
+      admit.
+    inv ap2.
+      contradict H4.
+      admit.
+    
+    inv H0. inv H4.
+    apply infRecList in H0.
+    auto.
+  - (* CONTRADICT: a(SINGLE) != gradual *)
+    exfalso.
+    unfold gGamma' in *. simpl in *.
+    inv H0.
+    unfold pincl in *.
+    specialize (H4 p2). lapply H4; intros. Focus 2. exists p0. cut. clear H4.
+    assert (∀ gp' : gphi,
+     gGood gp'
+     → (∀ p : phi, nPhiWithout x p0 p → gGamma' gp' p)
+     → ∀ p : phi, good p -> phiImplies p p1 → gGamma' gp' p)
+    as ass.
+      intros.
+      apply H5; auto.
+        intros.
+        apply H6. unf. subst. assumption.
+      eca.
+    clear H5.
+    inv H0. simpl in *.
+    
+    specialize (ass (false, p0)).
+    admit.
+  - inv H0.
+    clear H5.
+    unfold pincl in H4.
+    unfold gGamma' in *. simpl in *.
+    assert (p2 = p1).
+      apply H4. exists p0. cut.
+    subst.
+    split; cut.
+Qed.
+
+Definition nPhiWithoutAcc (a : A'_s) (p1 p2 : phi) : Prop :=
+  fst gp2 = fst gp1 /\
+  snd gp2 = snd gp1 ++ p /\
+  (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
+   exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p)).
+
+
+
+(* APP *)
+Inductive hoareAppX : Gamma -> T -> T -> x -> phi -> phi -> phi -> phi -> Prop :=
+| HX'App : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+        incl (FV phi_pre) [xUserDef z ; xthis] ->
+        incl (FV phi_post) [xUserDef z ; xthis ; xresult] ->
+        sfrmphi [] phi_pre ->
+        sfrmphi [] phi_post ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
+    listDistinct [x ; y ; z'] ->
+    phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
+    phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
+    hoareAppX G T_r T_p z' phi_pre phi_post phi phi_q
+.
+
+Inductive hoareGAppX : Gamma -> T -> T -> x -> gphi -> gphi -> gphi -> gphi -> Prop :=
+| HX'GApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+        incl (FV (snd phi_pre)) [xUserDef z ; xthis] ->
+        incl (FV (snd phi_post)) [xUserDef z ; xthis ; xresult] ->
+        sfrmgphi [] phi_pre ->
+        sfrmgphi [] phi_post ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    gphiImplies phi (fst phi_p, phiNeq (ex y) (ev vnull) :: snd phi_p) ->
+    listDistinct [x ; y ; z'] ->
+    phi_p = (fst phi_pre, phiSubsts2 xthis y (xUserDef z) z' (snd phi_pre)) ->
+    phi_q = (fst phi_post, phiSubsts3 xthis y (xUserDef z) z' xresult x (snd phi_post)) ->
+    hoareGAppX G T_r T_p z' phi_pre phi_post phi phi_q
+.
+
+Theorem GLIFT_eq : forall G Tr Tp p p1 p2 p3 p4,
+  gGood p1 ->
+  gGood p2 ->
+  gGood p3 ->
+  gGood p4 ->
+  hoareGAppX        G Tr Tp p  p1 p2 p3 p4 <-> 
+  GLIFT4 (hoareAppX G Tr Tp p) p1 p2 p3 p4.
+Proof.
+  unfold
+    GLIFT4, PLIFT4, gGamma', sfrmgphi,
+    gphiSatisfiable, NotIn,
+    phiIsIndependentVar.
+  split;
+  rename H into gps1;
+  rename H0 into gps2;
+  rename H1 into gps3;
+  rename H2 into gps4;
+  intros.
+  - inversionx H.
+    do 4 eexists. simpl in *.
+    split. eca.
+    split. eca.
+    split. eca.
+    split. eca.
+    inversionx gps1.
+    apply hasWellFormedSubtype in H.
+    inversionx gps2.
+    apply hasWellFormedSubtype in H9.
+    inversionx gps3.
+    apply hasWellFormedSubtype in H11.
+    inversionx gps4.
+    apply hasWellFormedSubtype in H13.
+    unf.
+    simpl in *.
+    exists (if fst p1 then x3 else snd p1).
+    exists (if fst p2 then x2 else snd p2).
+    exists (if fst p3 then x1 else snd p3).
+    exists (if fst p2 then x0 else snd p4).
+    unfold gGamma'.
+    destruct p1, p2, p3, p4. simpl in *.
+    split. destruct b; auto. split; auto. eca.
+    split. destruct b0; auto. split; auto. eca.
+    split. destruct b1; auto. split.
+      eca. admit. repeat eca.
+      eappIn phiImpliesTrans H27.
+      rewrite cons2app. eapp phiImpliesSuffix.
+    split. destruct b2; auto. split; auto. eca.
+    eca.
+    * destruct b;
+      try rewriteRev H19;
+      eauto.
+    * destruct b0;
+      try rewriteRev H22;
+      eauto.
+    * destruct b;
+      eauto.
+      inversionx H2; try tauto; try discriminate.
+    * destruct b0;
+      eauto.
+      inversionx H3; try tauto; try discriminate.
+    * destruct b1; auto.
+      rewrite cons2app. eapp phiImpliesPrefix.
+      admit.
+    * repeat eca.
+    * admit.
+    * admit.
+  - unf.
+    inversionx H8.
+    inversionx H0.
+    inversionx H.
+    inversionx H1.
+    inversionx H2.
+    eca.
+    * admit.
+    * admit.
+    * apply H8.
+    * apply H0.
+    * destruct p3.
+      destruct b; unfold gphiImplies; simpl.
+      + exists x5.
+        inversionx H5.
+        auto.
+      + inversionx H5.
+        auto.
+    * destruct p3.
+      destruct b; unfold gphiImplies; simpl.
+      + exists x5.
+        inversionx H5.
+        split; auto.
+        split; auto.
+        eauto.
+        destruct p1.
+        simpl in *.
+        destruct b; inversionx H3;
+        unfold dividex, divideTrue in *; simpl in *; eauto.
+        admit.
+      + inversionx H5.
+        destruct p1.
+        simpl in *.
+        destruct b; inversionx H3;
+        unfold dividex, divideTrue in *; simpl in *; eauto.
+        admit.
+    * unfold gdividex.
+      simpl.
+      unfold sfrmgphi.
+      destruct (fst p3 || fst p1); auto.
+    * simpl in *.
+      unfold dividex, divideTrue in *.
+      rewrite app_nil_r in *.
+      destruct p2, p3, p1, p4.
+      simpl in *.
+      unfold gphiImplies.
+      destruct (b || (b0 || b1)) eqn: ee; simpl.
+      + exists x6.
+        destruct b2;
+        inversionx H6; simpl in *.
+          split; auto.
+Admitted.
+
+
 
 (* INTERIORS *)
 Definition interior : Type := phi -> phi -> Prop.
@@ -25,18 +593,6 @@ Definition interiorHoareSingle (s : s) := fun p1 p2 => hoareSingle p1 s p2.
 Definition interiorHoare (s : list s) :=
   fold_right interiorJoin interiorEq (map interiorHoareSingle s).
  *)
-
-(* hasWellFormedSubtype *)
-Theorem hasWellFormedSubtype : forall p,
-  phiSatisfiable p ->
-  ∃ p' : phi, phiSatisfiable p' ∧ sfrmphi [] p' ∧ phiImplies p' p.
-Proof.
-  induction p0; intros; simpl.
-  - exists [].
-    split; auto.
-    repeat eex.
-  - admit.
-Admitted.
 
 (* phi equality *)
 Inductive geq : gphi -> gphi -> Prop :=

@@ -73,12 +73,12 @@ Proof.
   eapp dynSemLift.
 Qed.
 
-Lemma phiImpliesTauto : forall H r A p,
+Lemma phiImpliesTauto : forall p,
   phiImplies [] p ->
-  evalphi H r A p.
+  forall H r A,  evalphi H r A p.
 Proof.
   intros.
-  apply H1.
+  apply H0.
   constructor.
 Qed.
 
@@ -100,7 +100,7 @@ Lemma evale'RemoveRhoSubst : forall H r x v e,
 Proof.
   induction e0; intros; simpl in *.
   - tauto.
-  - unfold rhoSubst. dec (x_dec x1 x0); tauto.
+  - unfold rhoSubst. dec (x_dec x1 x0); cut. contradict H1. auto.
   - apply IHe0 in H1. rewrite H1. tauto.
 Qed.
 
@@ -902,19 +902,6 @@ Proof.
   auto.
 Qed.
 
-Lemma evalphiTypeUnlift : forall x T H r A p,
-  In (phiType x T) p -> evalphi H r A p -> evalphi' H r A (phiType x T).
-Proof.
-  induction p0; intros; inversionx H1.
-  - inversionx H2.
-    inversionx H11.
-    econstructor; eauto.
-  - apply IHp0; auto.
-    inversionx H2.
-    apply evalphiAexcept in H13.
-    assumption.
-Qed.
-
 Lemma hasDynamicTypeHSubst : forall H v T o f x,
   hasDynamicType H v T <-> hasDynamicType (HSubst o f x H) v T.
 Proof.
@@ -929,7 +916,7 @@ Proof.
     - eca.
       unfold HSubst.
       rename de2 into des.
-      dec (o_dec o1 o0); try tauto.
+      dec (o_dec o1 o0). congruence.
       eauto.
   * inversionx H1; try constructor.
     unfold HSubst in *.
@@ -938,31 +925,6 @@ Proof.
       destruct p0. inversionx H3.
       eca.
     - eca.
-Qed.
-
-Lemma phiImpliesStaticType : forall p1 p2 e T,
-  phiImplies p1 p2 -> 
-  hasStaticType p2 e T -> 
-  hasStaticType p1 e T.
-Proof.
-  induction e0; intros; inversionx H1; try constructor.
-  - unfold phiImplies in *.
-    intros.
-    apply H4.
-    apply H0.
-    assumption.
-  - econstructor; eauto.
-Qed.
-
-Lemma evalphiImpliesType : forall H r A p x T,
-  evalphi H r A p -> phiImplies p [phiType x T] -> ehasDynamicType H r (ex x) T.
-Proof.
-  intros.
-  apply H2 in H1.
-  inversionx H1.
-  inversionx H12.
-  unfold ehasDynamicType.
-  eexists; eauto.
 Qed.
 
 
@@ -1018,7 +980,7 @@ Proof.
   undecb.
   destruct a0, a. simpl.
   dec (o_dec o0 o1); try tauto.
-  dec (string_dec f0 f1); try tauto.
+  dec (string_dec f0 f1); cut.
 Qed.
 
 Lemma fieldsDistinct : forall c l,

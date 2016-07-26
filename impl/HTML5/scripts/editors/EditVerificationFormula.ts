@@ -1,15 +1,14 @@
 import { EditableElement } from "./EditableElement";
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
 
-import { vfdNormalize } from "../types/VerificationFormulaDataServices";
-
 export class EditVerificationFormula extends EditableElement
 {
     private formulaContainer: JQuery;
     private verForm: VerificationFormulaGradual;
 
     public constructor(
-        initialSource: string = ""
+        initialSource: string = "",
+        onChange: (verForm: VerificationFormulaGradual) => void = () => {}
     ) 
     {
         var formulaContainer = $("<span>");
@@ -19,15 +18,15 @@ export class EditVerificationFormula extends EditableElement
             initialSource,
             (source: string) => {
                 this.verForm = new VerificationFormulaGradual(source);
+                onChange(this.verForm);
                 var html = this.verForm.createHTML();
-                if (!this.verForm.sfrm())
-                    html.addClass("errSfrm");
-                // DEBUG: normalized data
-                var data = this.verForm.staticFormula.collectData();
-                console.log(JSON.stringify(data));
-                if (data.knownToBeFalse)
-                    html.addClass("errFalse");
-                // DEBUG end
+                // if (!this.verForm.sfrm())
+                //     html.addClass("errSfrm");
+                // // DEBUG: normalized data
+                // var phi = this.verForm.staticFormula;
+                // if (!phi.satisfiable())
+                //     html.addClass("errFalse");
+                // // DEBUG end
                 return {
                     source: html.text(),
                     html: html
@@ -43,9 +42,7 @@ export class EditVerificationFormula extends EditableElement
         return $("<p>")
             .addClass("clickable")
             .addClass("instructionVerForm")
-            .append("{")
             .append(this.formulaContainer)
-            .append("}")
             .click(eo => { 
                 this.editBegin();
                 eo.stopPropagation();

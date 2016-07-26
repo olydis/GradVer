@@ -49,7 +49,6 @@ Definition staticFootprintX' (p : phi') : A_s :=
   | phiEq  e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
   | phiNeq e1 e2 => staticFootprintXe e1 ++ staticFootprintXe e2
   | phiAcc e _ => staticFootprintXe e
-  | phiType _ _ => []
   end.
 
 Definition staticFootprintX (p : phi) : A_s :=
@@ -101,8 +100,6 @@ Proof.
     eapp sfrmeVSsfpX.
   - constructor.
     eapp sfrmeVSsfpX.
-  - apply inclEmpty.
-  - constructor.
 Qed.
 
 

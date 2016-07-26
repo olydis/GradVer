@@ -76,6 +76,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
             return 0;
         };
         ExpressionV.prototype.FV = function () { return []; };
+        ExpressionV.prototype.eval = function (env) {
+            return this.v;
+        };
         return ExpressionV;
     }(Expression));
     exports.ExpressionV = ExpressionV;
@@ -105,6 +108,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
             return 1;
         };
         ExpressionX.prototype.FV = function () { return [this.x]; };
+        ExpressionX.prototype.eval = function (env) {
+            return env.r[this.x];
+        };
         return ExpressionX;
     }(Expression));
     exports.ExpressionX = ExpressionX;
@@ -152,6 +158,16 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 return thisx;
         };
         ExpressionDot.prototype.FV = function () { return this.e.FV(); };
+        ExpressionDot.prototype.eval = function (env) {
+            var inner = this.e.eval(env);
+            if (inner instanceof ValueExpression_1.ValueObject) {
+                var HEntry = env.H[inner.UID];
+                if (!HEntry)
+                    return null;
+                return HEntry.fs[this.f];
+            }
+            return null;
+        };
         return ExpressionDot;
     }(Expression));
     exports.ExpressionDot = ExpressionDot;

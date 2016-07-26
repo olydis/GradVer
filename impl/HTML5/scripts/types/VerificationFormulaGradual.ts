@@ -1,5 +1,5 @@
 import { VerificationFormula } from "./VerificationFormula";
-import { FootprintStatic } from "./FootprintStatic";
+import { FootprintStatic } from "./Footprint";
 
 export class VerificationFormulaGradual
 {
@@ -62,27 +62,25 @@ export class VerificationFormulaGradual
         return frm;
     }
 
+    public satisfiable(): boolean
+    {
+        return this.staticFormula.satisfiable();
+    }
+    public norm(): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+    }
+    public woVar(x: string): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woVar(x));
+    }
+
     // may produce false negatives
     public impliesApprox(phi: VerificationFormula): boolean
     {
         if (this.gradual)
-            return VerificationFormula.intersect(this.staticFormula, phi).satisfiableApprox();
+            return VerificationFormula.intersect(this.staticFormula, phi).satisfiable();
         else
-            return this.staticFormula.impliesApprox(phi);
-    }
-    public impliesApproxMissing(phi: VerificationFormula): VerificationFormula
-    {
-        return this.staticFormula.impliesApproxMissing(phi);
-    }
-    public containsApprox(phi: VerificationFormula): boolean
-    {
-        if (!this.gradual)
-            return VerificationFormula.eq(this.staticFormula, phi);
-        // gradual
-        if (!phi.satisfiableApprox())
-            return false;
-        if (!phi.sfrm([]))
-            return false;
-        return phi.impliesApprox(this.staticFormula);
+            return this.staticFormula.implies(phi);
     }
 }

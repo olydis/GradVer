@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDataServices"], function (require, exports, Expression_1, Type_1, VerificationFormulaDataServices_1) {
+define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/EvalEnv"], function (require, exports, Expression_1, ValueExpression_1, EvalEnv_1) {
     "use strict";
     var FormulaPart = (function () {
         function FormulaPart() {
@@ -11,10 +11,13 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPart.prototype.footprintStatic = function () {
             return [];
         };
+        FormulaPart.prototype.footprintDynamic = function (env) {
+            return [];
+        };
+        FormulaPart.prototype.envImpiledBy = function (env) { return this.eval(env.getEnv()); };
         Object.defineProperty(FormulaPart, "subs", {
             get: function () {
                 return [
-                    FormulaPartType,
                     FormulaPartAcc,
                     FormulaPartTrue,
                     FormulaPartNeq,
@@ -67,9 +70,9 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartTrue.prototype.sfrm = function (fp) {
             return true;
         };
-        FormulaPartTrue.prototype.collectData = function (data) {
-        };
         FormulaPartTrue.prototype.FV = function () { return []; };
+        FormulaPartTrue.prototype.envAdd = function (env) { return env; };
+        FormulaPartTrue.prototype.eval = function (env) { return true; };
         return FormulaPartTrue;
     }(FormulaPart));
     exports.FormulaPartTrue = FormulaPartTrue;
@@ -111,10 +114,13 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
         };
-        FormulaPartEq.prototype.collectData = function (data) {
-            data.equalities.push({ e1: this.e1, e2: this.e2 });
-        };
         FormulaPartEq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
+        FormulaPartEq.prototype.envAdd = function (env) { return env.addEq(this.e1, this.e2); };
+        FormulaPartEq.prototype.eval = function (env) {
+            var v1 = this.e1.eval(env);
+            var v2 = this.e2.eval(env);
+            return v1 != null && v2 != null && v1.equalTo(v2);
+        };
         return FormulaPartEq;
     }(FormulaPart));
     exports.FormulaPartEq = FormulaPartEq;
@@ -160,10 +166,18 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
         };
-        FormulaPartNeq.prototype.collectData = function (data) {
-            data.inEqualities.push({ e1: this.e1, e2: this.e2 });
-        };
         FormulaPartNeq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
+        FormulaPartNeq.prototype.envAdd = function (env) { return env.addIneq(this.e1, this.e2); };
+        FormulaPartNeq.prototype.envImpiledBy = function (env) {
+            if (!_super.prototype.envImpiledBy.call(this, env))
+                return false;
+            return env.addEq(this.e1, this.e2) == null;
+        };
+        FormulaPartNeq.prototype.eval = function (env) {
+            var v1 = this.e1.eval(env);
+            var v2 = this.e2.eval(env);
+            return v1 != null && v2 != null && !v1.equalTo(v2);
+        };
         return FormulaPartNeq;
     }(FormulaPart));
     exports.FormulaPartNeq = FormulaPartNeq;
@@ -206,57 +220,27 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
         FormulaPartAcc.prototype.footprintStatic = function () {
             return [{ e: this.e, f: this.f }];
         };
+        FormulaPartAcc.prototype.FootprintDynamic = function (env) {
+            var v = this.e.eval(env);
+            if (v instanceof ValueExpression_1.ValueObject)
+                return [{ o: v.UID, f: this.f }];
+            return [];
+        };
         FormulaPartAcc.prototype.sfrm = function (fp) {
             return this.e.sfrm(fp);
         };
-        FormulaPartAcc.prototype.collectData = function (data) {
-            data.access.push({ e: this.e, f: this.f });
-        };
         FormulaPartAcc.prototype.FV = function () { return this.e.FV(); };
+        FormulaPartAcc.prototype.envAdd = function (env) { return env.addAcc(this.e, this.f); };
+        FormulaPartAcc.prototype.eval = function (env) {
+            var _this = this;
+            var v = this.e.eval(env);
+            if (v instanceof ValueExpression_1.ValueObject)
+                return env.A.some(function (a) { return a.o == v.UID && a.f == _this.f; });
+            return false;
+        };
         return FormulaPartAcc;
     }(FormulaPart));
     exports.FormulaPartAcc = FormulaPartAcc;
-    var FormulaPartType = (function (_super) {
-        __extends(FormulaPartType, _super);
-        function FormulaPartType(x, T) {
-            _super.call(this);
-            this.x = x;
-            this.T = T;
-            if (!Expression_1.Expression.isValidX(x))
-                throw "null arg";
-        }
-        FormulaPartType.parse = function (source) {
-            var dotIndex = source.lastIndexOf(":");
-            if (dotIndex == -1)
-                return null;
-            var x = source.substr(0, dotIndex);
-            var T = source.substr(dotIndex + 1);
-            var TT = Type_1.Type.parse(T);
-            if (TT == null)
-                return null;
-            return new FormulaPartType(x, TT);
-        };
-        FormulaPartType.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("("))
-                .append($("<span>").text(this.x))
-                .append($("<span>").text(" : "))
-                .append(this.T.createHTML())
-                .append($("<span>").text(")"));
-        };
-        FormulaPartType.prototype.substs = function (m) {
-            return new FormulaPartType(m(this.x), this.T);
-        };
-        FormulaPartType.prototype.sfrm = function (fp) {
-            return true;
-        };
-        FormulaPartType.prototype.collectData = function (data) {
-            data.types.push({ x: this.x, T: this.T });
-        };
-        FormulaPartType.prototype.FV = function () { return [this.x]; };
-        return FormulaPartType;
-    }(FormulaPart));
-    exports.FormulaPartType = FormulaPartType;
     var VerificationFormula = (function () {
         function VerificationFormula(source, parts) {
             if (source === void 0) { source = null; }
@@ -271,6 +255,9 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             }
             this.updateHTML();
         }
+        VerificationFormula.getFalse = function () {
+            return new VerificationFormula(null, [new FormulaPartNeq(Expression_1.Expression.getNull(), Expression_1.Expression.getNull())]);
+        };
         VerificationFormula.empty = function () {
             return new VerificationFormula(null, []);
         };
@@ -315,34 +302,65 @@ define(["require", "exports", "./Expression", "./Type", "./VerificationFormulaDa
             }
             return true;
         };
-        VerificationFormula.prototype.collectData = function () {
-            var data = VerificationFormulaDataServices_1.vfdTrue();
-            for (var _i = 0, _a = this.parts; _i < _a.length; _i++) {
-                var part = _a[_i];
-                part.collectData(data);
+        VerificationFormula.prototype.footprintStatic = function () {
+            var res = [];
+            this.parts.forEach(function (p) { return res.push.apply(res, p.footprintStatic()); });
+            return res;
+        };
+        VerificationFormula.prototype.footprintDynamic = function (env) {
+            var res = [];
+            this.parts.forEach(function (p) { return res.push.apply(res, p.footprintDynamic(env)); });
+            return res;
+        };
+        VerificationFormula.prototype.eval = function (env) {
+            if (!this.parts.every(function (p) { return p.eval(env); }))
+                return false;
+            var fp = this.footprintDynamic(env);
+            // nodup
+            var a = [];
+            for (var _i = 0, fp_1 = fp; _i < fp_1.length; _i++) {
+                var x = fp_1[_i];
+                if (a.some(function (y) { return y.f == x.f && y.o == x.o; }))
+                    return false;
+                a.push(x);
             }
-            return VerificationFormulaDataServices_1.vfdNormalize(data);
+            return true;
+        };
+        VerificationFormula.prototype.envImpliedBy = function (env) {
+            if (env == null)
+                return true;
+            if (!this.parts.every(function (p) { return p.envImpiledBy(env); }))
+                return false;
+            return this.eval(env.getEnv());
         };
         VerificationFormula.prototype.FV = function () {
             return this.parts.reduce(function (a, b) { return a.concat(b.FV()); }, []);
         };
-        // conservative: might not find type, but WILL, if x:T exists
-        VerificationFormula.prototype.tryGetType = function (x) {
-            var data = this.collectData();
-            if (data.knownToBeFalse)
-                return null;
-            var type = data.types.filter(function (y) { return y.x == x; });
-            return type.length == 1 ? type[0].T : null;
+        VerificationFormula.prototype.createNormalizedEnv = function () {
+            var env = EvalEnv_1.NormalizedEnv.create();
+            for (var _i = 0, _a = this.parts; _i < _a.length; _i++) {
+                var part = _a[_i];
+                env = env ? part.envAdd(env) : null;
+            }
+            return env;
         };
-        // may produce false negatives
-        VerificationFormula.prototype.impliesApprox = function (phi) {
-            return VerificationFormulaDataServices_1.vfdImpliesApprox(this.collectData(), phi.collectData());
+        VerificationFormula.prototype.satisfiable = function () {
+            return this.createNormalizedEnv() != null;
         };
-        VerificationFormula.prototype.impliesApproxMissing = function (phi) {
-            return new VerificationFormula(null, VerificationFormulaDataServices_1.vfdExceptRevApprox(this.collectData(), phi.collectData()));
+        VerificationFormula.prototype.implies = function (phi) {
+            return phi.envImpliedBy(this.createNormalizedEnv());
         };
-        VerificationFormula.prototype.satisfiableApprox = function () {
-            return VerificationFormulaDataServices_1.vfdSatisfiableApprox(this.collectData());
+        VerificationFormula.prototype.norm = function () {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? VerificationFormula.getFalse()
+                : nenv.createFormula();
+        };
+        VerificationFormula.prototype.woVar = function (x) {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? VerificationFormula.getFalse()
+                : nenv.woVar(x).createFormula();
         };
         return VerificationFormula;
     }());

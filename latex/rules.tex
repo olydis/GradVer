@@ -89,6 +89,8 @@
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
+\newcommand{\grad}[1]{\widetilde{#1}}
+\newcommand{\withqm}[1]{?\:*\:#1}
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}
@@ -115,7 +117,6 @@
 				  ~|~ e = e
 				  ~|~ e \neq e
 				  ~|~ \acc(e.f)
-				  ~|~ x : T
 				  ~|~ \phi * \phi
 \\ &e			&&::= v
 				  ~|~ x
@@ -126,6 +127,7 @@
 \\				  
 \\ &H			&&\in~~ (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
 \\ &\rho		&&\in~~ (x \rightharpoonup v)
+\\ &\Gamma		&&\in~~ (x \rightharpoonup T)
 \\ &A_s			&&::= \overline{(e, f)}
 \\ &A_d			&&::= \overline{(o, f)}
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
@@ -162,7 +164,7 @@ All the rules in the following sections are implicitly parameterized over a $pro
 {
 FV(\phi_1) \subseteq \{ x, \xthis \} \\
 FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
-\hoare {x : T_x * \xthis : C * \phi_1} {\overline{s}} {x : T_x * \xthis : C * \xresult : T_m * \phi_2} \\
+x : T_x, \xthis : C, \xresult : T_m \hoare {\phi_1} {\overline{s}} {\phi_2} \\
 \emptyset \sfrmphi {\phi_1} \\
 \emptyset \sfrmphi {\phi_2} \\
 \overline{\neg writesTo(s_i, x)}
@@ -200,7 +202,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \end{align*}
 
 \newcommand{\sType}[3]{#1 \vdash #2 : #3}
-\subsection{Type ($\sType {\phi} {e} {T}$)}
+\subsection{Type ($\sType {\Gamma} {e} {T}$)}
 %\begin{mathpar}
 %\inferrule* [Right=STValue]
 %{~}
@@ -209,68 +211,72 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \begin{mathpar}
 \inferrule* [Right=STValNum]
 {~}
-{\sType {\phi} {n} {\Tint}}
+{\sType {\Gamma} {n} {\Tint}}
 \end{mathpar}
 \begin{mathpar}
 \inferrule* [Right=STValNull]
 {~}
-{\sType {\phi} {\vnull} {T}}
+{\sType {\Gamma} {\vnull} {T}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=STVar]
-{\phi \implies (x : T)}
-{\sType {\phi} {x} {T}}
+{\Gamma(x) = T}
+{\sType {\Gamma} {x} {T}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=STField]
-{ \sType {\phi} {e} {C}
+{ \sType {\Gamma} {e} {C}
 \\ \vdash C.f : T}
-{\sType {\phi} {e.f} {T}}
+{\sType {\Gamma} {e.f} {T}}
 \end{mathpar}
 
-\subsection{Hoare ($\hoare {\phi} {\overline s} {\phi}$)}
+\subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
+
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
-%\hoare {\phi_p} {s_1} {\phi_{q}} \\ 
-%\hoare {\phi_{q}} {s_2} {\phi_r}
- \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
- \phi_{q1} \implies \phi_{q2} \\
- \emptyset \sfrmphi \phi_{q2} \\
- \hoare {\phi_{q2}} {s_2} {\phi_r}
-}
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=HApp]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\
+{\emptyset} \sfrmphi {\phi_r}\\
+{x} \not \in {FV(\phi_r)}\\
+x \neq y \wedge x \neq z'\\
+{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
-\input{staticSemanticsPreMini}
-
-\subsubsection{Hoare revisited - pre-grad minification}
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
- \hoare {\phi_p} {s_1} {\phi_{q1}} \\ 
- \phi_{q1} \implies \phi_{q2} \\
- \emptyset \sfrmphi \phi_{q2} \\
- \hoare {\phi_{q2}} {s_2} {\phi_r}
-}
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=HAppD]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
+\phi_r = \phi / \phi_p / x\\
+x \neq y \wedge x \neq z'\\
+{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
-\input{staticSemantics}
-
-\subsubsection{Hoare revisited - pre-grad minification with simple HSec}
 \begin{mathpar}
-\inferrule* [Right=HSec]
-{
- \hoare {\phi_p} {s_1} {\phi_{q}} \\ 
- \hoare {\phi_{q}} {s_2} {\phi_r}
-}
-{\hoare {\phi_p} {s_1;s_2} {\phi_r}}
+\inferrule* [Right=GHAppD]
+{{\Gamma} \vdash {{y}} : {{C}}\\
+{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\grad{\phi_{pre}}};~\ensures {\grad{\phi_{post}}};}~\{ {\_} \}}}\\
+{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
+{\grad{\phi}} \grad{\implies} {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
+\grad{\phi_r} = \grad{\phi} /_{y : C, z' : T_p, x : T_r} \grad{\phi_p} / x\\
+x \neq y \wedge x \neq z'\\
+\grad{\phi_p} = {{\grad{\phi_{pre}}}[{y}, {z'} / {\xthis}, {{z}}]}\\
+\grad{\phi_q} = {{\grad{\phi_{post}}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma~ \ghoare {\grad{\phi}} {{x} := {y}.{m}({z'})} {\grad{\phi_q} * \grad{\phi_r}}}
 \end{mathpar}
 
-(other rules not printed here: think of previous subsection, but with self-framed implication on every pre-condition)
+What is the criterion of a correct gradual lifting of HCall?
+
+%\input{staticSemanticsPreMini}
 
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
@@ -329,6 +335,21 @@ Note: $\phi \text{ satisfiable} \iff \valphi {\phi} \neq \emptyset$
 \end{equation*}
 Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equirecursive State Abstractions''.
 
+\subsubsection{Implying inequality}
+\begin{align*}
+\\   & \phi * (e_1 = e_1) * (e_2 = e_2) \implies (e_1 \neq e_2)
+\\ =~& \forall H, \rho, A:~ \evalphi \phi * (e_1 = e_1) * (e_2 = e_2) \implies \evalphi (e_1 \neq e_2)
+\\ =~& \forall H, \rho, A:~  (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge (v_1 \neq v2))
+\\ =~& \forall H, \rho, A, v_1, v_2:~  (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge (v_1 \neq v2))
+\\ =~& \forall H, \rho, A, v_1, v_2:~  (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \implies (v_1 \neq v2)
+\\ =~& \forall H, \rho, A, v_1, v_2:~  \neg (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi) \vee (v_1 \neq v2)
+\\ =~& \forall H, \rho, A, v_1, v_2:~  \neg (\evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi \wedge (v_1 = v2))
+\\ =~& \forall H, \rho, A:~ \neg (\exists v_1, v_2:~ \evale {e_1} {v_1} \wedge \evale {e_2} {v_2} \wedge \evalphi \phi \wedge (v_1 = v2))
+\\ =~& \forall H, \rho, A:~ \neg (\evalphi \phi \wedge \evalphi (e_1 = e_2))
+\\ =~& \forall H, \rho, A:~ \neg \evalphi \phi * (e_1 = e_2)
+\\ =~& \neg \text{sat~}(\phi * (e_1 = e_2))
+\end{align*}
+
 \subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
 \begin{align*}
  &\dynamicFP {H} {\rho} {\true}    		&&= \emptyset
@@ -351,8 +372,6 @@ Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equir
 \input{dynamicSemantics}
 %\input{dynamicSemanticsX}
 
-\newcommand{\grad}[1]{\widetilde{#1}}
-\newcommand{\withqm}[1]{?\:*\:#1}
 \section{Gradualization}
 \subsection{Syntax}
 \subsubsection{Gradual formula}
@@ -364,51 +383,34 @@ Note: consider $?$ in other positions as ``self-framing delimiter'', but with se
 
 As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propagates the $?$ to the very left in case $\grad{\phi_2}$ contains one.
 
-\subsubsection{Type judgment expansion}
-
-Motivation: Materialize and combine the requirements on $\phi$.
-
-Designed so that
-\begin{mathpar}
-\phi \vdash e : T
-\quad \wedge \quad
-\staticFP {\phi} \sfrme e
-\\ \iff \\
-\hasTypePremise e T C
-\quad \wedge \quad
-\phi \implies \hasTypeFormula e T C
-\end{mathpar}
-
-\textbf{Expand into premise: } $\hasTypePremise e T C$
+\subsubsection{Self-framed and satisfiable formula}
 \begin{align*}
-   &\hasTypePremise {v} T C   	&&=\quad T = C \quad\wedge\quad \vdash v : T
-\\ &\hasTypePremise {x} T C   	&&=\quad T = C
-\\ &\hasTypePremise {e.f} T C	&&=\quad \hasTypePremise {e} {C'} C \quad\wedge\quad \vdash C'.f : T 
+&\hat{\phi} \quad \in \quad \{~ \phi ~|~ \sfrmphi \phi \wedge \text{sat~} \phi ~\}
 \end{align*}
-
-\textbf{Expand into formula: } $\hasTypeFormula e T C$
-\begin{align*}
-   &\hasTypeFormula {v} T C   	&&= \true
-\\ &\hasTypeFormula {x} T C   	&&= (x : C)
-\\ &\hasTypeFormula {e.f} T C	&&= \hasTypeFormula e T C * \acc(e.f)
-\end{align*}
-
 
 \subsection{Concretization}
-Syntax $\hat{\phi} := $ self-framed and satisfiable $\phi$
 \begin{align*}
 &\gamma(\hat{\phi}) ~&&= \{~ \hat{\phi} ~\} \\
 &\gamma(?\:*\:\phi') ~&&= \{~ \hat{\phi} ~|~ \hat{\phi} \implies \phi' ~\} \text{~~if $\phi'$ satisfiable} \\
 &\gamma(\phi) \text{ undefined otherwise} \\
+~\\
+&\grad{\phi_1} \sqsubseteq \grad{\phi_2} \quad:\iff\quad \gamma(\grad{\phi_1}) \subseteq \gamma(\grad{\phi_2})
 \end{align*}
+
+
 
 \subsection{Abstraction}
 \begin{align*}
-&\alpha(\emptyset) \text{ undefined} \\
-&\alpha(\{~ \phi ~\}) &&= \phi \\
-&\alpha(\overline{\phi} \text{ with maximum element } \phi) &&=~ ?\:*\:\phi \\
-&\alpha(\overline{\phi}) &&=~ ? \text{~~~otherwise} \\
+&\alpha(\overline{\phi}) &&= \min_{\sqsubseteq} {\{~ \grad{\phi} ~|~ \overline{\phi} \subseteq \gamma(\grad{\phi}) ~\}}\\
 \end{align*}
+
+Proved:
+\begin{itemize}
+	\item partial function
+	\item sound
+	\item optimal
+	\item $\alpha(\gamma(\grad{\phi})) = \grad{\phi}$
+\end{itemize}
 
 %\subsection{$(\phi, \implies)$ is semilattice}
 %According to the definition of $\implies$ via $\subseteq$, we define
@@ -491,6 +493,25 @@ But maybe not even necessary with smarter hoare rules?
 }
 {\grad{\phi_1} \approx \grad{\phi_2}}
 \end{mathpar}
+
+\subsubsection{Append}
+\begin{align*}
+&\text{by definition:}\\
+&\grad{\phi} ~\grad{*}~ \phi_p = \alpha(\gamma(\grad{\phi}) \overline{*} \phi_p)
+&~\\\\
+&\text{equivalent to:}\\
+&\grad{\phi} ~\grad{*}~ \phi_p = \grad{\phi} * \phi_p
+      && \text{if~} \forall \hat{\phi_1}, (\hat{\phi_1} \implies \phi * \phi_p) \implies 
+                    \exists \hat{\phi_2}, (\hat{\phi_2} \implies \phi \wedge \hat{\phi_1} \implies \hat{\phi_2} * \phi_p) \\
+&~
+      && \text{if~} \forall \hat{\phi_1} \in \gamma(\grad{\phi} * \phi_p), 
+                    \exists \hat{\phi_2} \in \gamma(\grad{\phi}), \hat{\phi_1} \implies \hat{\phi_2} * \phi_p \\
+&\grad{\phi} ~\grad{*}~ \phi_p \textit{~undefined}
+      && \text{otherwise}
+\end{align*}
+% (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
+% exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p))
+
 
 \subsection{Gradual Hoare: minimal static rule approach}
 

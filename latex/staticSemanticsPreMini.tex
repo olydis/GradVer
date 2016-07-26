@@ -1,32 +1,32 @@
 % Inductive Semantics.hoareSingle
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
-{\hoare {\phi} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{{x} : {{C}}} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\Gamma} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{\Gamma \hoare {\phi} {{x} := \new {C}} {\overline{\acc({x}, f_i) * } {{{({{x}} \neq {{\vnull}})} * {\phi'}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{\phi} \vdash {{x}} : {{C}}\\{\phi} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
-{\hoare {\phi} {{x}.{f} := {y}} {{{x} : {{C}}} * {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi'}}}}}}
+{{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{\Gamma \hoare {\phi} {{x}.{f} := {y}} {{{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})} * {\phi'}}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FVe(e)}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
-{\hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FVe(e)}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\staticFP {\phi'}} \sfrme {e}}
+{\Gamma \hoare {\phi} {{x} := {e}} {{\phi'} * {{({{x}} = {e})}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{\xresult} \not \in {FV(\phi')}\\{\phi} \vdash {{x}} : {T}\\{\phi} \vdash {{\xresult}} : {T}}
-{\hoare {\phi} {\return {x}} {{{\xresult} : {T}} * {{({{\xresult}} = {{x}})} * {\phi'}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{\xresult} \not \in {FV(\phi')}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {{\xresult}} : {T}}
+{\Gamma \hoare {\phi} {\return {x}} {{{({{\xresult}} = {{x}})} * {\phi'}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\phi} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\phi} \vdash {{x}} : {T_r}\\{\phi} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\@listDistinct(x, {x} \cdot {{y} \cdot {{z'} \cdot {\emptyset}}})\\{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-{\hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
+{{\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\{\emptyset} \sfrmphi {\phi_r}\\{x} \not \in {FV(\phi_r)}\\@listDistinct(x, {x} \cdot {{y} \cdot {{z'} \cdot {\emptyset}}})\\{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -38,12 +38,13 @@
 \begin{mathpar}
 \inferrule* [Right=HRelease]
 {{\phi_1} \implies {{\phi_2} * {\phi_r}}\\{\emptyset} \sfrmphi {\phi_r}}
-{\hoare {\phi_1} {\release {\phi_2}} {\phi_r}}
+{\Gamma \hoare {\phi_1} {\release {\phi_2}} {\phi_r}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}}
-{\hoare {\phi} {{T}~{x}} {{{x} : {T}} * {{({{x}} = {{\texttt{defaultValue}({T})}})} * {\phi'}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {\dom(\Gamma)}\\
+{\Gamma, x : T \hoare {{({{x}} = {{\texttt{defaultValue}({T})}})} * \phi} {\overline{s}} {{{\phi'}}}}}
+{\Gamma \hoare {\phi} {{T}~{x}; \overline{s}} {{{\phi'}}}}
 \end{mathpar}
 

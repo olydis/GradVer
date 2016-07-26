@@ -13,32 +13,6 @@ export class ExecutionEnvironment
     {
     }
 
-    public tryGetType(p: VerificationFormula, e: Expression): Type
-    {
-        if (e instanceof ExpressionV)
-            return e.v.getType();
-        if (e instanceof ExpressionX)
-            return p.tryGetType(e.x);
-        if (e instanceof ExpressionDot)
-        {
-            var inner = this.tryGetType(p, e.e);
-            if (inner instanceof TypeClass)
-                return this.fieldType(inner.C, e.f);
-            return null;
-        }
-        return null;
-    }
-    public tryGetCoreType(p: VerificationFormula, e: Expression): Type
-    {
-        if (e instanceof ExpressionV)
-            return e.v.getType();
-        if (e instanceof ExpressionX)
-            return p.tryGetType(e.x);
-        if (e instanceof ExpressionDot)
-            return this.tryGetCoreType(p, e.e);
-        return null;
-    }
-
     private getMain(): Statement[]
     {
         return this.program.main;

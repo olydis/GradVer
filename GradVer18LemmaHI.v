@@ -47,7 +47,8 @@ Proof.
   dec (o_dec o1 o0); try tauto.
   destruct (H0 o0); try tauto.
   destruct p0. simpl in *.
-  dec (string_dec f1 f0); try tauto.
+  dec (string_dec f1 f0); cut.
+  contradict H2. auto.
 Qed.
 
 Lemma HSubstHasDynamicType : forall H v v' t o f,
@@ -63,7 +64,7 @@ Proof.
       rewrite H3.
       eauto.
     * rename de2 into dex.
-      dec (o_dec o1 o0); try tauto.
+      dec (o_dec o1 o0); try cut.
       rewrite H3.
       eauto.
   - dec (o_dec o1 o0); try (eca; fail).
@@ -113,11 +114,6 @@ Proof.
     rewrite H9.
     eca.
     eca.
-  - eca.
-    rewriteRev HSubstHasDynamicType.
-    assumption.
-  - eca.
-    eapp HSubstHasDynamicType.
 Qed.
 
 Lemma footprint'HSubst : forall H r p o f v,
@@ -268,17 +264,6 @@ Proof.
     erewrite evale'eSubsts2RhoFrom3 in *; eauto.
   - eca; unfold evale;
     erewrite evale'eSubsts2RhoFrom3 in *; eauto.
-  - apply inclSingle in H1.
-    unfold xSubsts, rhoFrom3 in *.
-    inversionx H1; simpl in *; eca.
-    * dec (x_dec (xUserDef z) xresult). clear de2.
-      dec (x_dec (xUserDef z) xthis). clear de2.
-      dec (x_dec (xUserDef z) (xUserDef z)).
-      rewrite H2 in *. assumption.
-    * inversionx H4; try tauto.
-      dec (x_dec xthis xresult). clear de2.
-      dec (x_dec xthis xthis).
-      rewrite H3 in *. assumption.
 Admitted.
 
 Lemma evalphiPhiSubsts2RhoFrom3 : forall H r z x1 x2 v0 v1 v2 p A,
@@ -387,6 +372,17 @@ Proof.
   dec (o_dec o0 o1); simpl in *; try discriminate.
   dec (string_dec f0 f1); simpl in *; try discriminate.
   tauto.
+Qed.
+
+Lemma evalphi'FootprintAccess : ∀ p H r A,
+       evalphi' H r A p ->
+       evalphi' H r (footprint' H r p) p.
+Proof.
+  intros.
+  inversionx H1; eca.
+  simpl.
+  rewrite H3.
+  apply in_eq.
 Qed.
 
 Lemma evalphiFootprintAccess : ∀ p H r A,
@@ -525,9 +521,6 @@ Proof.
       apply incl_app;
       eapp incleSubsts.
     * eapp incleSubsts.
-    * apply inclSingle.
-      apply inclSingle in H1.
-      eapp inclxSubsts.
   - eapp IHp0.
 Qed.
 
@@ -558,15 +551,15 @@ Proof.
       rewrite H4.
       unfold xSubsts, rhoSubst. simpl.
       rewrite xd3.
-      dec (x_dec x2 x0); tauto.
+      dec (x_dec x2 x0); cut.
     inversionx H8.
       rewrite H3.
       unfold xSubsts, rhoSubst. simpl.
-      dec (x_dec x1 x0); tauto.
+      dec (x_dec x1 x0); cut.
     inversionx H0.
       rewrite H5.
       unfold xSubsts, rhoSubst. simpl.
-      dec (x_dec x0 x0); tauto.
+      dec (x_dec x0 x0); cut.
     tauto.
   - subst fR xUDz.
     erewrite IHe0; eauto.
@@ -606,13 +599,13 @@ Proof.
       dec (x_dec (xUserDef z) xthis). clear de2.
       dec (x_dec (xUserDef z) (xUserDef z)).
       rewrite H4.
-      dec (x_dec x2 x0); tauto.
+      dec (x_dec x2 x0); cut.
     inversionx H9; simpl.
       rewrite H3.
-      dec (x_dec x1 x0); tauto.
+      dec (x_dec x1 x0); cut.
     inversionx H0; simpl.
       rewrite H5.
-      dec (x_dec x0 x0); tauto.
+      dec (x_dec x0 x0); cut.
     tauto.
   - subst fR.
     erewrite IHe0; eauto.
@@ -679,7 +672,7 @@ Proof.
     destruct a, x0. simpl in *.
     dec (o_dec o0 o1); simpl; try discriminate.
     dec (string_dec f0 f1); simpl; try discriminate.
-    tauto.
+    cut.
   apply not_true_is_false in H1.
   rewrite H1. simpl.
   rewrite IHA1; try tauto.
@@ -738,27 +731,6 @@ Proof.
       eca; unfold evale in *;
       subst fR xUDz;
       erewrite incl2PhiSubst3; eauto.
-    * assert (x_decb xUDz xthis = false) as xd1. dec (x_dec xUDz xthis). tauto.
-      assert (x_decb xUDz xresult = false) as xd2. dec (x_dec xUDz xresult). tauto.
-      assert (x_decb xUDz xUDz = true) as xd3. dec (x_dec xUDz xUDz). tauto.
-      rewrite cons2app in H0.
-      apply inclApp in H0. unf.
-      apply inclSingle in H9.
-      inversionx inva.
-      subst fR. unfold rhoSubst, xSubsts, rhoFrom3 in *. simpl.
-      inversionx H9; subst; simpl.
-        rename H16 into ee.
-        rewrite H4 in ee. inversionx ee.
-        eca. rewrite xd3. dec (x_dec x2 x0); tauto.
-      inversionx H0; subst; simpl.
-        rename H16 into ee.
-        rewrite H3 in ee. simpl in ee. inversionx ee.
-        eca. dec (x_dec x1 x0); tauto.
-      inversionx H9; subst; simpl.
-        rename H16 into ee.
-        rewrite H5 in ee. inversionx ee.
-        eca. dec (x_dec x0 x0); tauto.
-      tauto.
   - rename H9 into ep.
     inversion ep as [? | ? ? ? ? ? ? ? ? invc ? inva invb]. subst. clear ep inva invc.
     assert (disjoint (footprint fH' fR' ppost) (footprint' fH' fR' a)).

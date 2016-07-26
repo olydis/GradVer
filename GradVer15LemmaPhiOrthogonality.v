@@ -9,29 +9,6 @@ Definition phiOrthogonal (p1 p2 : phi) := disjoint (FV p1) (FV p2).
 Definition phiIsIndependentVar (x : x) (p : phi) := forall H r A v,
   evalphi H r A p -> evalphi H (rhoSubst x v r) A p.
 
-
-Lemma phiImpliesType : forall T' p x T H,
-  In (phiType x T') p ->
-  phiSatisfiable p ->
-  phiImplies p [phiType x T] ->
-  hasDynamicType H (defaultValue T') T.
-Proof.
-  intros.
-  unfold phiImplies, phiSatisfiable in *.
-  unf.
-  assert (H4' := H4).
-  apply H3 in H4'. clear H3.
-  eapply evalphiTypeUnlift in H1; eauto.
-  inversionx H4'.
-  simpl in *.
-  inversionx H1.
-  inversionx H12.
-  rewrite H9 in H10. clear H9. inversionx H10.
-  inversionx H11;
-  inversionx H14;
-  constructor.
-Qed.
-
 Lemma phiImpliesSatisfiable : forall p1 p2,
   phiImplies p1 p2 ->
   phiSatisfiable p1 ->
@@ -117,7 +94,7 @@ Definition rhoWithOmap (omap : o -> o) (r : rho) : rho :=
            (vWithOmap omap)
            (r x).
 
-Definition colocateH (H0 H1 : H) := λ o : nat,
+(* Definition colocateH (H0 H1 : H) := λ o : nat,
        match modulo o 2 with
        | 0 => H0 (div o 2)
        | Datatypes.S _ => H1 (div (o - 1) 2)
@@ -130,10 +107,10 @@ Definition colocateRho (xs0 : list x) (r0 r1 : rho) := λ x,
 
 Definition colocateAccess (A0 A1 : A_d) :=
     map (fun x => (2 * (fst x)    , snd x)) A0 ++ 
-    map (fun x => (2 * (fst x) + 1, snd x)) A1.
+    map (fun x => (2 * (fst x) + 1, snd x)) A1. *)
 
 
-Require Import Coq.Logic.FunctionalExtensionality.
+(* Require Import Coq.Logic.FunctionalExtensionality.
 
 Lemma colocateRhoEmpty : forall r0 r1,
   colocateRho [] r0 r1 = rhoWithOmap (λ o, 2 * o + 1) r1.
@@ -143,7 +120,7 @@ Proof.
   apply functional_extensionality.
   simpl.
   tauto.
-Qed.
+Qed. *)
 
 (*
 Lemma phiSatisfiableAppHelper : forall p0 p1 H0 H1 r0 r1 A0 A1,

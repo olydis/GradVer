@@ -9,18 +9,32 @@
         <script src="scripts/require.js" data-main="scripts/main"></script>
     </head>
     <body>
-        <p id="codeContainer" class="roundedContainer">
-            CODE
-        </p>
+        <div id="containerProps" class="roundedContainer">
+            <h1>General Properties</h1>
+            <table>
+                <tr><td>Formula</td><td id="containerPropsInput"></td></tr>
+                <tr><td>satisfiable</td><td id="containerPropsOutSat"></td></tr>
+                <tr><td>self-framed</td><td id="containerPropsOutSfrm"></td></tr>
+                <tr><td>normalized</td><td id="containerPropsOutNorm" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerWoVar" class="roundedContainer">
+            <h1>Without Variable</h1>
+            <table>
+                <tr><td>Formula</td><td id="containerWoVarInput"></td></tr>
+                <tr><td>Variable</td><td><input id="containerWoVarInputVar"></input></td></tr>
+                <tr><td>Result</td><td id="containerWoVarOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
         <br/>
-        <p id="controls" style="text-align: center; font-size: 20pt; font-weight: bold">
+        <!--<p id="controls" style="text-align: center; font-size: 20pt; font-weight: bold">
             <span id="btnHammer" class="button" style="padding: 10px 9px 6px 7px" title="auto assertions">🔨</span>
             <span id="btnReset" class="button" style="padding: 8px 8px 8px 8px" title="reset assertions">{}</span>
             <span id="btnResetQ" class="button" style="padding: 8px 12px 8px 4px" title="reset assertions">{?}</span>
             <span id="btnVerify" class="button" style="padding: 10px 9px 6px 7px" title="verify all">✓</span>
-            <!--<span id="btnVerify" class="button" style="padding: 10px 6px 6px 10px">►</span>-->
-            <!--✘-->
-        </p>
+            <span id="btnVerify" class="button" style="padding: 10px 6px 6px 10px">►</span>
+            ✘
+        </p>-->
         <br/>
         <br/>
         <br/>
@@ -53,6 +67,6 @@
         <br/>
         <br/>
         <br/>
-        <span id="btnE1" class="button" style="padding: 10px 9px 6px 7px; width: 100px; border-radius: 5px" title="example 1">load ex. 1</span>
+        <!--<span id="btnE1" class="button" style="padding: 10px 9px 6px 7px; width: 100px; border-radius: 5px" title="example 1">load ex. 1</span>-->
     </body>
 </html>

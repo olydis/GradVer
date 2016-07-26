@@ -1,66 +1,34 @@
-Load GradVer20Hook.
+Load GradVer21Determ.
 Import Semantics.
 
+Require Import Coq.Logic.Classical_Pred_Type.
 
-Definition gphi := prod bool phi.
-Definition pphi := phi -> Prop.
 
-Definition gphiSatisfiable (gp : gphi) := phiSatisfiable (snd gp).
+Theorem alphaWD : forall pp gp1 gp2,
+  gAlpha pp gp1 ->
+  gAlpha pp gp2 ->
+  gphiEquals gp1 gp2.
+Proof.
+  intros.
+  inv H.
+  inv H0.
+  unfold gphiEquals.
+  exists (gGamma' gp1).
+  exists (gGamma' gp2).
+  repeat eca.
+Qed.
 
-Definition gUnknown : gphi := (true, []).
-Definition gThat (p : phi) : gphi := (false, p).
-Definition gThatOrSub (p : phi) : gphi := (true, p).
 
-Definition pFromList (ps : list phi) := fun p => In p ps.
-Definition pSingleton (p' : phi) := fun p => p' = p.
-
-Definition pincl (pp1 pp2 : pphi) :=
-  forall p, pp1 p -> pp2 p.
-
-Definition evalgphi H r A (gp : gphi) := evalphi H r A (snd gp).
-Definition evalpphi H r A (pp : pphi) := exists p, pp p /\ evalphi H r A p.
-
-Definition good (p : phi) := phiSatisfiable p /\ sfrmphi [] p.
-
-(* concretization *)
-Inductive gGamma : gphi -> pphi -> Prop :=
-| GammaNonGradual : forall (p : phi),
-  good p ->
-  gGamma (false, p) (pSingleton p)
-| GammaGradual : forall (p : phi),
-  phiSatisfiable p ->
-  gGamma (true, p) (fun p' => good p' /\ phiImplies p' p)
-.
-
-Definition ppGood (pp : pphi) :=
-  (exists p, pp p) /\
-  (forall p, pp p -> good p).
-
-Definition ppIsSingleton (p : phi) (pp : pphi) :=
-  pp p /\ (forall p', pp p' -> p' = p).
-
-Definition ppHasMaximum (p : phi) (pp : pphi) :=
-  pp p /\ (forall p', pp p' -> phiImplies p' p).
-
-Inductive gAlpha : pphi -> gphi -> Prop :=
-| AlphaNonGradual : forall (pp : pphi) (p : phi),
-  ppGood pp ->
-  
-  ppIsSingleton p pp ->
-  gAlpha pp (false, p)
-| AlphaGradual : forall (pp : pphi) (p : phi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  
-  ppHasMaximum p pp ->
-  gAlpha pp (true, p)
-| AlphaTotal : forall (pp : pphi),
-  ppGood pp ->
-  (forall p, ~ ppIsSingleton p pp) ->
-  (forall p, ~ ppHasMaximum p pp) ->
-  
-  gAlpha pp (true, [])
-.
+Theorem gammaWD : forall gp pp1 pp2,
+  gGamma gp pp1 ->
+  gGamma gp pp2 ->
+  pphiEquals pp1 pp2.
+Proof.
+  intros.
+  inv H.
+  inv H0.
+  split; cut.
+Qed.
 
 Theorem alphaSound : forall pp1 gp pp2,
   gAlpha pp1 gp ->
@@ -68,42 +36,10 @@ Theorem alphaSound : forall pp1 gp pp2,
   pincl pp1 pp2.
 Proof.
   intros.
-  inversionx H0.
-  - inversionx H1.
-    unfold
-      pincl,
-      pSingleton,
-      ppIsSingleton
-    in *. unf.
-    intros.
-    apply H1 in H3.
-    subst.
-    congruence.
-  - inversionx H1.
-    unfold
-      pincl,
-      ppHasMaximum,
-      ppIsSingleton
-    in *. unf.
-    intros.
-    split.
-    * eapp H2.
-    * eapp H1.
-  - inversionx H1.
-    unfold
-      pincl,
-      ppHasMaximum,
-      ppIsSingleton
-    in *.
-    intros.
-    split.
-    * eapp H2.
-    * unfold phiImplies.
-      intros.
-      constructor.
+  inv H.
+  inv H0.
+  assumption.
 Qed.
-
-Require Import Coq.Logic.Classical_Pred_Type.
 
 Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
   gAlpha pp1 gp2 ->
@@ -113,94 +49,2981 @@ Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
   pincl pp3 pp2.
 Proof.
   intros.
-  inversionx H0; inversionx H2.
-  - unfold
-      pincl,
-      pSingleton,
-      ppIsSingleton
-    in *. unf.
+  inv H.
+  inv H0.
+  inv H1.
+  apply H6; cut.
+Qed.
+
+Theorem alphaGammaId : forall pp gp,
+  gGamma gp pp ->
+  gAlpha pp gp.
+Proof.
+  intros.
+  inv H.
+  eca; cut.
+  inv H0.
+  unfold gGamma', gphiSatisfiable, sfrmgphi, ppGood in *.
+  destruct gp.
+  simpl in *.
+  destruct b.
+  - split; cut.
+    apply hasWellFormedSubtype in H. unf.
+    eex.
+  - inv H1; cut.
+    split; cut.
     intros. subst.
-    apply H3.
+    eca.
+Qed.
+
+Definition phiFalse : phi' := phiNeq (ev vnull) (ev vnull).
+Lemma phiFalseNotSat : ~ phiSatisfiable [phiFalse].
+Proof.
+  intuition.
+  inversionx H. unf.
+  inversionx H0.
+  inversionx H9.
+  common.
+  inversionx H2. inversionx H7.
+  cut.
+Qed.
+
+
+Open Scope string_scope.
+Definition x2string (x : x) : string :=
+  match x with
+  | xUserDef x => "1" ++ x
+  | xthis => "2"
+  | xresult => "3"
+  end.
+Close Scope string_scope.
+
+(* generic ENV *)
+(* 
+Definition genericRho : rho := fun x => Some (vo [x2string x]).
+Definition genericHeap : H := fun o => Some (EmptyString, 
+                             (fun f => Some (vo (f :: o)))).
+Definition genericAccess : A_d := [].
+
+no good idea: merge of two objects already needs infinite submerges
+ *)
+
+Definition dEnv : Type := prod 
+  (prod (prod (list o) (list f)) (list (prod v v)))
+  (prod (prod H rho) A_d).
+
+Definition dEnvGetHeap (env : dEnv) : H := fst (fst (snd env)).
+Definition dEnvGetRho (env : dEnv) : rho := snd (fst (snd env)).
+Definition dEnvGetAccess (env : dEnv) : A_d := snd (snd env).
+Definition dEnvGetKnownO (env : dEnv) : list o := fst (fst (fst env)).
+Definition dEnvGetKnownF (env : dEnv) : list f := snd (fst (fst env)).
+Definition dEnvGetKnownIneq (env : dEnv) : list (prod v v) := snd (fst env).
+
+Ltac dEnvGetUnf :=
+  try unfold dEnvGetHeap in *;
+  try unfold dEnvGetRho in *;
+  try unfold dEnvGetAccess in *;
+  try unfold dEnvGetKnownO in *;
+  try unfold dEnvGetKnownF in *;
+  try unfold dEnvGetKnownIneq in *.
+
+Definition dEnvValidateAccB (A : A_d) : bool :=
+  is_nodup A'_d_decb A.
+
+Definition dEnvValidateIneqB (ineq : list (prod v v)) : bool :=
+  negb (existsb (fun ineq => v_decb (fst ineq) (snd ineq)) ineq).
+
+Definition dEnvConsistent (env : dEnv) : Prop :=
+  (forall o,
+  (
+  (exists x, dEnvGetRho env x = Some (vo o)) \/
+  (exists h, dEnvGetHeap env o = Some h) \/
+  (exists o' C fs f, dEnvGetHeap env o' = Some (C, fs) /\ fs f = Some (vo o)) \/
+  (exists f, In (o, f) (dEnvGetAccess env))
+  ) -> In o (dEnvGetKnownO env)) /\
+  (forall f,
+  (
+  (exists o' C fs o, dEnvGetHeap env o' = Some (C, fs) /\ fs f = Some (vo o))
+  ) -> In f (dEnvGetKnownF env)) /\
+  dEnvValidateAccB (dEnvGetAccess env) = true /\
+  dEnvValidateIneqB (dEnvGetKnownIneq env) = true.
+
+
+Ltac or_l := apply or_introl.
+Ltac or_r := apply or_intror.
+Ltac or1 := try or_l.
+Ltac or2 := or_r; try or_l.
+Ltac or3 := or_r; or_r; try or_l.
+Ltac or4 := or_r; or_r; or_r; try or_l.
+
+Definition dEnvKnownTo (v : v) (env : dEnv) : bool :=
+  match v with
+  | vo o => existsb (o_decb o) (dEnvGetKnownO env)
+  | _ => true
+  end.
+
+Definition dEnvNew : dEnv := (([], [], []), (newHeap, newRho, newAccess)).
+Lemma dEnvNewConsistent : dEnvConsistent dEnvNew.
+Proof.
+  split.
+    repeat intro.
+    inversionx H.
+      unf. discriminate.
+    inversionx H0.
+      unf. discriminate.
+    inversionx H.
+      unf. discriminate.
+    unf.
+    tauto.
+  split.
+    repeat intro.
+    unf. discriminate.
+  split.
+    auto.
+  auto.
+Qed.
+
+Definition dEnvEval (e : e) (env : dEnv) : option v :=
+  evale' (dEnvGetHeap env) (dEnvGetRho env) e.
+Fixpoint dEnvEnsure (e : e) (env : dEnv) : option (prod dEnv v) :=
+  match e with
+  | ev v => Some (env, ve v)
+  | ex x => Some (
+            match dEnvGetRho env x with
+            | None => let newObj := [x2string x] in
+                      (((newObj :: dEnvGetKnownO env, dEnvGetKnownF env, dEnvGetKnownIneq env),
+                       (dEnvGetHeap env,
+                        fun x' => if x_decb x x'
+                                  then Some (vo newObj)
+                                  else dEnvGetRho env x',
+                        dEnvGetAccess env)),
+                        vo newObj)
+            | Some v => (env, v)
+            end)
+  | edot e f => 
+      match dEnvEnsure e env with
+      | None => None
+      | Some (env, v) =>
+            match v with
+            | vo o => Some (
+              match dEnvGetHeap env o with
+              | None => 
+                let newObj := f :: o in
+                (((newObj :: dEnvGetKnownO env, f :: dEnvGetKnownF env, dEnvGetKnownIneq env),
+                 (fun o' => if o_decb o o'
+                            then Some (EmptyString, fun f' =>
+                                 if f_decb f f'
+                                 then Some (vo newObj)
+                                 else None)
+                            else dEnvGetHeap env o',
+                  dEnvGetRho env,
+                  dEnvGetAccess env)),
+                  vo newObj)
+              | Some (C, fs) =>
+                match fs f with
+                | None => let newObj := f :: o in
+                          (((newObj :: dEnvGetKnownO env, f :: dEnvGetKnownF env, dEnvGetKnownIneq env),
+                           (fun o' => if o_decb o o'
+                                      then Some (C, fun f' =>
+                                           if f_decb f f'
+                                           then Some (vo newObj)
+                                           else fs f')
+                                      else dEnvGetHeap env o',
+                            dEnvGetRho env,
+                            dEnvGetAccess env)),
+                            vo newObj)
+                | Some v => (env, v)
+                end
+              end)
+            | ve _ => None
+            end
+      end
+  end.
+  
+Lemma dEnvEvalsKnown : forall env' e v,
+  dEnvConsistent env' ->
+  dEnvEval e env' = Some v ->
+  dEnvKnownTo v env' = true.
+Proof.
+  unfold dEnvEval.
+  induction e;
+  intros;
+  simpl in *.
+  - destruct v0; simpl; auto.
+    discriminate.
+  - destruct env'.
+    destruct p0.
+    destruct p1.
+    destruct p0.
+    destruct p1.
+    unfold dEnvConsistent in *.
+    dEnvGetUnf.
+    simpl in *.
+    destruct v; simpl; auto.
+    apply existsb_exists.
+    exists o.
+    dec o_dec.
+    splau.
+    apply H.
+    constructor.
+    eex.
+  - destruct (evale' (dEnvGetHeap env') (dEnvGetRho env') e);
+    try discriminate.
+    destruct v0; cut.
+    destruct v; simpl; auto.
+    assert (dEnvKnownTo (vo o) env' = true) as dd.
+      apply (IHe (vo o)) in H; auto.
+      clear IHe.
+    simpl in *.
+    apply existsb_exists.
+    apply existsb_exists in dd.
+    unf.
+    exists o0.
+    dec o_dec; cut.
+    dec o_dec. splau.
+    destruct env'.
+    destruct p0.
+    destruct p1.
+    destruct p0.
+    destruct p1.
+    dEnvGetUnf.
+    unfold dEnvConsistent in *.
+    simpl in *.
+    apply H.
+    or3.
+    dEnvGetUnf.
+    simpl.
+    exists x.
+    destruct h; cut.
+    destruct p0.
+    eex.
+Qed.
+
+Lemma dEnvEnsureEvalsForwardAccess : forall env e v env',
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvGetAccess env = dEnvGetAccess env'.
+Proof.
+  induction e; simpl in *; intros.
+  * inv H.
+    auto.
+  * inv H.
+    destruct (dEnvGetRho env x) eqn: ee;
+    inv H1;
+    cut.
+  * destruct dEnvEnsure; cut.
+    destruct p0.
+    destruct v0; cut.
+    inv H.
+    destruct dEnvGetHeap.
+    + destruct p0.
+      destruct (o0 f); inv H1.
+      - eapp IHe.
+      - unfold dEnvGetAccess in *.
+        simpl.
+        eapp IHe.
+    + inv H1.
+      dEnvGetUnf.
+      simpl.
+      eapp IHe.
+Qed.
+
+Lemma dEnvEnsureEvalsForwardRho : forall env e v' x v env',
+  dEnvEnsure e env = Some (env', v') ->
+  dEnvGetRho env x = Some v ->
+  dEnvGetRho env' x = Some v.
+Proof.
+  induction e; simpl in *; intros.
+  * inv H.
     assumption.
-  - inversionx H1.
-    * (* contradict *)
-      specialize (H5 p0).
-      contradict H5.
-      unfold
-        pincl,
-        pSingleton,
-        ppHasMaximum,
-        ppIsSingleton
-      in *. unf.
-      split; auto.
-      intros.
-      apply H3 in H1.
-      apply H3 in H5.
-      subst.
-      congruence.
-    * unfold
-        pincl,
-        ppHasMaximum,
-        ppIsSingleton
-      in *.
-      intros. unf.
-      split; auto.
-      apply (phiImpliesTrans p2 p0 p1); auto.
-      apply H3 in H1.
-      unf.
+  * inv H.
+    destruct (dEnvGetRho env x) eqn: ee;
+    inv H2;
+    cut.
+    dEnvGetUnf.
+    simpl in *.
+    dec x_dec; cut.
+  * destruct dEnvEnsure; cut.
+    destruct p0.
+    eappIn IHe H0.
+    destruct v0; cut.
+    inv H.
+    destruct dEnvGetHeap.
+    + destruct p0.
+      destruct (o0 f); inv H2; cut.
+    + inv H2.
+      dEnvGetUnf.
+      assumption.
+Qed.
+
+Lemma dEnvEnsureEvalsForwardHeap : forall env e v' C fs o f v env',
+  dEnvEnsure e env = Some (env', v') ->
+   dEnvGetHeap env  o = Some (C, fs) -> fs f = Some v ->
+  (exists fs, 
+   dEnvGetHeap env' o = Some (C, fs) /\ fs f = Some v).
+Proof.
+  induction e; simpl in *; intros.
+  * inv H.
+    exists fs.
+    auto.
+  * inv H.
+    destruct (dEnvGetRho env x) eqn: ee;
+    inv H3.
+    + exists fs.
       auto.
-  - inversionx H1.
-    * (* contradict *)
-      specialize (H5 p0).
-      contradict H5.
-      unfold
-        pincl,
-        pSingleton,
-        ppGood,
-        ppHasMaximum,
-        ppIsSingleton
-      in *. unf.
-      assert (p0 = x0). eapp H3. subst.
-      split; auto.
-      intros.
-      apply H3 in H1. subst.
-      congruence.
-    * (* contradict everything but phi = true *)
-      unfold
-        pincl,
-        ppHasMaximum,
-        ppIsSingleton
-      in *.
-      intros. unf.
-      destruct (classic (phiImplies [] p0)).
-      + split; auto.
-        apply (phiImpliesTrans p1 [] p0); auto.
-      + (* contradict *)
-        assert (~ phiImplies [] p).
-        
-        unfold phiImplies in H1.
-        
-        rewrite not_all_ex_not in H1.
-      destruct p0; try tauto.
-      intros. unf.
-      split; auto.
-      apply (phiImpliesTrans p2 p0 p1); auto.
-      apply H3 in H1.
-      unf.
+    + exists fs.
+      dEnvGetUnf.
+      simpl in *.
       auto.
-      
-      inversionx H1.
-    unfold
-      pincl,
-      ppHasMaximum,
-      ppIsSingleton
-    in *.
-    intros.
+  * destruct dEnvEnsure; cut.
+    destruct p0.
+    eappIn IHe H0.
+    destruct v0; cut.
+    inv H.
+    destruct (dEnvGetHeap d o0) eqn: ee.
+    + destruct p0.
+      destruct (o1 f) eqn: oo; inv H3; cut.
+      unf.
+      dEnvGetUnf.
+      simpl in *.
+      dec o_dec.
+      - rewrite ee in H0. inv H0.
+        eex. simpl.
+        dec string_dec; cut.
+      - exists x.
+        auto.
+    + inv H3.
+      dEnvGetUnf.
+      simpl. unf.
+      exists x.
+      splau.
+      dec o_dec; cut.
+Qed.
+
+Lemma dEnvEnsureEvalsForward : forall env e1 e2 v1 v2 env',
+  dEnvEnsure e2 env = Some (env', v2) ->
+  dEnvEval e1 env = Some v1 ->
+  dEnvEval e1 env' = Some v1.
+Proof.
+  unfold dEnvEval.
+  induction e1; simpl in *.
+  - auto.
+  - intros.
+    eapp dEnvEnsureEvalsForwardRho.
+  - intros.
+    destruct evale'; cut.
+    destruct v; cut.
+    destruct dEnvGetHeap eqn: ee; cut.
+    destruct p0.
+    simpl in *.
+    eappIn dEnvEnsureEvalsForwardHeap ee.
+    invE ee fs.
+    
+    eappIn IHe1 H.
+    rewrite H.
+    unf.
+    rewrite H1.
+    assumption.
+Qed.
+
+Lemma dEnvEnsureEvals : forall e v env env',
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvConsistent env ->
+  dEnvEval e env' = Some v.
+Proof.
+  unfold dEnvEval.
+  induction e; intros; simpl in *.
+  - inversionx H.
+    auto.
+  - inversionx H.
+    destruct (dEnvGetRho env x) eqn: ee.
+    * inversionx H2.
+      assumption.
+    * inversionx H2.
+      dEnvGetUnf.
+      simpl in *.
+      dec (x_dec x x).
+      auto.
+  - destruct (dEnvEnsure e env) eqn: ee; try discriminate.
+    destruct p0.
+    apply IHe in ee; auto.
+    specialize (IHe v0).
+    destruct v0; try discriminate.
+    inversionx H.
+    destruct (dEnvGetHeap d o) eqn: eeh.
+    * destruct p0.
+      destruct (o0 f) eqn: eeo; inversionx H2.
+      + rewrite ee.
+        rewrite eeh.
+        simpl.
+        assumption.
+      + (* unfold dEnvConsistent in H0. *)
+        dEnvGetUnf.
+        destruct d.
+        destruct p0.
+        destruct p1.
+        destruct p0.
+        destruct p1.
+        simpl in *.
+        set (h' := (λ o' : GradVer20Hook.o,
+           if o_decb o o'
+           then
+            Some
+              (c, λ f' : string, if f_decb f f' then Some (vo (f :: o)) else o0 f')
+           else h o')) in *.
+        assert (forall e o, evale' h  r e = Some (vo o) ->
+                            evale' h' r e = Some (vo o)) as eva.
+          induction e0; intros; simpl in *; auto.
+          destruct (evale' h r e0); try discriminate.
+          destruct v; try discriminate.
+          lapply (IHe0 o2); intros; auto.
+          rewrite H1. clear H1.
+          subst h'. simpl.
+          destruct (h o2) eqn: htmp; try discriminate.
+          destruct p0.
+          simpl in *.
+          dec (o_dec o o2); simpl; auto.
+          rewrite eeh in htmp. inversionx htmp.
+          dec (string_dec f f0); auto.
+          rewrite eeo in H.
+          discriminate.
+        apply eva in ee.
+        rewrite ee.
+        dec (o_dec o o).
+        simpl.
+        dec (string_dec f f).
+        auto.
+    * inversionx H2.
+      dEnvGetUnf.
+      destruct d.
+      destruct p0.
+      destruct p1.
+      destruct p0.
+      destruct p1.
+      simpl in *.
+      set (h' := (λ o' : GradVer20Hook.o,
+         if o_decb o o'
+         then
+          Some
+            (EmptyString, λ f' : string, if f_decb f f' then Some (vo (f :: o)) else None)
+         else h o')) in *.
+      assert (forall e o, evale' h  r e = Some (vo o) ->
+                          evale' h' r e = Some (vo o)) as eva.
+        induction e0; intros; simpl in *; auto.
+        destruct (evale' h r e0); try discriminate.
+        destruct v; try discriminate.
+        lapply (IHe0 o1); intros; auto.
+        rewrite H1. clear H1.
+        subst h'. simpl.
+        destruct (h o1) eqn: htmp; try discriminate.
+        destruct p0.
+        simpl in *.
+        dec (o_dec o o1); simpl; auto.
+        rewrite eeh in htmp.
+        discriminate.
+      apply eva in ee.
+      rewrite ee.
+      dec (o_dec o o).
+      simpl.
+      dec (string_dec f f).
+      auto.
+Qed.
+
+Lemma dEnvEnsureConsistent : forall env,
+  dEnvConsistent env ->
+  forall e env' v,
+  dEnvEnsure e env = Some (env', v) ->
+  dEnvConsistent env'.
+Proof.
+  intro. intro.
+  induction e; intros; simpl in *.
+  - inversionx H0.
+    assumption.
+  - inversionx H0.
+    destruct (dEnvGetRho env x);
+    inversionx H2; try assumption.
+    unfold dEnvConsistent in *.
+    destruct env.
+    destruct p0.
+    destruct p1.
+    destruct p0.
+    destruct p1.
+    dEnvGetUnf.
+    simpl in *.
     split.
-    * eapp H2.
+      intros.
+      inversionx H0; unf.
+        dec (x_dec x x0). inversionx H0. auto.
+        or_r.
+        apply H1.
+        or1.
+        eex.
+      or_r.
+      apply H0.
+      inversionx H1; unf.
+        or2.
+        eex.
+      inversionx H3; unf.
+        or3.
+        eex.
+      or4.
+      eex.
+    split.
+      intros.
+      unf.
+      apply H.
+      eex.
+    split; apply H.
+  - destruct (dEnvEnsure e env) eqn: ee; try discriminate.
+    destruct p0.
+    specialize (IHe d v0).
+    assert (dEnvConsistent d) as IH.
+      eapp IHe.
+      clear IHe.
+    destruct d.
+    destruct p0.
+    destruct p1.
+    destruct p0.
+    destruct p1.
+    dEnvGetUnf.
+    simpl in *.
+    assert (evale' h r e = Some v0) as eva.
+      eappIn dEnvEnsureEvals H.
+      dEnvGetUnf. assumption.
+    destruct v0; try discriminate.
+    assert (In o l0) as ii.
+      eappIn dEnvEvalsKnown IH.
+      simpl in IH. apply existsb_exists in IH. unf.
+      dec o_dec; cut.
+    inversionx H0.
+    destruct (h o) eqn: hh.
+    * destruct p0.
+      destruct (o0 f) eqn: ff;
+      inversionx H2; auto.
+      unfold dEnvConsistent in *.
+      inversion IH as [IH1 IH234]; clear IH.
+      inversion IH234 as [IH2 IH34]; clear IH234.
+      inversion IH34 as [IH3 IH4]; clear IH34.
+      dEnvGetUnf.
+      simpl in *.
+      split.
+        intros.
+        inversionx H0; unf.
+          or_r.
+          apply IH1.
+          or1.
+          eex.
+        inversionx H1; unf.
+          assert (exists x, h o1 = Some x).
+            dec (o_dec o o1); eex.
+          or_r.
+          apply IH1.
+          or2.
+          assumption.
+        inversionx H3; unf.
+          dec (o_dec o x).
+            inversionx H3.
+            dec (string_dec f x2).
+              inversionx H5.
+              auto.
+            or_r.
+            apply IH1.
+            or3.
+            eex.
+          or_r.
+          apply IH1.
+          or3.
+          eex.
+        or_r.
+        apply IH1.
+        or4.
+        eex.
+      split.
+        intros.
+        unf.
+        dec (o_dec o x).
+          inv H1.
+          dec (string_dec f f0).
+            auto.
+          or_r.
+          apply IH2.
+          or1.
+          eex.
+        or_r.
+        apply IH2.
+        eex.
+      split; auto.
+    * inversionx H2.
+      unfold dEnvConsistent in *.
+      inversion IH as [IH1 IH234]; clear IH.
+      inversion IH234 as [IH2 IH34]; clear IH234.
+      inversion IH34 as [IH3 IH4]; clear IH34.
+      dEnvGetUnf.
+      simpl in *.
+      split.
+        intros.
+        inversionx H0; unf.
+          or_r.
+          apply IH1.
+          or1.
+          eex.
+        inversionx H1; unf.
+          destruct x.
+          dec (o_dec o o0); auto.
+          or_r.
+          apply IH1.
+          or2.
+          eex.
+        inversionx H3; unf.
+          dec (o_dec o x).
+            inversionx H3.
+            dec (string_dec f x2); try discriminate.
+            inversionx H5.
+            auto.
+          or_r.
+          apply IH1.
+          or3.
+          eex.
+        or_r.
+        apply IH1.
+        or4.
+        eex.
+      split.
+        intros.
+        unf.
+        dec (o_dec o x).
+          inv H1.
+          dec (string_dec f f0).
+            auto.
+          discriminate.
+        or_r.
+        apply IH2.
+        eex.
+      split; auto.
+Qed.
+
+Definition dEnvMergeObjHeapFields (fs1 fs2 : f -> option v) (fs : list f) : list (prod v v) :=
+  flat_map
+  (fun f => match fs1 f with
+            | None => []
+            | Some v1 =>
+              match fs2 f with
+              | None => []
+              | Some v2 => [(v1, v2)]
+              end
+            end)
+  fs.
+
+(* removes o' from dom(heap) *)
+Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) (fsx : list f) : option (prod H (list (prod v v))) :=
+  match Heap o' with
+  | None => Some (Heap, [])
+  | Some (C', fs') =>
+      match v' with
+      | vo o => let HeapMoveo'TOo : H := fun oo => if o_decb o' oo
+                                                   then None
+                                                   else
+                                                    (if o_decb o oo
+                                                     then Some (C', fs')
+                                                     else Heap oo)
+                in
+                match Heap o with
+                | None => (* can move Heap o' here *)
+                    Some (HeapMoveo'TOo, [])
+                | Some (C, fs) => (* merge required *)
+                    if C_decb C C'
+                    then Some (HeapMoveo'TOo, dEnvMergeObjHeapFields fs' fs fsx)
+                    else None (* incompatible types *)
+                end
+      | ve v => None (* o' has fields BUT now has to be a vex (cannot have fields) *)
+      end
+  end.
+
+(* remove vo' from codom(heap) *)
+Definition dEnvMergeObjHeapC (vo' : v) (v' : v) (Heap : H) : H :=
+  fun o => match Heap o with
+           | None =>
+             None
+           | Some (C, fs) =>
+             Some (C, fun f => match fs f with
+                               | None =>
+                                 None
+                               | Some v =>
+                                 Some (if v_decb vo' v
+                                       then v'
+                                       else v)
+                               end)
+           end.
+
+
+Definition dEnvValidateAcc (A : A_d) : option A_d :=
+  if dEnvValidateAccB A
+  then Some A
+  else None.
+
+Definition dEnvAddAcc (v : v) (f : f) (env : dEnv) : option dEnv :=
+  match v with
+  | vo o =>
+    match dEnvValidateAcc ((o, f) :: dEnvGetAccess env) with
+    | None => 
+      None
+    | Some acc =>
+      Some ( fst env
+           , ( dEnvGetHeap env
+             , dEnvGetRho env
+             , acc))
+    end
+  | _ => None
+  end.
+
+Definition dEnvMergeObjAccess (o' : o) (v' : v) (A : A_d) : option A_d :=
+  match v' with
+  | vo o => dEnvValidateAcc
+           (map (fun A => ( if o_decb o' (fst A)
+                            then o
+                            else (fst A)
+                          , snd A)) A)
+  | _ => if existsb (fun A => o_decb o' (fst A)) A
+         then None
+         else Some A
+  end.
+
+Definition dEnvValidateIneq (ineq : list (prod v v)) : option (list (prod v v)) :=
+  if dEnvValidateIneqB ineq
+  then Some ineq
+  else None.
+
+Definition dEnvAddIneq (v1 v2 : v) (env : dEnv) : option dEnv :=
+  match dEnvValidateIneq ((v1, v2) :: dEnvGetKnownIneq env) with
+  | None => 
+    None
+  | Some ineq =>
+    Some ( ( dEnvGetKnownO env
+           , dEnvGetKnownF env
+           , ineq)
+         , snd env)
+  end.
+
+(* removes o' from ineq (and checks for inconsistency) *)
+Definition dEnvMergeObjIneq  (vo' : v) (v' : v) (ineq : list (prod v v)) : option (list (prod v v)) :=
+  let ineq' := map (fun ineq =>
+                    ( if v_decb vo' (fst ineq)
+                      then v'
+                      else (fst ineq)
+                    , if v_decb vo' (snd ineq)
+                      then v'
+                      else (snd ineq)
+                    )) ineq in
+    dEnvValidateIneq ineq'.
+
+(* removes o' from env *)
+Definition dEnvMergeObj (o' : o) (v' : v) (env : dEnv) : option (prod dEnv (list (prod v v))) :=
+  let vo' := vo o' in
+  match dEnvMergeObjIneq vo' v' (dEnvGetKnownIneq env) with
+  | None =>
+    None
+  | Some ineq =>
+    match dEnvMergeObjAccess o' v' (dEnvGetAccess env) with
+    | None =>
+      None
+    | Some A =>
+      match dEnvMergeObjHeap o' v' (dEnvMergeObjHeapC vo' v' (dEnvGetHeap env)) (dEnvGetKnownF env) with
+      | None =>
+        None
+      | Some (H', merge) =>
+        Some 
+        ( ( ( filter (fun o => negb (o_decb o' o)) (dEnvGetKnownO env)
+            , dEnvGetKnownF env
+            , ineq)
+          , ( H'
+            , fun x =>
+                  match dEnvGetRho env x with
+                  | None =>
+                    None
+                  | Some v =>
+                    Some (if v_decb vo' v
+                          then v'
+                          else v)
+                  end
+            , A))
+        , merge)
+      end
+    end
+  end
+.
+
+Definition dEnvMerge (v1 v2 : v) (env : dEnv) : option (prod dEnv (list (prod v v))) :=
+  if v_decb v1 v2 
+    || negb (dEnvKnownTo v1 env)
+    || negb (dEnvKnownTo v2 env)
+  then Some (env, [])
+  else
+   (match v1 with
+    | vo o1 => dEnvMergeObj o1 v2 env
+    | _ =>
+      match v2 with
+      | vo o2 => dEnvMergeObj o2 v1 env
+      | _ => None   (* two non-object values that are syntactically different *)
+      end
+    end).
+
+Lemma dEnvMergeObjConsistent : forall env o v merge env',
+  dEnvKnownTo v env = true ->
+  In o (dEnvGetKnownO env) ->
+  vo o <> v ->
+  dEnvConsistent env ->
+  dEnvMergeObj o v env = Some (env', merge) ->
+  dEnvConsistent env'.
+Proof.
+  intros.
+  rename H0 into kno.
+  rename H into knv.
+  rename H1 into ung.
+  rename H2 into cons.
+  rename H3 into m.
+  unfold dEnvMergeObj in *.
+  destruct env.
+  destruct p0.
+  destruct p1.
+  destruct p0.
+  destruct p1.
+  dEnvGetUnf.
+  simpl in *.
+  destruct (dEnvMergeObjIneq (vo o) v l) eqn: deIneq;
+  try discriminate.
+  destruct (dEnvMergeObjAccess o v a) eqn: deAccess;
+  try discriminate.
+  destruct (dEnvMergeObjHeap o v (dEnvMergeObjHeapC (vo o) v h) l1) eqn: deHeap;
+  try discriminate.
+  destruct p0.
+  inversionx m.
+  inversion cons as [IH1 IH234]; clear cons.
+  inversion IH234 as [IH2 IH34]; clear IH234.
+  inversion IH34 as [IH3 IH4]; clear IH34.
+  
+  unfold dEnvConsistent in *.
+  dEnvGetUnf.
+  simpl in *.
+  split.
+    intros.
+    apply filter_In.
+    inversionx H; unf.
+      destruct (r x) eqn: rx; try discriminate.
+      inversionx H.
+      destruct v0; try discriminate.
+      undecb.
+      simpl in *.
+      dec (o_dec o o1); simpl in *.
+        subst.
+        simpl in knv.
+        split. 
+          apply existsb_exists in knv. unf.
+          dec o_dec; cut.
+        dec (o_dec o1 o0); auto.
+      inversionx H1.
+      rename de2 into de.
+      dec (o_dec o o0); auto.
+      split; auto.
+      apply IH1.
+      or1.
+      eex.
+    inversionx H0; unf.
+      unfold dEnvMergeObjHeap,
+             dEnvMergeObjHeapC in deHeap.
+      destruct (h o) eqn: ho.
+        destruct p0.
+        destruct v; try discriminate.
+        destruct (h o2) eqn: ho2.
+          destruct p0.
+          dec (string_dec c0 c); cut.
+          inversionx deHeap.
+          dec (o_dec o o0); cut.
+          split; auto.
+          apply IH1. or2.
+          rename de2 into de.
+          dec (o_dec o2 o0).
+            eex.
+          destruct (h o0); cut.
+        inversionx deHeap.
+        dec (o_dec o o0); cut.
+        splau.
+        rename de2 into de.
+        dec (o_dec o2 o0).
+          simpl in knv.
+          apply existsb_exists in knv. unf.
+          dec o_dec; cut.
+        apply IH1.
+        or2.
+        destruct (h o0); cut.
+      inversionx deHeap.
+      dec (o_dec o o0).
+        rewrite ho in *.
+        cut.
+      splau.
+      apply IH1.
+      or2.
+      destruct (h o0); cut.
+    inversionx H; unf.
+      unfold dEnvMergeObjHeap,
+             dEnvMergeObjHeapC in deHeap.
+      destruct (h o) eqn: ho.
+        destruct p0.
+        destruct v; try discriminate.
+        destruct (h o2) eqn: ho2.
+          destruct p0.
+          dec (string_dec c0 c); cut.
+          inversionx deHeap.
+          dec (o_dec o o0); splau.
+            dec (o_dec o0 x); cut. rename de2 into de.
+            dec (o_dec o2 x).
+              inversionx H.
+              destruct (o1 x2) eqn: o1x2; cut.
+              inv H1.
+              destruct v; cut.
+              dec (o_dec o0 o4);
+              inv H0;
+              cut.
+            destruct (h x) eqn: hx; cut.
+            destruct p0.
+            inv H.
+            destruct (o4 x2) eqn: o4x2; cut.
+            inv H1.
+            destruct v; cut.
+            rename de2 into de3.
+            dec (o_dec o0 o5);
+            inv H0;
+            cut.
+          rename de2 into de.
+          dec (o_dec o x); cut.
+          rename de2 into de3.
+          dec (o_dec o2 x).
+            inv H.
+            destruct (o1 x2) eqn: o1x2; cut.
+            inv H1.
+            destruct v; cut.
+            simpl in knv.
+            apply existsb_exists in knv. unf.
+            dec (o_dec x x1); cut.
+            dec (o_dec o o4);
+            inv H0;
+            cut.
+            apply IH1.
+            or3.
+            eex.
+          destruct (h x) eqn: hx; cut.
+          destruct p0.
+          inv H.
+          destruct (o4 x2) eqn: o4x2; cut.
+          inv H1.
+          destruct v; cut.
+          rename de2 into de4.
+          simpl in knv.
+          apply existsb_exists in knv. unf.
+          dec (o_dec o2 x1); cut.
+          dec (o_dec o o5);
+          inv H0;
+          cut.
+          apply IH1.
+          or3.
+          eex.
+        inv deHeap.
+        dec (o_dec o x); cut.
+        rename de2 into de.
+        dec (o_dec o2 x).
+          inv H.
+          destruct (o1 x2) eqn: o1x2; cut.
+          inv H1.
+          destruct v; cut.
+          simpl in knv.
+          apply existsb_exists in knv. unf.
+          dec (o_dec x x1); cut.
+          dec (o_dec o o3); inv H0.
+            dec (o_dec o3 o0); cut.
+          rename de2 into de3.
+          dec (o_dec o o0); cut.
+          splau.
+          apply IH1.
+          or3.
+          eex.
+        destruct (h x) eqn: hx; cut.
+        destruct p0.
+        inv H.
+        destruct (o3 x2) eqn: o3x2; cut.
+        inv H1.
+        destruct v; cut.
+        simpl in knv.
+        apply existsb_exists in knv. unf.
+        rename de2 into de5.
+        dec (o_dec o2 x1); cut.
+        dec (o_dec o o4); inv H0.
+          dec (o_dec o4 o0); cut.
+        rename de2 into de4.
+        dec (o_dec o o0); cut.
+        splau.
+        apply IH1.
+        or3.
+        eex.
+      inv deHeap.
+      destruct (h x) eqn: hx; cut.
+      destruct p0.
+      inv H.
+      destruct (o1 x2) eqn: o1x2; cut.
+      inv H1.
+      destruct v0; cut.
+      undecb. simpl in H0.
+      dec (o_dec o o2); inv H0; simpl in *.
+        subst.
+        simpl in knv.
+        apply existsb_exists in knv. unf.
+        dec (o_dec o0 x1); cut.
+        dec (o_dec o2 x1); cut.
+      rename de2 into de.
+      dec (o_dec o o0); cut.
+      splau.
+      apply IH1.
+      or3.
+      eex.
+    unfold dEnvMergeObjAccess in deAccess.
+    destruct v.
+      destruct (existsb (λ A, o_decb o (fst A)) a) eqn: ee; cut.
+      inv deAccess.
+      dec (o_dec o o0).
+        contradict ee.
+        apply not_false_iff_true.
+        apply existsb_exists.
+        eex.
+        simpl.
+        dec (o_dec o0 o0); cut.
+      splau.
+      apply IH1. or4. eex.
+    inv deAccess.
+    unfold dEnvValidateAcc in *.
+    destruct (dEnvValidateAccB _) in H1; cut.
+    inv H1.
+    apply in_map_iff in H. unf.
+    inv H.
+    destruct x0. simpl.
+    simpl in knv.
+    apply existsb_exists in knv. unf.
+    dec (o_dec o1 x); cut.
+    dec (o_dec o o0).
+      dec (o_dec o0 x); cut.
+    rename de2 into de.
+    dec (o_dec o o0); cut.
+    splau.
+    apply IH1. or4. eex.
+  split.
+    intros.
+    unf.
+    apply IH2. or1.
+    unfold dEnvMergeObjHeap,
+           dEnvMergeObjHeapC in deHeap.
+    destruct (h o) eqn: ho.
+      destruct p0.
+      destruct v; cut.
+      destruct (h o1) eqn: ho1.
+        destruct p0.
+        dec (string_dec c0 c); cut.
+        inv deHeap.
+        dec (o_dec o x); cut.
+        rename de2 into de.
+        dec (o_dec o1 x).
+          inv H0.
+          destruct (o0 f) eqn: o1f; cut.
+          inv H1.
+          destruct v; cut.
+          eex.
+        destruct (h x) eqn: hx; cut.
+        destruct p0.
+        inv H0.
+        destruct (o3 f) eqn: o3f; cut.
+        inv H1.
+        destruct v; cut.
+      inv deHeap.
+      dec (o_dec o x); cut.
+      rename de2 into de.
+      dec (o_dec o1 x).
+        inv H0.
+        destruct (o0 f) eqn: o0f; cut.
+        inv H1.
+        destruct v; cut.
+      destruct (h x) eqn: hx; cut.
+      destruct p0.
+      inv H0.
+      destruct (o2 f) eqn: o2f; cut.
+      inv H1.
+      destruct v; cut.
+    inv deHeap.
+    destruct (h x) eqn: hx; cut.
+    destruct p0.
+    inv H0.
+    destruct (o0 f) eqn: o0f; cut.
+    inv H1.
+    destruct v0; cut.
+  split.
+    unfold dEnvMergeObjAccess in deAccess.
+    unfold dEnvValidateAcc in *.
+    unfold dEnvValidateAccB in *.
+    destruct v.
+      destruct existsb; cut.
+    destruct (is_nodup _ _) eqn: ii; cut.
+  unfold dEnvMergeObjIneq in deIneq.
+  unfold dEnvValidateIneq in *.
+  unfold dEnvValidateIneqB in *.
+  destruct (negb _) eqn: ii; cut.
+Qed.
+
+Lemma dEnvMergeObjMergeKnown : forall env o v merge env',
+  dEnvKnownTo v env = true ->
+  In o (dEnvGetKnownO env) ->
+  vo o <> v ->
+  dEnvConsistent env ->
+  dEnvMergeObj o v env = Some (env', merge) ->
+  forall v1 v2, In (v1, v2) merge ->
+    dEnvKnownTo v1 env = true /\
+    dEnvKnownTo v2 env = true /\
+    dEnvKnownTo v1 env' = true /\
+    dEnvKnownTo v2 env' = true.
+Proof.
+  intros.
+  rename H0 into kno.
+  rename H into knv.
+  rename H1 into ung.
+  rename H2 into cons.
+  rename H3 into m.
+  assert (dEnvConsistent env') as cons'.
+    apply dEnvMergeObjConsistent in m; auto.
+  unfold dEnvMergeObj in *.
+  destruct env.
+  destruct p0.
+  destruct p1.
+  destruct p0.
+  destruct p1.
+  destruct env'.
+  destruct p0.
+  destruct p1.
+  destruct p0.
+  destruct p1.
+  dEnvGetUnf.
+  simpl in *.
+  destruct (dEnvMergeObjIneq (vo o) v l) eqn: deIneq;
+  try discriminate.
+  destruct (dEnvMergeObjAccess o v a) eqn: deAccess;
+  try discriminate.
+  destruct (dEnvMergeObjHeap o v (dEnvMergeObjHeapC (vo o) v h) l1) eqn: deHeap;
+  try discriminate.
+  destruct p0.
+  inversionx m.
+  inversion cons as [IH1 IH234]; clear cons.
+  inversion IH234 as [IH2 IH34]; clear IH234.
+  inversion IH34 as [IH3 IH4]; clear IH34.
+  (* inversion cons' as [IH1' IH234']; clear cons'.
+  inversion IH234' as [IH2' IH34']; clear IH234'.
+  inversion IH34' as [IH3' IH4']; clear IH34'. *)
+  dEnvGetUnf.
+  simpl in *.
+  
+  
+  unfold dEnvMergeObjHeap,
+         dEnvMergeObjHeapC in deHeap.
+  destruct (h o) eqn: ho.
+  - destruct p0.
+    destruct v; cut.
+    destruct (h o1) eqn: ho1.
+    * destruct p0.
+      dec (string_dec c0 c); cut.
+      inv deHeap.
+      unfold dEnvMergeObjHeapFields in *.
+      apply in_flat_map in H4. unf.
+      destruct (o0 x) eqn: o0x; cut.
+      destruct (o2 x) eqn: o2x; cut.
+      apply InSingle in H1.
+      inv H1.
+      split.
+        destruct v. constructor.
+        dec (o_dec o o3); cut.
+        simpl.
+        apply existsb_exists. exists o3. rename de2 into de. dec o_dec. splau.
+        apply IH1.
+        or3.
+        eex.
+      split.
+        destruct v0. constructor.
+        dec (o_dec o o3); cut.
+        simpl.
+        apply existsb_exists. exists o3. rename de2 into de. dec o_dec. splau.
+        apply IH1.
+        or3.
+        eex.
+      split.
+        destruct v. constructor.
+        dec (o_dec o o3); simpl;
+        dEnvGetUnf; simpl;
+        apply existsb_exists.
+          exists o1. dec o_dec. splau.
+          apply filter_In.
+          dec (o_dec o3 o1); cut.
+        rename de2 into de.
+        exists o3. dec o_dec. splau.
+        apply filter_In.
+        dec (o_dec o o3); cut.
+        splau.
+        apply IH1.
+        or3. eex.
+      destruct v0. constructor.
+      dec (o_dec o o3); simpl;
+      dEnvGetUnf; simpl;
+      apply existsb_exists.
+        exists o1. dec o_dec. splau.
+        apply filter_In.
+        dec (o_dec o3 o1); cut.
+      rename de2 into de.
+      exists o3. dec o_dec. splau.
+      apply filter_In.
+      dec (o_dec o o3); cut.
+      splau.
+      apply IH1.
+      or3. eex.
+    * inv deHeap.
+      tauto.
+  - inv deHeap.
+    tauto.
+Qed.
+
+
+Lemma dEnvMergeConsistent : forall env v1 v2 merge env',
+  dEnvConsistent env ->
+  dEnvMerge v1 v2 env = Some (env', merge) ->
+  dEnvConsistent env'.
+Proof.
+  intros.
+  unfold dEnvMerge in *.
+  dec (v_dec v1 v2). inv H0. assumption.
+  rename de2 into de.
+  destruct (negb (_ v1 _)) eqn: dek1.
+    inv H0. assumption.
+  destruct (negb (_ v2 _)) eqn: dek2.
+    inv H0. assumption.
+  apply negb_false_iff in dek1.
+  apply negb_false_iff in dek2.
+  destruct v1, v2; simpl in *; cut;
+  eapply dEnvMergeObjConsistent in H0; cut.
+  - apply existsb_exists in dek2. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+Qed.
+
+Lemma dEnvMergeMergeKnown : forall env v1 v2 merge env',
+  dEnvConsistent env ->
+  dEnvMerge v1 v2 env = Some (env', merge) ->
+  forall v1 v2, In (v1, v2) merge ->
+    dEnvKnownTo v1 env' = true /\
+    dEnvKnownTo v2 env' = true.
+Proof.
+  intros.
+  unfold dEnvMerge in *.
+  dec (v_dec v1 v2). inv H0. tauto.
+  rename de2 into de.
+  destruct (negb (_ v1 _)) eqn: dek1.
+    inv H0. tauto.
+  destruct (negb (_ v2 _)) eqn: dek2.
+    inv H0. tauto.
+  apply negb_false_iff in dek1.
+  apply negb_false_iff in dek2.
+  destruct v1, v2; simpl in *; cut;
+  eapply dEnvMergeObjMergeKnown in H0; eauto; cut.
+  - apply existsb_exists in dek2. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+Qed.
+
+Fixpoint dEnvMergeRec' (v1 v2 : v) (env : dEnv) (n : nat) : option dEnv :=
+  match n with
+  | 0 => None (* unreachable, if called via dEnvMergeRec *)
+  | Datatypes.S n =>
+    match dEnvMerge v1 v2 env with
+    | None => None
+    | Some (env', todo) =>
+      fold_right
+        (fun eq env =>
+          match env with
+          | None => None
+          | Some env => dEnvMergeRec' (fst eq) (snd eq) env n
+          end)
+        (Some env')
+        todo
+    end
+  end.
+
+Definition dEnvMergeRec (v1 v2 : v) (env : dEnv) : option dEnv :=
+  dEnvMergeRec' v1 v2 env (Datatypes.S (length (dEnvGetKnownO env))).
+
+Lemma dEnvMergeRec'Consistent : forall n env v1 v2 env',
+  dEnvConsistent env ->
+  dEnvMergeRec' v1 v2 env n = Some env' ->
+  dEnvConsistent env'.
+Proof.
+  induction n;
+  intros; cut.
+  simpl in *.
+  destruct dEnvMerge eqn: ee; cut.
+  destruct p0.
+  apply dEnvMergeConsistent in ee; auto.
+  clear env H.
+  generalize l d env' H0 ee. clear l d env' H0 ee.
+  induction l; intros. inv H0. assumption.
+  simpl in *.
+  destruct a.
+  specialize (IHl d).
+  destruct fold_right; cut.
+  simpl in *.
+  apply (IHl d0) in ee; auto.
+  apply IHn in H0; auto.
+Qed.
+
+Lemma dEnvMergeRecConsistent : forall env v1 v2 env',
+  dEnvConsistent env ->
+  dEnvMergeRec v1 v2 env = Some env' ->
+  dEnvConsistent env'.
+Proof.
+  intros.
+  unfold dEnvMergeRec in *.
+  eapply dEnvMergeRec'Consistent; eauto.
+Qed.
+
+Lemma filter_lt : forall {T:Type} f (l : list T),
+  length (filter f l) <= length l.
+Proof.
+  induction l; cut.
+  simpl.
+  destruct (f a); cut.
+  simpl.
+  auto with arith.
+Qed.
+
+(* orderly termination proof *)
+Lemma dEnvMergeObjReduces : forall o v env env' todo,
+  dEnvKnownTo v env = true ->
+  In o (dEnvGetKnownO env) ->
+  vo o <> v ->
+  dEnvMergeObj o v env = Some (env', todo) ->
+  length (dEnvGetKnownO env') < length (dEnvGetKnownO env).
+Proof.
+  intros.
+  rename H0 into kno.
+  rename H into knv.
+  rename H1 into ung.
+  rename H2 into m.
+  unfold dEnvMergeObj in *.
+  destruct env.
+  destruct p0.
+  destruct p1.
+  destruct p0.
+  destruct p1.
+  dEnvGetUnf.
+  simpl in *.
+  destruct (dEnvMergeObjIneq (vo o) v l) eqn: deIneq;
+  try discriminate.
+  destruct (dEnvMergeObjAccess o v a) eqn: deAccess;
+  try discriminate.
+  destruct (dEnvMergeObjHeap o v (dEnvMergeObjHeapC (vo o) v h) l1) eqn: deHeap;
+  try discriminate.
+  destruct p0.
+  inversionx m.
+  simpl.
+  generalize l0 kno. clear.
+  induction l0; intros; inv kno; simpl.
+  - dec (o_dec o o).
+    simpl.
+    unfold lt.
+    apply le_n_S.
+    apply filter_lt.
+  - apply IHl0 in H.
+    dec (o_dec o a); simpl; cut.
+    auto with arith.
+Qed.
+
+Lemma dEnvMergeReduces : forall v1 v2 env env' todo,
+  dEnvMerge v1 v2 env = Some (env', todo) ->
+  todo = [] \/
+  length (dEnvGetKnownO env') < length (dEnvGetKnownO env).
+Proof.
+  intros.
+  unfold dEnvMerge in *.
+  dec (v_dec v1 v2).
+    inv H.
+    auto.
+  rename de2 into de.
+  destruct (negb (_ v1 _)) eqn: dek1.
+    inv H. tauto.
+  destruct (negb (_ v2 _)) eqn: dek2.
+    inv H. tauto.
+  apply negb_false_iff in dek1.
+  apply negb_false_iff in dek2.
+  or2.
+  simpl in *.
+  unfold dEnvKnownTo in *.
+  destruct v1, v2; cut;
+  eappIn dEnvMergeObjReduces H.
+  - apply existsb_exists in dek2. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+  - apply existsb_exists in dek1. unf.
+    dec o_dec; cut.
+Qed.
+
+Lemma dEnvMergeRec'Works : forall n e1 e2 v1 v2 env env',
+  let v := match v1 with
+           | vo _ => v2
+           | _ => v1
+           end in
+  dEnvConsistent env ->
+  dEnvMergeRec' v1 v2 env n = Some env' ->
+  dEnvEval e1 env = Some v1 ->
+  dEnvEval e2 env = Some v2 ->
+  dEnvEval e1 env' = Some v /\
+  dEnvEval e2 env' = Some v.
+Proof.
+  admit.
+Admitted.
+  
+Lemma dEnvMergeRecWorks : forall e1 e2 v1 v2 env env',
+  let v := match v1 with
+           | vo _ => v2
+           | _ => v1
+           end in
+  dEnvConsistent env ->
+  dEnvMergeRec v1 v2 env = Some env' ->
+  dEnvEval e1 env = Some v1 ->
+  dEnvEval e2 env = Some v2 ->
+  dEnvEval e1 env' = Some v /\
+  dEnvEval e2 env' = Some v.
+Proof.
+  intros.
+  unfold dEnvMergeRec in *.
+  eapply dEnvMergeRec'Works; eauto.
+Qed.
+
+Definition dEnvAddPhi' (p : phi') (env : dEnv) : option dEnv :=
+  match p with
+  | phiTrue => Some env
+  | phiEq e1 e2 =>
+      match dEnvEnsure e1 env with
+      | None => None
+      | Some (env, v1) => 
+        match dEnvEnsure e2 env with
+        | None => None
+        | Some (env, v2) => dEnvMergeRec v1 v2 env
+        end
+      end
+  | phiNeq e1 e2 =>
+      match dEnvEnsure e1 env with
+      | None => None
+      | Some (env, v1) => 
+        match dEnvEnsure e2 env with
+        | None => None
+        | Some (env, v2) => dEnvAddIneq v1 v2 env
+        end
+      end
+  | phiAcc e f =>
+      match dEnvEnsure e env with
+      | Some (env, v) => dEnvAddAcc v f env
+      | _ => None
+      end
+  end.
+
+Definition dEnvFromPhi (p : phi) : option dEnv :=
+  fold_right (fun p env => 
+              match env with
+              | None => None
+              | Some env => dEnvAddPhi' p env
+              end) (Some dEnvNew) p.
+
+Definition dEnvEvalPhi' (p : phi') (env : dEnv) : Prop :=
+  evalphi'
+    (dEnvGetHeap env)
+    (dEnvGetRho env)
+    (dEnvGetAccess env)
+    p.
+
+Definition dEnvEvalPhi (p : phi) (env : dEnv) : Prop :=
+  evalphi
+    (dEnvGetHeap env)
+    (dEnvGetRho env)
+    (dEnvGetAccess env)
+    p.
+
+Lemma dEnvAddIneqConsistent : ∀ env v1 v2 env',
+       dEnvConsistent env ->
+       dEnvAddIneq v1 v2 env = Some env' ->
+       dEnvConsistent env'.
+Proof.
+  intros.
+  unfold dEnvAddIneq
+       , dEnvValidateIneq
+       , dEnvValidateIneqB in *.
+  simpl in *.
+  destruct negb eqn: ee; cut.
+  inv H0.
+  destruct env.
+  destruct p0, p1.
+  destruct p0, p1.
+  unfold dEnvConsistent in *.
+  dEnvGetUnf.
+  simpl in *.
+  unf.
+  splau.
+Qed.
+
+Lemma dEnvAddAccConsistent : ∀ env v f env',
+      dEnvKnownTo v env = true ->
+      dEnvConsistent env ->
+      dEnvAddAcc v f env = Some env' ->
+      dEnvConsistent env'.
+Proof.
+  intros.
+  unfold dEnvAddAcc in *.
+  simpl in *.
+  destruct v; cut.
+  destruct dEnvValidateAcc eqn: ee; cut.
+  unfold dEnvValidateAcc in ee.
+  destruct dEnvValidateAccB eqn: eeb; cut.
+  inv ee.
+  inv H1.
+  destruct env.
+  destruct p0, p1.
+  destruct p0, p1.
+  simpl in *.
+  apply existsb_exists in H. unf. dec o_dec; cut.
+  unfold dEnvConsistent in *.
+  dEnvGetUnf.
+  simpl in *.
+  unf.
+  split.
+    intros.
+    inv H4; cut.
+    inv H6; cut.
+    inv H4; cut.
+    unf. inv H4.
+      inv H6. assumption.
+    apply H1. or4. eex.
+  split.
+    intros.
+    inv H4; cut.
+    inv H6; cut.
+    unf.
+    apply H0. eex.
+  splau.
+Qed.
+
+Lemma dEnvAddIneqWorks : forall e1 e2 v1 v2 env env',
+       dEnvConsistent env ->
+       dEnvAddIneq v1 v2 env = Some env' ->
+       dEnvEval e1 env = Some v1 ->
+       dEnvEval e2 env = Some v2 ->
+       dEnvEval e1 env' = Some v1 ∧
+       dEnvEval e2 env' = Some v2 /\
+       v1 <> v2.
+Proof.
+  intros.
+  unfold dEnvAddIneq in *.
+  destruct dEnvValidateIneq eqn: ee; cut.
+  inv H0.
+  unfold dEnvValidateIneq in *.
+  destruct dEnvValidateIneqB eqn: ii; cut.
+  inv ee.
+  unfold dEnvEval in *.
+  dEnvGetUnf.
+  simpl in *.
+  splau.
+  splau.
+  intro. subst.
+  contradict ii.
+  unfold dEnvValidateIneqB.
+  simpl.
+  dec v_dec.
+  simpl.
+  discriminate.
+Qed.
+
+
+Lemma dEnvAddPhi'Consistent : forall p env env',
+  dEnvConsistent env ->
+  dEnvAddPhi' p env = Some env' ->
+  dEnvConsistent env'.
+Proof.
+  intros.
+  destruct p0; simpl in *.
+  - inv H0.
+    assumption.
+  - destruct (dEnvEnsure e env) eqn: ee1; cut.
+    destruct p0.
+    destruct (dEnvEnsure e0 d) eqn: ee2; cut.
+    destruct p0.
+    eapply dEnvEnsureConsistent in ee1; eauto.
+    eapply dEnvEnsureConsistent in ee2; eauto.
+    eapply dEnvMergeRecConsistent in H0; eauto.
+  - destruct (dEnvEnsure e env) eqn: ee1; cut.
+    destruct p0.
+    destruct (dEnvEnsure e0 d) eqn: ee2; cut.
+    destruct p0.
+    eapply dEnvEnsureConsistent in ee1; eauto.
+    eapply dEnvEnsureConsistent in ee2; eauto.
+    eapply dEnvAddIneqConsistent in H0; eauto.
+  - destruct (dEnvEnsure e env) eqn: ee; cut.
+    destruct p0.
+    assert (dEnvConsistent d) as cons.
+      eapply dEnvEnsureConsistent in ee; eauto.
+    eapply dEnvEnsureEvals in ee; eauto.
+    eapply dEnvEvalsKnown in ee; eauto.
+    eapply dEnvAddAccConsistent in H0; eauto.
+Qed.
+
+Lemma dEnvAddPhi'Works : forall p env env',
+  dEnvConsistent env ->
+  dEnvAddPhi' p env = Some env' ->
+  dEnvEvalPhi' p env' /\
+  incl 
+    (footprint' (dEnvGetHeap env') (dEnvGetRho env') p)
+    (dEnvGetAccess env').
+Proof.
+  intros.
+  destruct p0; simpl in *.
+  - split.
+    * eca.
+    * apply inclEmpty.
+  - destruct (dEnvEnsure e env) eqn: ee1; cut.
+    destruct p0.
+    destruct (dEnvEnsure e0 d) eqn: ee2; cut.
+    destruct p0.
+    assert (dEnvConsistent d) as Hd.
+      apply dEnvEnsureConsistent in ee1; auto.
+    assert (dEnvConsistent d0) as Hd0.
+      apply dEnvEnsureConsistent in ee2; auto.
+    apply dEnvEnsureEvals in ee1; auto.
+    eapply dEnvEnsureEvalsForward in ee1; eauto.
+    apply dEnvEnsureEvals in ee2; auto.
+    eapply dEnvMergeRecWorks in H0; eauto. unf.
+    split.
+    * eca.
+    * apply inclEmpty.
+  - destruct (dEnvEnsure e env) eqn: ee1; cut.
+    destruct p0.
+    destruct (dEnvEnsure e0 d) eqn: ee2; cut.
+    destruct p0.
+    assert (dEnvConsistent d) as Hd.
+      apply dEnvEnsureConsistent in ee1; auto.
+    assert (dEnvConsistent d0) as Hd0.
+      apply dEnvEnsureConsistent in ee2; auto.
+    apply dEnvEnsureEvals in ee1; auto.
+    eapply dEnvEnsureEvalsForward in ee1; eauto.
+    apply dEnvEnsureEvals in ee2; auto.
+    eapply dEnvAddIneqWorks in H0; eauto. unf.
+    split.
+    * eca.
+    * apply inclEmpty.
+  - destruct (dEnvEnsure e env) eqn: ee; cut.
+    destruct p0.
+    assert (dEnvConsistent d) as Hd.
+      apply dEnvEnsureConsistent in ee; auto.
+    apply dEnvEnsureEvals in ee; auto.
+    unfold dEnvAddAcc in H0.
+    destruct v; cut.
+    destruct dEnvValidateAcc eqn: de; cut.
+    inv H0.
+    unfold dEnvValidateAcc in de.
+    destruct dEnvValidateAccB eqn: ii; cut.
+    inv de.
+    split.
+    * eca.
+      apply in_eq.
+    * unfold dEnvEval in ee.
+      dEnvGetUnf.
+      simpl.
+      rewrite ee.
+      apply inclSingle.
+      apply in_eq.
+Qed.
+
+Lemma dEnvAddPhi'Forward : forall p env env' p',
+  dEnvAddPhi' p' env = Some env' ->
+  dEnvEvalPhi p env ->
+  dEnvEvalPhi p env'.
+Proof.
+Admitted.
+
+Lemma dEnvFromPhiConsistent : forall p env,
+  dEnvFromPhi p = Some env ->
+  dEnvConsistent env.
+Proof.
+  induction p0; intros; simpl in *.
+  - inv H.
+    apply dEnvNewConsistent.
+  - destruct dEnvFromPhi; cut.
+    apply dEnvAddPhi'Consistent in H; auto.
+Qed.
+
+Lemma evalsInCons : forall h r a p,
+  evalsIn h r (staticFootprint (a :: p)) (footprint h r (a :: p)) ->
+  evalsIn h r (staticFootprint p) (footprint h r p).
+Proof.
+  unfold evalsIn.
+  intros.
+  destruct a; cut.
+  simpl in *.
+  rewrite map_app in H.
+  
+  remember (A'_s2A'_d h r (e, f)) as aa.
+  unfold A'_s2A'_d in Heqaa. subst.
+  
+  simpl in *.
+  destruct evale';
+  simpl in *.
+  - destruct v.
+    * destruct (footprint h r p0); cut.
+    * simpl in *. inv H. auto.
+  - destruct (footprint h r p0); cut.
+Qed.
+
+Lemma dEnvFromPhiWorks : forall p env,
+  dEnvFromPhi p = Some env ->
+  dEnvEvalPhi p env /\
+  dEnvGetAccess env = footprint (dEnvGetHeap env) (dEnvGetRho env) p.
+Proof.
+  induction p0; intros.
+    simpl in *.
+    inv H.
+    repeat constructor.
+  simpl in *.
+  destruct dEnvFromPhi eqn: ee; cut.
+  specialize (IHp0 d).
+  apply eqImpl in IHp0.
+  unf.
+  assert (evalsIn (dEnvGetHeap d) (dEnvGetRho d)
+          (staticFootprint p0)
+          (footprint (dEnvGetHeap d) (dEnvGetRho d) p0))
+  as evalsIn_d.
+    eapp evalphiVSfp.
+  eapply dEnvAddPhi'Forward in H0; eauto.
+  assert (evalsIn (dEnvGetHeap env) (dEnvGetRho env)
+          (staticFootprint p0)
+          (footprint (dEnvGetHeap env) (dEnvGetRho env) p0))
+  as evalsIn_env.
+    eapp evalphiVSfp.
+  eapply dEnvFromPhiConsistent in ee; eauto.
+  assert (H' := H).
+  apply dEnvAddPhi'Works in H'; auto. unf.
+  
+  split.
+  * eca.
+    - eapp evalphi'FootprintAccess.
+    - eapp evalphiRemoveAexcept.
+      destruct a; cut.
+      simpl in *.
+      destruct dEnvEnsure eqn: eva; cut.
+      destruct p1.
+      assert (forall e v, dEnvEval e d = Some v → dEnvEval e d0 = Some v)
+      as fw.
+        intros.
+        eapp dEnvEnsureEvalsForward.
+      unfold dEnvEval in fw.
+      (* forward H1 *)
+      erewrite dEnvEnsureEvalsForwardAccess in H1; eauto.
+      assert (footprint (dEnvGetHeap d) (dEnvGetRho d) p0 = footprint (dEnvGetHeap d0) (dEnvGetRho d0) p0)
+      as accx.
+        generalize p0 evalsIn_d evalsIn_env.
+        clear p0 evalsIn_d evalsIn_env H0 H1 H H2 H3 eva.
+        induction p0; cut.
+        intros.
+        destruct a; cut.
+        simpl.
+        rewrite IHp0.
+          Focus 2. eapp evalsInCons.
+          Focus 2. eapp evalsInCons.
+        assert (In (e0, f0) (staticFootprint (phiAcc e0 f0 :: p0))) as inn. apply in_eq.
+        eappIn evalsInIn evalsIn_d.
+        unfold A'_s2A'_d in evalsIn_d.
+        simpl in evalsIn_d.
+        unf.
+        destruct evale' eqn: eva; cut.
+        apply fw in eva; eauto.
+        rewrite eva. auto.
+      rewrite accx in H1. clear accx.
+      apply dEnvEnsureEvals in eva; auto.
+      unfold dEnvAddAcc in *.
+      destruct v; cut.
+      destruct dEnvValidateAcc eqn: val; cut.
+      inv H.
+      unfold dEnvEval in *.
+      dEnvGetUnf.
+      destruct d0.
+      destruct p1, p2.
+      destruct p1, p2.
+      simpl in *.
+      rewrite eva in *.
+      subst.
+      unfold dEnvValidateAcc, dEnvValidateAccB in *.
+      simpl in val.
+      destruct existsb eqn: ex; cut.
+      apply not_true_iff_false in ex.
+      rewrite existsb_exists in ex.
+      unfold disjoint.
+      intros.
+      eapply not_ex_all_not in ex.
+      apply not_and_or in ex.
+      inv ex; eauto.
+      apply or_intror. intro. contradict H.
+      apply InSingle in H1. subst.
+      dec A'_d_dec; cut.
+  * destruct a; simpl in *.
+    - inv H.
+      assumption.
+    - admit.
+    - admit.
+    - admit.
+Admitted.
+
+Definition o2b {T:Type} (x : option T) : bool := match x with
+                                                 | None => false
+                                                 | _ => true
+                                                 end.
+Definition phiSatisfiableB (p : phi) : bool := o2b (dEnvFromPhi p).
+
+Theorem phiSatisfiableDec : forall p,
+  phiSatisfiable p <->
+  phiSatisfiableB p = true.
+Proof.
+  split; intros.
+  - invE H h.
+    invE H r.
+    invE H a.
+    admit.
+  - unfold phiSatisfiableB, o2b in *.
+    destruct dEnvFromPhi eqn: ee; cut.
+    destruct d.
+    destruct p1, p2.
+    destruct p1, p2.
+    exists h.
+    exists r.
+    exists a.
+    apply dEnvFromPhiWorks in ee.
+    cut.
+Admitted.
+
+(* IMPLICATION *)
+Check dEnvEvalPhi'.
+
+Definition dEnvGuaranteesIneq (e1 e2 : e) (env : dEnv) : bool :=
+  match dEnvEval e1 env with
+  | None => false
+  | Some v1 =>
+    match dEnvEval e2 env with
+    | None => false
+    | Some v2 =>
+      negb (o2b (dEnvMergeRec v1 v2 env))
+    end
+  end.
+
+Definition phiInequalities (p : phi) : list (prod e e) :=
+  flat_map
+  (fun p => match p with
+            | phiNeq e1 e2 => [(e1, e2)]
+            | _ => []
+            end)
+  p.
+
+Definition dEnvImplies' (env : dEnv) (p : phi) : bool :=
+  evalphiB (dEnvGetHeap env) (dEnvGetRho env) (dEnvGetAccess env) p &&
+  forallb (fun ineq => dEnvGuaranteesIneq (fst ineq) (snd ineq) env) (phiInequalities p).
+
+Definition phiImpliesB (p1 p2 : phi) : bool :=
+  match dEnvFromPhi p1 with
+  | None => true
+  | Some env => dEnvImplies' env p2
+  end.
+
+(*
+note: dEnvEvalPhi is NOT the same!
+  More specifically: It does not GUARANTEE inequalities, but merely states that, so far, they are plausible
+  If dEnvImplies' agrees on an inequality, the environment CANNOT ever be enhanced to break the inequality
+ *)
+
+(* test *)
+(* unsat: a.f.x = b.g.y * a.f = c * b.g = d * d.y = 3 * c.x <> 3 *)
+Open Scope string.
+Definition t_ea : e := ex (xUserDef "a").
+Definition t_eb : e := ex (xUserDef "b").
+Definition t_ec : e := ex (xUserDef "c").
+Definition t_ed : e := ex (xUserDef "d").
+Eval compute in phiSatisfiableB
+  [ phiAcc t_ea "f"
+  ; phiAcc t_eb "f"].
+Eval compute in o2b (dEnvFromPhi 
+  [ phiAcc t_ea "f"
+  ; phiAcc t_eb "f"
+  ; phiEq t_ea t_eb]).
+Eval compute in phiSatisfiableB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))].
+Eval compute in phiSatisfiableB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 4))].
+
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 4))]
+  [phiAcc t_ea "h"].
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y")
+  ; phiEq (edot t_ea "f") t_ec
+  ; phiEq (edot t_eb "g") t_ed
+  ; phiEq (edot t_ed "y") (ev (vn 3))
+  ; phiEq (edot t_ec "x") (ev (vn 3))]
+  [phiAcc t_ea "h"].
+Eval compute in phiImpliesB
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y") ]
+  [ phiEq (edot (edot t_ea "f") "x") (edot (edot t_eb "g") "y") ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "f" ]
+  [ phiNeq t_ea t_eb ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g" ]
+  [ phiNeq t_ea t_eb ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g"; phiEq t_eb t_ea ]
+  [ phiAcc t_eb "f"; phiAcc t_ea "g" ].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "f"; phiAcc t_eb "g"; phiEq t_eb t_ea ]
+  [ phiAcc t_eb "f"; phiAcc t_ea "f" ].
+Eval compute in phiImpliesB
+  [ phiEq t_ea t_eb ]
+  [ phiEq (edot t_ea "x") (edot t_eb "x")].
+Eval compute in phiImpliesB
+  [ phiAcc t_ea "x";
+    phiEq t_ea t_eb ]
+  [ phiAcc t_ea "x";
+    phiEq (edot t_ea "x") (edot t_ea "x")].
+Eval compute in phiImpliesB
+  [ phiNeq (edot t_ea "x") (edot t_eb "x") ]
+  [ phiNeq t_ea t_eb].
+Eval compute in phiImpliesB
+  [ phiEq t_ea (edot (edot (edot t_ea "f") "f") "f") ]
+  [ phiEq t_ea (edot (edot (edot (edot (edot (edot t_ea "f") "f") "f") "f") "f") "f") ].
+Eval compute in phiImpliesB
+  [ phiEq t_ea (edot (edot t_ea "f") "f") ]
+  [ phiEq t_ea (edot (edot (edot (edot (edot (edot t_ea "f") "f") "f") "f") "f") "f") ].
+Close Scope string.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fixpoint eSubste (eq : prod e e) (e' : e) : e :=
+	  if e_dec e' (fst eq)
+	  then (snd eq)
+	  else match e' with
+	       | edot e f => edot (eSubste eq e) f
+	       | _ => e'
+	       end.
+
+Lemma eSubstseEval : forall H r e a b,
+  evale' H r a = evale' H r b ->
+  evale' H r (eSubste (a, b) e) = evale' H r e.
+Proof.
+  induction e; intros;
+  unfold eSubste;
+  fold eSubste.
+  - dec (e_dec (ev v) (fst (a, b)));
+    auto.
+  - dec (e_dec (ex x) (fst (a, b)));
+    auto.
+  - dec (e_dec (edot e f) (fst (a, b)));
+    auto.
+    apply IHe in H0.
+    simpl.
+    rewrite H0.
+    auto.
+Qed.
+
+Definition eSubstsEnum (e1 e2 : e) (e' : e) : list e :=
+  [ e'
+  ; eSubste (e1, e2) e'
+  ; eSubste (e2, e1) e'
+  ].
+
+Lemma eSubstsEnumEval : forall H r e a b,
+  evale' H r a = evale' H r b ->
+  forall e', In e' (eSubstsEnum a b e) ->
+  evale' H r e' = evale' H r e.
+Proof.
+  intros.
+  unfold eSubstsEnum in *.
+  inversionx H1; auto.
+  inversionx H2; try eapp eSubstseEval.
+  inversionx H1; try eapp eSubstseEval.
+  inversionx H2.
+Qed.
+
+Definition phi'SubstsEnum (a b : e) (p : phi') : list phi' :=
+  match p with
+  | phiTrue => [phiTrue]
+  | phiEq e1 e2 => map (fun p => phiEq (fst p) (snd p)) 
+                       (list_prod (eSubstsEnum a b e1)
+                                  (eSubstsEnum a b e2))
+  | phiNeq e1 e2 => map (fun p => phiNeq (fst p) (snd p)) 
+                       (list_prod (eSubstsEnum a b e1)
+                                  (eSubstsEnum a b e2))
+  | phiAcc e f => map (fun e => phiAcc e f)
+                       (eSubstsEnum a b e)
+  end.
+
+Lemma in_list_prod : forall {T : Type} (a b : T) aa bb,
+  In (a, b) (list_prod aa bb) <->
+  In a aa /\ In b bb.
+Proof.
+  induction aa;
+  intros;
+  simpl in *.
+  - tauto.
+  - split; intros.
+    * apply in_app_iff in H.
+      inversionx H.
+      + apply in_map_iff in H0. unf.
+        inversionx H0.
+        auto.
+      + apply IHaa in H0.
+        unf.
+        auto.
+    * unf.
+      apply in_app_iff.
+      rewrite IHaa.
+      inversionx H0; auto.
+      constructor.
+      apply in_map_iff.
+      eex.
+Qed.
+
+
+Lemma phi'SubstsEnumFP : forall H r p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phi'SubstsEnum a b p) ->
+  footprint' H r p' = footprint' H r p.
+Proof.
+  intros.
+  destruct p0;
+  unfold phi'SubstsEnum in *.
+  - inversionx H1; tauto.
+  - apply in_map_iff in H1. unf. subst.
+    tauto.
+  - apply in_map_iff in H1. unf. subst.
+    tauto.
+  - apply in_map_iff in H1. unf. subst.
+    eappIn eSubstsEnumEval H3.
+    simpl.
+    rewrite H3.
+    tauto.
+Qed.
+
+Lemma phi'SubstsEnumEval : forall H r A p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phi'SubstsEnum a b p) ->
+  evalphi' H r A p' <-> evalphi' H r A p.
+Proof.
+  intros.
+  destruct p0;
+  unfold phi'SubstsEnum in *.
+  - inversionx H1; tauto.
+  - apply in_map_iff in H1. unf. subst.
+    destruct x. simpl.
+    apply in_list_prod in H3. unf.
+    eappIn eSubstsEnumEval H1;
+    eappIn eSubstsEnumEval H2;
+    intro;
+    inversionx H3; eca;
+    unfold evale in *;
+    try rewrite H1 in *;
+    try rewrite H2 in *;
+    eauto.
+  - apply in_map_iff in H1. unf. subst.
+    destruct x. simpl.
+    apply in_list_prod in H3. unf.
+    eappIn eSubstsEnumEval H1;
+    eappIn eSubstsEnumEval H2;
+    intro;
+    inversionx H3; eca;
+    unfold evale in *;
+    try rewrite H1 in *;
+    try rewrite H2 in *;
+    eauto.
+  - apply in_map_iff in H1. unf. subst.
+    eappIn eSubstsEnumEval H3;
+    intro;
+    inversionx H1; eca;
+    unfold evale in *;
+    try rewrite H3 in *;
+    eauto.
+Qed.
+
+Fixpoint phiSubstsEnum (a b : e) (p : phi) : list phi :=
+  match p with
+  | [] => [[]]
+  | p :: ps => flat_map (fun ps => map (fun p => p :: ps) 
+                                  (phi'SubstsEnum a b p))
+                        (phiSubstsEnum a b ps)
+  end.
+
+
+Lemma phiSubstsEnumFP : forall H r p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phiSubstsEnum a b p) ->
+  footprint H r p' = footprint H r p.
+Proof.
+  induction p0;
+  intros;
+  simpl in *.
+  - inversionx H1; tauto.
+  - apply in_flat_map in H1. unf.
+    apply in_map_iff in H3. unf. subst.
+    apply IHp0 in H1; auto.
+    eappIn phi'SubstsEnumFP H4.
+    simpl.
+    rewrite H1, H4.
+    tauto.
+Qed.
+
+Lemma phiSubstsEnumEval : forall H r A p a b,
+  evale' H r a = evale' H r b ->
+  forall p', In p' (phiSubstsEnum a b p) ->
+  evalphi H r A p' <-> evalphi H r A p.
+Proof.
+  induction p0;
+  intros.
+  - inversionx H1;
+    tauto.
+  - simpl in *.
+    apply in_flat_map in H1. unf.
+    apply in_map_iff in H3. unf.
+    subst.
+    assert (footprint' H r x0 = footprint' H r a) as fp'Eq.
+      eappIn phi'SubstsEnumFP H0.
+    assert (footprint H r x = footprint H r p0) as fpEq.
+      eappIn phiSubstsEnumFP H0.
+    eapply phi'SubstsEnumEval in H4; eauto.
+    eapply IHp0 in H1; eauto.
+    rewrite (cons2app x0).
+    rewrite (cons2app a).
+    split; intros;
+    apply evalphiSymm in H2;
+    apply evalphiSymm;
+    eappIn evalphiApp H2; inversionx H2;
+    eapp evalphiAppRev;
+    try eapp H1;
+    inversionx H5; eca;
+    try rewrite fp'Eq in *;
+    try rewrite fpEq in *;
+    auto;
+    eapp H4.
+Qed.
+
+
+Definition eSubstsEnumContainsOrig : forall p e1 e2,
+  In p (eSubstsEnum e1 e2 p).
+Proof.
+  unfold eSubstsEnum.
+  intros.
+  apply in_eq.
+Qed.
+Definition phi'SubstsEnumContainsOrig : forall p e1 e2,
+  In p (phi'SubstsEnum e1 e2 p).
+Proof.
+  unfold phi'SubstsEnum.
+  intros.
+  destruct p0.
+  - apply in_eq.
+  - apply in_map_iff.
+    exists (e, e0).
+    split; auto.
+    apply in_list_prod.
+    split; apply eSubstsEnumContainsOrig.
+  - apply in_map_iff.
+    exists (e, e0).
+    split; auto.
+    apply in_list_prod.
+    split; apply eSubstsEnumContainsOrig.
+  - apply in_map_iff.
+    eex.
+    apply eSubstsEnumContainsOrig.
+Qed.
+Definition phiSubstsEnumContainsOrig : forall p e1 e2,
+  In p (phiSubstsEnum e1 e2 p).
+Proof.
+  induction p0; intros; simpl; auto.
+  apply in_flat_map. exists p0.
+  split. apply IHp0.
+  apply in_map_iff.
+  eex.
+  apply phi'SubstsEnumContainsOrig.
+Qed.
+
+Definition phiSubstsEnumImplies : forall p e1 e2,
+  forall p',
+  In p' (phiSubstsEnum e1 e2 p) ->
+  phiImplies (phiEq e1 e2 :: p) p'.
+Proof.
+  unfold phiImplies.
+  intros.
+  inversionx H0.
+  eappIn phiSubstsEnumEval H.
+    eapp H. eapp evalphiAexcept.
+  inversionx H10.
+  rewrite H3, H8.
+  auto.
+Qed.
+
+Definition phiSubstsEnumImpliesBack : forall p e1 e2,
+  exists p',
+  In p' (phiSubstsEnum e1 e2 p) /\
+  phiImplies p' p.
+Proof.
+  unfold phiImplies.
+  intros.
+  exists p0.
+  split. apply phiSubstsEnumContainsOrig.
+  tauto.
+Qed.
+
+Inductive phiImplySplit : phi -> phi -> phi -> phi -> Prop :=
+| PIS : forall p1,
+  phiImplySplit p1 [] [] []
+| PIS1 : forall p1 p p2 p2a p2b,
+  phiImplySplit p1 p2 p2a p2b ->
+  phiImplies p1 [p] ->
+  phiImplySplit p1 (p :: p2) (p :: p2a) p2b
+| PIS2 : forall p1 p p2 p2a p2b,
+  phiImplySplit p1 p2 p2a p2b ->
+  ~ phiImplies p1 [p] ->
+  phiImplySplit p1 (p :: p2) p2a (p :: p2b)
+.
+
+Definition phiJoin (a b c : phi) : Prop :=
+  exists b1 b2 a1 a2, phiImplySplit a b b1 b2
+                   /\ phiImplySplit b2 a a1 a2
+                   /\ c = b1 ++ a1.
+
+(* wrong!
+Case:
+a = x * x = b
+\/
+a = y * y = b
+->
+a = b
+ *)
+Lemma phiJoinTest1 : forall x y f g,
+  x <> y ->
+  f <> g ->
+  phiJoin
+    [phiAcc x f; phiAcc y g; phiEq x y; phiEq (edot x f) (ev (vn 3)); phiNeq (edot x f) (ev (vn 5))]
+    [phiAcc y f; phiNeq (edot x f) (ev (vn 4))]
+    [phiAcc y f; phiNeq (edot x f) (ev (vn 4))].
+Proof.
+  intros.
+  exists [phiAcc y f; phiNeq (edot x f) (ev (vn 4))].
+  exists [].
+  exists [].
+  exists [phiAcc x f; phiAcc y g; phiEq x y; phiEq (edot x f) (ev (vn 3)); phiNeq (edot x f) (ev (vn 5))].
+  repeat split.
+  - eca. eca. eca.
+    * repeat intro.
+      inversionx H1.
+      inversionx H12.
+      inversionx H14.
+      inversionx H16.
+      inversionx H17.
+      common. inversionx H14.
+      repeat eca.
+      + apply inclEmpty.
+      + discriminate.
+    * repeat intro.
+      inversionx H1.
+      inversionx H12.
+      inversionx H14.
+      inversionx H11.
+      inversionx H15.
+      common. rewrite H10 in *. inversionx H4.
+      repeat eca;
+      simpl in *;
+      rewrite H10, H14 in *.
+      + assumption.
+      + apply in_eq.
+  - eca. eca. eca. eca. eca. eca.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct (evale' newHeap newRho x); inversionx H5.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct (evale' newHeap newRho x); inversionx H5.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct x, y; simpl in *; try discriminate.
+      + inversionx H10.
+        inversionx H5.
+        tauto.
+      + destruct (evale' newHeap newRho y); inversionx H10.
+        destruct v0; inversionx H3.
+      + destruct (evale' newHeap newRho x); inversionx H5.
+        destruct v0; inversionx H3.
+      + destruct (evale' newHeap newRho y); inversionx H10.
+        destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct y; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho y); inversionx H9.
+      destruct v; inversionx H3.
+    * intuition.
+      specialize (H1 newHeap newRho newAccess).
+      lapply H1; try constructor.
+      intro.
+      inversionx H2.
+      inversionx H12.
+      unfold evale in *.
+      simpl in *.
+      destruct x; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho x); inversionx H9.
+      destruct v; inversionx H3.
+Qed.
+
+Lemma phiJoinTest2 : forall x y f,
+  x <> y ->
+  phiJoin
+    [phiAcc x f]
+    [phiAcc y f]
+    [].
+Proof.
+  intros.
+  exists [].
+  exists [phiAcc y f].
+  exists [].
+  exists [phiAcc x f].
+  repeat split.
+  - eca. eca.
+    intuition.
+    admit.
+  - eca. eca.
+    intuition.
+    admit.
+Admitted.
+
+Lemma phiJoinTest3 : forall x y f,
+  x <> y ->
+  phiJoin
+    [phiAcc x f; phiEq x y]
+    [phiAcc y f; phiEq x y]
+    [phiAcc y f; phiEq x y].
+Proof.
+  intros. rename H into ug.
+  exists [phiAcc y f; phiEq x y].
+  exists [].
+  exists [].
+  exists [phiAcc x f; phiEq x y].
+  repeat split.
+  - eca. eca. eca.
+    * repeat intro.
+      inversionx H.
+      eapp evalphiAexcept.
+    * repeat intro.
+      inversionx H.
+      inversionx H10.
+      inversionx H9.
+      inversionx H11.
+      common. rewrite H7 in *. inversionx H2.
+      repeat eca;
+      simpl in *;
+      rewrite H7, H10 in *.
+      + assumption.
+      + apply in_eq.
+  - eca. eca. eca.
+    * intuition.
+      specialize (H newHeap newRho newAccess).
+      lapply H; try constructor.
+      intro.
+      inversionx H0.
+      inversionx H10.
+      unfold evale in *.
+      destruct x, y; simpl in *; try discriminate.
+      + inversionx H8.
+        inversionx H3.
+        tauto.
+      + destruct (evale' newHeap newRho y); inversionx H8.
+        destruct v0; inversionx H1.
+      + destruct (evale' newHeap newRho x); inversionx H3.
+        destruct v0; inversionx H1.
+      + destruct (evale' newHeap newRho y); inversionx H8.
+        destruct v; inversionx H1.
+    * intuition.
+      specialize (H newHeap newRho newAccess).
+      lapply H; try constructor.
+      intro.
+      inversionx H0.
+      inversionx H10.
+      unfold evale in *.
+      simpl in *.
+      destruct x; simpl in *; try discriminate.
+      destruct (evale' newHeap newRho x); inversionx H7.
+      destruct v; inversionx H1.
+Qed.
+
+Definition phiImpliesConsEqHelper : forall p p' px a e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) (a :: p') ->
+  In px (phiSubstsEnum e1 e2 p') ->
+  phiImplies p px ->
+  exists x,
+    In x (phi'SubstsEnum e1 e2 a) /\
+    phiImplies p (x :: px).
+Proof.
+  (* induction p0; intros.
+    assert (∀ H r A, evalphi H r A px) as tt.
+      eapp phiImpliesTauto.
+    admit.
+  specialize *)
+  destruct a; simpl.
+  - eex.
+    eapp phiImpliesTrans.
+    admit.
+  - admit.
+  - admit.
+  - intros.
+    
+Admitted.
+
+Fixpoint exprse (p : e) : list e :=
+  p :: match p with
+       | edot e _ => exprse e
+       | _ => []
+       end.
+
+Definition exprsphi' (p : phi') : list e :=
+  match p with
+  | phiTrue => []
+  | phiEq e1 e2 => exprse e1 ++ exprse e2
+  | phiNeq e1 e2 => exprse e1 ++ exprse e2
+  | phiAcc e _ => exprse e
+  end.
+
+Definition exprsphi (p : phi) : list e :=
+  flat_map exprsphi' p.
+
+(* Definition phiImpliesConsEqRemove : forall e1 e2 p1 p2,
+  ~ In e1 (exprsphi p1) ->
+  ~ In e1 (exprsphi p2) ->
+  phiImplies (phiEq e1 e2 :: p1) p2 ->
+  phiImplies p1 p2.
+Proof.
+  induction p2; intros.
+    eapp phiImpliesPrefix. 
+    eapp phiImpliesRefl.
+  simpl in *.
+  rewrite in_app_iff in H0.
+  apply not_or_and in H0. unf.
+  eappIn IHp2 H3.
+  Focus 2.
+    eapp phiImpliesTrans.
+    rewrite cons2app.
+    eapp phiImpliesSuffix.
+  unfold phiImplies. intros. *)
+  
+(*   wrong 
+
+a.f.x = b.g.y * a.f = c * b.g = d * d.y = 3  => c.x = 3
+                a.f = c * b.g = d * d.y = 3 !=> c.x = 3
+
+=> need ORDER!
+
+*)
+  
+
+Definition phiImpliesConsEq : forall p p' e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) p'
+  -> 
+  exists px,
+  In px (phiSubstsEnum e1 e2 p') /\
+  phiImplies p px.
+Proof.
+  intros.
+  Check phiSubstsEnumImpliesBack.
+  assert (forall px,
+      In px (phiSubstsEnum e1 e2 p') ->
+      phiImplies (phiEq e1 e2 :: p0) px).
+    unfold phiImplies.
+    intros.
+    eappIn phiSubstsEnumEval H1.
+      eapp H1.
+    inversionx H2. inversionx H12.
+    rewrite H5, H10.
+    auto.
+
+  induction p'; intros; simpl in *.
+    eex.
+    eapp phiImpliesPrefix. eapp phiImpliesRefl.
+  assert (phiImplies (phiEq e1 e2 :: p0) p') as IH.
+    eapp phiImpliesTrans.
+    rewrite cons2app. eapp phiImpliesSuffix.
+  apply IHp' in IH; auto.
+  invE IH px. unf.
+  assert (forall H r A,
+      evale' H r e1 = evale' H r e2 ->
+      evalphi H r A px <-> evalphi H r A p') as eph.
+    intros.
+    eappIn phiSubstsEnumEval H4; inversionx H4;
+    eauto.
+  clear H1.
+
+  
+  
+  
+  eappIn phiImpliesConsEqHelper H.
+  unf.
+  eexists (x :: px).
+  split; auto.
+  apply in_flat_map.
+  eex.
+  apply in_map_iff.
+  eex.
+Qed.
+
+Definition phiImpliesAccessHelper : forall p e f e1 e2,
+  phiSatisfiable (phiEq e1 e2 :: p) ->
+  phiImplies (phiEq e1 e2 :: p) [phiAcc e f]
+  -> 
+    phiImplies p [phiAcc e f]
+  ∨ phiImplies p [phiAcc (eSubste (e1, e2) e) f]
+  ∨ phiImplies p [phiAcc (eSubste (e2, e1) e) f].
+Proof.
+  induction p0; intros.
+  - contradict H0.
+    invE H h.
+    invE H r.
+    invE H a.
+    apply evalphiFootprintAccess in H. simpl in *.
+    
+    unfold phiImplies.
+    apply ex_not_not_all.
+    exists h.
+    apply ex_not_not_all.
+    exists r.
+    apply ex_not_not_all.
+    exists [].
+    apply ex_not_not_all.
+    eexists. assumption.
+    intuition.
+    inversionx H0.
+    inversionx H10.
+    simpl in *. rewrite H7 in *.
+    apply inclEmptyFalse in H5.
+    tauto.
+  - assert (phiSatisfiable (phiEq e1 e2 :: p0)) as IH.
+      invE H h'.
+      invE H r'.
+      invE H a'.
+      exists h'. exists r'. exists a'.
+      inversionx H. eca.
+      inversionx H11. common.
+      eapp evalphiAexcept.
+    
+Admitted.
+
+(* Definition phiImpliesAccessHelper2 : forall *)
+
+Lemma evalphiInclFootprint : forall p1 p2,
+  phiImplies p1 p2 ->
+  forall H r,
+    evalphi H r (footprint H r p1) p1 ->
+    incl (footprint H r p2) (footprint H r p1).
+Proof.
+  intros.
+  apply H in H1.
+  eapp evalphiImpliesAccess.
+Qed.
+
+Definition phiImpliesAccess : forall p e f,
+  phiSatisfiable p ->
+  phiImplies p [phiAcc e f] ->
+  exists e', In (phiAcc e' f) p /\ phiImplies p [phiEq e e'].
+Proof.
+  intros.
+  assert (forall H r A, 
+      evalphi H r A p0 ->
+      exists o,
+        evale' H r e = Some (vo o) /\
+        In (o, f) A).
+    intros.
+    apply H0 in H2.
+    inversionx H2.
+    inversionx H12.
+    eex.
+  
+  Check evalphiVSfp.
+  
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    evalsIn H r (staticFootprint p0) (footprint H r p0) /\
+    evalsIn H r (staticFootprint [phiAcc e f]) (footprint H r [phiAcc e f]) /\
+    incl (footprint H r [phiAcc e f]) (footprint H r p0)) as HH.
+    intros.
+    split. eapp evalphiVSfp.
+    split. apply H0 in H3. eapp evalphiVSfp.
+    eapp evalphiInclFootprint.
+  Check dynamicASstaticFP.
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    incl (footprint H r [phiAcc e f]) 
+         (oflatten (map (A'_s2A'_d H r) (staticFootprint p0))) /\
+    exists o, evale' H r e = Some (vo o)) as HHH.
+    intros.
+    repeat rewriteRev dynamicASstaticFP.
+    split. eapp evalphiInclFootprint.
+    apply H0 in H3.
+    inversionx H3. inversionx H13.
+    eex.
+  assert (forall H r,
+    evalphi H r (footprint H r p0) p0 ->
+    exists e' o,
+    In (phiAcc e' f) p0 /\
+    evale' H r e' = Some (vo o) /\
+    evale' H r e = Some (vo o)
+    ) as HHHH.
+    intros.
+    apply HHH in H3.
+    unf.
+    simpl in *.
+    rewrite H3 in H4.
+    rewrite app_nil_r in *.
+    apply inclSingle in H4.
+    apply InOflatten in H4.
+    apply in_map_iff in H4.
+    unf.
+    unfold staticFootprint in H6.
+    apply in_flat_map in H6.
+    unf.
+    destruct x1; try tauto.
+    simpl in *.
+    inversionx H7; try tauto.
+    unfold A'_s2A'_d in H4.
+    simpl in *.
+    destruct (evale' H2 r e0) eqn: H3'; try discriminate.
+    destruct v; try discriminate.
+    simpl in *.
+    inversionx H4.
+    eex.
+  assert (forall H r a,
+    evalphi H r a p0 ->
+    exists e',
+    In (phiAcc e' f) p0 /\
+    evalphi H r [] [phiEq e e']
+    ) as HHHHH.
+    intros.
+    apply evalphiFootprintAccess in H3.
+    apply HHHH in H3.
+    unf.
+    eex.
+    repeat eca.
+    apply inclEmpty.
+
+  destruct (classic (In (phiAcc e f) p0)).
+    eex. unfold phiImplies. intros.
+    assert (H3' := H3).
+    eappIn evalphiIn H2. inversionx H2.
+    repeat eca.
+    apply inclEmpty.
+  rename H2 into ni.
+
+  invE H h.
+  invE H r.
+  invE H a.
+  assert (H' := H).
+  apply HHHHH in H'. invE H' e'. unf.
+  eex.
+  unfold phiImplies.
+  intros.
+  assert (H4' := H4).
+  apply HHHHH in H4'. invE H4' e''. unf.
+  apply H0 in H.
+  apply H0 in H4.
+  
+  assert (e' = e'').
+  Focus 2. subst. eapp evalphiIncl. apply inclEmpty.
+  
+  
+Admitted.
+
+
+Definition joinExists : forall p1 p2,
+  exists p, phiImplies p1 p /\ phiImplies p2 p /\
+  forall p', (phiImplies p1 p' /\ phiImplies p2 p') -> phiImplies p p'.
+Proof.
+  induction p1; intros.
+  - exists [].
+    split. eapp phiImpliesRefl.
+    split. eapp phiImpliesPrefix. eapp phiImpliesRefl.
+    intros. unf.
+    auto.
+  - destruct (classic (exists e f, a = phiAcc e f)).
+    * unf. subst.
+      admit.
+    * destruct (classic (phiImplies p1 [a])).
+        specialize (IHp1 p2). unf.
+        exists x.
+        split.
+          unfold phiImplies. intros.
+          inversionx H3. eapp H2.
+          eapp evalphiAexcept.
+        split. auto.
+        intros.
+        unf.
+        eapp H4.
+        admit. (* yes *)
+      destruct (classic (phiImplies p2 [a])).
+        specialize (IHp1 p2). unf.
+        exists (a :: x).
+        split.
+          unfold phiImplies. intros.
+          inversionx H4. eca.
+        split.
+          unfold phiImplies. intros.
+          assert (footprint' h r a = []) as fp.
+            destruct a; auto. contradict H. eex.
+          eca.
+            rewrite fp. apply inclEmpty.
+            apply H1 in H4. inversionx H4. assumption.
+          rewrite fp. common.
+          eapp H2.
+        intros. unf.
+        unfold phiImplies. intros.
+        destruct (classic (phiImplies p1 p')).
+          eapp H5.
+          rewrite cons2app in H4.
+          eapp phiImpliesSuffix.
+        
+        
+        inversionx H4.
+        split. auto.
+        intros. unf.
+        eapp H4.
+        admit.
+Qed.
+
+
+Theorem supremumWD : forall pp,
+  exists p, ppHasSupremum p (pFromList pp).
+Proof.
+  induction pp.
+  - exists [phiFalse].
+    unfold ppHasSupremum.
+    unfold ppHasUpperBound.
+    split.
+    * intros.
+      inversionx H.
     * unfold phiImplies.
       intros.
-      constructor.
+      exfalso.
+      eapp phiFalseNotSat.
+      eex.
+  - unfold ppHasSupremum in *.
+    unfold ppHasUpperBound in *.
+    unf.
+
+Theorem alphaOptimal : forall pp1 gp1 pp2 gp2 pp3,
+  gAlpha pp1 gp2 ->
+  gGamma gp1 pp2 ->
+  gGamma gp2 pp3 ->
+  pincl pp1 pp2 ->
+  pincl pp3 pp2.
+Proof.
+  intros.
+  inversionx H;
+  inversionx H0;
+  inversionx H1.
+  - unfold
+      pincl,
+      gGamma',
+      ppIsSingleton
+    in *.
+    simpl. unf.
+    intros. subst.
+    eapp H2.
+  - unfold pincl, gGamma' in *.
+    simpl. intros. unf.
+    destruct gp1.
+    destruct b; simpl in *.
+    * unfold
+        ppHasSupremum,
+        ppIsSingleton
+      in *.
+      unf.
+      split; auto.
+      apply (phiImpliesTrans p1 p0 p2); auto.
+      eapp H8.
+      unfold ppHasUpperBound.
+      intros.
+      eapp H2.
+    * (* contradict *)
+      unfold
+        pincl,
+        ppHasSupremum,
+        ppIsSingleton
+      in *. unf.
+      inversionx H3. unf.
+      assert (x = p2). eapp H2. subst.
+      specialize (H4 p2). contradict H4.
+      split; auto.
+  - unfold pincl, gGamma' in *.
+    simpl. intros. unf.
+    destruct gp1.
+    destruct b; simpl in *.
+    * (* contradict everything but phi = true *)
+      split; auto.
+      destruct (classic (phiImplies [] p1)).
+        eapp phiImpliesTrans.
+      contradict H1.
+      clear H0 H7.
+      unfold phiImplies. intros. clear H0.
+      inversionx H3. unf. clear H1.
+      unfold ppIsSingleton in *.
+        specialize (H4 x).
+        apply not_and_or in H4.
+        inversionx H4; try tauto.
+        apply not_all_ex_not in H0. unf.
+        assert (pp1 x0). eapp not_imply_elim.
+        apply not_imply_elim2 in H1.
+      unfold ppHasSupremum in H5.
+    * (* contradict *)
+      unfold
+        pincl,
+        ppHasSupremum,
+        ppIsSingleton
+      in *.
+      inversionx H3. unf.
+      assert (x = p1). eapp H2. subst.
+      specialize (H4 p1). contradict H4.
+      split; auto.
 Qed.
 
 

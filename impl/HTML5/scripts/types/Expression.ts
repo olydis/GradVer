@@ -1,7 +1,9 @@
 import { VerificationFormula } from "./VerificationFormula";
-import { ValueExpression } from "./ValueExpression";
-import { FootprintStatic } from "./FootprintStatic";
+import { ValueExpression, Value, ValueObject } from "./ValueExpression";
+import { FootprintStatic } from "./Footprint";
 import { Type } from "./Type";
+
+import { EvalEnv } from "../runtime/EvalEnv";
 
 export abstract class Expression
 {
@@ -21,6 +23,7 @@ export abstract class Expression
     public abstract toString(): string;
     public abstract depth(): number;
     public abstract FV(): string[];
+    public abstract eval(env: EvalEnv): Value;
 
     public static eq(e1: Expression, e2: Expression): boolean
     {
@@ -90,6 +93,10 @@ export class ExpressionV extends Expression
         return 0;
     }
     public FV(): string[] { return []; }
+    public eval(env: EvalEnv): Value
+    {
+        return this.v;
+    }
 }
 
 export class ExpressionX extends Expression
@@ -125,6 +132,10 @@ export class ExpressionX extends Expression
         return 1;
     }
     public FV(): string[] { return [this.x]; }
+    public eval(env: EvalEnv): Value
+    {
+        return env.r[this.x];
+    }
 }
 
 export class ExpressionDot extends Expression
@@ -178,4 +189,15 @@ export class ExpressionDot extends Expression
             return thisx;
     }
     public FV(): string[] { return this.e.FV(); }
+    public eval(env: EvalEnv): Value
+    {
+        var inner = this.e.eval(env);
+        if (inner instanceof ValueObject)
+        {
+            var HEntry = env.H[inner.UID];
+            if (!HEntry) return null;
+            return HEntry.fs[this.f];
+        } 
+        return null;
+    }
 }

@@ -1,7 +1,8 @@
 import { EditInstructions } from "./editors/EditInstructions";
+import { EditVerificationFormula } from "./editors/EditVerificationFormula";
 import { EditableElement } from "./editors/EditableElement";
 import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
-import { Hoare } from "./runtime/Hoare";
+//import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 
 $(() =>
@@ -13,9 +14,38 @@ $(() =>
         main: []
     };
     var env = new ExecutionEnvironment(program);
-    var hoare = new Hoare(env);
+    //var hoare = new Hoare(env);
 
-    var editor = new EditInstructions($("#codeContainer"), hoare);
+    // containerProps
+    {
+        var input = new EditVerificationFormula("", phi => {
+            $("#containerPropsOutSat").text(phi.satisfiable() ? "yes" : "no");
+            $("#containerPropsOutSfrm").text(phi.sfrm() ? "yes" : "no");
+            $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
+        });
+        $("#containerPropsInput").append(input.createHTML());
+        
+    }
+    // containerWoVar
+    {
+        var update = () => {};
+        var input = new EditVerificationFormula("", () => update());
+        var inputVar = $("#containerWoVarInputVar");
+        inputVar.on("input", () => update());
+        update = () =>
+        {
+            var phi = input.getFormula();
+            var x = inputVar.val();
+            $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
+        };
+        $("#containerWoVarInput").append(input.createHTML());
+        
+    }
+
+    var editor = new EditInstructions(
+        $("#codeContainer")
+        //, hoare
+    );
     $("#btnVerify").click(() => editor.btnCheckAll());
     $("#btnHammer").click(() => editor.btnPropDownAll());
     $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
