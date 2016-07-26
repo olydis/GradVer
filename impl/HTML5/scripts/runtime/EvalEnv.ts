@@ -341,5 +341,23 @@ export class NormalizedEnv {
         delete env.r[x];
         return NormalizedEnv.create(this.ineq, env);
     }
+    private woAccInternal(o: number, f: string): NormalizedEnv
+    {
+        var env = cloneEvalEnv(this.env);
+        // if ()
+        // delete env.r[x];
+        return NormalizedEnv.create(this.ineq, env);
+    }
+    public woAcc(e: Expression, f: string): NormalizedEnv
+    {
+        return new VerificationFormula("TODO = TODO").createNormalizedEnv();
+        // if (new FormulaPartAcc(e, f).envImpiledBy(this))
+        // {
+        //     var v = e.eval(this.env);
+        //     if (v instanceof ValueObject)
+        //         return this.woAccInternal(v.UID, f);
+        //     throw "unreachable";
+        // }
+    }
 }
 

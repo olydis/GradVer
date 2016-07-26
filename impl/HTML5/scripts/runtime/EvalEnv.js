@@ -291,6 +291,22 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             delete env.r[x];
             return NormalizedEnv.create(this.ineq, env);
         };
+        NormalizedEnv.prototype.woAccInternal = function (o, f) {
+            var env = cloneEvalEnv(this.env);
+            // if ()
+            // delete env.r[x];
+            return NormalizedEnv.create(this.ineq, env);
+        };
+        NormalizedEnv.prototype.woAcc = function (e, f) {
+            return new VerificationFormula_1.VerificationFormula("TODO = TODO").createNormalizedEnv();
+            // if (new FormulaPartAcc(e, f).envImpiledBy(this))
+            // {
+            //     var v = e.eval(this.env);
+            //     if (v instanceof ValueObject)
+            //         return this.woAccInternal(v.UID, f);
+            //     throw "unreachable";
+            // }
+        };
         return NormalizedEnv;
     }());
     exports.NormalizedEnv = NormalizedEnv;
