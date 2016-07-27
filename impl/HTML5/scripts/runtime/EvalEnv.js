@@ -97,6 +97,35 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     v2: a.v2 == vo ? v : a.v2 };
             });
         };
+        NormalizedEnv.prototype.reachableObjects = function () {
+            var _this = this;
+            var dfs = function (e, seen, todo) {
+                var v = e.eval(_this.env);
+                todo(e, v);
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (seen.indexOf(o) == -1) {
+                        seen = seen.concat([o]);
+                        var he = _this.env.H[o];
+                        if (he) {
+                            var fs = he.fs;
+                            for (var f in fs)
+                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
+                        }
+                    }
+                }
+            };
+            var dfsx = function (todo) {
+                for (var x in _this.env.r)
+                    dfs(new Expression_1.ExpressionX(x), [], todo);
+            };
+            var reachableObjects = [];
+            dfsx(function (e, v) {
+                if (v instanceof ValueExpression_1.ValueObject)
+                    reachableObjects.push(v.UID);
+            });
+            return reachableObjects;
+        };
         NormalizedEnv.prototype.createFormula = function () {
             var _this = this;
             var dfs = function (e, seen, todo) {
@@ -333,26 +362,16 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return NormalizedEnv.create(this.ineq, env);
         };
         NormalizedEnv.prototype.woAcc = function (e, f) {
-            if (new VerificationFormula_1.FormulaPartAcc(e, f).envImpiledBy(this)) {
-                var v = e.eval(this.env);
-                if (v instanceof ValueExpression_1.ValueObject)
-                    return this.woAccInternal(v.UID, f);
-                throw "unreachable";
-            }
-            else {
-                var x = this;
-                for (var _i = 0, _a = this.env.A; _i < _a.length; _i++) {
-                    var a = _a[_i];
-                    if (a.f == f) {
-                        var ex = this.createExpression(a.o);
-                        if (ex && this.addEq(e, ex) == null) {
-                            continue; // aliasing apparently impossible
-                        }
-                        x = x.woAccInternal(a.o, f);
-                    }
+            var x = this;
+            for (var _i = 0, _a = this.reachableObjects(); _i < _a.length; _i++) {
+                var o = _a[_i];
+                var ex = this.createExpression(o);
+                if (ex && this.addEq(e, ex) == null) {
+                    continue; // aliasing apparently impossible
                 }
-                return x;
+                x = x.woAccInternal(o, f);
             }
+            return x;
         };
         return NormalizedEnv;
     }());

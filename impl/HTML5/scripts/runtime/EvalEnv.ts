@@ -124,6 +124,40 @@ export class NormalizedEnv {
         private env: EvalEnv = { H: {}, r: {}, A: [] })
     { }
 
+    private reachableObjects(): number[]
+    {
+        var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
+        {
+            var v = e.eval(this.env);
+            todo(e, v);
+            if (v instanceof ValueObject)
+            {
+                var o = v.UID;
+                if (seen.indexOf(o) == -1)
+                {
+                    seen = seen.concat([o]);
+                    var he = this.env.H[o];
+                    if (he)
+                    {
+                        var fs = he.fs;
+                        for (var f in fs)
+                            dfs(new ExpressionDot(e, f), seen, todo);
+                    }
+                }
+            }
+        };
+        var dfsx: (todo: (e: Expression, v: Value) => void) => void = todo =>
+        {
+            for (var x in this.env.r)
+                dfs(new ExpressionX(x), [], todo);
+        };
+        var reachableObjects: number[] = [];
+        dfsx((e, v) => {
+            if (v instanceof ValueObject)
+                reachableObjects.push(v.UID);
+        });
+        return reachableObjects;
+    }
     public createFormula(): VerificationFormula
     {
         var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
@@ -391,28 +425,17 @@ export class NormalizedEnv {
     }
     public woAcc(e: Expression, f: string): NormalizedEnv
     {
-        if (new FormulaPartAcc(e, f).envImpiledBy(this))
+        var x: NormalizedEnv = this;
+        for (var o of this.reachableObjects())
         {
-            var v = e.eval(this.env);
-            if (v instanceof ValueObject)
-                return this.woAccInternal(v.UID, f);
-            throw "unreachable";
+            var ex = this.createExpression(o);
+            if (ex && this.addEq(e, ex) == null)
+            {
+                continue; // aliasing apparently impossible
+            }
+            x = x.woAccInternal(o, f);
         }
-        else
-        {
-            var x: NormalizedEnv = this;
-            for (var a of this.env.A)
-                if (a.f == f)
-                {
-                    var ex = this.createExpression(a.o);
-                    if (ex && this.addEq(e, ex) == null)
-                    {
-                        continue; // aliasing apparently impossible
-                    }
-                    x = x.woAccInternal(a.o, f);
-                }
-            return x;
-        }
+        return x;
     }
 }
 
