@@ -28,6 +28,7 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
                 var x = inputVar.val();
                 $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
             };
+            update();
             $("#containerWoVarInput").append(input.createHTML());
         })();
         // containerWoAcc
@@ -45,6 +46,7 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
                 else
                     $("#containerWoAccOutput").text("format error");
             };
+            update();
             $("#containerWoAccInput").append(input.createHTML());
         })();
         // containerImplies
@@ -57,6 +59,7 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
                 var pB = inputB.getFormula();
                 $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
             };
+            update();
             $("#containerImpliesInputA").append(inputA.createHTML());
             $("#containerImpliesInputB").append(inputB.createHTML());
         })();

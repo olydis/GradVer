@@ -39,6 +39,7 @@ $(() =>
             var x = inputVar.val();
             $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
         };
+        update();
         $("#containerWoVarInput").append(input.createHTML());
     })();
     
@@ -58,6 +59,7 @@ $(() =>
             else
                 $("#containerWoAccOutput").text("format error");
         };
+        update();
         $("#containerWoAccInput").append(input.createHTML());
     })();
     
@@ -72,6 +74,7 @@ $(() =>
             var pB = inputB.getFormula();
             $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
         };
+        update();
         $("#containerImpliesInputA").append(inputA.createHTML());
         $("#containerImpliesInputB").append(inputB.createHTML());
     })();

@@ -3,7 +3,7 @@ body
     background-color: #FAFAFA;
     font-family: sans-serif;
 
-    padding: 100px 20%;
+    padding: 50px 15%;
 }
 
 input
@@ -34,10 +34,11 @@ input
 .roundedContainer
 {
     background-color: white;
+    overflow: hidden;
 
     border-radius: 8px;
     border: 1px solid gray;
-    padding: 10px;
+    padding: 0;
     margin: 10px;
 }
 
@@ -61,7 +62,8 @@ input
     /*height: 1.5em;*/
     line-height: 1.5em;
 
-    color: gray;
+    /*color: gray;*/
+    font-weight: bold;
 }
 
 .instructionStatement
@@ -76,11 +78,15 @@ input
 
 h1
 {
+    background-color: gray;
+    color: #FFF;
     font-weight: bold;
+    padding: 8px;
 }
 table
 {
     width: 100%;
+    margin: 16px;
 }
 td
 {
@@ -100,6 +106,7 @@ tr td:first-child
 .derived
 {
     font-style: italic;
+    padding-left: 16px;
 }
 
 .sepConj

@@ -124,35 +124,36 @@ export class NormalizedEnv {
         private env: EvalEnv = { H: {}, r: {}, A: [] })
     { }
 
-    private reachableObjects(): number[]
+    private expressionDfs(e: Expression, seen: number[], todo: (e: Expression, v: Value) => void): void
     {
-        var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
+        var v = e.eval(this.env);
+        todo(e, v);
+        if (v instanceof ValueObject)
         {
-            var v = e.eval(this.env);
-            todo(e, v);
-            if (v instanceof ValueObject)
+            var o = v.UID;
+            if (seen.indexOf(o) == -1)
             {
-                var o = v.UID;
-                if (seen.indexOf(o) == -1)
+                seen = seen.concat([o]);
+                var he = this.env.H[o];
+                if (he)
                 {
-                    seen = seen.concat([o]);
-                    var he = this.env.H[o];
-                    if (he)
-                    {
-                        var fs = he.fs;
-                        for (var f in fs)
-                            dfs(new ExpressionDot(e, f), seen, todo);
-                    }
+                    var fs = he.fs;
+                    for (var f in fs)
+                        this.expressionDfs(new ExpressionDot(e, f), seen, todo);
                 }
             }
-        };
-        var dfsx: (todo: (e: Expression, v: Value) => void) => void = todo =>
-        {
-            for (var x in this.env.r)
-                dfs(new ExpressionX(x), [], todo);
-        };
+        }
+    }
+    private allExpressionDfs(todo: (e: Expression, v: Value) => void): void
+    {
+        for (var x in this.env.r)
+            this.expressionDfs(new ExpressionX(x), [], todo);
+    }
+
+    private reachableObjects(): number[]
+    {
         var reachableObjects: number[] = [];
-        dfsx((e, v) => {
+        this.allExpressionDfs((e, v) => {
             if (v instanceof ValueObject)
                 reachableObjects.push(v.UID);
         });
@@ -160,34 +161,9 @@ export class NormalizedEnv {
     }
     public createFormula(): VerificationFormula
     {
-        var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
-        {
-            var v = e.eval(this.env);
-            todo(e, v);
-            if (v instanceof ValueObject)
-            {
-                var o = v.UID;
-                if (seen.indexOf(o) == -1)
-                {
-                    seen = seen.concat([o]);
-                    var he = this.env.H[o];
-                    if (he)
-                    {
-                        var fs = he.fs;
-                        for (var f in fs)
-                            dfs(new ExpressionDot(e, f), seen, todo);
-                    }
-                }
-            }
-        };
-        var dfsx: (todo: (e: Expression, v: Value) => void) => void = todo =>
-        {
-            for (var x in this.env.r)
-                dfs(new ExpressionX(x), [], todo);
-        };
         // collect reachable objects
         var reachableObjects: {e: Expression, o: number}[] = [];
-        dfsx((e, v) => {
+        this.allExpressionDfs((e, v) => {
             if (v instanceof ValueObject)
                 reachableObjects.push({e: e, o: v.UID});
         });
@@ -223,7 +199,7 @@ export class NormalizedEnv {
                 parts.push(new FormulaPartNeq(e1, e2));
         }
         // eq
-        dfsx((e, v) => {
+        this.allExpressionDfs((e, v) => {
             var ex = getExpression(v);
             if (ex)
                 parts.push(new FormulaPartEq(e, ex));
@@ -305,9 +281,10 @@ export class NormalizedEnv {
         {
             var ineq = this.ineq.slice();
             var env = this.getEnv();
-            for (var a of env.A)
-                if (a.f == f)
-                    ineq.push({v1: v, v2: new ValueObject(a.o)});
+            // for (var a of env.A)
+            //     if (a.f == f)
+            //         ineq.push({v1: v, v2: new ValueObject(a.o)});
+            //// above now handled by acc-removal (as it should be...)
             env.A.push({ o: v.UID, f: f });
             return NormalizedEnv.create(ineq, env);
         }
@@ -393,34 +370,9 @@ export class NormalizedEnv {
     }
     private createExpression(o: number): Expression
     {
-        var dfs: (e: Expression, seen: number[], todo: (e: Expression, v: Value) => void) => void = (e, seen, todo) =>
-        {
-            var v = e.eval(this.env);
-            todo(e, v);
-            if (v instanceof ValueObject)
-            {
-                var o = v.UID;
-                if (seen.indexOf(o) == -1)
-                {
-                    seen = seen.concat([o]);
-                    var he = this.env.H[o];
-                    if (he)
-                    {
-                        var fs = he.fs;
-                        for (var f in fs)
-                            dfs(new ExpressionDot(e, f), seen, todo);
-                    }
-                }
-            }
-        };
-        var dfsx: (todo: (e: Expression, v: Value) => void) => void = todo =>
-        {
-            for (var x in this.env.r)
-                dfs(new ExpressionX(x), [], todo);
-        };
         // collect reachable objects
         var reachableObjects: {e: Expression, o: number}[] = [];
-        dfsx((e, v) => {
+        this.allExpressionDfs((e, v) => {
             if (v instanceof ValueObject)
                 reachableObjects.push({e: e, o: v.UID});
         });
@@ -432,12 +384,19 @@ export class NormalizedEnv {
     }
     private woAccInternal(o: number, f: string): NormalizedEnv
     {
+        var ineq = this.ineq.slice();
+        // augment implicit inequalities
+        this.allExpressionDfs((e, v) => {
+            if (this.addEqV(v, new ValueObject(o)) == null)
+                ineq.push({v1: v, v2: new ValueObject(o)});
+        });
+
         var env = cloneEvalEnv(this.env);
         env.A = env.A.filter(x => x.o != o || x.f != f);
         var he = env.H[o];
         if (he)
             delete he.fs[f];
-        return NormalizedEnv.create(this.ineq, env);
+        return NormalizedEnv.create(ineq, env);
     }
     public woAcc(e: Expression, f: string): NormalizedEnv
     {

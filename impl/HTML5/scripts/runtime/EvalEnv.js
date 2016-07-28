@@ -97,60 +97,38 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     v2: a.v2 == vo ? v : a.v2 };
             });
         };
-        NormalizedEnv.prototype.reachableObjects = function () {
-            var _this = this;
-            var dfs = function (e, seen, todo) {
-                var v = e.eval(_this.env);
-                todo(e, v);
-                if (v instanceof ValueExpression_1.ValueObject) {
-                    var o = v.UID;
-                    if (seen.indexOf(o) == -1) {
-                        seen = seen.concat([o]);
-                        var he = _this.env.H[o];
-                        if (he) {
-                            var fs = he.fs;
-                            for (var f in fs)
-                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
-                        }
+        NormalizedEnv.prototype.expressionDfs = function (e, seen, todo) {
+            var v = e.eval(this.env);
+            todo(e, v);
+            if (v instanceof ValueExpression_1.ValueObject) {
+                var o = v.UID;
+                if (seen.indexOf(o) == -1) {
+                    seen = seen.concat([o]);
+                    var he = this.env.H[o];
+                    if (he) {
+                        var fs = he.fs;
+                        for (var f in fs)
+                            this.expressionDfs(new Expression_1.ExpressionDot(e, f), seen, todo);
                     }
                 }
-            };
-            var dfsx = function (todo) {
-                for (var x in _this.env.r)
-                    dfs(new Expression_1.ExpressionX(x), [], todo);
-            };
+            }
+        };
+        NormalizedEnv.prototype.allExpressionDfs = function (todo) {
+            for (var x in this.env.r)
+                this.expressionDfs(new Expression_1.ExpressionX(x), [], todo);
+        };
+        NormalizedEnv.prototype.reachableObjects = function () {
             var reachableObjects = [];
-            dfsx(function (e, v) {
+            this.allExpressionDfs(function (e, v) {
                 if (v instanceof ValueExpression_1.ValueObject)
                     reachableObjects.push(v.UID);
             });
             return reachableObjects;
         };
         NormalizedEnv.prototype.createFormula = function () {
-            var _this = this;
-            var dfs = function (e, seen, todo) {
-                var v = e.eval(_this.env);
-                todo(e, v);
-                if (v instanceof ValueExpression_1.ValueObject) {
-                    var o = v.UID;
-                    if (seen.indexOf(o) == -1) {
-                        seen = seen.concat([o]);
-                        var he = _this.env.H[o];
-                        if (he) {
-                            var fs = he.fs;
-                            for (var f in fs)
-                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
-                        }
-                    }
-                }
-            };
-            var dfsx = function (todo) {
-                for (var x in _this.env.r)
-                    dfs(new Expression_1.ExpressionX(x), [], todo);
-            };
             // collect reachable objects
             var reachableObjects = [];
-            dfsx(function (e, v) {
+            this.allExpressionDfs(function (e, v) {
                 if (v instanceof ValueExpression_1.ValueObject)
                     reachableObjects.push({ e: e, o: v.UID });
             });
@@ -189,7 +167,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     parts.push(new VerificationFormula_1.FormulaPartNeq(e1, e2));
             }
             // eq
-            dfsx(function (e, v) {
+            this.allExpressionDfs(function (e, v) {
                 var ex = getExpression(v);
                 if (ex)
                     parts.push(new VerificationFormula_1.FormulaPartEq(e, ex));
@@ -256,11 +234,10 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             if (v instanceof ValueExpression_1.ValueObject) {
                 var ineq = this.ineq.slice();
                 var env = this.getEnv();
-                for (var _i = 0, _a = env.A; _i < _a.length; _i++) {
-                    var a = _a[_i];
-                    if (a.f == f)
-                        ineq.push({ v1: v, v2: new ValueExpression_1.ValueObject(a.o) });
-                }
+                // for (var a of env.A)
+                //     if (a.f == f)
+                //         ineq.push({v1: v, v2: new ValueObject(a.o)});
+                //// above now handled by acc-removal (as it should be...)
                 env.A.push({ o: v.UID, f: f });
                 return NormalizedEnv.create(ineq, env);
             }
@@ -336,30 +313,9 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return NormalizedEnv.create(this.ineq, env);
         };
         NormalizedEnv.prototype.createExpression = function (o) {
-            var _this = this;
-            var dfs = function (e, seen, todo) {
-                var v = e.eval(_this.env);
-                todo(e, v);
-                if (v instanceof ValueExpression_1.ValueObject) {
-                    var o = v.UID;
-                    if (seen.indexOf(o) == -1) {
-                        seen = seen.concat([o]);
-                        var he = _this.env.H[o];
-                        if (he) {
-                            var fs = he.fs;
-                            for (var f in fs)
-                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
-                        }
-                    }
-                }
-            };
-            var dfsx = function (todo) {
-                for (var x in _this.env.r)
-                    dfs(new Expression_1.ExpressionX(x), [], todo);
-            };
             // collect reachable objects
             var reachableObjects = [];
-            dfsx(function (e, v) {
+            this.allExpressionDfs(function (e, v) {
                 if (v instanceof ValueExpression_1.ValueObject)
                     reachableObjects.push({ e: e, o: v.UID });
             });
@@ -369,12 +325,19 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return null;
         };
         NormalizedEnv.prototype.woAccInternal = function (o, f) {
+            var _this = this;
+            var ineq = this.ineq.slice();
+            // augment implicit inequalities
+            this.allExpressionDfs(function (e, v) {
+                if (_this.addEqV(v, new ValueExpression_1.ValueObject(o)) == null)
+                    ineq.push({ v1: v, v2: new ValueExpression_1.ValueObject(o) });
+            });
             var env = cloneEvalEnv(this.env);
             env.A = env.A.filter(function (x) { return x.o != o || x.f != f; });
             var he = env.H[o];
             if (he)
                 delete he.fs[f];
-            return NormalizedEnv.create(this.ineq, env);
+            return NormalizedEnv.create(ineq, env);
         };
         NormalizedEnv.prototype.woAcc = function (e, f) {
             var x = this;
