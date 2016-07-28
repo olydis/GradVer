@@ -18,16 +18,17 @@ $(() =>
     //var hoare = new Hoare(env);
 
     // containerProps
-    {
+    (() => {
         var input = new EditVerificationFormula("", phi => {
             $("#containerPropsOutSat").text(phi.satisfiable() ? "yes" : "no");
             $("#containerPropsOutSfrm").text(phi.sfrm() ? "yes" : "no");
             $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
         });
         $("#containerPropsInput").append(input.createHTML());
-    }
+    })();
+
     // containerWoVar
-    {
+    (() => {
         var update = () => {};
         var input = new EditVerificationFormula("", () => update());
         var inputVar = $("#containerWoVarInputVar");
@@ -39,10 +40,10 @@ $(() =>
             $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
         };
         $("#containerWoVarInput").append(input.createHTML());
-        
-    }
+    })();
+    
     // containerWoAcc
-    {
+    (() => {
         var update = () => {};
         var input = new EditVerificationFormula("", () => update());
         var inputAcc = $("#containerWoAccInputAcc");
@@ -59,7 +60,7 @@ $(() =>
         };
         $("#containerWoAccInput").append(input.createHTML());
         
-    }
+    })();
 
     // var editor = new EditInstructions(
     //     $("#codeContainer")

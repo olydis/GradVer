@@ -9,16 +9,16 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);
         //var hoare = new Hoare(env);
         // containerProps
-        {
+        (function () {
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function (phi) {
                 $("#containerPropsOutSat").text(phi.satisfiable() ? "yes" : "no");
                 $("#containerPropsOutSfrm").text(phi.sfrm() ? "yes" : "no");
                 $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
             });
             $("#containerPropsInput").append(input.createHTML());
-        }
+        })();
         // containerWoVar
-        {
+        (function () {
             var update = function () { };
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
             var inputVar = $("#containerWoVarInputVar");
@@ -29,9 +29,9 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
                 $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
             };
             $("#containerWoVarInput").append(input.createHTML());
-        }
+        })();
         // containerWoAcc
-        {
+        (function () {
             var update = function () { };
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
             var inputAcc = $("#containerWoAccInputAcc");
@@ -46,7 +46,7 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
                     $("#containerWoAccOutput").text("format error");
             };
             $("#containerWoAccInput").append(input.createHTML());
-        }
+        })();
         // var editor = new EditInstructions(
         //     $("#codeContainer")
         //     //, hoare
