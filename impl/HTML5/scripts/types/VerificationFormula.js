@@ -226,7 +226,7 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartAcc.prototype.footprintStatic = function () {
             return [{ e: this.e, f: this.f }];
         };
-        FormulaPartAcc.prototype.FootprintDynamic = function (env) {
+        FormulaPartAcc.prototype.footprintDynamic = function (env) {
             var v = this.e.eval(env);
             if (v instanceof ValueExpression_1.ValueObject)
                 return [{ o: v.UID, f: this.f }];

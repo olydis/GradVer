@@ -242,7 +242,7 @@ export class FormulaPartAcc extends FormulaPart
     {
         return [{ e: this.e, f: this.f }];
     }
-    public FootprintDynamic(env: EvalEnv): FootprintDynamic
+    public footprintDynamic(env: EvalEnv): FootprintDynamic
     {
         var v = this.e.eval(env);
         if (v instanceof ValueObject)
