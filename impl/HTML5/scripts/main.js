@@ -47,6 +47,19 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
             };
             $("#containerWoAccInput").append(input.createHTML());
         })();
+        // containerImplies
+        (function () {
+            var update = function () { };
+            var inputA = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
+            var inputB = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
+            update = function () {
+                var pA = inputA.getFormula();
+                var pB = inputB.getFormula();
+                $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
+            };
+            $("#containerImpliesInputA").append(inputA.createHTML());
+            $("#containerImpliesInputB").append(inputB.createHTML());
+        })();
         // var editor = new EditInstructions(
         //     $("#codeContainer")
         //     //, hoare

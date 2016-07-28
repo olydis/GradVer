@@ -59,7 +59,21 @@ $(() =>
                 $("#containerWoAccOutput").text("format error");
         };
         $("#containerWoAccInput").append(input.createHTML());
-        
+    })();
+    
+    // containerImplies
+    (() => {
+        var update = () => {};
+        var inputA = new EditVerificationFormula("", () => update());
+        var inputB = new EditVerificationFormula("", () => update());
+        update = () =>
+        {
+            var pA = inputA.getFormula();
+            var pB = inputB.getFormula();
+            $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
+        };
+        $("#containerImpliesInputA").append(inputA.createHTML());
+        $("#containerImpliesInputB").append(inputB.createHTML());
     })();
 
     // var editor = new EditInstructions(

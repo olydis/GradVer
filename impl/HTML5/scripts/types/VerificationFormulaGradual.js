@@ -55,6 +55,39 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
         VerificationFormulaGradual.prototype.woAcc = function (e, f) {
             return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woAcc(e, f));
         };
+        VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
+            var _this = this;
+            if (this.gradual) {
+                // impossible by itself?
+                if (!phi.satisfiable())
+                    return VerificationFormula_1.VerificationFormula.getFalse();
+                var linearPart = phi.parts.filter(function (p) { return p instanceof VerificationFormula_1.FormulaPartAcc; });
+                var classicalPart = phi.parts.filter(function (p) { return !(p instanceof VerificationFormula_1.FormulaPartAcc); });
+                // augment classical parts
+                for (var i = 0; i < linearPart.length; ++i)
+                    for (var j = i + 1; j < linearPart.length; ++j)
+                        if (linearPart[i].f == linearPart[j].f)
+                            classicalPart.push(new VerificationFormula_1.FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+                // impossible to imply?
+                if (!new VerificationFormula_1.VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())
+                    return VerificationFormula_1.VerificationFormula.getFalse();
+                // simplify
+                classicalPart = classicalPart.filter(function (x) {
+                    return !_this.staticFormula.implies(new VerificationFormula_1.VerificationFormula(null, [x]));
+                });
+                linearPart = linearPart.filter(function (x) {
+                    return !_this.staticFormula.implies(new VerificationFormula_1.VerificationFormula(null, [x]));
+                });
+                // not required if more sophisticated:
+                // - create meet of A and B (structured disjunction)
+                // - eliminate unsatisfiable
+                // - simplify remaining
+                // BUT: that makes runtime checks more expensive!
+                return new VerificationFormula_1.VerificationFormula(null, classicalPart.concat(linearPart)).norm();
+            }
+            else
+                return this.staticFormula.impliesRuntime(phi);
+        };
         // may produce false negatives
         VerificationFormulaGradual.prototype.impliesApprox = function (phi) {
             if (this.gradual)

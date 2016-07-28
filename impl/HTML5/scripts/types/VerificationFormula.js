@@ -350,6 +350,11 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         VerificationFormula.prototype.implies = function (phi) {
             return phi.envImpliedBy(this.createNormalizedEnv());
         };
+        VerificationFormula.prototype.impliesRuntime = function (phi) {
+            return this.implies(phi)
+                ? VerificationFormula.empty()
+                : VerificationFormula.getFalse();
+        };
         VerificationFormula.prototype.norm = function () {
             var nenv = this.createNormalizedEnv();
             return nenv == null

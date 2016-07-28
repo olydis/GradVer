@@ -195,8 +195,8 @@ export class FormulaPartNeq extends FormulaPart
 export class FormulaPartAcc extends FormulaPart
 {
     public constructor(
-        private e: Expression,
-        private f: string)
+        public e: Expression,
+        public f: string)
     {
         super();
         if (e == null) throw "null arg";
@@ -388,9 +388,15 @@ export class VerificationFormula
     {
         return this.createNormalizedEnv() != null;
     }
-    public implies(phi: VerificationFormula)
+    public implies(phi: VerificationFormula): boolean
     {
         return phi.envImpliedBy(this.createNormalizedEnv());
+    }
+    public impliesRuntime(phi: VerificationFormula): VerificationFormula
+    {
+        return this.implies(phi)
+            ? VerificationFormula.empty()
+            : VerificationFormula.getFalse();
     }
     public norm(): VerificationFormula
     {

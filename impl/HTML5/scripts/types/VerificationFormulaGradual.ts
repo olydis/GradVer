@@ -1,4 +1,4 @@
-import { VerificationFormula } from "./VerificationFormula";
+import { VerificationFormula, FormulaPartAcc, FormulaPartNeq, FormulaPart } from "./VerificationFormula";
 import { FootprintStatic } from "./Footprint";
 import { Expression } from "./Expression";
 
@@ -78,6 +78,45 @@ export class VerificationFormulaGradual
     public woAcc(e: Expression, f: string): VerificationFormulaGradual
     {
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woAcc(e, f));
+    }
+
+    public impliesRuntime(phi: VerificationFormula): VerificationFormula
+    {
+        if (this.gradual)
+        {
+            // impossible by itself?
+            if (!phi.satisfiable())
+                return VerificationFormula.getFalse();
+            
+            var linearPart = <FormulaPartAcc[]>
+                phi.parts.filter(p => p instanceof FormulaPartAcc);
+            var classicalPart =
+                phi.parts.filter(p => !(p instanceof FormulaPartAcc));
+            // augment classical parts
+            for (var i = 0; i < linearPart.length; ++i)
+                for (var j = i + 1; j < linearPart.length; ++j)
+                    if (linearPart[i].f == linearPart[j].f)
+                        classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+            
+            // impossible to imply?
+            if (!new VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())
+                return VerificationFormula.getFalse();
+
+            // simplify
+            classicalPart = classicalPart.filter(x => 
+                            !this.staticFormula.implies(new VerificationFormula(null, [x])));
+            linearPart = linearPart.filter(x => 
+                            !this.staticFormula.implies(new VerificationFormula(null, [x])));
+
+            // not required if more sophisticated:
+            // - create meet of A and B (structured disjunction)
+            // - eliminate unsatisfiable
+            // - simplify remaining
+            // BUT: that makes runtime checks more expensive!
+            return new VerificationFormula(null, classicalPart.concat(linearPart)).norm();
+        }
+        else
+            return this.staticFormula.impliesRuntime(phi);
     }
 
     // may produce false negatives
