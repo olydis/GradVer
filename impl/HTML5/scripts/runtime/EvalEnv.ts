@@ -228,6 +228,18 @@ export class NormalizedEnv {
             if (ex)
                 parts.push(new FormulaPartEq(e, ex));
         });
+        // MINIFY
+        for (var i = 0; i < parts.length; ++i)
+        {
+            var partTarget = parts[i];
+            var partsSource = parts.filter((_, j) => i != j);
+            if (new VerificationFormula(null, partsSource).implies(
+                new VerificationFormula(null, [partTarget])))
+            {
+                parts = partsSource;
+                --i;
+            }
+        }
         return new VerificationFormula(null, parts);
     }
 
@@ -350,7 +362,7 @@ export class NormalizedEnv {
 
     public addAcc(e: Expression, f: string): NormalizedEnv
     {
-        var env = this.ensure(e);
+        var env = this.ensure(new ExpressionDot(e, f));
         if (!env) return null;
         return env.addAccV(e.eval(env.env), f);
     }

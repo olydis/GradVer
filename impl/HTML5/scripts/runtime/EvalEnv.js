@@ -307,7 +307,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return res;
         };
         NormalizedEnv.prototype.addAcc = function (e, f) {
-            var env = this.ensure(e);
+            var env = this.ensure(new Expression_1.ExpressionDot(e, f));
             if (!env)
                 return null;
             return env.addAccV(e.eval(env.env), f);
