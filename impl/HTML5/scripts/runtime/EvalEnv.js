@@ -245,9 +245,15 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
         };
         NormalizedEnv.prototype.addAccV = function (v, f) {
             if (v instanceof ValueExpression_1.ValueObject) {
+                var ineq = this.ineq.slice();
                 var env = this.getEnv();
+                for (var _i = 0, _a = env.A; _i < _a.length; _i++) {
+                    var a = _a[_i];
+                    if (a.f == f)
+                        ineq.push({ v1: v, v2: new ValueExpression_1.ValueObject(a.o) });
+                }
                 env.A.push({ o: v.UID, f: f });
-                return NormalizedEnv.create(this.ineq, env);
+                return NormalizedEnv.create(ineq, env);
             }
             return null;
         };

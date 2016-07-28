@@ -291,9 +291,13 @@ export class NormalizedEnv {
     {
         if (v instanceof ValueObject)
         {
+            var ineq = this.ineq.slice();
             var env = this.getEnv();
+            for (var a of env.A)
+                if (a.f == f)
+                    ineq.push({v1: v, v2: new ValueObject(a.o)});
             env.A.push({ o: v.UID, f: f });
-            return NormalizedEnv.create(this.ineq, env);
+            return NormalizedEnv.create(ineq, env);
         }
         return null;
     }

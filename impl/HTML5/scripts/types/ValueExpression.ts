@@ -9,10 +9,10 @@ export abstract class Value {
 export class ValueObject extends Value {
     private static _uid: number = 0;
 
-    private uid: number;
-    constructor() {
+    constructor(private uid: number = null) {
         super();
-        this.uid = ValueObject._uid++;
+        if (uid === null)
+            this.uid = ValueObject._uid++;
     }
 
     public equalTo(other: Value): boolean
