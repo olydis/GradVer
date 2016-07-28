@@ -1,33 +1,39 @@
 % Inductive Semantics.hoare
-\newcommand{\hsc}{~\hat{*}~}
+
+\newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
 
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{\hat{\phi} \implies \hat{\phi'}\\{x} \not \in {FV({\hat{\phi'}})}\\{\Gamma} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{{\wo {\hat{\phi}} {x}} = \hat{\phi'}\\
+    {\Gamma} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x} := \new {C}}} {{\hat{\phi'}} \hsc {{({{x}} \neq {{\vnull}})} \hsc {\overline{\acc({x}, f_i)}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{\hat{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * \hat{\phi'}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{{\wo {\hat{\phi}} {\acc(x.f)}} = \hat{\phi'}\\
+    \hat{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x}.{f} := {y}}} {\hat{\phi'} \hsc {{\acc({{x}}.{f})} \hsc {{({{x}} \neq {{\vnull}})} \hsc {{({{{x}}.{f}} = {{y}})}}}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{\hat{\phi} \implies \hat{\phi'}\\{x} \not \in {FV(\hat{\phi'})}\\{x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\accFor {{e}}} \subseteq {\hat{\phi'}}}
+{{\wo {\hat{\phi}} {x}} = \hat{\phi'}\\
+    {x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\accFor {{e}}} \subseteq {\hat{\phi'}}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x} := {e}}} {\hat{\phi'} \hsc {{({{x}} = {e})}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{\hat{\phi} \implies \hat{\phi'}\\{\xresult} \not \in {FV(\hat{\phi'})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {{\xresult}} : {T}}
+{{\wo {\hat{\phi}} {\xresult}} = \hat{\phi'}\\
+    {\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {{\xresult}} : {T}}
 {{\Gamma} \hoare {\hat{\phi}} {{\return {x}}} {\hat{\phi'} \hsc {{({{\xresult}} = {{x}})}}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \hat{\phi_{pre}};~\ensures \hat{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\hat{\phi} \implies {{({{y}} \neq {{\vnull}})} * {\hat{\phi_p} * \hat{\phi'}}}\\{x} \not \in {FV(\hat{\phi'})}\\x \neq y \wedge x \neq z'\\\hat{\phi_p} = {\hat{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\hat{\phi_q} = {\hat{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\wo {\wo {\hat{\phi}} {x}} {\staticFP{\hat{\phi_p}}} = \hat{\phi'}\\
+    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \hat{\phi_{pre}};~\ensures \hat{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\hat{\phi} \implies {{({{y}} \neq {{\vnull}})} * {\hat{\phi_p}}}\\x \neq y \wedge x \neq z'\\\hat{\phi_p} = {\hat{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\hat{\phi_q} = {\hat{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x} := {y}.{m}({z'})}} {\hat{\phi'} * \hat{\phi_q}}}
 \end{mathpar}
 
@@ -39,7 +45,8 @@
 
 \begin{mathpar}
 \inferrule* [Right=HRelease]
-{\hat{\phi} \implies {{\phi_r} * \hat{\phi'}}}
+{{\wo {\hat{\phi}} {\staticFP{\phi_r}}} = \hat{\phi'}\\
+    \hat{\phi} \implies {{\phi_r}}}
 {{\Gamma} \hoare {\hat{\phi}} {{\release {\phi_r}}} {\hat{\phi'}}}
 \end{mathpar}
 
