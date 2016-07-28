@@ -31,13 +31,12 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression"]
     }
     exports.generateExpressionDot = generateExpressionDot;
     function generateExpression(seed) {
-        var lseed = seed % 4;
-        seed = Math.floor(seed / 4);
+        var lseed = seed % 3;
+        seed = Math.floor(seed / 3);
         switch (lseed) {
             case 0: return generateExpressionV(seed);
             case 1: return generateExpressionX(seed);
-            case 2:
-            case 3: return generateExpressionDot(seed);
+            case 2: return generateExpressionDot(seed);
         }
         throw "unreachable";
     }

@@ -37,13 +37,12 @@ export function generateExpressionDot(seed: number): { seed: number, e: Expressi
 
 export function generateExpression(seed: number): { seed: number, e: Expression }
 {
-    var lseed = seed % 4;
-    seed = Math.floor(seed / 4);
+    var lseed = seed % 3;
+    seed = Math.floor(seed / 3);
     switch (lseed) {
         case 0: return generateExpressionV(seed);
         case 1: return generateExpressionX(seed);
-        case 2: 
-        case 3: return generateExpressionDot(seed);
+        case 2: return generateExpressionDot(seed);
     }
     throw "unreachable";
 }

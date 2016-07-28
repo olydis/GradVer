@@ -21,6 +21,4 @@ export function testImpliesTransitivity(): void
 
     if (!p1.implies(p3))// FAIL
         console.error("transitivity", t1, t2, t3);
-    else
-        console.log("transitivity", t1, t2, t3);
 }
