@@ -136,6 +136,8 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 throw "null arg";
         }
         FormulaPartNeq.parse = function (source) {
+            if (source == "false")
+                return new FormulaPartNeq(Expression_1.Expression.getNull(), Expression_1.Expression.getNull());
             var eqIndex = source.indexOf("!=");
             if (eqIndex == -1)
                 eqIndex = source.indexOf("<>");
@@ -152,11 +154,15 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 : null;
         };
         FormulaPartNeq.prototype.createHTML = function () {
+            var e1 = this.e1.createHTML();
+            var e2 = this.e2.createHTML();
+            if (e1.text() == e2.text() && e1.text() == "null")
+                return $("<span>").text("false");
             return $("<span>")
                 .append($("<span>").text("("))
-                .append(this.e1.createHTML())
+                .append(e1)
                 .append($("<span>").text(" ≠ "))
-                .append(this.e2.createHTML())
+                .append(e2)
                 .append($("<span>").text(")"));
         };
         FormulaPartNeq.prototype.substs = function (m) {

@@ -145,6 +145,9 @@ export class FormulaPartNeq extends FormulaPart
 
     public static parse(source: string): FormulaPart
     {
+        if (source == "false")
+            return new FormulaPartNeq(Expression.getNull(), Expression.getNull());
+
         var eqIndex = source.indexOf("!=");
         if (eqIndex == -1) eqIndex = source.indexOf("<>");
         if (eqIndex == -1) eqIndex = source.indexOf("≠");
@@ -161,11 +164,15 @@ export class FormulaPartNeq extends FormulaPart
 
     public createHTML(): JQuery
     {
+        var e1 = this.e1.createHTML();
+        var e2 = this.e2.createHTML();
+        if (e1.text() == e2.text() && e1.text() == "null")
+            return $("<span>").text("false");
         return $("<span>")
             .append($("<span>").text("("))
-            .append(this.e1.createHTML())
+            .append(e1)
             .append($("<span>").text(" ≠ "))
-            .append(this.e2.createHTML())
+            .append(e2)
             .append($("<span>").text(")"));
     }
     public substs(m: (x: string) => string): FormulaPart
