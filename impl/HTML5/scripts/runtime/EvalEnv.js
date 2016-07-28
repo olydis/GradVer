@@ -194,6 +194,15 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                 if (ex)
                     parts.push(new VerificationFormula_1.FormulaPartEq(e, ex));
             });
+            // MINIFY
+            for (var i = 0; i < parts.length; ++i) {
+                var partTarget = parts[i];
+                var partsSource = parts.filter(function (_, j) { return i != j; });
+                if (new VerificationFormula_1.VerificationFormula(null, partsSource).implies(new VerificationFormula_1.VerificationFormula(null, [partTarget]))) {
+                    parts = partsSource;
+                    --i;
+                }
+            }
             return new VerificationFormula_1.VerificationFormula(null, parts);
         };
         NormalizedEnv.prototype.getEnv = function () { return cloneEvalEnv(this.env); };
