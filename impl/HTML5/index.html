@@ -13,9 +13,10 @@
             <h1>General Properties</h1>
             <table>
                 <tr><td>Formula</td><td id="containerPropsInput"></td></tr>
-                <tr><td>satisfiable</td><td id="containerPropsOutSat"></td></tr>
-                <tr><td>self-framed</td><td id="containerPropsOutSfrm"></td></tr>
-                <tr><td>normalized</td><td id="containerPropsOutNorm" class="instructionVerForm"></td></tr>
+                
+                <tr><td class="derived">satisfiable</td><td id="containerPropsOutSat"></td></tr>
+                <tr><td class="derived">self-framed</td><td id="containerPropsOutSfrm"></td></tr>
+                <tr><td class="derived">normalized</td><td id="containerPropsOutNorm" class="instructionVerForm"></td></tr>
             </table>
         </div>
         <div id="containerWoVar" class="roundedContainer">
@@ -23,7 +24,17 @@
             <table>
                 <tr><td>Formula</td><td id="containerWoVarInput"></td></tr>
                 <tr><td>Variable</td><td><input id="containerWoVarInputVar"></input></td></tr>
-                <tr><td>Result</td><td id="containerWoVarOutput" class="instructionVerForm"></td></tr>
+                
+                <tr><td class="derived">Result</td><td id="containerWoVarOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerWoAcc" class="roundedContainer">
+            <h1>Without Access</h1>
+            <table>
+                <tr><td>Formula</td><td id="containerWoAccInput"></td></tr>
+                <tr><td>Variable</td><td><input id="containerWoAccInputAcc"></input></td></tr>
+                
+                <tr><td class="derived">Result</td><td id="containerWoAccOutput" class="instructionVerForm"></td></tr>
             </table>
         </div>
         <br/>

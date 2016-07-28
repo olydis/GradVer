@@ -1,6 +1,30 @@
 Load GradVer16LemmaHalloc.
 Import Semantics.
 
+Lemma goodConsTrue : forall p, good p <-> good (phiTrue :: p).
+Proof.
+  split; intros.
+  + inv H0.
+    constructor.
+    - invE H1 h. exists h.
+      invE H1 r. exists r.
+      invE H1 a. exists a.
+      eca.
+      * apply inclEmpty.
+      * eca.
+      * common.
+        assumption.
+    - repeat eca.
+  + inv H0.
+    constructor.
+    - invE H1 h. exists h.
+      invE H1 r. exists r.
+      invE H1 a. exists a.
+      inv H1.
+      eapp evalphiAexcept.
+    - inv H2.
+      assumption.
+Qed.
 
 Lemma AexceptNOTodotInPhi : forall H r p A A',
   sfrmphi [] p ->

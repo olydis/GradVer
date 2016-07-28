@@ -406,4 +406,11 @@ export class VerificationFormula
             ? VerificationFormula.getFalse()
             : nenv.woVar(x).createFormula();
     }
+    public woAcc(e: Expression, f: string): VerificationFormula
+    {
+        var nenv = this.createNormalizedEnv();
+        return nenv == null
+            ? VerificationFormula.getFalse()
+            : nenv.woAcc(e, f).createFormula();
+    }
 }

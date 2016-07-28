@@ -13,7 +13,7 @@ input
     font: inherit;
     border: none;
 
-    width: 70%;
+    width: 100%;
 }
 
 .overlay
@@ -78,14 +78,28 @@ h1
 {
     font-weight: bold;
 }
+table
+{
+    width: 100%;
+}
 td
 {
     padding-top: 8px;
     padding-right: 20px;
+    vertical-align: middle;
 }
 tr
 {
     height: 35px;
+}
+tr td:first-child
+{
+    width: 100px;
+}
+
+.derived
+{
+    font-style: italic;
 }
 
 .sepConj

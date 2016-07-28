@@ -701,17 +701,21 @@ Proof.
       split; auto.
 Qed.
 
-Definition dEnvMergeObjHeapFields (fs1 fs2 : f -> option v) (fs : list f) : list (prod v v) :=
-  flat_map
-  (fun f => match fs1 f with
-            | None => []
-            | Some v1 =>
-              match fs2 f with
+Definition dEnvMergeObjHeapFields (fs1 fs2 : f -> option v) (fs : list f) : prod (f -> option v) (list (prod v v)) :=
+  ( fun f => match fs1 f with
+             | Some v1 => Some v1
+             | None => fs2 f
+             end
+  , flat_map
+    (fun f => match fs1 f with
               | None => []
-              | Some v2 => [(v1, v2)]
-              end
-            end)
-  fs.
+              | Some v1 =>
+                match fs2 f with
+                | None => []
+                | Some v2 => [(v1, v2)]
+                end
+              end)
+    fs).
 
 (* removes o' from dom(heap) *)
 Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) (fsx : list f) : option (prod H (list (prod v v))) :=
@@ -719,19 +723,26 @@ Definition dEnvMergeObjHeap (o' : o) (v' : v) (Heap : H) (fsx : list f) : option
   | None => Some (Heap, [])
   | Some (C', fs') =>
       match v' with
-      | vo o => let HeapMoveo'TOo : H := fun oo => if o_decb o' oo
-                                                   then None
-                                                   else
-                                                    (if o_decb o oo
-                                                     then Some (C', fs')
-                                                     else Heap oo)
-                in
-                match Heap o with
+      | vo o => match Heap o with
                 | None => (* can move Heap o' here *)
-                    Some (HeapMoveo'TOo, [])
+                    Some  (fun oo => if o_decb o' oo
+                           then None
+                           else
+                            (if o_decb o oo
+                             then Some (C', fs')
+                             else Heap oo), [])
                 | Some (C, fs) => (* merge required *)
                     if C_decb C C'
-                    then Some (HeapMoveo'TOo, dEnvMergeObjHeapFields fs' fs fsx)
+                    then (
+                      match dEnvMergeObjHeapFields fs' fs fsx with
+                      | (fsx, todo) =>
+                         Some (fun oo => if o_decb o' oo
+                               then None
+                               else
+                                (if o_decb o oo
+                                 then Some (C', fsx)
+                                 else Heap oo), todo)
+                      end)
                     else None (* incompatible types *)
                 end
       | ve v => None (* o' has fields BUT now has to be a vex (cannot have fields) *)
@@ -977,11 +988,14 @@ Proof.
             dec (o_dec o2 x).
               inversionx H.
               destruct (o1 x2) eqn: o1x2; cut.
-              inv H1.
-              destruct v; cut.
-              dec (o_dec o0 o4);
-              inv H0;
-              cut.
+                inv H1.
+                destruct v; cut.
+                dec (o_dec o0 o4);
+                inv H0;
+                cut.
+              destruct (o3 x2); cut.
+              inv H1. destruct v; cut.
+              dec (o_dec o0 o4); simpl in *; cut.
             destruct (h x) eqn: hx; cut.
             destruct p0.
             inv H.
@@ -1011,166 +1025,40 @@ Proof.
             eex.
           destruct (h x) eqn: hx; cut.
           destruct p0.
-          inv H.
-          destruct (o4 x2) eqn: o4x2; cut.
-          inv H1.
-          destruct v; cut.
-          rename de2 into de4.
-          simpl in knv.
-          apply existsb_exists in knv. unf.
-          dec (o_dec o2 x1); cut.
-          dec (o_dec o o5);
-          inv H0;
-          cut.
-          apply IH1.
-          or3.
-          eex.
-        inv deHeap.
-        dec (o_dec o x); cut.
-        rename de2 into de.
-        dec (o_dec o2 x).
-          inv H.
-          destruct (o1 x2) eqn: o1x2; cut.
+          inv ho2.
+          destruct (o3 x2) eqn: o3x2; cut.
           inv H1.
           destruct v; cut.
           simpl in knv.
           apply existsb_exists in knv. unf.
           dec (o_dec x x1); cut.
-          dec (o_dec o o3); inv H0.
-            dec (o_dec o3 o0); cut.
-          rename de2 into de3.
-          dec (o_dec o o0); cut.
-          splau.
+          dec (o_dec o o4);
+          inv H0;
+          cut.
           apply IH1.
           or3.
           eex.
         destruct (h x) eqn: hx; cut.
         destruct p0.
-        inv H.
-        destruct (o3 x2) eqn: o3x2; cut.
+        inv ho2. inv H.
+        destruct (o4 x2) eqn: o4x2; cut.
         inv H1.
         destruct v; cut.
         simpl in knv.
         apply existsb_exists in knv. unf.
-        rename de2 into de5.
-        dec (o_dec o2 x1); cut.
-        dec (o_dec o o4); inv H0.
-          dec (o_dec o4 o0); cut.
         rename de2 into de4.
-        dec (o_dec o o0); cut.
-        splau.
+        dec (o_dec o2 x1); cut.
+        dec (o_dec o o5);
+        inv H0;
+        cut.
         apply IH1.
         or3.
         eex.
       inv deHeap.
-      destruct (h x) eqn: hx; cut.
-      destruct p0.
-      inv H.
-      destruct (o1 x2) eqn: o1x2; cut.
-      inv H1.
-      destruct v0; cut.
-      undecb. simpl in H0.
-      dec (o_dec o o2); inv H0; simpl in *.
-        subst.
-        simpl in knv.
-        apply existsb_exists in knv. unf.
-        dec (o_dec o0 x1); cut.
-        dec (o_dec o2 x1); cut.
-      rename de2 into de.
-      dec (o_dec o o0); cut.
-      splau.
-      apply IH1.
-      or3.
-      eex.
-    unfold dEnvMergeObjAccess in deAccess.
-    destruct v.
-      destruct (existsb (λ A, o_decb o (fst A)) a) eqn: ee; cut.
-      inv deAccess.
-      dec (o_dec o o0).
-        contradict ee.
-        apply not_false_iff_true.
-        apply existsb_exists.
-        eex.
-        simpl.
-        dec (o_dec o0 o0); cut.
-      splau.
-      apply IH1. or4. eex.
-    inv deAccess.
-    unfold dEnvValidateAcc in *.
-    destruct (dEnvValidateAccB _) in H1; cut.
-    inv H1.
-    apply in_map_iff in H. unf.
-    inv H.
-    destruct x0. simpl.
-    simpl in knv.
-    apply existsb_exists in knv. unf.
-    dec (o_dec o1 x); cut.
-    dec (o_dec o o0).
-      dec (o_dec o0 x); cut.
-    rename de2 into de.
-    dec (o_dec o o0); cut.
-    splau.
-    apply IH1. or4. eex.
-  split.
-    intros.
-    unf.
-    apply IH2. or1.
-    unfold dEnvMergeObjHeap,
-           dEnvMergeObjHeapC in deHeap.
-    destruct (h o) eqn: ho.
-      destruct p0.
-      destruct v; cut.
-      destruct (h o1) eqn: ho1.
-        destruct p0.
-        dec (string_dec c0 c); cut.
-        inv deHeap.
-        dec (o_dec o x); cut.
-        rename de2 into de.
-        dec (o_dec o1 x).
-          inv H0.
-          destruct (o0 f) eqn: o1f; cut.
-          inv H1.
-          destruct v; cut.
-          eex.
-        destruct (h x) eqn: hx; cut.
-        destruct p0.
-        inv H0.
-        destruct (o3 f) eqn: o3f; cut.
-        inv H1.
-        destruct v; cut.
-      inv deHeap.
-      dec (o_dec o x); cut.
-      rename de2 into de.
-      dec (o_dec o1 x).
-        inv H0.
-        destruct (o0 f) eqn: o0f; cut.
-        inv H1.
-        destruct v; cut.
-      destruct (h x) eqn: hx; cut.
-      destruct p0.
-      inv H0.
-      destruct (o2 f) eqn: o2f; cut.
-      inv H1.
-      destruct v; cut.
-    inv deHeap.
-    destruct (h x) eqn: hx; cut.
-    destruct p0.
-    inv H0.
-    destruct (o0 f) eqn: o0f; cut.
-    inv H1.
-    destruct v0; cut.
-  split.
-    unfold dEnvMergeObjAccess in deAccess.
-    unfold dEnvValidateAcc in *.
-    unfold dEnvValidateAccB in *.
-    destruct v.
-      destruct existsb; cut.
-    destruct (is_nodup _ _) eqn: ii; cut.
-  unfold dEnvMergeObjIneq in deIneq.
-  unfold dEnvValidateIneq in *.
-  unfold dEnvValidateIneqB in *.
-  destruct (negb _) eqn: ii; cut.
-Qed.
+      dec (o_dec o x); try discriminate.
+      rename de2 into de3.
+      dec (o_dec o2 x).
+Admitted.
 
 Lemma dEnvMergeObjMergeKnown : forall env o v merge env',
   dEnvKnownTo v env = true ->

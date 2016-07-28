@@ -13,9 +13,12 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     exports.Value = Value;
     var ValueObject = (function (_super) {
         __extends(ValueObject, _super);
-        function ValueObject() {
+        function ValueObject(uid) {
+            if (uid === void 0) { uid = null; }
             _super.call(this);
-            this.uid = ValueObject._uid++;
+            this.uid = uid;
+            if (uid === null)
+                this.uid = ValueObject._uid++;
         }
         ValueObject.prototype.equalTo = function (other) {
             return other instanceof ValueObject && this.uid == other.uid;

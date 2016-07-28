@@ -97,6 +97,35 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     v2: a.v2 == vo ? v : a.v2 };
             });
         };
+        NormalizedEnv.prototype.reachableObjects = function () {
+            var _this = this;
+            var dfs = function (e, seen, todo) {
+                var v = e.eval(_this.env);
+                todo(e, v);
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (seen.indexOf(o) == -1) {
+                        seen = seen.concat([o]);
+                        var he = _this.env.H[o];
+                        if (he) {
+                            var fs = he.fs;
+                            for (var f in fs)
+                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
+                        }
+                    }
+                }
+            };
+            var dfsx = function (todo) {
+                for (var x in _this.env.r)
+                    dfs(new Expression_1.ExpressionX(x), [], todo);
+            };
+            var reachableObjects = [];
+            dfsx(function (e, v) {
+                if (v instanceof ValueExpression_1.ValueObject)
+                    reachableObjects.push(v.UID);
+            });
+            return reachableObjects;
+        };
         NormalizedEnv.prototype.createFormula = function () {
             var _this = this;
             var dfs = function (e, seen, todo) {
@@ -216,9 +245,15 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
         };
         NormalizedEnv.prototype.addAccV = function (v, f) {
             if (v instanceof ValueExpression_1.ValueObject) {
+                var ineq = this.ineq.slice();
                 var env = this.getEnv();
+                for (var _i = 0, _a = env.A; _i < _a.length; _i++) {
+                    var a = _a[_i];
+                    if (a.f == f)
+                        ineq.push({ v1: v, v2: new ValueExpression_1.ValueObject(a.o) });
+                }
                 env.A.push({ o: v.UID, f: f });
-                return NormalizedEnv.create(this.ineq, env);
+                return NormalizedEnv.create(ineq, env);
             }
             return null;
         };
@@ -291,21 +326,58 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             delete env.r[x];
             return NormalizedEnv.create(this.ineq, env);
         };
+        NormalizedEnv.prototype.createExpression = function (o) {
+            var _this = this;
+            var dfs = function (e, seen, todo) {
+                var v = e.eval(_this.env);
+                todo(e, v);
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (seen.indexOf(o) == -1) {
+                        seen = seen.concat([o]);
+                        var he = _this.env.H[o];
+                        if (he) {
+                            var fs = he.fs;
+                            for (var f in fs)
+                                dfs(new Expression_1.ExpressionDot(e, f), seen, todo);
+                        }
+                    }
+                }
+            };
+            var dfsx = function (todo) {
+                for (var x in _this.env.r)
+                    dfs(new Expression_1.ExpressionX(x), [], todo);
+            };
+            // collect reachable objects
+            var reachableObjects = [];
+            dfsx(function (e, v) {
+                if (v instanceof ValueExpression_1.ValueObject)
+                    reachableObjects.push({ e: e, o: v.UID });
+            });
+            var res = reachableObjects.filter(function (x) { return x.o == o; })[0];
+            if (res)
+                return res.e;
+            return null;
+        };
         NormalizedEnv.prototype.woAccInternal = function (o, f) {
             var env = cloneEvalEnv(this.env);
-            // if ()
-            // delete env.r[x];
+            env.A = env.A.filter(function (x) { return x.o != o || x.f != f; });
+            var he = env.H[o];
+            if (he)
+                delete he.fs[f];
             return NormalizedEnv.create(this.ineq, env);
         };
         NormalizedEnv.prototype.woAcc = function (e, f) {
-            return new VerificationFormula_1.VerificationFormula("TODO = TODO").createNormalizedEnv();
-            // if (new FormulaPartAcc(e, f).envImpiledBy(this))
-            // {
-            //     var v = e.eval(this.env);
-            //     if (v instanceof ValueObject)
-            //         return this.woAccInternal(v.UID, f);
-            //     throw "unreachable";
-            // }
+            var x = this;
+            for (var _i = 0, _a = this.reachableObjects(); _i < _a.length; _i++) {
+                var o = _a[_i];
+                var ex = this.createExpression(o);
+                if (ex && this.addEq(e, ex) == null) {
+                    continue; // aliasing apparently impossible
+                }
+                x = x.woAccInternal(o, f);
+            }
+            return x;
         };
         return NormalizedEnv;
     }());

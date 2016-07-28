@@ -1,5 +1,6 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { FootprintStatic } from "./Footprint";
+import { Expression } from "./Expression";
 
 export class VerificationFormulaGradual
 {
@@ -73,6 +74,10 @@ export class VerificationFormulaGradual
     public woVar(x: string): VerificationFormulaGradual
     {
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woVar(x));
+    }
+    public woAcc(e: Expression, f: string): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woAcc(e, f));
     }
 
     // may produce false negatives
