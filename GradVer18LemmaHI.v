@@ -886,3 +886,35 @@ Proof.
   specialize (dis (o0, f0)).
   intuition.
 Qed.
+
+Lemma phiImpliesAppB : forall p p1 p2,
+  (forall H r A, evalphi H r A p -> disjoint (footprint H r p1) (footprint H r p2)) ->
+  phiImplies p p1 ->
+  phiImplies p p2 ->
+  phiImplies p (p1 ++ p2).
+Proof.
+  induction p1; intros; cut.
+  repeat intro.
+  simpl in *.
+  apply IHp1 in H2.
+  Focus 2. intros. apply H0 in H5. apply disjointAppA in H5. cut.
+  Focus 2. eapp (phiImpliesTrans p0 (a :: p1) p1). rewrite cons2app. eapp phiImpliesSuffix.
+  assert (H3' := H3).
+  assert (H3'' := H3).
+  apply H1 in H3.
+  apply H2 in H3'.
+  apply H0 in H3''.
+  apply disjointAppA in H3''. unf.
+  inv H3.
+  eca.
+  eapp evalphiRemoveAexcept.
+  rewrite footprintApp.
+  apply disjointAppA.
+  split.
+  - apply evalphiImpliesAccess in H16.
+    apply inclAexceptDisjoint in H16.
+    assumption.
+  - unfold disjoint in *. intros.
+    specialize (H4 x0).
+    cut.
+Qed.

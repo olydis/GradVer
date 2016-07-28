@@ -193,6 +193,8 @@ Ltac undecb :=
       in *.
 
 Definition GammaEmpty : Gamma := fun x => None.
+
+(*coq2latex: GammaSet #x #T #G := #G, #x : #T *)
 Definition GammaSet (x : x) (T : T) (G : Gamma) : Gamma :=
   fun x' => if x ==b x' then Some T else G x'.
 
@@ -493,16 +495,23 @@ Definition hasNoStaticType (G : Gamma) (e : e) : Prop :=
 Definition fieldHasType C f T := fieldType C f = Some T.
 
 (* Figure 5: Hoare-based proof rules for core language *)
-(*coq2latex: accListApp #x \overline{f} #p := \overline{\acc(#x, f_i) * } #p *)
-Definition accListApp (x : x) (f_bar : list f) (p : phi) : phi := fold_right
-        (fun arg1 arg2 => phiAcc (ex x) arg1 :: arg2)
-        p
+(*coq2latex: accListApp #x \overline{f} := \overline{\acc(#x, f_i)} *)
+Definition accListApp (x : x) (f_bar : list f) : phi := 
+        map
+        (fun f => phiAcc (ex x) f)
         f_bar.
 
+
+(*coq2latex: @incl phi' #p1 #p2 := #p1 \subseteq #p2 *)
 
 (*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
 (*coq2latex: @cons phi' #p1 (@nil phi') := #p1 *)
 (*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
+
+(*coq2latex: @app s #p1 #p2 := #p1; #p2 *)
+(*coq2latex: @cons s #p1 (@nil s) := #p1 *)
+(*coq2latex: @cons s #p1 #p2 := #p1; #p2 *)
+
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)
 (*coq2latex: @cons #_ #p1 #p2 := #p1 \cdot #p2 *)
@@ -538,14 +547,17 @@ Definition FVA_s (A : A_s) : list x := flat_map FVe (map fst A).
 (* Definition FVmTarg (m : list (x * e)) : list x := flat_map FVe (map snd m). *)
 
 
-(*coq2latex: unfoldAcc #e #T #TT := \hasAccFor {#e} *)
+(*coq2latex: unfoldAcc #e := \accFor {#e} *)
 Definition unfoldAcc (e : e) : phi :=
   match e with
   | edot e f => [phiAcc e f]
   | _ => []
   end.
 
-(*coq2latex: hoare #p1 #s #p2 := \hoare #p1 #s #p2 *)
+(*coq2latex: GammaNotSetAt #G #x := #x \not\in \dom(#G) *)
+Definition GammaNotSetAt (G : Gamma) (x : x) : Prop := G x = None.
+
+(*coq2latex: hoare #G #p1 #s #p2 := #G \hoare #p1 #s #p2 *)
 Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
 | HNewObj : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
     phiImplies phi phi' ->
@@ -557,7 +569,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       G
       phi
       [sAlloc x C]
-      (accListApp x f_bar (phiNeq (ex x) (ev vnull) :: phi'))
+      (phi' ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))
 | HFieldAssign : forall G(*\Gamma*) (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
     phiImplies phi (phiAcc (ex x) f :: 
                     phiNeq (ex x) (ev vnull) :: phi') ->
@@ -567,9 +579,9 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     hasStaticType G (ex y) T ->
     fieldHasType C f T ->
     hoare G phi [sMemberSet x f y]
-      (phiAcc (ex x) f ::
+      (phi' ++ phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
-       phiEq (edot (ex x) f) (ex y) :: phi')
+       phiEq (edot (ex x) f) (ex y) :: [])
 | HVarAssign : forall G(*\Gamma*) T phi(*\*) phi'(*\*) (x : x) (e : e),
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
@@ -588,37 +600,37 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     hoare G
       phi 
       [sReturn x]
-      (phiEq (ex xresult) (ex x) :: phi')
-| HApp : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi_r(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+      (phi' ++ phiEq (ex xresult) (ex x) :: [])
+| HApp : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi'(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p ++ phi_r) ->
-    sfrmphi [] phi_r ->
-    NotIn x (FV phi_r) ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p ++ phi') ->
+    sfrmphi [] phi' ->
+    NotIn x (FV phi') ->
     listDistinct [x ; y ; z'] ->
     phi_p = phiSubsts2 xthis y (xUserDef z) z' phi_pre ->
     phi_q = phiSubsts3 xthis y (xUserDef z) z' xresult x phi_post ->
-    hoare G phi [sCall x y m z'] (phi_q ++ phi_r)
-| HAssert : forall G(*\Gamma*) phi_1(*\*) phi_2(*\*),
-    phiImplies phi_1 phi_2 ->
-    hoare G phi_1 [sAssert phi_2] phi_1
-| HRelease : forall G(*\Gamma*) phi_1(*\*) phi_2(*\*) phi_r(*\*),
-    phiImplies phi_1 (phi_2 ++ phi_r) ->
-    sfrmphi [] phi_r ->
-    hoare G phi_1 [sRelease phi_2] phi_r
-| HDeclare : forall ss G(*\Gamma*) phi(*\*) phi'(*\*) x T,
-    G x = None ->
+    hoare G phi [sCall x y m z'] (phi' ++ phi_q)
+| HAssert : forall G(*\Gamma*) phi(*\*) phi'(*\*),
+    phiImplies phi phi' ->
+    hoare G phi [sAssert phi'] phi
+| HRelease : forall G(*\Gamma*) phi(*\*) phi_r(*\*) phi'(*\*),
+    phiImplies phi (phi_r ++ phi') ->
+    sfrmphi [] phi' ->
+    hoare G phi [sRelease phi_r] phi'
+| HDeclare : forall s(*\overline{s}*) G(*\Gamma*) phi(*\*) phi'(*\*) x T,
+    GammaNotSetAt G x ->
     hoare (GammaSet x T G)
       (phiEq (ex x) (ev (defaultValue' T)) :: phi)
-      ss
+      s
       phi' ->
     hoare G
       phi
-      (sDeclare T x :: ss)
+      (sDeclare T x :: s)
       phi'
-| HSec : forall s1 s2 G(*\Gamma*) p q r,
+| HSec : forall s1(*s_1*) s2(*s_2*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p s1 q ->
     hoare G q s2 r ->
     hoare G p (s1 ++ s2) r
