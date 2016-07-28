@@ -447,8 +447,9 @@ Inductive evalphi' : H -> rho -> A_d -> phi' -> Prop :=
     evale H rho e_2 v_2 ->
     neq v_1 v_2 ->
     evalphi' H rho A (phiNeq e_1 e_2)
-| EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f,
+| EAAcc : forall H rho(*\*) (A : A_d) e (o : o) f v,
     evale H rho e (vo o) ->
+    evale H rho (edot e f) v ->
     In (o, f) A ->
     evalphi' H rho A (phiAcc e f)
 .
