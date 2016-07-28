@@ -220,8 +220,6 @@ Definition liftableAppend (p : phi) (p1 p2 : phi) : Prop :=
   (forall p'',(good p'' /\ phiImplies p'' (p1 ++ p)) ->
    exists p' , good p'  /\ phiImplies p'  (p1) /\ phiImplies p'' (p' ++ p) /\ good (p' ++ p)).
 
-Definition liftable
-
 Theorem liftableAppend_ : forall p, liftable (liftableAppend p).
 Proof.
   split.
@@ -271,6 +269,43 @@ Proof.
     apply H1.
 Qed.
 
+Definition minWith {T:Type} (pred : T -> Prop) (lt : T -> T -> Prop) : T -> Prop :=
+    fun x => pred x /\ (forall y, pred y -> lt x y).
+
+Definition liftableWOvar (x : x) (p1 p2 : phi) : Prop :=
+  (good p1 -> good p2) /\
+  (minWith (fun p => phiImplies p1 p /\ ~ In x (FV p)) phiImplies p2).
+
+Theorem liftableWOvar_ : forall x, liftable (liftableWOvar x).
+Proof.
+  split.
+    constructor.
+      intros. apply H. assumption.
+    split.
+      intros. admit. (*the case when implemented*)
+    intros.
+      admit. (* add x=x for variable x that does not occur in x0 *)
+  split.
+    unfold pmFun. intros.
+    inv H. inv H0.
+    unfold minWith in *.
+    unf.
+    apply H7.
+    splau.
+    eapp (phiImpliesTrans x1 x2 y2).
+  unfold gFun. intros.
+  unfold gGamma' in *. simpl in *.
+  destruct pa.
+  - unf.
+    eexists. (* take minimum self-framed pb (if multiple choices, look at p1) *)
+    eexists. (* follows from evaluation of WO *)
+    admit.
+  - subst.
+    exists pb.
+    exists pc.
+    cut.
+Admitted.
+    
 (* Lemma gGammaContainsEquiv : forall gp p1 p2,
   phiImplies p2 p1 ->
   gGamma' (true, gp) p1 ->
@@ -486,8 +521,8 @@ Proof.
     eapp evalphiAppRev.
 Qed.
 
-Definition minWith {T:Type} (pred : T -> Prop) (lt : T -> T -> Prop) : T -> Prop :=
-    fun x => pred x /\ (forall y, pred y -> lt x y).
+
+
 
 Definition nPhiWithout (x : x) (p1 p2 : phi) :=
   phiSatisfiable p1 /\
