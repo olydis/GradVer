@@ -1,0 +1,64 @@
+% Inductive Semantics.hoare
+
+\begin{mathpar}
+\inferrule* [Right=HNewObj]
+{{\wo {\grad{\phi}} {x}} = \grad{\phi'}\\
+    {\Gamma} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{x} := \new {C}}} {{\grad{\phi'}} \gsc {{({{x}} \neq {{\vnull}})} \gsc {\overline{\acc({x}, f_i)}}}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HFieldAssign]
+{{\wo {\grad{\phi}} {\acc(x.f)}} = \grad{\phi'}\\
+    \grad{\phi} \grad{\implies} {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{x}.{f} := {y}}} {\grad{\phi'} \gsc {{\acc({{x}}.{f})} \gsc {{({{x}} \neq {{\vnull}})} \gsc {{({{{x}}.{f}} = {{y}})}}}}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HVarAssign]
+{{\wo {\grad{\phi}} {x}} = \grad{\phi'}\\
+    {x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\grad{\phi'}} \grad{\implies} {\accFor {{e}}}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{x} := {e}}} {\grad{\phi'} \gsc {{({{x}} = {e})}}}}
+\end{mathpar}
+
+Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular concatenation.
+
+\begin{mathpar}
+\inferrule* [Right=HReturn]
+{{\wo {\grad{\phi}} {\xresult}} = \grad{\phi'}\\
+    {\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {{\xresult}} : {T}}
+{\Gamma~ \ghoare {\grad{\phi}} {{\return {x}}} {\grad{\phi'} \gsc {{({{\xresult}} = {{x}})}}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HApp]
+{\wo {\wo {\grad{\phi}} {x}} {\staticFP{\grad{\phi_p}}} = \grad{\phi'}\\
+    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \grad{\phi_{pre}};~\ensures \grad{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\grad{\phi} \grad{\implies} {{({{y}} \neq {{\vnull}})} * {\grad{\phi_p}}}\\x \neq y \wedge x \neq z'\\\grad{\phi_p} = {\grad{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\grad{\phi_q} = {\grad{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{x} := {y}.{m}({z'})}} {\grad{\phi'} * \grad{\phi_q}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HAssert]
+{\grad{\phi} \grad{\implies} {\phi'}}
+{\Gamma~ \ghoare {\grad{\phi}} {{\assert {\phi'}}} {\grad{\phi}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HRelease]
+{{\wo {\grad{\phi}} {\staticFP{\phi_r}}} = \grad{\phi'}\\
+    \grad{\phi} \grad{\implies} {{\phi_r}}}
+{\Gamma~ \ghoare {\grad{\phi}} {{\release {\phi_r}}} {\grad{\phi'}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HDeclare]
+{{x} \not\in \dom({\Gamma})\\{{\Gamma}, {x} : {T}} \hoare {\grad{\phi} \gsc {({{x}} = {{\texttt{defaultValue}({T})}})}} {\overline{s}} {\grad{\phi'}}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{T}~{x}}; {\overline{s}}} {\grad{\phi'}}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=HSec]
+{\Gamma~ \ghoare {\grad{\phi_p}} {s_1} {\grad{\phi_q}}\\\Gamma~ \ghoare {\grad{\phi_q}} {s_2} {\grad{\phi_r}}}
+{\Gamma~ \ghoare {\grad{\phi_p}} {{s_1}; {s_2}} {\grad{\phi_r}}}
+\end{mathpar}
+

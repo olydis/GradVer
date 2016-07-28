@@ -97,6 +97,8 @@
 \newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}
 
 \newcommand{\hsc}{~\hat{*}~}
+\newcommand{\gsc}{~\grad{*}~}
+\newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
 
 \section{Syntax}
 
@@ -237,52 +239,15 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
 \input{staticSemantics}
+
 \subsubsection{Notation}
 \input{staticSemanticsNotation}
+
 \subsubsection{Deterministic}
 \input{staticSemanticsDeterm}
 
-\subsubsection{HApp determinism discussion}
-\begin{mathpar}
-    \inferrule* [Right=HApp]
-    {{\Gamma} \vdash {{y}} : {{C}}\\
-        {\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
-        {\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
-        {\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi_r}}}\\
-        {\emptyset} \sfrmphi {\phi_r}\\
-        {x} \not \in {FV(\phi_r)}\\
-        x \neq y \wedge x \neq z'\\
-        {\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
-        {\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-    {\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
-\end{mathpar}
-
-\begin{mathpar}
-    \inferrule* [Right=HAppD]
-    {{\Gamma} \vdash {{y}} : {{C}}\\
-        {\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\
-        {\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
-        {\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
-        \phi_r = \phi / \phi_p / x\\
-        x \neq y \wedge x \neq z'\\
-        {\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\
-        {\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-    {\Gamma \hoare {\phi} {{x} := {y}.{m}({z'})} {{\phi_q} * {\phi_r}}}
-\end{mathpar}
-
-\begin{mathpar}
-    \inferrule* [Right=GHAppD]
-    {{\Gamma} \vdash {{y}} : {{C}}\\
-        {\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\grad{\phi_{pre}}};~\ensures {\grad{\phi_{post}}};}~\{ {\_} \}}}\\
-        {\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\
-        {\grad{\phi}} \grad{\implies} {{({{y}} \neq {{\vnull}})} * {{\phi_p}}}\\
-        \grad{\phi_r} = \grad{\phi} /_{y : C, z' : T_p, x : T_r} \grad{\phi_p} / x\\
-        x \neq y \wedge x \neq z'\\
-        \grad{\phi_p} = {{\grad{\phi_{pre}}}[{y}, {z'} / {\xthis}, {{z}}]}\\
-        \grad{\phi_q} = {{\grad{\phi_{post}}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-    {\Gamma~ \ghoare {\grad{\phi}} {{x} := {y}.{m}({z'})} {\grad{\phi_q} * \grad{\phi_r}}}
-\end{mathpar}
-
+\subsubsection{Gradual}
+\input{staticSemanticsDetermGrad}
 
 \section{Dynamic semantics}
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}

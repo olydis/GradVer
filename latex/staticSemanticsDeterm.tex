@@ -1,7 +1,5 @@
 % Inductive Semantics.hoare
 
-\newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
-
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
 {{\wo {\hat{\phi}} {x}} = \hat{\phi'}\\
@@ -19,9 +17,11 @@
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
 {{\wo {\hat{\phi}} {x}} = \hat{\phi'}\\
-    {x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\accFor {{e}}} \subseteq {\hat{\phi'}}}
+    {x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\hat{\phi'}} \implies {\accFor {{e}}}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x} := {e}}} {\hat{\phi'} \hsc {{({{x}} = {e})}}}}
 \end{mathpar}
+
+Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preserve self-framing!
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
