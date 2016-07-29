@@ -407,6 +407,23 @@ export class VerificationFormula
             ? VerificationFormula.empty()
             : VerificationFormula.getFalse();
     }
+
+    public impliedEqualities(): FormulaPartEq[]
+    {
+        var nenv = this.createNormalizedEnv();
+        return nenv == null
+            ? null
+            : nenv.impliedEqualities().map(x => new FormulaPartEq(x.e1, x.e2));
+    }
+
+    public impliedInequalities(): FormulaPartNeq[]
+    {
+        var nenv = this.createNormalizedEnv();
+        return nenv == null
+            ? null
+            : nenv.impliedInequalities().map(x => new FormulaPartNeq(x.e1, x.e2));
+    }
+
     public norm(): VerificationFormula
     {
         var nenv = this.createNormalizedEnv();

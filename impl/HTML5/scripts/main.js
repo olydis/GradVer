@@ -1,4 +1,4 @@
-define(["require", "exports", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./testing/MainTest"], function (require, exports, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, MainTest_1) {
+define(["require", "exports", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/VerificationFormula"], function (require, exports, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, MainTest_1, VerificationFormulaGradual_1, VerificationFormula_1) {
     "use strict";
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
@@ -62,6 +62,42 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
             update();
             $("#containerImpliesInputA").append(inputA.createHTML());
             $("#containerImpliesInputB").append(inputB.createHTML());
+        })();
+        // containerSup
+        (function () {
+            var update = function () { };
+            var inputA = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
+            var inputB = new EditVerificationFormula_1.EditVerificationFormula("", function () { return update(); });
+            update = function () {
+                var pA = inputA.getFormula();
+                var pB = inputB.getFormula();
+                if (!pA.gradual) {
+                    inputA.setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, pA.staticFormula));
+                    return;
+                }
+                if (!pB.gradual) {
+                    inputB.setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, pB.staticFormula));
+                    return;
+                }
+                var sA = pA.norm().staticFormula;
+                var sB = pB.norm().staticFormula;
+                var parts = [];
+                for (var _i = 0, _a = sA.impliedEqualities(); _i < _a.length; _i++) {
+                    var eq = _a[_i];
+                    if (sB.implies(new VerificationFormula_1.VerificationFormula(null, [eq])))
+                        parts.push(eq);
+                }
+                for (var _b = 0, _c = sA.impliedInequalities(); _b < _c.length; _b++) {
+                    var neq = _c[_b];
+                    if (sB.implies(new VerificationFormula_1.VerificationFormula(null, [neq])))
+                        parts.push(neq);
+                }
+                var res = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, parts));
+                $("#containerSupOutput").text(res.norm().createHTML().text());
+            };
+            update();
+            $("#containerSupInputA").append(inputA.createHTML());
+            $("#containerSupInputB").append(inputB.createHTML());
         })();
         $("#btnTESTS").click(function () { return MainTest_1.testAll(); });
         // var editor = new EditInstructions(

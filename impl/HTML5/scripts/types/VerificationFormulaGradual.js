@@ -1,4 +1,4 @@
-define(["require", "exports", "./VerificationFormula"], function (require, exports, VerificationFormula_1) {
+define(["require", "exports", "./VerificationFormula", "./Expression"], function (require, exports, VerificationFormula_1, Expression_1) {
     "use strict";
     var VerificationFormulaGradual = (function () {
         function VerificationFormulaGradual(source) {
@@ -47,7 +47,22 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             return this.staticFormula.satisfiable();
         };
         VerificationFormulaGradual.prototype.norm = function () {
-            return VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+            var res = VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+            // gradual post-normalization
+            if (this.gradual) {
+                var linearPart = res.staticFormula.parts.filter(function (p) { return p instanceof VerificationFormula_1.FormulaPartAcc; });
+                var classicalPart = res.staticFormula.parts.filter(function (p) { return !(p instanceof VerificationFormula_1.FormulaPartAcc); });
+                // augment classical parts
+                for (var i = 0; i < linearPart.length; ++i) {
+                    for (var j = i + 1; j < linearPart.length; ++j)
+                        if (linearPart[i].f == linearPart[j].f)
+                            classicalPart.push(new VerificationFormula_1.FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+                    var pivot = new Expression_1.ExpressionDot(linearPart[i].e, linearPart[i].f);
+                    classicalPart.push(new VerificationFormula_1.FormulaPartEq(pivot, pivot));
+                }
+                res = VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, classicalPart));
+            }
+            return res;
         };
         VerificationFormulaGradual.prototype.woVar = function (x) {
             return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woVar(x));

@@ -364,6 +364,18 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? VerificationFormula.empty()
                 : VerificationFormula.getFalse();
         };
+        VerificationFormula.prototype.impliedEqualities = function () {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? null
+                : nenv.impliedEqualities().map(function (x) { return new FormulaPartEq(x.e1, x.e2); });
+        };
+        VerificationFormula.prototype.impliedInequalities = function () {
+            var nenv = this.createNormalizedEnv();
+            return nenv == null
+                ? null
+                : nenv.impliedInequalities().map(function (x) { return new FormulaPartNeq(x.e1, x.e2); });
+        };
         VerificationFormula.prototype.norm = function () {
             var nenv = this.createNormalizedEnv();
             return nenv == null

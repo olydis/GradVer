@@ -159,7 +159,7 @@ export class NormalizedEnv {
         });
         return reachableObjects;
     }
-    public createFormula(): VerificationFormula
+    private getNameableObjects(): { [o: number]: Expression[] }
     {
         // collect reachable objects
         var reachableObjects: {e: Expression, o: number}[] = [];
@@ -175,6 +175,57 @@ export class NormalizedEnv {
                 .filter(x => x.o == o)
                 .map(x => x.e)
                 .sort((a, b) => a.depth() - b.depth());
+        return objs;
+    }
+    public impliedEqualities(): {e1: Expression, e2: Expression}[]
+    {
+        var res: {e1: Expression, e2: Expression}[] = [];
+        var objs = this.getNameableObjects();
+        var getExpressions: (v: Value) => Expression[] = (v: Value) => {
+            if (v instanceof ValueExpression)
+                return [new ExpressionV(v)];
+            if (v instanceof ValueObject)
+            {
+                var o = v.UID;
+                if (objs[o])
+                    return objs[o];
+                return [];
+            }
+            throw "unknown subtype";
+        };
+        this.allExpressionDfs((e, v) => {
+            res.push(...getExpressions(v).map(ex => {return {e1: e, e2: ex};}));
+        });
+        return res;
+    }
+    public impliedInequalities(): {e1: Expression, e2: Expression}[]
+    {
+        var res: {e1: Expression, e2: Expression}[] = [];
+        var objs = this.getNameableObjects();
+        var getExpressions: (v: Value) => Expression[] = (v: Value) => {
+            if (v instanceof ValueExpression)
+                return [new ExpressionV(v)];
+            if (v instanceof ValueObject)
+            {
+                var o = v.UID;
+                if (objs[o])
+                    return objs[o];
+                return [];
+            }
+            throw "unknown subtype";
+        };
+        this.ineq.forEach(ineq => {
+            var a = ineq.v1;
+            var b = ineq.v2;
+            for (var ea of getExpressions(a))
+                for (var eb of getExpressions(b))
+                    res.push({e1: ea, e2: eb});
+        });
+        return res;
+    }
+    public createFormula(): VerificationFormula
+    {
+        var objs = this.getNameableObjects();
         // BUILD
         var parts: FormulaPart[] = [];
         // accs

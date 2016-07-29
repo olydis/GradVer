@@ -125,7 +125,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             });
             return reachableObjects;
         };
-        NormalizedEnv.prototype.createFormula = function () {
+        NormalizedEnv.prototype.getNameableObjects = function () {
             // collect reachable objects
             var reachableObjects = [];
             this.allExpressionDfs(function (e, v) {
@@ -142,11 +142,61 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     .map(function (x) { return x.e; })
                     .sort(function (a, b) { return a.depth() - b.depth(); });
             }
+            return objs;
+        };
+        NormalizedEnv.prototype.impliedEqualities = function () {
+            var res = [];
+            var objs = this.getNameableObjects();
+            var getExpressions = function (v) {
+                if (v instanceof ValueExpression_1.ValueExpression)
+                    return [new Expression_1.ExpressionV(v)];
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (objs[o])
+                        return objs[o];
+                    return [];
+                }
+                throw "unknown subtype";
+            };
+            this.allExpressionDfs(function (e, v) {
+                res.push.apply(res, getExpressions(v).map(function (ex) { return { e1: e, e2: ex }; }));
+            });
+            return res;
+        };
+        NormalizedEnv.prototype.impliedInequalities = function () {
+            var res = [];
+            var objs = this.getNameableObjects();
+            var getExpressions = function (v) {
+                if (v instanceof ValueExpression_1.ValueExpression)
+                    return [new Expression_1.ExpressionV(v)];
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    var o = v.UID;
+                    if (objs[o])
+                        return objs[o];
+                    return [];
+                }
+                throw "unknown subtype";
+            };
+            this.ineq.forEach(function (ineq) {
+                var a = ineq.v1;
+                var b = ineq.v2;
+                for (var _i = 0, _a = getExpressions(a); _i < _a.length; _i++) {
+                    var ea = _a[_i];
+                    for (var _b = 0, _c = getExpressions(b); _b < _c.length; _b++) {
+                        var eb = _c[_b];
+                        res.push({ e1: ea, e2: eb });
+                    }
+                }
+            });
+            return res;
+        };
+        NormalizedEnv.prototype.createFormula = function () {
+            var objs = this.getNameableObjects();
             // BUILD
             var parts = [];
             // accs
-            for (var _a = 0, _b = this.env.A; _a < _b.length; _a++) {
-                var acc = _b[_a];
+            for (var _i = 0, _a = this.env.A; _i < _a.length; _i++) {
+                var acc = _a[_i];
                 if (objs[acc.o])
                     parts.push(new VerificationFormula_1.FormulaPartAcc(objs[acc.o][0], acc.f));
             }
@@ -162,8 +212,8 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                 }
                 throw "unknown subtype";
             };
-            for (var _c = 0, _d = this.ineq; _c < _d.length; _c++) {
-                var ineq = _d[_c];
+            for (var _b = 0, _c = this.ineq; _b < _c.length; _b++) {
+                var ineq = _c[_b];
                 var e1 = getExpression(ineq.v1);
                 var e2 = getExpression(ineq.v2);
                 if (e1 && e2)

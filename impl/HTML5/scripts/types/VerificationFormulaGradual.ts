@@ -1,6 +1,6 @@
-import { VerificationFormula, FormulaPartAcc, FormulaPartNeq, FormulaPart } from "./VerificationFormula";
+import { VerificationFormula, FormulaPartAcc, FormulaPartNeq, FormulaPartEq, FormulaPart } from "./VerificationFormula";
 import { FootprintStatic } from "./Footprint";
-import { Expression } from "./Expression";
+import { Expression, ExpressionDot } from "./Expression";
 
 export class VerificationFormulaGradual
 {
@@ -69,7 +69,26 @@ export class VerificationFormulaGradual
     }
     public norm(): VerificationFormulaGradual
     {
-        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+        var res = VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
+        // gradual post-normalization
+        if (this.gradual)
+        {
+            var linearPart = <FormulaPartAcc[]>
+                res.staticFormula.parts.filter(p => p instanceof FormulaPartAcc);
+            var classicalPart =
+                res.staticFormula.parts.filter(p => !(p instanceof FormulaPartAcc));
+            // augment classical parts
+            for (var i = 0; i < linearPart.length; ++i)
+            {
+                for (var j = i + 1; j < linearPart.length; ++j)
+                    if (linearPart[i].f == linearPart[j].f)
+                        classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+                var pivot = new ExpressionDot(linearPart[i].e, linearPart[i].f);
+                classicalPart.push(new FormulaPartEq(pivot, pivot));
+            }
+            res = VerificationFormulaGradual.create(true, new VerificationFormula(null, classicalPart));
+        }
+        return res;
     }
     public woVar(x: string): VerificationFormulaGradual
     {

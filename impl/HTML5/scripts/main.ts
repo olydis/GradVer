@@ -6,6 +6,8 @@ import { Expression, ExpressionDot } from "./types/Expression";
 //import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 import { testAll } from "./testing/MainTest";
+import { VerificationFormulaGradual } from "./types/VerificationFormulaGradual";
+import { VerificationFormula, FormulaPart, FormulaPartEq, FormulaPartNeq } from "./types/VerificationFormula";
 
 $(() =>
 {
@@ -78,6 +80,44 @@ $(() =>
         update();
         $("#containerImpliesInputA").append(inputA.createHTML());
         $("#containerImpliesInputB").append(inputB.createHTML());
+    })();
+    
+    // containerSup
+    (() => {
+        var update = () => {};
+        var inputA = new EditVerificationFormula("", () => update());
+        var inputB = new EditVerificationFormula("", () => update());
+        update = () =>
+        {
+            var pA = inputA.getFormula();
+            var pB = inputB.getFormula();
+            if (!pA.gradual)
+            {
+                inputA.setFormula(VerificationFormulaGradual.create(true, pA.staticFormula));
+                return;
+            }
+            if (!pB.gradual)
+            {
+                inputB.setFormula(VerificationFormulaGradual.create(true, pB.staticFormula));
+                return;
+            }
+
+            var sA = pA.norm().staticFormula;
+            var sB = pB.norm().staticFormula;
+
+            var parts: FormulaPart[] = [];
+            for (var eq of sA.impliedEqualities())
+                if (sB.implies(new VerificationFormula(null, [eq])))
+                    parts.push(eq);
+            for (var neq of sA.impliedInequalities())
+                if (sB.implies(new VerificationFormula(null, [neq])))
+                    parts.push(neq);
+            var res = VerificationFormulaGradual.create(true, new VerificationFormula(null, parts));
+            $("#containerSupOutput").text(res.norm().createHTML().text());
+        };
+        update();
+        $("#containerSupInputA").append(inputA.createHTML());
+        $("#containerSupInputB").append(inputB.createHTML());
     })();
 
     $("#btnTESTS").click(() => testAll());
