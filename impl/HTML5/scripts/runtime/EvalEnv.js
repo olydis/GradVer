@@ -137,7 +137,10 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             var objs = {};
             for (var _i = 0, os_1 = os; _i < os_1.length; _i++) {
                 var o = os_1[_i];
-                objs[o] = reachableObjects.filter(function (x) { return x.o == o; }).map(function (x) { return x.e; }).sort(function (a, b) { return a.depth() - b.depth(); });
+                objs[o] = reachableObjects
+                    .filter(function (x) { return x.o == o; })
+                    .map(function (x) { return x.e; })
+                    .sort(function (a, b) { return a.depth() - b.depth(); });
             }
             // BUILD
             var parts = [];
@@ -173,12 +176,11 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     parts.push(new VerificationFormula_1.FormulaPartEq(e, ex));
             });
             // MINIFY
-            for (var i = 0; i < parts.length; ++i) {
+            for (var i = parts.length - 1; i >= 0; --i) {
                 var partTarget = parts[i];
                 var partsSource = parts.filter(function (_, j) { return i != j; });
                 if (new VerificationFormula_1.VerificationFormula(null, partsSource).implies(new VerificationFormula_1.VerificationFormula(null, [partTarget]))) {
                     parts = partsSource;
-                    --i;
                 }
             }
             return new VerificationFormula_1.VerificationFormula(null, parts);

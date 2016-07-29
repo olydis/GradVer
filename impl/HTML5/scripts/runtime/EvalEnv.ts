@@ -171,7 +171,10 @@ export class NormalizedEnv {
         os = os.filter((x, i) => i == 0 || os[i - 1] != x);
         var objs: { [o: number]: Expression[] } = {};
         for (var o of os)
-            objs[o] = reachableObjects.filter(x => x.o == o).map(x => x.e).sort((a, b) => a.depth() - b.depth());
+            objs[o] = reachableObjects
+                .filter(x => x.o == o)
+                .map(x => x.e)
+                .sort((a, b) => a.depth() - b.depth());
         // BUILD
         var parts: FormulaPart[] = [];
         // accs
@@ -205,7 +208,7 @@ export class NormalizedEnv {
                 parts.push(new FormulaPartEq(e, ex));
         });
         // MINIFY
-        for (var i = 0; i < parts.length; ++i)
+        for (var i = parts.length - 1; i >= 0; --i)
         {
             var partTarget = parts[i];
             var partsSource = parts.filter((_, j) => i != j);
@@ -213,7 +216,6 @@ export class NormalizedEnv {
                 new VerificationFormula(null, [partTarget])))
             {
                 parts = partsSource;
-                --i;
             }
         }
         return new VerificationFormula(null, parts);
