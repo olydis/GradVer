@@ -57,9 +57,13 @@ Definition evalphi'B (h : H) (r : rho) (a : A_d) (p : phi') : bool :=
                      | Some v2 => negb (v_decb v1 v2)
                      end
                    end
-  | phiAcc e f =>  match evale' h r e with
-                   | Some (vo o) => inB A'_d_dec (o, f) a
-                   | _ => false
+  | phiAcc e f =>  match evale' h r (edot e f) with
+                   | Some _ =>
+                     match evale' h r e with
+                     | Some (vo o) => inB A'_d_dec (o, f) a
+                     | _ => false
+                     end
+                   | None => false
                    end
   end.
 
@@ -95,12 +99,14 @@ Proof.
       rewrite H3, H7.
       dec v_dec; auto.
   - split; intros.
-    * destruct (evale' h r e) eqn: ev; cut.
-      destruct v; cut.
+    * destruct evale' eqn: ev1; cut.
+      destruct (evale' h r e) eqn: ev2; cut.
+      destruct v0; cut.
       eca.
       eapply inB_In; eauto.
     * inv H.
-      rewrite H6.
+      rewrite H7.
+      rewrite H3.
       apply inB_In.
       auto.
 Qed.
