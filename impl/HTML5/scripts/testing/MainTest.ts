@@ -9,7 +9,7 @@ import { testWoAccPreserveSfrm } from "./TestWoAcc";
 
 var testProcs: (() => void)[] = 
     [ testWoVarPreserveSat
-    
+
     , testWoVarMonotonic
     , testWoVarPreserveSat
     , testWoVarPreserveSfrm
@@ -20,7 +20,13 @@ var testProcs: (() => void)[] =
     , testWoAccPreserveSfrm
     ];
 
-export function test(iters: number = 1000, testProc: number)
+export function testAll(iters: number = 10000)
+{
+    for (var i = 0; i < testProcs.length; ++i)
+        test(iters, i);
+}
+
+export function test(iters: number, testProc: number)
 {
     testX(iters, testProcs[testProc % testProcs.length]);
 }
@@ -29,7 +35,8 @@ function testX(iters: number, testProc: () => void)
 {
     if (iters > 0)
         setTimeout(() => {
-            console.log((<any>testProc).name);
+            if (iters % 100 == 0)
+                console.log((<any>testProc).name, iters);
             testProc();
             testX(iters - 1, testProc);
         }, 10);

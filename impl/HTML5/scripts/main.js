@@ -1,4 +1,4 @@
-define(["require", "exports", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression"], function (require, exports, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1) {
+define(["require", "exports", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./testing/MainTest"], function (require, exports, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, MainTest_1) {
     "use strict";
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
@@ -63,6 +63,7 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
             $("#containerImpliesInputA").append(inputA.createHTML());
             $("#containerImpliesInputB").append(inputB.createHTML());
         })();
+        $("#btnTESTS").click(function () { return MainTest_1.testAll(); });
         // var editor = new EditInstructions(
         //     $("#codeContainer")
         //     //, hoare

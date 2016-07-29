@@ -5,6 +5,7 @@ import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
 import { Expression, ExpressionDot } from "./types/Expression";
 //import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
+import { testAll } from "./testing/MainTest";
 
 $(() =>
 {
@@ -78,6 +79,8 @@ $(() =>
         $("#containerImpliesInputA").append(inputA.createHTML());
         $("#containerImpliesInputB").append(inputB.createHTML());
     })();
+
+    $("#btnTESTS").click(() => testAll());
 
     // var editor = new EditInstructions(
     //     $("#codeContainer")

@@ -3,9 +3,9 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Expressi
     function testWoAccWorks() {
         var p1 = VerificationFormula_1.VerificationFormula.getFalse();
         var p2 = VerificationFormula_1.VerificationFormula.getFalse();
-        while (!p1.satisfiable())
+        while (!p1.satisfiable() || p1.footprintStatic().length == 0)
             p1 = GeneratorFormula_1.generateVerificationFormula(Random_1.rand());
-        while (!p1.implies(p2))
+        while (!p1.implies(p2) || p2.footprintStatic().length == 0)
             p2 = GeneratorFormula_1.generateVerificationFormula(Random_1.rand());
         var p1wo2 = p1;
         for (var _i = 0, _a = p2.footprintStatic(); _i < _a.length; _i++) {

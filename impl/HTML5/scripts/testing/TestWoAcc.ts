@@ -8,9 +8,9 @@ export function testWoAccWorks(): void
     var p1 = VerificationFormula.getFalse();
     var p2 = VerificationFormula.getFalse();
 
-    while (!p1.satisfiable())
+    while (!p1.satisfiable() || p1.footprintStatic().length == 0)
         p1 = generateVerificationFormula(rand());
-    while (!p1.implies(p2))
+    while (!p1.implies(p2) || p2.footprintStatic().length == 0)
         p2 = generateVerificationFormula(rand());
 
     var p1wo2 = p1;
