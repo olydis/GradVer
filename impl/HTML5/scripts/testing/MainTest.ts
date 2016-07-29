@@ -35,6 +35,7 @@ function testX(iters: number, testProc: () => void)
 {
     if (iters > 0)
         setTimeout(() => {
+            document.title = iters + " - " + (<any>testProc).name;
             if (iters % 100 == 0)
                 console.log((<any>testProc).name, iters);
             testProc();

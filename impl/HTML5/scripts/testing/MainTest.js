@@ -22,6 +22,7 @@ define(["require", "exports", "./TestWoVar", "./TestWoVar", "./TestWoVar", "./Te
     function testX(iters, testProc) {
         if (iters > 0)
             setTimeout(function () {
+                document.title = iters + " - " + testProc.name;
                 if (iters % 100 == 0)
                     console.log(testProc.name, iters);
                 testProc();
