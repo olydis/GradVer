@@ -22,7 +22,7 @@ export function testWoVarMonotonic(): void
     var t2x = "{" + p2x.createHTML().text() + "}";
 
     if (!p1x.implies(p2x))// FAIL
-        console.error("monotonic", t1, t2, t1x, t2x);
+        console.error("TestWoVar monotonic", t1, t2, t1x, t2x);
 }
 
 export function testWoVarPreserveSat(): void
@@ -38,8 +38,8 @@ export function testWoVarPreserveSat(): void
 
     var t1x = "{" + p1x.createHTML().text() + "}";
 
-    if (!p1x.satisfiable())// FAIL
-        console.error("preserve sat", t1, t1x);
+    if (!p1.implies(p1x))// FAIL
+        console.error("TestWoVar preserve sat", t1, t1x);
 }
 
 export function testWoVarPreserveSfrm(): void
@@ -56,5 +56,5 @@ export function testWoVarPreserveSfrm(): void
     var t1x = "{" + p1x.createHTML().text() + "}";
 
     if (!p1x.sfrm())// FAIL
-        console.error("preserve sfrm", t1, t1x);
+        console.error("TestWoVar preserve sfrm", t1, t1x);
 }

@@ -20,5 +20,5 @@ export function testImpliesTransitivity(): void
     var t3 = "{" + p3.createHTML().text() + "}";
 
     if (!p1.implies(p3))// FAIL
-        console.error("transitivity", t1, t2, t3);
+        console.error("TestImplies transitivity", t1, t2, t3);
 }

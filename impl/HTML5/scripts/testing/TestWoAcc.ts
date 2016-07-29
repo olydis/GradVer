@@ -25,7 +25,7 @@ export function testWoAccWorks(): void
     var t1x = "{" + p1x.createHTML().text() + "}";
 
     if (!p1.implies(p1x))// FAIL
-        console.error("works", t1, t2, t12, t1x);
+        console.error("TestWoAcc works", t1, t2, t12, t1x);
 }
 
 export function testWoAccMonotonic(): void
@@ -48,7 +48,7 @@ export function testWoAccMonotonic(): void
     var t2x = "{" + p2x.createHTML().text() + "}";
 
     if (!p1x.implies(p2x))// FAIL
-        console.error("monotonic", t1, t2, t1x, t2x);
+        console.error("TestWoAcc monotonic", t1, t2, t1x, t2x);
 }
 
 export function testWoAccPreserveSat(): void
@@ -64,8 +64,8 @@ export function testWoAccPreserveSat(): void
 
     var t1x = "{" + p1x.createHTML().text() + "}";
 
-    if (!p1x.satisfiable())// FAIL
-        console.error("preserve sat", t1, t1x);
+    if (!p1.implies(p1x))// FAIL
+        console.error("TestWoAcc preserve sat", t1, t1x);
 }
 
 export function testWoAccPreserveSfrm(): void
@@ -82,5 +82,5 @@ export function testWoAccPreserveSfrm(): void
     var t1x = "{" + p1x.createHTML().text() + "}";
 
     if (!p1x.sfrm())// FAIL
-        console.error("preserve sfrm", t1, t1x);
+        console.error("TestWoAcc preserve sfrm", t1, t1x);
 }

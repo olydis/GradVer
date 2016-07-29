@@ -14,7 +14,7 @@ define(["require", "exports", "../types/VerificationFormula", "./Random", "./Gen
         var t2 = "{" + p2.createHTML().text() + "}";
         var t3 = "{" + p3.createHTML().text() + "}";
         if (!p1.implies(p3))
-            console.error("transitivity", t1, t2, t3);
+            console.error("TestImplies transitivity", t1, t2, t3);
     }
     exports.testImpliesTransitivity = testImpliesTransitivity;
 });

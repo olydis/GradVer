@@ -18,7 +18,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Expressi
         var t12 = "{" + p1wo2.createHTML().text() + "}";
         var t1x = "{" + p1x.createHTML().text() + "}";
         if (!p1.implies(p1x))
-            console.error("works", t1, t2, t12, t1x);
+            console.error("TestWoAcc works", t1, t2, t12, t1x);
     }
     exports.testWoAccWorks = testWoAccWorks;
     function testWoAccMonotonic() {
@@ -35,7 +35,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Expressi
         var t1x = "{" + p1x.createHTML().text() + "}";
         var t2x = "{" + p2x.createHTML().text() + "}";
         if (!p1x.implies(p2x))
-            console.error("monotonic", t1, t2, t1x, t2x);
+            console.error("TestWoAcc monotonic", t1, t2, t1x, t2x);
     }
     exports.testWoAccMonotonic = testWoAccMonotonic;
     function testWoAccPreserveSat() {
@@ -45,8 +45,8 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Expressi
         var p1x = p1.woAcc(new Expression_1.ExpressionX("a"), "f");
         var t1 = "{" + p1.createHTML().text() + "}";
         var t1x = "{" + p1x.createHTML().text() + "}";
-        if (!p1x.satisfiable())
-            console.error("preserve sat", t1, t1x);
+        if (!p1.implies(p1x))
+            console.error("TestWoAcc preserve sat", t1, t1x);
     }
     exports.testWoAccPreserveSat = testWoAccPreserveSat;
     function testWoAccPreserveSfrm() {
@@ -57,7 +57,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Expressi
         var t1 = "{" + p1.createHTML().text() + "}";
         var t1x = "{" + p1x.createHTML().text() + "}";
         if (!p1x.sfrm())
-            console.error("preserve sfrm", t1, t1x);
+            console.error("TestWoAcc preserve sfrm", t1, t1x);
     }
     exports.testWoAccPreserveSfrm = testWoAccPreserveSfrm;
 });

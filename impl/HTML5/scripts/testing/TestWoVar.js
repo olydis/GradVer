@@ -14,7 +14,7 @@ define(["require", "exports", "../types/VerificationFormula", "./Random", "./Gen
         var t1x = "{" + p1x.createHTML().text() + "}";
         var t2x = "{" + p2x.createHTML().text() + "}";
         if (!p1x.implies(p2x))
-            console.error("monotonic", t1, t2, t1x, t2x);
+            console.error("TestWoVar monotonic", t1, t2, t1x, t2x);
     }
     exports.testWoVarMonotonic = testWoVarMonotonic;
     function testWoVarPreserveSat() {
@@ -24,8 +24,8 @@ define(["require", "exports", "../types/VerificationFormula", "./Random", "./Gen
         var p1x = p1.woVar("a");
         var t1 = "{" + p1.createHTML().text() + "}";
         var t1x = "{" + p1x.createHTML().text() + "}";
-        if (!p1x.satisfiable())
-            console.error("preserve sat", t1, t1x);
+        if (!p1.implies(p1x))
+            console.error("TestWoVar preserve sat", t1, t1x);
     }
     exports.testWoVarPreserveSat = testWoVarPreserveSat;
     function testWoVarPreserveSfrm() {
@@ -36,7 +36,7 @@ define(["require", "exports", "../types/VerificationFormula", "./Random", "./Gen
         var t1 = "{" + p1.createHTML().text() + "}";
         var t1x = "{" + p1x.createHTML().text() + "}";
         if (!p1x.sfrm())
-            console.error("preserve sfrm", t1, t1x);
+            console.error("TestWoVar preserve sfrm", t1, t1x);
     }
     exports.testWoVarPreserveSfrm = testWoVarPreserveSfrm;
 });
