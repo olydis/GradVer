@@ -120,6 +120,8 @@ export class FormulaPartEq extends FormulaPart
     }
     public sfrm(fp: FootprintStatic): boolean
     {
+        // TODO: rethink
+        if (Expression.eq(this.e1, this.e2)) return true;
         return this.e1.sfrm(fp)
             && this.e2.sfrm(fp);
     }

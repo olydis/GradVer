@@ -111,6 +111,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             return new FormulaPartEq(this.e1.substs(m), this.e2.substs(m));
         };
         FormulaPartEq.prototype.sfrm = function (fp) {
+            // TODO: rethink
+            if (Expression_1.Expression.eq(this.e1, this.e2))
+                return true;
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
         };

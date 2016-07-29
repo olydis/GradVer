@@ -336,7 +336,8 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             env.A = env.A.filter(function (x) { return x.o != o || x.f != f; });
             var he = env.H[o];
             if (he)
-                delete he.fs[f];
+                he.fs[f] = new ValueExpression_1.ValueObject();
+            // delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
             return NormalizedEnv.create(ineq, env);
         };
         NormalizedEnv.prototype.woAcc = function (e, f) {
