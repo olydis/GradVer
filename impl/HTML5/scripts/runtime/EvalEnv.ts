@@ -395,8 +395,9 @@ export class NormalizedEnv {
         env.A = env.A.filter(x => x.o != o || x.f != f);
         var he = env.H[o];
         if (he)
-            he.fs[f] = new ValueObject();
             // delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
+            if (he.fs[f] !== undefined)
+                he.fs[f] = new ValueObject();
         return NormalizedEnv.create(ineq, env);
     }
     public woAcc(e: Expression, f: string): NormalizedEnv
