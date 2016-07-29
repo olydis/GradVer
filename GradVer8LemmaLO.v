@@ -104,8 +104,8 @@ Proof.
   - apply IHe0 in H1. rewrite H1. tauto.
 Qed.
 
-Lemma FVaccListApp : forall x p l,
-  FV (accListApp x l p) = map (fun asd => x) l ++ FV p.
+Lemma FVaccListApp : forall x l,
+  FV (accListApp x l) = map (fun asd => x) l.
 Proof.
   induction l; simpl; try tauto.
   rewrite IHl.
@@ -348,8 +348,8 @@ Proof.
   intros.
   inversionx H0;
   econstructor; eauto.
-  unfold Aexcept, except in H3.
-  apply filter_In in H3.
+  unfold Aexcept, except in H4.
+  apply filter_In in H4.
   intuition.
 Qed.
 
@@ -360,11 +360,11 @@ Proof.
     inversionx H12.
     inversionx H11.
     unfold footprint' in *.
-    rewrite H9 in *; clear H9.
-    apply H5 in H10.
-    unfold Aexcept, except in H10.
-    apply filter_In in H10.
-    inversionx H10.
+    rewrite H4 in *; clear H4.
+    apply H5 in H12.
+    unfold Aexcept, except in H12.
+    apply filter_In in H12.
+    inv H12.
     contradict H2.
     apply not_true_iff_false.
     apply negb_false_iff.
@@ -1047,9 +1047,9 @@ Proof.
   intuition;
   try eapp IHp0.
   
-  inversionx H11.
+  inv H11.
   destruct (evale' H0 r e0); try tauto.
-  destruct v0; try tauto.
+  destruct v1; try tauto.
   simpl.
   undecb.
   simpl.

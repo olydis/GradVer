@@ -23,7 +23,8 @@ Proof.
         dec (o_dec o0 o1); try tauto.
         destruct (H1 o1); try tauto.
         destruct p0. simpl in *.
-        dec (string_dec f0 f1); try tauto.
+        destruct o2; cut.
+        dec (string_dec f0 f1); cut.
       + unfold HSubst. simpl in *.
         dec (o_dec o0 o1); try tauto.
         destruct (H1 o1); try tauto.
@@ -203,6 +204,7 @@ Proof.
       dec (o_dec o1 o0); try tauto.
       destruct (H1 o0); try discriminate.
       destruct p0. simpl in *.
+      rewrite H4.
       dec (string_dec f1 f0); try tauto.
     * eapply IHss in dss; eauto.
     * eapply IHss in dss; eauto.
@@ -293,12 +295,30 @@ Lemma evalphi'ChangeHeap : forall H1 H2 S1 S2 r A p,
 Proof.
   intros;
   inversionx H4;
-  simpl in *;
-  eca;
-  try rewrite in_app_iff in H3;
-  unfold evale in *;
-  try (rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition).
-Qed.
+  simpl in *.
+  - eca.
+  - eca;
+    unfold evale in *;
+    rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition.
+  - eca;
+    unfold evale in *;
+    rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition.
+  - assert (evale' H2 r e0 = Some (vo o0)) as ee.
+      rewriteRev (evale'ChangeHeap H1 H2); eauto; intros; eapp H3; intuition.
+    unfold evale in *.
+    simpl in *.
+    rewrite H6 in *.
+    destruct H1 eqn: eeH1; cut.
+    destruct p0.
+    eapply HeapGetsMoreSpecific in eeH1; eauto.
+    unf.
+    eca.
+    unfold evale. simpl. rewrite ee.
+    rewrite H4.
+    simpl.
+(*     HeapFieldsGetMoreSpecific. *)
+    admit.
+Admitted.
 
 Lemma evalphiChangeHeap : forall H1 H2 S1 S2 r p A,
   dynSemStar (H1, S1) (H2, S2) ->
@@ -364,9 +384,13 @@ Proof.
     erewrite evale'ChangeRho in H4, H5; eauto;
     intros; intuition.
   - simpl in *.
+    unfold evale in *. simpl in *.
+    rewrite H4 in H5.
     eca; unfold evale in *;
     erewrite evale'ChangeRho in H4; eauto;
     intros; intuition.
+    simpl. rewrite H4.
+    eauto.
 Qed.
 
 Lemma evalphiChangeRho : forall r1 r2 H p A,
@@ -405,8 +429,9 @@ Proof.
   destruct v1; try tauto.
   simpl in *.
   unfold HSubst.
-  dec (o_dec o1 o0); try cut.
-  destruct (H0 o0); try cut. destruct p0. simpl.
+  dec (o_dec o1 o0); cut.
+  destruct (H0 o0); cut. destruct p0. simpl.
+  destruct o2; cut.
   dec (string_dec f1 f0); cut.
   contradict H2.
   auto.
@@ -447,10 +472,33 @@ Proof.
     inversionx H1; eca; unfold evale in *;
     try rewriteRev evale'RemoveHSubst; eauto;
     try erewrite evale'RemoveHSubst; eauto.
-  - split; intros;
-    inversionx H2; eca; unfold evale in *;
-    try rewriteRev evale'RemoveHSubst; eauto;
-    try erewrite evale'RemoveHSubst; eauto.
+  - split; intros; inv H2; unfold evale in *;
+    simpl in *; rewrite H6 in *.
+    * erewrite evale'RemoveHSubst in H6; eauto.
+      eca.
+      unfold evale. simpl.
+      rewrite H6.
+      instantiate (1 := if o_decb o1 o0 && f_decb f1 f0 then v0 else v1).
+      unfold HSubst.
+      dec (o_dec o1 o0); eauto.
+      destruct H0; cut.
+      destruct p0.
+      simpl in *.
+      rewrite H10.
+      auto.
+    * rewriteRevIn evale'RemoveHSubst H6; eauto.
+      unfold HSubst in *.
+      dec (o_dec o1 o0).
+        Focus 2. eca. unfold evale. simpl. rewrite H6. eauto.
+      destruct H0 eqn: eeH0; cut.
+      destruct p0.
+      simpl in *.
+      destruct o2 eqn: eeo2; cut.
+      eca.
+      unfold evale. simpl. rewrite H6.
+      rewrite eeH0.
+      simpl.
+      eauto.
 Qed.
 
 Lemma evalphiRemoveHSubst : forall o f v H r p A,

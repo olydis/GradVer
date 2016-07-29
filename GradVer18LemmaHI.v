@@ -64,13 +64,14 @@ Proof.
   induction e0; intros; simpl in *; auto.
   rewrite in_app_iff in H1.
   apply not_or_and in H1. unf.
-  rewriteRev IHe0; auto.
-  destruct (evale' H0 r e0) eqn: ee; try tauto.
-  destruct v1; try tauto.
+  rewriteRev IHe0; auto. clear IHe0.
+  destruct (evale' H0 r e0) eqn: ee; cut.
+  destruct v1; cut.
   unfold HSubst.
-  dec (o_dec o1 o0); try tauto.
+  dec (o_dec o1 o0); cut.
   destruct (H0 o0); try tauto.
   destruct p0. simpl in *.
+  destruct o2; cut.
   dec (string_dec f1 f0); cut.
   contradict H2. auto.
 Qed.
@@ -129,15 +130,36 @@ Proof.
     erewrite HSubst'NOTodotInE; eauto.
     erewrite HSubst'NOTodotInE; eauto.
   - unfold evale in *.
-    erewrite HSubst'NOTodotInE in H9; eauto.
+    simpl in *.
+    rewrite H6 in *.
+    erewrite HSubst'NOTodotInE in H6; eauto.
+    rewrite H6.
     eca.
-    rewrite H9.
-    eca.
+    instantiate (1 := if o_decb o1 o0 && f_decb f1 f0 then v0 else v1).
+    unfold evale. simpl.
+    rewrite H6.
+    unfold HSubst.
+    dec (o_dec o1 o0); cut.
+    destruct H0; cut.
+    destruct p0. simpl in *.
+    rewrite H10.
+    auto.
   - unfold evale in *.
-    rewriteRevIn HSubst'NOTodotInE H9; eauto.
-    rewrite H9.
+    simpl in *.
+    rewrite H6 in *.
+    rewriteRevIn HSubst'NOTodotInE H6; eauto.
+    rewrite H6.
+    unfold HSubst in *.
+    dec (o_dec o1 o0); cut.
+      Focus 2. eca. unfold evale. simpl. rewrite H6. eauto.
+    destruct H0 eqn: eeH0; cut.
+    destruct p0. simpl in *.
+    destruct o2 eqn: eeo2; cut.
     eca.
-    eca.
+    unfold evale. simpl. rewrite H6.
+    rewrite eeH0.
+    simpl.
+    eauto.
 Qed.
 
 Lemma footprint'HSubst : forall H r p o f v,
@@ -754,6 +776,7 @@ Proof.
       inversionx inva.
       eca; unfold evale in *;
       subst fR xUDz;
+      simpl;
       erewrite incl2PhiSubst3; eauto.
   - rename H9 into ep.
     inversion ep as [? | ? ? ? ? ? ? ? ? invc ? inva invb]. subst. clear ep inva invc.
@@ -881,7 +904,7 @@ Proof.
   apply IHp0 in H12.
   destruct a; try apply H12.
   simpl in *.
-  inversionx H11. rewrite H8 in *. simpl in *.
+  inversionx H11. rewrite H4 in *. simpl in *.
   constructor; try assumption.
   specialize (dis (o0, f0)).
   intuition.

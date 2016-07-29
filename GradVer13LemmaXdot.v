@@ -255,7 +255,7 @@ Lemma evalphi'VSsfpX : forall p A H r A',
   exists v, evalA'_s H r A' = Some v.
 Proof.
   intros.
-  inversionx H1; try inversionx H2;
+  inv H1; try inv H2;
   simpl in *.
   - apply in_app_iff in H2.
     inversionx H2;
@@ -263,7 +263,7 @@ Proof.
   - apply in_app_iff in H2.
     inversionx H2;
     eappIn evaleVSsfpX H1.
-  - eapp evaleVSsfpX.
+  - eappIn evaleVSsfpX H2.
 Qed.
 
 Lemma evalphiVSsfpX : forall p A H r A',

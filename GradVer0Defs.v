@@ -325,7 +325,12 @@ Definition HSubst (o' : o) (f' : f) (v' : v) (h : H) : H :=
       then 
       (
         match h o'' with
-        | Some (C', ff') => Some (C', fun f'' => if f_decb f'' f' then Some v' else ff' f'')
+        | Some (C', ff') => 
+          Some (C', fun f'' => 
+              match ff' f'' with
+              | Some v => Some (if f_decb f'' f' then v' else v)
+              | None => None
+              end)
         | None => None
         end
       )

@@ -306,3 +306,12 @@ Proof.
     cut.
 Admitted.
 
+Definition liftableWOacc (a : A'_s) (p1 p2 : phi) : Prop :=
+  (good p1 -> good p2) /\
+  (minWith (fun p => phiImplies p1 p /\ (forall px, phiImplies p px /\ ~ In a (staticFootprint px) /\ ~ In a (staticFootprintX px))) phiImplies p2).
+(* doesn't account for a.f = a.f thingy... *)
+
+Theorem liftableWOacc_ : forall x, liftable (liftableWOacc x).
+Proof.
+Admitted.
+

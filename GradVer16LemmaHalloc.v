@@ -116,13 +116,6 @@ Proof.
   eauto.
 Qed.
 
-Lemma accListAppExtract : forall x A l,
-  accListApp x l A = accListApp x l [] ++ A.
-Proof.
-  induction l; simpl; try tauto.
-  rewrite IHl. tauto.
-Qed.
-
 Lemma ehasDynamicTypeRemoveHalloc : forall H r e T o C,
   H o = None ->
   ehasDynamicType H r e T ->
