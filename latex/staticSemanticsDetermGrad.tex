@@ -33,8 +33,8 @@ Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular
 \begin{mathpar}
 \inferrule* [Right=HApp]
 {\wo {\wo {\grad{\phi}} {x}} {\staticFP{\grad{\phi_p}}} = \grad{\phi'}\\
-    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \grad{\phi_{pre}};~\ensures \grad{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\grad{\phi} \grad{\implies} {{({{y}} \neq {{\vnull}})} * {\grad{\phi_p}}}\\x \neq y \wedge x \neq z'\\\grad{\phi_p} = {\grad{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\grad{\phi_q} = {\grad{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-{\Gamma~ \ghoare {\grad{\phi}} {{{x} := {y}.{m}({z'})}} {\grad{\phi'} * \grad{\phi_q}}}
+    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \grad{\phi_{pre}};~\ensures \grad{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\grad{\phi} \grad{\implies} {{\grad{\phi_p}} \gsc {({{y}} \neq {{\vnull}})}}\\x \neq y \wedge x \neq z'\\\grad{\phi_p} = {\grad{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\grad{\phi_q} = {\grad{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{\Gamma~ \ghoare {\grad{\phi}} {{{x} := {y}.{m}({z'})}} {\grad{\phi'} \gsc \grad{\phi_q}}}
 \end{mathpar}
 
 \begin{mathpar}

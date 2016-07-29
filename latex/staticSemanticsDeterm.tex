@@ -33,8 +33,8 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 \begin{mathpar}
 \inferrule* [Right=HApp]
 {\wo {\wo {\hat{\phi}} {x}} {\staticFP{\hat{\phi_p}}} = \hat{\phi'}\\
-    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \hat{\phi_{pre}};~\ensures \hat{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\hat{\phi} \implies {{({{y}} \neq {{\vnull}})} * {\hat{\phi_p}}}\\x \neq y \wedge x \neq z'\\\hat{\phi_p} = {\hat{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\hat{\phi_q} = {\hat{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-{{\Gamma} \hoare {\hat{\phi}} {{{x} := {y}.{m}({z'})}} {\hat{\phi'} * \hat{\phi_q}}}
+    {\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires \hat{\phi_{pre}};~\ensures \hat{\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\\hat{\phi} \implies {{\hat{\phi_p}} \hsc {({{y}} \neq {{\vnull}})}}\\x \neq y \wedge x \neq z'\\\hat{\phi_p} = {\hat{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\\hat{\phi_q} = {\hat{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{{\Gamma} \hoare {\hat{\phi}} {{{x} := {y}.{m}({z'})}} {\hat{\phi'} \hsc \hat{\phi_q}}}
 \end{mathpar}
 
 \begin{mathpar}
