@@ -1,19 +1,232 @@
 Load GradVer22Galois.
 Import Semantics.
 
-Check HNewObj.
+Print GLIFTpp1x.
+Lemma GLIFT_liftablex : forall P,
+  liftable P ->
+  GLIFTpp1 P (simpleLift P).
+Proof.
+  intros.
+  lapply (GLIFT_liftable P); try apply H.
+  intros.
+  lapply H0; try apply H.
+  intros.
+  lapply H1; try apply H.
+  intros.
+  unfold GLIFTpp1, GLIFTpp1x in *.
+  intros.
+  eapply H2 in H5; eauto.
+  inv H4.
+  inv H5.
+  
+  specialize (H9 gp2').
+  specialize (H12 gp2).
+  intuition.
+  
+  unfold gphiEquals.
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  cut.
+Qed.
+
+Lemma simpleLift2lift : forall P,
+  liftable P ->
+  forall p1 p2, gGood p1 ->
+    simpleLift P p1 p2 <-> 
+    gAlpha (PLIFTp1 P (gGamma' p1)) p2.
+Proof.
+  intros.
+  assert (H' := H).
+  apply GLIFT_liftablex in H.
+  unfold GLIFTpp1x in H.
+  specialize (H p1 p2).
+  split; intros.
+  - assert (exists pp, gGamma p1 pp).
+      eexists. eca. unf.
+    admit.
+  - unfold simpleLift.
+    splau.
+    split. inv H1. assumption.
+    split.
+    * admit.
+    * admit.
+Admitted.
 
 (* HNewObj *)
-Inductive HNewObjX : Gamma -> phi -> phi -> Prop :=
-| HNewObj : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
+Inductive HNewObjX : x -> C -> 
+              Gamma -> phi -> phi -> Prop :=
+| HNewObj : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' x (C : C) f_bar(*\overline{f}*),
     liftableWOvar x phi phi' ->
     hasStaticType G (ex x) (TClass C) ->
     fieldsNames C = Some f_bar ->
-    HNewObjX
+    liftableAppend (phiNeq (ex x) (ev vnull) :: accListApp x f_bar)
+      phi' phi'' ->
+    HNewObjX x C
       G
       phi
-      (phi' ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))
+      phi''
 .
+
+Inductive GHNewObjX : x -> C -> 
+              Gamma -> gphi -> gphi -> Prop :=
+| GHNewObj : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' x (C : C) f_bar(*\overline{f}*),
+    simpleLift (liftableWOvar x) phi phi' ->
+    hasStaticType G (ex x) (TClass C) ->
+    fieldsNames C = Some f_bar ->
+    simpleLift (liftableAppend (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))
+      phi' phi'' ->
+    GHNewObjX x C
+      G
+      phi
+      phi''
+.
+
+Lemma gGoodFalseGood : forall p,
+  gGood (false, p) <-> good p.
+Proof.
+  split; intros.
+  - inv H.
+    inv H1; cut.
+  - split; try apply H.
+    unfold sfrmgphi.
+    apply or_intror.
+    apply H.
+Qed.
+
+Lemma gGammaGood : forall gp p,
+  gGood gp ->
+  gGamma' gp p ->
+  good p.
+Proof.
+  intros.
+  unfold gGamma' in H0.
+  destruct gp. simpl in *.
+  destruct b; cut.
+  subst.
+  rewriteRev gGoodFalseGood.
+  assumption.
+Qed.
+
+Theorem GLIFT_GHNewObjX : forall x C G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HNewObjX x C G) (GHNewObjX x C G).
+Proof.
+  unfold GLIFTpp1.
+  unfold PLIFTp1.
+  intros.
+  
+  eexists. eexists.
+  split. eca. inv H3. apply H7.
+  split. eca. inv H2. assumption.
+  
+  inv H1.
+  inv H3.
+  
+  assert (gGood gp2') as g1.
+    apply H7.
+  assert (gGood phi') as g2.
+    apply H1.
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  split.
+  - repeat intro.
+    inv H2.
+    apply H10.
+    
+    admit.
+    (* inv H7.
+    apply H10. auto.
+    repeat intro. *)
+  - apply simpleLift2lift in H1; auto.
+      Focus 2. apply liftableWOvar_.
+    apply simpleLift2lift in H7; auto.
+      Focus 2. apply liftableAppend_.
+    inv H2.
+    apply H10. auto.
+    clear H10 H9 H3.
+    repeat intro.
+    unf.
+    inv H9.
+    
+    rewrite H11 in H6. inv H6.
+    
+    assert (gGamma' phi' phi'0).
+      inv H1.
+      apply H13.
+      exists x0.
+      auto.
+    inv H7.
+    apply H14.
+    exists phi'0.
+    auto.
+Admitted.
+
+Theorem GLIFT_GHNewObjX : forall G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GHNewObjX        G  p1 p2 <-> 
+  GLIFT2 (HNewObjX G) p1 p2.
+Proof.
+  unfold GLIFT2, PLIFT2.
+  split; intros.
+  - inv H1.
+  
+    eexists. eexists.
+    split. eca.
+    split. eca.
+    
+    apply simpleLift2lift in H2; auto.
+      Focus 2. apply liftableWOvar_.
+    apply simpleLift2lift in H5; auto.
+      Focus 2. apply liftableAppend_.
+      Focus 2. inv H2. assumption.
+    
+    inv H2.
+    inv H1. unf.
+    assert (H1' := H1).
+    inv H1. unf.
+    exists x1.
+    apply H7 in H1'.
+    
+    assert (good x1) as g1.
+      apply (gGammaGood p1); eauto.
+    assert (good x0) as g2.
+      apply (gGammaGood phi'); eauto.
+    assert (good (x0 ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))) as g3.
+      admit. (* trust me *)
+    
+    assert (exists xo, liftableAppend (phiNeq (ex x) (ev vnull) :: accListApp x f_bar) x0 xo).
+      eexists.
+      eca.
+      splau.
+      intros. unf.
+      exists x0.
+      auto.
+    unf.
+    
+    exists x2.
+    
+    splau.
+    split.
+      inv H5.
+      apply H13.
+      unfold PLIFTp1.
+      exists x0.
+      auto.
+    eca.
+  - unf.
+    inv H2.
+    inv H1.
+    inv H6.
+    eca.
+    * apply 
+      unfold simpleLift.
+      splau.
+      split. Focus
 
 (* APP *)
 Inductive hoareAppX : Gamma -> T -> T -> x -> phi -> phi -> phi -> phi -> Prop :=
