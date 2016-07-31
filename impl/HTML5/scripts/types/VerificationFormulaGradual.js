@@ -20,6 +20,27 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
             res.updateHTML();
             return res;
         };
+        VerificationFormulaGradual.supremum = function (a, b) {
+            if (!a.gradual || !b.gradual)
+                return null;
+            var sA = a.norm().staticFormula;
+            var sB = b.norm().staticFormula;
+            var parts = [];
+            for (var _i = 0, _a = sA.impliedEqualities().concat(sB.impliedEqualities()); _i < _a.length; _i++) {
+                var eq = _a[_i];
+                var part = new VerificationFormula_1.VerificationFormula(null, [eq]);
+                if (sB.implies(part) && sA.implies(part))
+                    parts.push(eq);
+            }
+            for (var _b = 0, _c = sA.impliedInequalities().concat(sB.impliedInequalities()); _b < _c.length; _b++) {
+                var neq = _c[_b];
+                var part = new VerificationFormula_1.VerificationFormula(null, [neq]);
+                if (sB.implies(part) && sA.implies(part))
+                    parts.push(neq);
+            }
+            var res = VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, parts));
+            return res.norm();
+        };
         VerificationFormulaGradual.prototype.updateHTML = function () {
             this.html.text("");
             var grad = $("<span>").text("?");

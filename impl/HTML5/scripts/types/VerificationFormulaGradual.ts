@@ -18,6 +18,31 @@ export class VerificationFormulaGradual
         return res;
     }
 
+    public static supremum(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual
+    {
+        if (!a.gradual || !b.gradual)
+            return null;
+
+        var sA = a.norm().staticFormula;
+        var sB = b.norm().staticFormula;
+
+        var parts: FormulaPart[] = [];
+        for (var eq of sA.impliedEqualities().concat(sB.impliedEqualities()))
+        {
+            var part = new VerificationFormula(null, [eq]);
+            if (sB.implies(part) && sA.implies(part))
+                parts.push(eq);
+        }
+        for (var neq of sA.impliedInequalities().concat(sB.impliedInequalities()))
+        {
+            var part = new VerificationFormula(null, [neq]);
+            if (sB.implies(part) && sA.implies(part))
+                parts.push(neq);
+        }
+        var res = VerificationFormulaGradual.create(true, new VerificationFormula(null, parts));
+        return res.norm();
+    }
+
     public constructor(
         source: string = "?"
     )

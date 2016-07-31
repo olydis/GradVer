@@ -159,8 +159,11 @@ export class NormalizedEnv {
         });
         return reachableObjects;
     }
+    private getNameableObjects_cache: { [o: number]: Expression[] } = null;
     private getNameableObjects(): { [o: number]: Expression[] }
     {
+        if (this.getNameableObjects_cache) return this.getNameableObjects_cache;
+
         // collect reachable objects
         var reachableObjects: {e: Expression, o: number}[] = [];
         this.allExpressionDfs((e, v) => {
@@ -175,50 +178,35 @@ export class NormalizedEnv {
                 .filter(x => x.o == o)
                 .map(x => x.e)
                 .sort((a, b) => a.depth() - b.depth());
-        return objs;
+        return this.getNameableObjects_cache = objs;
+    }
+    private getExpressions(v: Value): Expression[]
+    {
+        var res: Expression[] = [];
+        if (v instanceof ValueExpression)
+            res.push(new ExpressionV(v));
+        this.allExpressionDfs((e, vv) => {
+            if (vv.equalTo(v))
+                res.push(e);
+        });
+        return res;
     }
     public impliedEqualities(): {e1: Expression, e2: Expression}[]
     {
         var res: {e1: Expression, e2: Expression}[] = [];
-        var objs = this.getNameableObjects();
-        var getExpressions: (v: Value) => Expression[] = (v: Value) => {
-            if (v instanceof ValueExpression)
-                return [new ExpressionV(v)];
-            if (v instanceof ValueObject)
-            {
-                var o = v.UID;
-                if (objs[o])
-                    return objs[o];
-                return [];
-            }
-            throw "unknown subtype";
-        };
         this.allExpressionDfs((e, v) => {
-            res.push(...getExpressions(v).map(ex => {return {e1: e, e2: ex};}));
+            res.push(...this.getExpressions(v).map(ex => {return {e1: e, e2: ex};}));
         });
         return res;
     }
     public impliedInequalities(): {e1: Expression, e2: Expression}[]
     {
         var res: {e1: Expression, e2: Expression}[] = [];
-        var objs = this.getNameableObjects();
-        var getExpressions: (v: Value) => Expression[] = (v: Value) => {
-            if (v instanceof ValueExpression)
-                return [new ExpressionV(v)];
-            if (v instanceof ValueObject)
-            {
-                var o = v.UID;
-                if (objs[o])
-                    return objs[o];
-                return [];
-            }
-            throw "unknown subtype";
-        };
         this.ineq.forEach(ineq => {
             var a = ineq.v1;
             var b = ineq.v2;
-            for (var ea of getExpressions(a))
-                for (var eb of getExpressions(b))
+            for (var ea of this.getExpressions(a))
+                for (var eb of this.getExpressions(b))
                     res.push({e1: ea, e2: eb});
         });
         return res;

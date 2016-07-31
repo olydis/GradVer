@@ -102,18 +102,7 @@ $(() =>
                 return;
             }
 
-            var sA = pA.norm().staticFormula;
-            var sB = pB.norm().staticFormula;
-
-            var parts: FormulaPart[] = [];
-            for (var eq of sA.impliedEqualities())
-                if (sB.implies(new VerificationFormula(null, [eq])))
-                    parts.push(eq);
-            for (var neq of sA.impliedInequalities())
-                if (sB.implies(new VerificationFormula(null, [neq])))
-                    parts.push(neq);
-            var res = VerificationFormulaGradual.create(true, new VerificationFormula(null, parts));
-            $("#containerSupOutput").text(res.norm().createHTML().text());
+            $("#containerSupOutput").text(VerificationFormulaGradual.supremum(pA, pB).createHTML().text());
         };
         update();
         $("#containerSupInputA").append(inputA.createHTML());

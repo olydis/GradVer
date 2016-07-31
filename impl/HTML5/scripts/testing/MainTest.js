@@ -1,13 +1,9 @@
-define(["require", "exports", "./TestWoVar", "./TestWoVar", "./TestWoVar", "./TestWoAcc", "./TestWoAcc", "./TestWoAcc", "./TestWoAcc"], function (require, exports, TestWoVar_1, TestWoVar_2, TestWoVar_3, TestWoAcc_1, TestWoAcc_2, TestWoAcc_3, TestWoAcc_4) {
+define(["require", "exports", "./TestSup", "./TestSup", "./TestSup"], function (require, exports, TestSup_1, TestSup_2, TestSup_3) {
     "use strict";
-    var testProcs = [TestWoVar_2.testWoVarPreserveSat,
-        TestWoVar_1.testWoVarMonotonic,
-        TestWoVar_2.testWoVarPreserveSat,
-        TestWoVar_3.testWoVarPreserveSfrm,
-        TestWoAcc_1.testWoAccWorks,
-        TestWoAcc_2.testWoAccMonotonic,
-        TestWoAcc_3.testWoAccPreserveSat,
-        TestWoAcc_4.testWoAccPreserveSfrm
+    var testProcs = [null,
+        TestSup_1.testSupImplies,
+        TestSup_2.testSupComm,
+        TestSup_3.testSupAssoc
     ];
     function testAll(iters) {
         if (iters === void 0) { iters = 10000; }
@@ -20,6 +16,8 @@ define(["require", "exports", "./TestWoVar", "./TestWoVar", "./TestWoVar", "./Te
     }
     exports.test = test;
     function testX(iters, testProc) {
+        if (testProc == null)
+            return;
         if (iters > 0)
             setTimeout(function () {
                 document.title = iters + " - " + testProc.name;

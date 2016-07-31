@@ -37,6 +37,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             if (env === void 0) { env = { H: {}, r: {}, A: [] }; }
             this.ineq = ineq;
             this.env = env;
+            this.getNameableObjects_cache = null;
         }
         NormalizedEnv.create = function (ineq, env) {
             if (ineq === void 0) { ineq = []; }
@@ -126,6 +127,8 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return reachableObjects;
         };
         NormalizedEnv.prototype.getNameableObjects = function () {
+            if (this.getNameableObjects_cache)
+                return this.getNameableObjects_cache;
             // collect reachable objects
             var reachableObjects = [];
             this.allExpressionDfs(function (e, v) {
@@ -142,47 +145,35 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                     .map(function (x) { return x.e; })
                     .sort(function (a, b) { return a.depth() - b.depth(); });
             }
-            return objs;
+            return this.getNameableObjects_cache = objs;
+        };
+        NormalizedEnv.prototype.getExpressions = function (v) {
+            var res = [];
+            if (v instanceof ValueExpression_1.ValueExpression)
+                res.push(new Expression_1.ExpressionV(v));
+            this.allExpressionDfs(function (e, vv) {
+                if (vv.equalTo(v))
+                    res.push(e);
+            });
+            return res;
         };
         NormalizedEnv.prototype.impliedEqualities = function () {
+            var _this = this;
             var res = [];
-            var objs = this.getNameableObjects();
-            var getExpressions = function (v) {
-                if (v instanceof ValueExpression_1.ValueExpression)
-                    return [new Expression_1.ExpressionV(v)];
-                if (v instanceof ValueExpression_1.ValueObject) {
-                    var o = v.UID;
-                    if (objs[o])
-                        return objs[o];
-                    return [];
-                }
-                throw "unknown subtype";
-            };
             this.allExpressionDfs(function (e, v) {
-                res.push.apply(res, getExpressions(v).map(function (ex) { return { e1: e, e2: ex }; }));
+                res.push.apply(res, _this.getExpressions(v).map(function (ex) { return { e1: e, e2: ex }; }));
             });
             return res;
         };
         NormalizedEnv.prototype.impliedInequalities = function () {
+            var _this = this;
             var res = [];
-            var objs = this.getNameableObjects();
-            var getExpressions = function (v) {
-                if (v instanceof ValueExpression_1.ValueExpression)
-                    return [new Expression_1.ExpressionV(v)];
-                if (v instanceof ValueExpression_1.ValueObject) {
-                    var o = v.UID;
-                    if (objs[o])
-                        return objs[o];
-                    return [];
-                }
-                throw "unknown subtype";
-            };
             this.ineq.forEach(function (ineq) {
                 var a = ineq.v1;
                 var b = ineq.v2;
-                for (var _i = 0, _a = getExpressions(a); _i < _a.length; _i++) {
+                for (var _i = 0, _a = _this.getExpressions(a); _i < _a.length; _i++) {
                     var ea = _a[_i];
-                    for (var _b = 0, _c = getExpressions(b); _b < _c.length; _b++) {
+                    for (var _b = 0, _c = _this.getExpressions(b); _b < _c.length; _b++) {
                         var eb = _c[_b];
                         res.push({ e1: ea, e2: eb });
                     }

@@ -6,18 +6,26 @@ import { testWoAccWorks } from "./TestWoAcc";
 import { testWoAccMonotonic } from "./TestWoAcc";
 import { testWoAccPreserveSat } from "./TestWoAcc";
 import { testWoAccPreserveSfrm } from "./TestWoAcc";
+import { testSupImplies } from "./TestSup";
+import { testSupComm } from "./TestSup";
+import { testSupAssoc } from "./TestSup";
 
 var testProcs: (() => void)[] = 
-    [ testWoVarPreserveSat
+    [ null
 
-    , testWoVarMonotonic
-    , testWoVarPreserveSat
-    , testWoVarPreserveSfrm
+    // , testWoVarPreserveSat
+    // , testWoVarMonotonic
+    // , testWoVarPreserveSat
+    // , testWoVarPreserveSfrm
 
-    , testWoAccWorks
-    , testWoAccMonotonic
-    , testWoAccPreserveSat
-    , testWoAccPreserveSfrm
+    // , testWoAccWorks
+    // , testWoAccMonotonic
+    // , testWoAccPreserveSat
+    // , testWoAccPreserveSfrm
+
+    , testSupImplies
+    , testSupComm
+    , testSupAssoc
     ];
 
 export function testAll(iters: number = 10000)
@@ -33,6 +41,8 @@ export function test(iters: number, testProc: number)
 
 function testX(iters: number, testProc: () => void)
 {
+    if (testProc == null)
+        return;
     if (iters > 0)
         setTimeout(() => {
             document.title = iters + " - " + (<any>testProc).name;
