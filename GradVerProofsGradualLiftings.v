@@ -32,25 +32,23 @@ Qed.
 
 Lemma simpleLift2lift : forall P,
   liftable P ->
-  forall p1 p2, gGood p1 ->
-    simpleLift P p1 p2 <-> 
+  forall p1 p2,
+    simpleLift P p1 p2 -> 
     gAlpha (PLIFTp1 P (gGamma' p1)) p2.
 Proof.
   intros.
   assert (H' := H).
   apply GLIFT_liftablex in H.
   unfold GLIFTpp1x in H.
-  specialize (H p1 p2).
-  split; intros.
-  - assert (exists pp, gGamma p1 pp).
-      eexists. eca. unf.
-    admit.
-  - unfold simpleLift.
-    splau.
-    split. inv H1. assumption.
-    split.
-    * admit.
-    * admit.
+  unfold GLIFTpp1 in H.
+  assert (forall pp, gAlpha (PLIFTp1 P (gGamma' p1)) pp → gphiEquals p2 pp) as IH.
+    intros.
+    eapply H; eauto.
+    eca.
+    apply H0.
+  clear H.
+  
+  admit. (* gAlpha is total *)
 Admitted.
 
 (* HNewObj *)
@@ -131,21 +129,31 @@ Proof.
   assert (gGood gp2) as g3.
     inv H2.
     assumption.
+    
+  apply simpleLift2lift in H1; auto.
+      Focus 2. apply liftableWOvar_.
+  apply simpleLift2lift in H7; auto.
+      Focus 2. apply liftableAppend_.
   
   split.
   - repeat intro.
+    Print gFun.
     inv H2.
-    apply H10.
-    
-    admit.
-    (* inv H7.
-    apply H10. auto.
-    repeat intro. *)
-  - apply simpleLift2lift in H1; auto.
-      Focus 2. apply liftableWOvar_.
-    apply simpleLift2lift in H7; auto.
-      Focus 2. apply liftableAppend_.
-    inv H2.
+    destruct gp1, phi', gp2'.
+    inv H1. inv H7. unf. simpl in *. subst.
+    unfold gGamma' in *. simpl in *.
+    destruct b1.
+    * unf.
+      destruct gp2. simpl in *.
+      destruct b.
+      + splau.
+        inv H15.
+      + admit.
+    * subst.
+      apply H10.
+      eex.
+      eca.
+  - inv H2.
     apply H10. auto.
     clear H10 H9 H3.
     repeat intro.

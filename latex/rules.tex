@@ -374,6 +374,11 @@ As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propa
 \begin{align*}
 &\alpha(\overline{\phi}) &&= \min_{\sqsubseteq} {\{~ \grad{\phi} ~|~ \overline{\phi} \subseteq \gamma(\grad{\phi}) ~\}}\\
 \end{align*}
+Equivalent to:
+\begin{align*}
+&\alpha(\{ \phi \}) &&= \phi\\
+&\alpha(\overline{\phi}) &&= \sup_{\sqsubseteq} {\{~ \withqm{\phi} ~|~ \phi \in \overline{\phi} ~\}}\\
+\end{align*}
 
 Proved:
 \begin{itemize}
@@ -381,7 +386,48 @@ Proved:
 	\item sound
 	\item optimal
 	\item $\alpha(\gamma(\grad{\phi})) = \grad{\phi}$
+    \item does this make $\langle \gamma, \alpha \rangle$ a (partial) “galois insertion”?
 \end{itemize}
+
+\subsection{Dominator Theory}
+Theorem:\\
+% $\gamma(\phi) = \biguplus_{i = 1..n} \gamma(\hat{\phi}_i)$
+For every $\phi$, there exists a finite set of “dominators” $\dom(\phi)$, such that 
+$$\gamma(\withqm{\phi}) = \bigcup_{\hat{\phi} \in \dom(f(\phi))} \gamma(\withqm{\hat{\phi}})$$
+
+~\\
+Lemmas:
+\begin{itemize}
+    \item $\max \gamma(\withqm{\hat{\phi}}) = \hat{\phi}$
+    \item $f : \phi \rightarrow \phi \text{ monotonic }  \implies  \max \overline{\phi} = \phi'  \implies  \max \overline{f(\phi)} = f(\phi')$
+    \item $\max \overline{\phi} = \phi'  \implies  \alpha(\overline{\phi}) \in \{ \withqm{\phi'}, \phi' \}$
+\end{itemize}
+
+~\\
+Corollary:\\
+$f : \phi \rightarrow \phi \text{ monotonic }  \implies  \alpha(\overline{f}(\gamma(\withqm{\hat{\phi}}))) =\, \withqm{f(\hat{\phi})}$
+
+%~\\
+%Also:\\
+%$\alpha(\overline{f}(\gamma(\phi))) =\, f(\phi)$
+
+~\\
+What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi}))) =\, \withqm{f(\phi)}$?
+\begin{align*}
+\withqm{f(\phi)} 
+&= \alpha(\gamma(\withqm{f(\phi)})) \\
+&= \alpha(\bigcup_{\hat{\phi} \in \dom(f(\phi))} \gamma(\withqm{\hat{\phi}})) \\
+&= \alpha(\bigcup_{\hat{\phi} \in \dom(f(\phi))} \{ \hat{\phi} \}) \\
+&= \alpha(\dom(f(\phi)))
+\end{align*}
+\begin{align*}
+\alpha(\overline{f}(\gamma(\withqm{\phi}))) 
+&= \alpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \gamma(\withqm{\hat{\phi}}))) \\
+&= \alpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \})) \\
+&= \alpha(\overline{f}(\dom(\phi)))
+\end{align*}
+Therefore we require $\dom(f(\phi)) = \overline{f}(\dom(\phi))$ to hold.
+
 
 %\subsection{$(\phi, \implies)$ is semilattice}
 %According to the definition of $\implies$ via $\subseteq$, we define
