@@ -575,22 +575,30 @@ Qed. *)
 (* HAssert *)
 Inductive HAssertX : phi ->
               Gamma -> phi -> phi -> Prop :=
-| HAssert : forall G(*\Gamma*) phi(*\*) phi'(*\*),
-    phiImplies phi phi' ->
-    HAssertX phi'
+| HAssert : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi' phi'',
+    phiImplies phi phi_a -> (* implied by liftableWOaccsX *)
+    liftableWOaccsX phi_a
+      phi phi' ->
+    liftableAppend phi_a
+      phi' phi'' ->
+    HAssertX phi_a
       G
       phi
-      phi
+      phi''
 .
 
 Inductive GHAssertX : phi ->
               Gamma -> gphi -> gphi -> Prop :=
-| GHAssert : forall G(*\Gamma*) phi(*\*) phi'(*\*),
-    gphiImplies phi phi' ->
-    GHAssertX phi'
+| GHAssert : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi' phi'',
+    gphiImplies phi phi_a -> (* implied by liftableWOaccsX *)
+    simpleLift (liftableWOaccsX phi_a)
+      phi phi' ->
+    simpleLift (liftableAppend phi_a)
+      phi' phi'' ->
+    GHAssertX phi_a
       G
       phi 
-      phi
+      phi''
 .
 
 Theorem GLIFT_GHAssertX : forall p  G p1 p2,
@@ -604,6 +612,10 @@ Proof.
   inv H1.
   inv H3.
   
+  assert (gGood gp2') as g1.
+    apply H6.
+  assert (gGood phi') as g2.
+    apply H5.
   assert (gGood gp2) as g3.
     inv H2.
     assumption.
@@ -612,19 +624,208 @@ Proof.
   split. eca.
   split. eca.
   
+  assert (lt := liftableTrans
+    (liftableWOaccsX p0)
+    (liftableAppend p0)
+    (liftableWOaccsX_ _)
+    (liftableAppend_ _)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableWOaccsX p0 x1 x2 ∧ liftableAppend p0 x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+  
   split.
-  - inv H1. unf.
+  - inv sl.
+    apply H9. auto.
     inv H2.
-    clear H8.
-  - inv H2.
-    apply H7. auto.
     repeat intro.
+    apply H12.
     unfold PLIFTp1 in *.
     unf.
-    inv H9.
-    assumption.
+    eex.
+    eca.
+    apply H15.
+  - inv H2.
+    apply H9. auto.
+    inv sl.
+    repeat intro.
+    apply H11.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    inv H15.
+    exists phi'0.
+    auto.
 Qed.
 
+
+(* HRelease *)
+Inductive HReleaseX : phi ->
+              Gamma -> phi -> phi -> Prop :=
+| HRelease : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi',
+    phiImplies phi phi_a -> (* implied by liftableWOaccsX *)
+    liftableWOaccsX phi_a
+      phi phi' ->
+    HReleaseX phi_a
+      G
+      phi
+      phi'
+.
+
+Inductive GHReleaseX : phi ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHRelease : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi',
+    gphiImplies phi phi_a -> (* implied by liftableWOaccsX *)
+    simpleLift (liftableWOaccsX phi_a)
+      phi phi' ->
+    GHReleaseX phi_a
+      G
+      phi 
+      phi'
+.
+
+Theorem GLIFT_GHReleaseX : forall p  G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HReleaseX p G) (GHReleaseX p G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H1.
+  inv H3.
+  
+  assert (gGood gp2') as g1.
+    apply H5.
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  rename H5 into sl.
+  apply simpleLift2lift in sl; auto.
+  Focus 2. apply liftableWOaccsX_.
+  
+  split.
+  - inv sl.
+    apply H7. auto.
+    inv H2.
+    repeat intro.
+    apply H10.
+    unfold PLIFTp1 in *.
+    unf.
+    eex; apply H13.
+  - inv H2.
+    apply H7. auto.
+    inv sl.
+    repeat intro.
+    apply H9.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H13.
+    eex.
+    apply H14.
+Qed.
+
+
+(* HDeclare *)
+Inductive HDeclareX : (Gamma -> list s -> phi -> phi -> Prop) -> T -> x -> list s ->
+              Gamma -> phi -> phi -> Prop :=
+| HDeclare : forall (ff : Gamma -> list s -> phi -> phi -> Prop) phi'' ss(*\overline{s}*) G(*\Gamma*) phi(*\*) phi'(*\*) x T,
+    GammaNotSetAt G x ->
+    liftableAppend [phiEq (ex x) (ev (defaultValue' T))]
+      phi phi'' ->
+    ff (GammaSet x T G) ss
+      phi''
+      phi' ->
+    HDeclareX ff T x ss
+      G
+      phi
+      phi'
+.
+
+Inductive GHDeclareX : (Gamma -> list s -> phi -> phi -> Prop) -> T -> x -> list s ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHDeclare : forall (ff : Gamma -> list s -> phi -> phi -> Prop) phi'' ss(*\overline{s}*) G(*\Gamma*) phi(*\*) phi'(*\*) x T,
+    GammaNotSetAt G x ->
+    simpleLift (liftableAppend [phiEq (ex x) (ev (defaultValue' T))])
+      phi phi'' ->
+    simpleLift (ff (GammaSet x T G) ss)
+      phi''
+      phi' ->
+    GHDeclareX ff T x ss
+      G
+      phi
+      phi'
+.
+
+Theorem GLIFT_GHDeclareX : forall ff T x ss  G p1 p2,
+  liftable (ff (GammaSet x T G) ss) ->
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HDeclareX ff T x ss G) (GHDeclareX ff T x ss G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H2.
+  inv H4.
+  
+  set (app := [phiEq (ex x) (ev (defaultValue' T))]) in *.
+  
+  assert (gGood gp2') as g1.
+    apply H7.
+  assert (gGood phi'') as g2.
+    apply H6.
+  assert (gGood gp2) as g3.
+    inv H3.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  assert (lt := liftableTrans
+    (liftableAppend app)
+    (ff (GammaSet x T G) ss)
+    (liftableAppend_ _)
+    H).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableAppend app x1 x2 ∧ ff (GammaSet x T G) ss x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+
+  split.
+  - inv sl.
+    apply H10. auto.
+    inv H3.
+    repeat intro.
+    apply H13.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
+  - inv H3.
+    apply H10. auto.
+    inv sl.
+    repeat intro.
+    apply H12.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H16.
+    eex.
+Qed.
 
 
 (* APP *)

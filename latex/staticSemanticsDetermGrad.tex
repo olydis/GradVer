@@ -39,8 +39,9 @@ Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular
 
 \begin{mathpar}
 \inferrule* [Right=GHAssert]
-{\grad{\phi} \grad{\implies} {\phi'}}
-{\Gamma~ \ghoare {\grad{\phi}} {{\assert {\phi'}}} {\grad{\phi}}}
+{{\wo {\grad{\phi}} {\staticFP{\phi_a}}} = \grad{\phi'}\\
+    \hat{\phi} \grad{\implies} {\phi_a}}
+{\Gamma~ \ghoare {\grad{\phi}} {{\assert {\phi_a}}} {\grad{\phi'} \gsc \phi_a}}
 \end{mathpar}
 
 \begin{mathpar}

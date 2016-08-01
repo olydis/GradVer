@@ -302,6 +302,41 @@ Proof.
     * assumption.
 Qed.
 
+Definition liftableWOaccsX (p : phi) (p1 p2 : phi) : Prop :=
+  phiImplies p1 p /\
+  liftableWOaccs (staticFootprint p) p1 p2.
+  
+Theorem liftableWOaccsX_ : forall x, liftable (liftableWOaccsX x).
+Proof.
+  intros.
+  assert (li := liftableWOaccs_ (staticFootprint x)).
+  unfold liftableWOaccsX.
+  inv li. inv H0.
+  split.
+    inv H.
+    split; intros; unf.
+      eapply H0; eauto.
+    eapply H3; eauto.
+  split.
+  - unfold pmFun in *. intros. unf.
+    eapply H1; eauto.
+  - unfold gFun in *. intros. unf.
+    eapply H2 in H5; eauto.
+    unf.
+    exists x0.
+    exists x1.
+    splau.
+    splau.
+    splau.
+    unfold gGamma' in H0.
+    simpl in *.
+    destruct pa.
+    * unf.
+      eapp phiImpliesTrans.
+    * subst.
+      assumption.
+Qed.
+
 
 Definition liftablePS2 
   (x1 : x) (y1 : x) 
