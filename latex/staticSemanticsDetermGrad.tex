@@ -10,7 +10,7 @@
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
 {{\wo {\grad{\phi}} {\acc(x.f)}} = \grad{\phi'}\\
-    \grad{\phi} \grad{\implies} {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+    \grad{\phi} \grad{\implies} {{\acc({{x}}.{f})}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
 {\Gamma~ \ghoare {\grad{\phi}} {{{x}.{f} := {y}}} {\grad{\phi'} \gsc {{\acc({{x}}.{f})} \gsc {{({{x}} \neq {{\vnull}})} \gsc {{({{{x}}.{f}} = {{y}})}}}}}}
 \end{mathpar}
 

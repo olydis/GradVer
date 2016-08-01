@@ -10,7 +10,7 @@
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
 {{\wo {\hat{\phi}} {\acc(x.f)}} = \hat{\phi'}\\
-    \hat{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+    \hat{\phi} \implies {{\acc({{x}}.{f})}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x}.{f} := {y}}} {\hat{\phi'} \hsc {{\acc({{x}}.{f})} \hsc {{({{x}} \neq {{\vnull}})} \hsc {{({{{x}}.{f}} = {{y}})}}}}}}
 \end{mathpar}
 

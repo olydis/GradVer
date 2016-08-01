@@ -577,8 +577,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       [sAlloc x C]
       (phi' ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))
 | HFieldAssign : forall G(*\Gamma*) (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
-    phiImplies phi (phiAcc (ex x) f :: 
-                    phiNeq (ex x) (ev vnull) :: phi') ->
+    phiImplies phi (phiAcc (ex x) f :: phi') ->
     sfrmphi [] phi' ->
     (* NotIn x (FV phi') -> *)
     hasStaticType G (ex x) (TClass C) ->

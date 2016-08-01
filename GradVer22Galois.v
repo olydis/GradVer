@@ -65,12 +65,7 @@ Definition goodFun (f : phi -> phi -> Prop) : Prop :=
   (forall x y1 y2,
     f x y1 ->
     f x y2 ->
-    y1 = y2)
-  /\
-  (forall x y,
-    good x ->
-    f x y -> 
-    exists x' y', good x' /\ phiImplies x' x /\ y <> y' /\ f x' y').
+    y1 = y2).
 
 Definition liftable (f : phi -> phi -> Prop) : Prop :=
   goodFun f /\
@@ -88,16 +83,10 @@ Proof.
     unfold goodFun in *. unf.
     split.
       intros. unf.
-      eapply H6 in H12; eauto.
-    split.
-      intros. unf.
-      assert (x0 = x1). eapp H2.
-      subst. eapp H1.
+      eapply H2 in H10; eauto.
     intros. unf.
-    assert (H10' := H10).
-    apply H7 in H10'; auto. unf.
-    assert (H12' := H12).
-    admit.
+    assert (x0 = x1). eapp H6.
+    subst. eapp H7.
   split.
     unfold pmFun in *.
     intros. unf.
@@ -151,9 +140,8 @@ Proof.
   rename H0 into mon.
   rename H1 into mag.
   rename H6 into goF.
-  rename H into det.
+  rename H8 into det.
   rename H7 into ff.
-  rename H9 into nconst.
   inv ga.
   clear H.
   
@@ -202,17 +190,9 @@ Proof.
     * assert (x0 = p1).
         eapp det. subst.
       splau.
-    * apply nconst in H3; auto. unf.
-      specialize (H0 x1).
-      contradict H0.
-      apply ex_not_not_all.
-      eexists; cut.
-      exists x0.
-      splau.
-      splau.
-      eapp (phiImpliesTrans x0 x p0).
+    * admit.
     * eapp det.
-Qed.
+Admitted.
 
 Definition liftableAppend (p : phi) (p1 p2 : phi) : Prop :=
   p2 = p1 ++ p /\
@@ -223,21 +203,9 @@ Definition liftableAppend (p : phi) (p1 p2 : phi) : Prop :=
 Theorem liftableAppend_ : forall p, liftable (liftableAppend p).
 Proof.
   split.
-    constructor.
-      intros. inv H. apply H2. assumption.
     split; intros.
-      inv H. inv H0. congruence.
-    exists (phiTrue :: x). exists (phiTrue :: y).
-    split. rewriteRev goodConsTrue. assumption.
-    split. rewrite cons2app. eapp phiImpliesSuffix.
-    split. intro. symmetry in H1. apply infRecList in H1. inv H1.
-    inv H0. unf.
-    split. simpl. congruence.
-    split. intros. rewriteRevIn goodConsTrue H2. apply H0 in H2. rewrite goodConsTrue in H2. assumption.
-    intros. unf. simpl in *.
-    assert (good p'' /\ phiImplies p'' (x ++ p0)) as IH. splau. eapp phiImpliesTrans. rewrite cons2app. eapp phiImpliesSuffix.
-    apply H1 in IH. unf.
-    exists x0. splau. splau. eapp phiImpliesTrans. repeat intro. eca. apply inclEmpty. eca. common. assumption.
+      inv H. apply H2. assumption.
+    inv H. inv H0. congruence.
   split.
     unfold pmFun. intros.
     inv H. inv H0.
@@ -279,12 +247,9 @@ Definition liftableWOvar (x : x) (p1 p2 : phi) : Prop :=
 Theorem liftableWOvar_ : forall x, liftable (liftableWOvar x).
 Proof.
   split.
-    constructor.
+    split; intros.
       intros. apply H. assumption.
-    split.
-      intros. admit. (*the case when implemented*)
-    intros.
-      admit. (* add x=x for variable x that does not occur in x0 *)
+    intros. admit. (*the case when implemented*)
   split.
     unfold pmFun. intros.
     inv H. inv H0.
@@ -307,6 +272,7 @@ Proof.
 Admitted.
 
 Definition liftableWOacc (a : A'_s) (p1 p2 : phi) : Prop :=
+  (phiImplies p1 [phiAcc (fst a) (snd a)]) /\
   (good p1 -> good p2) /\
   (minWith (fun p => phiImplies p1 p /\ (forall px, phiImplies p px /\ ~ In a (staticFootprint px) /\ ~ In a (staticFootprintX px))) phiImplies p2).
 (* doesn't account for a.f = a.f thingy... *)

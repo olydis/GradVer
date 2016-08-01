@@ -31,11 +31,6 @@ Definition ppGood (pp : pphi) :=
   (exists p, pp p) /\
   (forall p, pp p -> good p).
 
-Definition gphiImplies (gp1 gp2 : gphi) : Prop :=
-  if fst gp1
-  then (exists meet, good meet ∧ phiImplies meet (snd gp1) ∧ phiImplies meet (snd gp2))
-  else phiImplies (snd gp1) (snd gp2).
-
 
 (* concretization *)
 Definition gGamma' (phi : gphi) : pphi :=
@@ -50,6 +45,9 @@ Inductive gGamma : gphi -> pphi -> Prop :=
   gGamma' gp = pp ->
   gGamma gp pp
 .
+
+Definition gphiImplies (gp1 : gphi) (p2 : phi) : Prop :=
+  exists p1, gGamma' gp1 p1 /\ phiImplies p1 p2.
 
 (* abstraction *)
 Definition ppIsSingleton (p : phi) (pp : pphi) :=

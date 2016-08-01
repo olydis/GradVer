@@ -8,7 +8,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{\hat{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * \hat{\phi'}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
+{\hat{\phi} \implies {{\acc({{x}}.{f})} * {\hat{\phi'}}}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
 {{\Gamma} \hoare {\hat{\phi}} {{{x}.{f} := {y}}} {\hat{\phi'} \hsc {{\acc({{x}}.{f})} \hsc {{({{x}} \neq {{\vnull}})} \hsc {{({{{x}}.{f}} = {{y}})}}}}}}
 \end{mathpar}
 

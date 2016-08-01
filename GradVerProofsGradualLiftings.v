@@ -1,33 +1,43 @@
 Load GradVer22Galois.
 Import Semantics.
 
-Print GLIFTpp1x.
-Lemma GLIFT_liftablex : forall P,
-  liftable P ->
-  GLIFTpp1 P (simpleLift P).
+
+
+Lemma gGoodFalseGood : forall p,
+  gGood (false, p) <-> good p.
+Proof.
+  split; intros.
+  - inv H.
+    inv H1; cut.
+  - split; try apply H.
+    unfold sfrmgphi.
+    apply or_intror.
+    apply H.
+Qed.
+
+Lemma gGammaGood : forall gp p,
+  gGood gp ->
+  gGamma' gp p ->
+  good p.
 Proof.
   intros.
-  lapply (GLIFT_liftable P); try apply H.
+  unfold gGamma' in H0.
+  destruct gp. simpl in *.
+  destruct b; cut.
+  subst.
+  rewriteRev gGoodFalseGood.
+  assumption.
+Qed.
+
+
+
+
+Lemma GLIFT_liftablex : forall P,
+  liftable P ->
+  GLIFTpp1x P (simpleLift P).
+Proof.
   intros.
-  lapply H0; try apply H.
-  intros.
-  lapply H1; try apply H.
-  intros.
-  unfold GLIFTpp1, GLIFTpp1x in *.
-  intros.
-  eapply H2 in H5; eauto.
-  inv H4.
-  inv H5.
-  
-  specialize (H9 gp2').
-  specialize (H12 gp2).
-  intuition.
-  
-  unfold gphiEquals.
-  eexists. eexists.
-  split. eca.
-  split. eca.
-  cut.
+  apply (GLIFT_liftable P); apply H.
 Qed.
 
 Lemma simpleLift2lift : forall P,
@@ -39,17 +49,10 @@ Proof.
   intros.
   assert (H' := H).
   apply GLIFT_liftablex in H.
-  unfold GLIFTpp1x in H.
-  unfold GLIFTpp1 in H.
-  assert (forall pp, gAlpha (PLIFTp1 P (gGamma' p1)) pp → gphiEquals p2 pp) as IH.
-    intros.
-    eapply H; eauto.
-    eca.
-    apply H0.
-  clear H.
-  
-  admit. (* gAlpha is total *)
-Admitted.
+  eapply H; eauto.
+  eca.
+  apply H0.
+Qed.
 
 (* HNewObj *)
 Inductive HNewObjX : x -> C -> 
@@ -80,43 +83,13 @@ Inductive GHNewObjX : x -> C ->
       phi''
 .
 
-Lemma gGoodFalseGood : forall p,
-  gGood (false, p) <-> good p.
-Proof.
-  split; intros.
-  - inv H.
-    inv H1; cut.
-  - split; try apply H.
-    unfold sfrmgphi.
-    apply or_intror.
-    apply H.
-Qed.
-
-Lemma gGammaGood : forall gp p,
-  gGood gp ->
-  gGamma' gp p ->
-  good p.
-Proof.
-  intros.
-  unfold gGamma' in H0.
-  destruct gp. simpl in *.
-  destruct b; cut.
-  subst.
-  rewriteRev gGoodFalseGood.
-  assumption.
-Qed.
-
-Theorem GLIFT_GHNewObjX : forall x C G p1 p2,
+Theorem GLIFT_GHNewObjX : forall x C  G p1 p2,
   gGood p1 ->
   gGood p2 ->
   GLIFTpp1 (HNewObjX x C G) (GHNewObjX x C G).
 Proof.
   unfold GLIFTpp1.
   intros.
-  
-  eexists. eexists.
-  split. eca. inv H3. apply H7.
-  split. eca. inv H2. assumption.
   
   inv H1.
   inv H3.
@@ -130,6 +103,10 @@ Proof.
   assert (gGood gp2) as g3.
     inv H2.
     assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
   
   assert (lt := liftableTrans
     (liftableWOvar x)
@@ -170,68 +147,111 @@ Proof.
     auto.
 Qed.
 
-Theorem GLIFT_GHNewObjX : forall G p1 p2,
+
+(* HFieldAssign *)
+Inductive HFieldAssignX : x -> f -> x -> 
+              Gamma -> phi -> phi -> Prop :=
+| HFieldAssign : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' (x y : x) (f : f) C T,
+    liftableWOacc (ex x, f) phi phi' ->
+    phiImplies phi [phiAcc (ex x) f] ->
+    hasStaticType G (ex x) (TClass C) ->
+    hasStaticType G (ex y) T ->
+    fieldHasType C f T ->
+    liftableAppend (phiAcc (ex x) f ::
+       phiNeq (ex x) (ev vnull) ::
+       phiEq (edot (ex x) f) (ex y) :: [])
+      phi' phi'' ->
+    HFieldAssignX x f y
+      G
+      phi
+      phi''
+.
+
+Inductive GHFieldAssignX : x -> f -> x -> 
+              Gamma -> gphi -> gphi -> Prop :=
+| GHFieldAssign : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' (x y : x) (f : f) C T,
+    simpleLift (liftableWOacc (ex x, f)) phi phi' ->
+    gphiImplies phi [phiAcc (ex x) f] ->
+    hasStaticType G (ex x) (TClass C) ->
+    hasStaticType G (ex y) T ->
+    fieldHasType C f T ->
+    simpleLift (liftableAppend (phiAcc (ex x) f ::
+       phiNeq (ex x) (ev vnull) ::
+       phiEq (edot (ex x) f) (ex y) :: []))
+      phi' phi'' ->
+    GHFieldAssignX x f y
+      G
+      phi
+      phi''
+.
+
+Theorem GLIFT_GHFieldAssignX : forall x f y  G p1 p2,
   gGood p1 ->
   gGood p2 ->
-  GHNewObjX        G  p1 p2 <-> 
-  GLIFT2 (HNewObjX G) p1 p2.
+  GLIFTpp1 (HFieldAssignX x f y G) (GHFieldAssignX x f y G).
 Proof.
-  unfold GLIFT2, PLIFT2.
-  split; intros.
-  - inv H1.
+  unfold GLIFTpp1.
+  intros.
   
-    eexists. eexists.
-    split. eca.
-    split. eca.
-    
-    apply simpleLift2lift in H2; auto.
-      Focus 2. apply liftableWOvar_.
-    apply simpleLift2lift in H5; auto.
-      Focus 2. apply liftableAppend_.
-      Focus 2. inv H2. assumption.
-    
+  inv H1.
+  inv H3.
+  
+  set (app := [phiAcc (ex x) f; phiNeq (ex x) (ev vnull);
+          phiEq (edot (ex x) f) (ex y)]) in *.
+  
+  assert (gGood gp2') as g1.
+    apply H9.
+  assert (gGood phi') as g2.
+    apply H1.
+  assert (gGood gp2) as g3.
     inv H2.
-    inv H1. unf.
-    assert (H1' := H1).
-    inv H1. unf.
-    exists x1.
-    apply H7 in H1'.
-    
-    assert (good x1) as g1.
-      apply (gGammaGood p1); eauto.
-    assert (good x0) as g2.
-      apply (gGammaGood phi'); eauto.
-    assert (good (x0 ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))) as g3.
-      admit. (* trust me *)
-    
-    assert (exists xo, liftableAppend (phiNeq (ex x) (ev vnull) :: accListApp x f_bar) x0 xo).
-      eexists.
-      eca.
-      splau.
-      intros. unf.
-      exists x0.
-      auto.
-    unf.
-    
-    exists x2.
-    
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  assert (lt := liftableTrans
+    (liftableWOacc (ex x, f))
+    (liftableAppend app)
+    (liftableWOacc_ _)
+    (liftableAppend_ _)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableWOacc (ex x, f) x1 x2 ∧ liftableAppend app x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
     splau.
-    split.
-      inv H5.
-      apply H13.
-      unfold PLIFTp1.
-      exists x0.
-      auto.
-    eca.
-  - unf.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+  
+  split.
+  - inv sl.
+    apply H12. auto.
     inv H2.
-    inv H1.
-    inv H6.
+    repeat intro.
+    apply H15.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
     eca.
-    * apply 
-      unfold simpleLift.
-      splau.
-      split. Focus
+    apply H18.
+  - inv H2.
+    apply H12. auto.
+    inv sl.
+    repeat intro.
+    apply H14.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    inv H18.
+    exists phi'0.
+    auto.
+Qed.
+
+
+
+
 
 (* APP *)
 Inductive hoareAppX : Gamma -> T -> T -> x -> phi -> phi -> phi -> phi -> Prop :=
