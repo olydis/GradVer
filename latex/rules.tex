@@ -389,12 +389,27 @@ Proved:
     \item does this make $\langle \gamma, \alpha \rangle$ a (partial) “galois insertion”?
 \end{itemize}
 
-\subsection{Dominator Theory}
+\subsection{Lifting functions}
+Gradual lifting $\grad{f} : \grad{\phi} \rightarrow \grad{\phi}$ of a function $f : \phi \rightarrow \phi$:
+$$\grad{f}(\grad{\phi}) := \alpha(\overline{f}(\gamma(\grad{\phi})))$$ 
+
+This formal definition has drawbacks:
+\begin{itemize}
+    \item Calculations on infinite set (not implementable)
+    \item Determine supremum of infinite set (not even clear if it exists)
+\end{itemize}
+
+Turns out above definition can be rewritten in an equivalent, computable way.
+
+\subsubsection{Dominator Theory}
+TODO: first tackle singleton case etc.
+
 Theorem:\\
 % $\gamma(\phi) = \biguplus_{i = 1..n} \gamma(\hat{\phi}_i)$
 For every $\phi$, there exists a finite set of “dominators” $\dom(\phi)$, such that 
 $$\gamma(\withqm{\phi}) = \bigcup_{\hat{\phi} \in \dom(f(\phi))} \gamma(\withqm{\hat{\phi}})$$
 ~\\
+
 Consequence: 
 \begin{align*}
 \withqm{\phi} 
@@ -402,7 +417,8 @@ Consequence:
 &= \dalpha(\gamma(\withqm{\phi})) \\
 &= \dalpha(\bigcup_{\hat{\phi} \in \dom(\phi)} \gamma(\withqm{\hat{\phi}})) \\
 &= \dalpha(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \}) \\
-&= \dalpha(\dom(\phi))
+&= \dalpha(\dom(\phi)) \\
+&= \sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(\phi) ~\}}
 \end{align*}
 ~\\
 Analogous, for monotonic $f$: 
@@ -411,38 +427,61 @@ Analogous, for monotonic $f$:
 &= \dalpha(\overline{f}(\gamma(\withqm{\phi}))) \\
 &= \dalpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \gamma(\withqm{\hat{\phi}}))) \\
 &= \dalpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \})) \\
-&= \dalpha(\overline{f}(\dom(\phi)))
+&= \dalpha(\overline{f}(\dom(\phi))) \\
+&= \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}}
 \end{align*}
 
 ~\\
-Lemmas:
-\begin{itemize}
-    \item $\dom(\phi) \subseteq \gamma(\withqm{\phi})$
-    \item $\max \gamma(\withqm{\hat{\phi}}) = \hat{\phi}$
-    \item $f : \phi \rightarrow \phi \text{ monotonic }  \implies  \max \overline{\phi} = \phi'  \implies  \max \overline{f(\phi)} = f(\phi')$
-    \item $\max \overline{\phi} = \phi'  \implies  \alpha(\overline{\phi}) \in \{ \withqm{\phi'}, \phi' \}$
-\end{itemize}
+Re-definition of gradual lifting:
+$$\grad{f}(\phi) := f(\phi)$$ 
+$$\grad{f}(\withqm{\phi}) := \alpha(\overline{f}(\gamma(\withqm{\phi}))) = \dalpha(\overline{f}(\dom(\phi)))$$ 
 
-~\\
-Corollary:\\
-$f : \phi \rightarrow \phi \text{ monotonic }  \implies  \alpha(\overline{f}(\gamma(\withqm{\hat{\phi}}))) =\, \withqm{f(\hat{\phi})}$
+In terms of implementation: At least no more infinite sets, need to calculating supremum remains.\\
+
+Interesting observation:
+$$\grad{f}(\withqm{\hat{\phi}}) = \dalpha(\overline{f}(\dom(\hat{\phi}))) = \dalpha(\overline{f}(\{ \hat{\phi} \})) = \dalpha(\{ f(\hat{\phi}) \}) = \,\,\withqm{f(\hat{\phi})}$$
+
+This observation raises the question whether it is possible to generalize the equality to work with arbitrary formulas, getting rid of $\dalpha$ and calculating a supremum entirely.
+
+%Further observations:
+
+%~\\
+%Lemmas:
+%\begin{itemize}
+%    \item $\dom(\phi) \subseteq \gamma(\withqm{\phi})$
+%    \item $\max \gamma(\withqm{\hat{\phi}}) = \hat{\phi}$
+%    \item $f : \phi \rightarrow \phi \text{ monotonic }  \implies  \max \overline{\phi} = \phi'  \implies  \max \overline{f(\phi)} = f(\phi')$
+%    \item $\max \overline{\phi} = \phi'  \implies  \alpha(\overline{\phi}) \in \{ \withqm{\phi'}, \phi' \}$
+%\end{itemize}
 
 %~\\
 %Also:\\
 %$\alpha(\overline{f}(\gamma(\phi))) =\, f(\phi)$
 
+\subsubsection{Generalization: Auto-liftable functions}
+
+Goal:
+Get a definition of $\grad{f}$ that is even easier to handle and implement.
+Therefore we want to investigate whether, or under which circumstances 
+$$\grad{f}(\grad{\phi}) = f(\grad{\phi}) \quad\quad\text{(i.e. $f$ applied to the static part of $\grad{\phi}$)}$$
+holds.
+
+We call functions $f$ satisfying above equality “auto-liftable”.
+
+% always holds for singletons
+
+Counterexamples:
+\begin{itemize}
+    \item $f(\phi) = \acc(x.f) * \phi$\\
+    $$\grad{f}(\withqm{x.f = 3}) = \,\,\withqm{\texttt{false}} \neq \,\,\withqm{\acc(x.f) * (x.f = 3)} = f(\withqm{(x.f = 3)})$$
+    Cause: $\gamma(\withqm{x.f = 3})$ only contains self-framed formulas, so access to $x.f$ is always included. Adding it another time results in duplicate access and therefore unsatisfiable formulas.
+    \item $f(\phi) = $ remove all terms containing $x$\\
+    $$\grad{f}(\withqm{a = 3}) = \,\,? \neq \,\,\withqm{(a = 3)} = f(\withqm{(a = 3)})$$
+    Cause: $(a = x) * (x = 3) \in \gamma(\withqm{a = 3})$ and $f((a = x) * (x = 3)) = \true$. Abstracting from a (non-singleton) set that contains $\true$ yields $?$.
+    \end{itemize}
+
 ~\\
 What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi}))) =\, \withqm{f(\phi)}$?
-\begin{align*}
-\withqm{f(\phi)} 
-&= \dalpha(\dom(f(\phi))) \\
-&= \sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} \\
-\end{align*}
-\begin{align*}
-\alpha(\overline{f}(\gamma(\withqm{\phi}))) 
-&= \dalpha(\overline{f}(\dom(\phi))) \\
-&= \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
-\end{align*}
 
 \begin{align*}
 \forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' &\in \gamma(\withqm{f(\phi'')}) \\
@@ -453,23 +492,22 @@ What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi
 \implies \\
 \forall \phi' \in \dom(f(\phi)), \withqm{\phi'} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
 \iff \\
-\sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}}
+\sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
+\iff \\
+\withqm{f(\phi)}  &\sqsubseteq \alpha(\overline{f}(\gamma(\withqm{\phi})))
 \end{align*}
 
 \begin{align*}
-\withqm{f(\phi)} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\withqm{f(\phi)} &\sqsubseteq \,\,\withqm{f(\phi)} \\
 \implies \\
-\forall \phi' \in \dom(\phi), \withqm{f(\phi')} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\forall \phi' \in \dom(\phi), \withqm{f(\phi')} &\sqsubseteq \,\,\withqm{f(\phi)} \\
 \iff \\
-\sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)}))
+\sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \,\,\withqm{f(\phi)} \\
+\iff \\
+\alpha(\overline{f}(\gamma(\withqm{\phi}))) &\sqsubseteq \,\,\withqm{f(\phi)}
 \end{align*}
 
-\subsection{Liftable Functions}
-We call a function liftable iff $\grad{f}(\withqm{\phi}) = \,\,\withqm{f(\phi)}$ holds for all $\phi$.
-This property is very desirable as it allows treating gradual formulas the same way you would treat static formulas.
-Note that $\grad{f}(\phi) = f(\phi)$ holds anyway, so we have $\grad{f}(\grad{\phi}) = f(\grad{\phi})$, with $f$ simply being applied to the static part of $\grad{\phi}$.\\
-
-For a function $f$ to be liftable, the following properties are sufficient:
+For a function $f$ to be auto-liftable, the following properties are sufficient:
 \begin{itemize}
     \item Monotonicity
     \item $\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' \in \gamma(\withqm{f(\phi'')})$ 
@@ -481,13 +519,18 @@ Monotonicity is obviously preserved.
 
 Other condition:
 \begin{align*}
-\alpha(\dom(f(\phi))) &\sqsubseteq \alpha(\overline{f}(\dom(\phi))) \\
+\withqm{g(f(\phi))} \sqsubseteq \alpha(\overline{g}(\gamma(\withqm{f(\phi)}))) &\,\wedge
+\,\,\withqm{f(\phi)} \sqsubseteq \alpha(\overline{f}(\gamma(\withqm{\phi}))) \\
 \implies \\
-\alpha(\overline{g}(\dom(f(\phi)))) &\sqsubseteq \alpha(\overline{g}(\overline{f}(\dom(\phi)))) \\
+\withqm{g(f(\phi))} \sqsubseteq \alpha(\overline{g}(\gamma(\withqm{f(\phi)}))) &\wedge
+\alpha(\gamma(\withqm{f(\phi)})) \sqsubseteq \alpha(\overline{f}(\gamma(\withqm{\phi}))) \\
 \implies \\
-\alpha(\dom(g(f(\phi)))) &\sqsubseteq \alpha(\overline{g}(\overline{f}(\dom(\phi)))) \\
+\withqm{g(f(\phi))} \sqsubseteq \alpha(\overline{g}(\gamma(\withqm{f(\phi)}))) &\wedge
+\alpha(\overline{g}(\gamma(\withqm{f(\phi)}))) \sqsubseteq \alpha(\overline{g}(\overline{f}(\gamma(\withqm{\phi})))) \\
 \implies \\
-\alpha(\dom((g \circ f)(\phi))) &\sqsubseteq \alpha(\overline{(g \circ f)}(\dom(\phi))) \\
+\withqm{g(f(\phi))} &\sqsubseteq \alpha(\overline{g}(\overline{f}(\gamma(\withqm{\phi})))) \\
+\implies \\
+\withqm{(g \circ f)(\phi)} &\sqsubseteq \alpha(\overline{(g \circ f)}(\gamma(\withqm{\phi}))) \\
 \end{align*}
 
 
