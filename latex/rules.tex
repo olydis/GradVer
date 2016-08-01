@@ -455,7 +455,7 @@ We call a function liftable iff $\grad{f}(\withqm{\phi}) = \,\,\withqm{f(\phi)}$
 This property is very desirable as it allows treating gradual formulas the same way you would treat static formulas.
 Note that $\grad{f}(\phi) = f(\phi)$ holds anyway, so we have $\grad{f}(\grad{\phi}) = f(\grad{\phi})$, with $f$ simply being applied to the static part of $\grad{\phi}$.\\
 
-A function $f$ has to have the following properties in order to be liftable:
+For a function $f$ to be liftable, the following properties are sufficient:
 \begin{itemize}
     \item Monotonicity
     \item $\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' \in \gamma(\withqm{f(\phi'')})$ 

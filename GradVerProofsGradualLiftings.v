@@ -112,7 +112,6 @@ Theorem GLIFT_GHNewObjX : forall x C G p1 p2,
   GLIFTpp1 (HNewObjX x C G) (GHNewObjX x C G).
 Proof.
   unfold GLIFTpp1.
-  unfold PLIFTp1.
   intros.
   
   eexists. eexists.
@@ -122,6 +121,8 @@ Proof.
   inv H1.
   inv H3.
   
+  set (app := (phiNeq (ex x) (ev vnull) :: accListApp x f_bar)) in *.
+  
   assert (gGood gp2') as g1.
     apply H7.
   assert (gGood phi') as g2.
@@ -129,49 +130,45 @@ Proof.
   assert (gGood gp2) as g3.
     inv H2.
     assumption.
-    
-  apply simpleLift2lift in H1; auto.
-      Focus 2. apply liftableWOvar_.
-  apply simpleLift2lift in H7; auto.
-      Focus 2. apply liftableAppend_.
+  
+  assert (lt := liftableTrans
+    (liftableWOvar x)
+    (liftableAppend app)
+    (liftableWOvar_ x)
+    (liftableAppend_ app)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableWOvar x x1 x2 ∧ liftableAppend app x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
   
   split.
-  - repeat intro.
-    Print gFun.
+  - inv sl.
+    apply H10. auto.
     inv H2.
-    destruct gp1, phi', gp2'.
-    inv H1. inv H7. unf. simpl in *. subst.
-    unfold gGamma' in *. simpl in *.
-    destruct b1.
-    * unf.
-      destruct gp2. simpl in *.
-      destruct b.
-      + splau.
-        inv H15.
-      + admit.
-    * subst.
-      apply H10.
-      eex.
-      eca.
+    repeat intro.
+    apply H13.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
   - inv H2.
     apply H10. auto.
-    clear H10 H9 H3.
+    inv sl.
     repeat intro.
+    apply H12.
+    unfold PLIFTp1 in *.
     unf.
-    inv H9.
-    
-    rewrite H11 in H6. inv H6.
-    
-    assert (gGamma' phi' phi'0).
-      inv H1.
-      apply H13.
-      exists x0.
-      auto.
-    inv H7.
-    apply H14.
+    eex.
+    inv H16.
     exists phi'0.
+    
+    rewrite H18 in H6. inv H6.
     auto.
-Admitted.
+Qed.
 
 Theorem GLIFT_GHNewObjX : forall G p1 p2,
   gGood p1 ->
