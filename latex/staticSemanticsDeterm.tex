@@ -65,7 +65,7 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 
 \begin{mathpar}
 \inferrule* [Right=HSec]
-{{\Gamma} \hoare {\hat{\phi_p}} {s_1} {\hat{\phi_q}}\\{\Gamma} \hoare {\hat{\phi_q}} {s_2} {\hat{\phi_r}}}
-{{\Gamma} \hoare {\hat{\phi_p}} {{s_1}; {s_2}} {\hat{\phi_r}}}
+{{\Gamma} \hoare {\hat{\phi_p}} {s_1} {\hat{\phi_q}}\\{\Gamma} \hoare {\hat{\phi_q}} {\overline{s_2}} {\hat{\phi_r}}}
+{{\Gamma} \hoare {\hat{\phi_p}} {{s_1}; \overline{s_2}} {\hat{\phi_r}}}
 \end{mathpar}
 

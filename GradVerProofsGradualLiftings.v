@@ -83,25 +83,23 @@ Inductive GHNewObjX : x -> C ->
       phi''
 .
 
-Theorem GLIFT_GHNewObjX : forall x C  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+Theorem GLIFT_GHNewObjX : forall x C  G,
   GLIFTpp1 (HNewObjX x C G) (GHNewObjX x C G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   set (app := (phiNeq (ex x) (ev vnull) :: accListApp x f_bar)) in *.
   
   assert (gGood gp2') as g1.
-    apply H7.
+    apply H5.
   assert (gGood phi') as g2.
-    apply H1.
+    apply H.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
@@ -124,26 +122,26 @@ Proof.
   
   split.
   - inv sl.
-    apply H10. auto.
-    inv H2.
+    apply H8. auto.
+    inv H0.
     repeat intro.
-    apply H13.
+    apply H11.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
-  - inv H2.
-    apply H10. auto.
+  - inv H0.
+    apply H8. auto.
     inv sl.
     repeat intro.
-    apply H12.
+    apply H10.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H16.
+    inv H14.
     exists phi'0.
     
-    rewrite H18 in H6. inv H6.
+    rewrite H16 in H4. inv H4.
     auto.
 Qed.
 
@@ -185,26 +183,24 @@ Inductive GHFieldAssignX : x -> f -> x ->
       phi''
 .
 
-Theorem GLIFT_GHFieldAssignX : forall x f y  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+Theorem GLIFT_GHFieldAssignX : forall x f y  G,
   GLIFTpp1 (HFieldAssignX x f y G) (GHFieldAssignX x f y G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   set (app := [phiAcc (ex x) f; phiNeq (ex x) (ev vnull);
           phiEq (edot (ex x) f) (ex y)]) in *.
   
   assert (gGood gp2') as g1.
-    apply H9.
+    apply H7.
   assert (gGood phi') as g2.
-    apply H1.
+    apply H.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
@@ -227,24 +223,24 @@ Proof.
   
   split.
   - inv sl.
-    apply H12. auto.
-    inv H2.
+    apply H10. auto.
+    inv H0.
     repeat intro.
-    apply H15.
+    apply H13.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
-    apply H18.
-  - inv H2.
-    apply H12. auto.
+    apply H16.
+  - inv H0.
+    apply H10. auto.
     inv sl.
     repeat intro.
-    apply H14.
+    apply H12.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H18.
+    inv H16.
     exists phi'0.
     auto.
 Qed.
@@ -283,25 +279,23 @@ Inductive GHVarAssignX : x -> e ->
       phi''
 .
 
-(* Theorem GLIFT_GHVarAssignX : forall x e  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+(* Theorem GLIFT_GHVarAssignX : forall x e  G,
   GLIFTpp1 (HVarAssignX x e G) (GHVarAssignX x e G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   set (app := [phiEq (ex x) e]) in *.
   
   assert (gGood gp2') as g1.
-    apply H9.
+    apply H7.
   assert (gGood phi') as g2.
-    apply H1.
+    apply H.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
@@ -324,24 +318,24 @@ Proof.
   
   split.
   - inv sl.
-    apply H12. auto.
-    inv H2.
+    apply H10. auto.
+    inv H0.
     repeat intro.
-    apply H15.
+    apply H13.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
     admit. (* carry information of meet back to \grad{\phi} (WILL survive [w/o x] since [[e]] doesn't contain x!) *)
-  - inv H2.
-    apply H12. auto.
+  - inv H0.
+    apply H10. auto.
     inv sl.
     repeat intro.
-    apply H14.
+    apply H12.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H18.
+    inv H16.
     exists phi'0.
     auto.
 Admitted. *)
@@ -376,25 +370,23 @@ Inductive GHReturnX : x ->
       phi''
 .
 
-Theorem GLIFT_GHReturnX : forall x  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+Theorem GLIFT_GHReturnX : forall x  G,
   GLIFTpp1 (HReturnX x G) (GHReturnX x G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   set (app := [phiEq (ex xresult) (ex x)]) in *.
   
   assert (gGood gp2') as g1.
-    apply H7.
+    apply H5.
   assert (gGood phi') as g2.
-    apply H1.
+    apply H.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
@@ -417,23 +409,23 @@ Proof.
   
   split.
   - inv sl.
-    apply H10. auto.
-    inv H2.
+    apply H8. auto.
+    inv H0.
     repeat intro.
-    apply H13.
+    apply H11.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
-  - inv H2.
-    apply H10. auto.
+  - inv H0.
+    apply H8. auto.
     inv sl.
     repeat intro.
-    apply H12.
+    apply H10.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H16.
+    inv H14.
     exists phi'0.
     auto.
 Qed.
@@ -485,90 +477,129 @@ Inductive GHAppX : T -> m -> T -> x' -> gphi -> gphi ->
       phi'''
 . *)
 
-Inductive HAppX : T -> m -> T -> x' -> gphi -> gphi ->
+Inductive HAppX : (T -> m -> T -> x' -> phi -> phi -> Prop) -> T -> m -> T -> x' ->
               Gamma -> phi -> phi -> Prop :=
-| HApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HApp : forall (me : T -> m -> T -> x' -> phi -> phi -> Prop) 
+                G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
+    me T_r m T_p z phi_pre phi_post ->
     phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
     listDistinct [x ; y ; z'] ->
-    liftablePS2 xthis y (xUserDef z) z' 
-      phi_pre phi_p ->
+    liftablePS2 y xthis z' (xUserDef z)
+      phi_p phi_pre ->
     liftablePS3 xthis y (xUserDef z) z' xresult x 
       phi_post phi_q ->
-    HAppX T_r m T_p z (false, phi_pre) (false, phi_post)
+    HAppX me T_r m T_p z
       G
       phi
       phi_q
 .
 
-Inductive GHAppX : T -> m -> T -> x' -> gphi -> gphi ->
+Inductive GHAppX : (T -> m -> T -> x' -> phi -> phi -> Prop) -> T -> m -> T -> x' ->
               Gamma -> gphi -> gphi -> Prop :=
-| GHApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| GHApp : forall (me : T -> m -> T -> x' -> phi -> phi -> Prop) 
+                G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
+    simpleLift (me T_r m T_p z) phi_pre phi_post ->
     gphiImplies phi (phiNeq (ex y) (ev vnull) :: (snd phi_p)) ->
     listDistinct [x ; y ; z'] ->
-    simpleLift (liftablePS2 xthis y (xUserDef z) z')
-      phi_pre phi_p ->
+    simpleLift (liftablePS2 y xthis z' (xUserDef z))
+      phi_p phi_pre ->
     simpleLift (liftablePS3 xthis y (xUserDef z) z' xresult x)
       phi_post phi_q ->
-    GHAppX T_r m T_p z phi_pre phi_post
+    GHAppX me T_r m T_p z
       G
       phi
-      phi_p
+      phi_q
 .
 
-(* Theorem GLIFT_GHAppX : forall T_r m T_p z phi_pre phi_post  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
-  GLIFTpp1 (HAppX T_r m T_p z phi_pre phi_post G) (GHAppX T_r m T_p z phi_pre phi_post G).
+Theorem GLIFT_GHAppX : forall me T_r m T_p z  G,
+  liftable (me T_r m T_p z) ->
+  GLIFTpp1 (HAppX me T_r m T_p z G) (GHAppX me T_r m T_p z G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
-  inv H1.
-  inv H3.
+  inv H0.
+  inv H2.
   
   assert (gGood gp2') as g1.
-    apply H9.
-  assert (gGood phi_q) as g2.
     apply H10.
-  assert (gGood gp2) as g3.
-    inv H2.
+  assert (gGood phi_post) as g2.
+    apply H6.
+  assert (gGood phi_p) as g3.
+    apply H9.
+  assert (gGood phi_pre) as g4.
+    apply H9.
+  assert (gGood gp2) as g5.
+    inv H1.
     assumption.
   
   eexists. eexists.
   split. eca.
   split. eca.
   
-  apply simpleLift2lift in H9; auto.
-  apply simpleLift2lift in H10; auto.
+  set (op1 := liftablePS2 y xthis z' (xUserDef z)) in *.
+  set (op2 := me T_r m T_p z) in *.
+  set (op3 := liftablePS3 xthis y (xUserDef z) z' xresult x) in *.
+  
+  assert (lt12 := liftableTrans
+    op1
+    op2
+    (liftablePS2_ _ _ _ _)
+    H).
+  assert (lt123 := liftableTrans
+    (λ x1 x3, ∃ x2, op1 x1 x2 ∧ op2 x2 x3)
+    op3
+    lt12
+    (liftablePS3_ _ _ _ _ _ _)).
+  simpl in *.
+    
+  assert (simpleLift (λ x1 x3 : phi,
+           ∃ x2 : phi,
+         (∃ x4 : phi, op1 x1 x4 ∧ op2 x4 x2) ∧ op3 x2 x3) phi_p gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
   
   split.
-  - inv H9.
+  - inv sl.
     apply H13. auto.
-    inv H2.
+    inv H1.
     repeat intro.
-    apply H15.
+    apply H16.
     unfold PLIFTp1 in *.
     unf.
+    inv H7.
+    exists x3. unf.
+    splau.
+    eca. eca. eca. eca.
+    subst op1.
+    destruct gp1.
+    destruct b.
+    * inv H7.
     eex.
     eca.
-  - inv H2.
-    apply H10. auto.
+  - inv H0.
+    apply H8. auto.
     inv sl.
     repeat intro.
-    apply H12.
+    apply H10.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H16.
+    inv H14.
     exists phi'0.
     auto.
-Qed. *)
+Qed.
 
 
 
@@ -601,23 +632,21 @@ Inductive GHAssertX : phi ->
       phi''
 .
 
-Theorem GLIFT_GHAssertX : forall p  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+Theorem GLIFT_GHAssertX : forall p  G,
   GLIFTpp1 (HAssertX p G) (GHAssertX p G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   assert (gGood gp2') as g1.
-    apply H6.
+    apply H4.
   assert (gGood phi') as g2.
-    apply H5.
+    apply H3.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
@@ -640,24 +669,24 @@ Proof.
   
   split.
   - inv sl.
-    apply H9. auto.
-    inv H2.
+    apply H7. auto.
+    inv H0.
     repeat intro.
-    apply H12.
+    apply H10.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
-    apply H15.
-  - inv H2.
-    apply H9. auto.
+    apply H13.
+  - inv H0.
+    apply H7. auto.
     inv sl.
     repeat intro.
-    apply H11.
+    apply H9.
     unfold PLIFTp1 in *.
     unf.
     eex.
-    inv H15.
+    inv H13.
     exists phi'0.
     auto.
 Qed.
@@ -688,50 +717,48 @@ Inductive GHReleaseX : phi ->
       phi'
 .
 
-Theorem GLIFT_GHReleaseX : forall p  G p1 p2,
-  gGood p1 ->
-  gGood p2 ->
+Theorem GLIFT_GHReleaseX : forall p  G,
   GLIFTpp1 (HReleaseX p G) (GHReleaseX p G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H.
   inv H1.
-  inv H3.
   
   assert (gGood gp2') as g1.
-    apply H5.
+    apply H3.
   assert (gGood gp2) as g3.
-    inv H2.
+    inv H0.
     assumption.
   
   eexists. eexists.
   split. eca.
   split. eca.
   
-  rename H5 into sl.
+  rename H3 into sl.
   apply simpleLift2lift in sl; auto.
   Focus 2. apply liftableWOaccsX_.
   
   split.
   - inv sl.
-    apply H7. auto.
-    inv H2.
+    apply H5. auto.
+    inv H0.
     repeat intro.
-    apply H10.
+    apply H8.
     unfold PLIFTp1 in *.
     unf.
-    eex; apply H13.
-  - inv H2.
-    apply H7. auto.
+    eex; apply H11.
+  - inv H0.
+    apply H5. auto.
     inv sl.
     repeat intro.
-    apply H9.
+    apply H7.
     unfold PLIFTp1 in *.
     unf.
-    inv H13.
+    inv H11.
     eex.
-    apply H14.
+    apply H12.
 Qed.
 
 
@@ -766,26 +793,24 @@ Inductive GHDeclareX : (Gamma -> list s -> phi -> phi -> Prop) -> T -> x -> list
       phi'
 .
 
-Theorem GLIFT_GHDeclareX : forall ff T x ss  G p1 p2,
+Theorem GLIFT_GHDeclareX : forall ff T x ss  G,
   liftable (ff (GammaSet x T G) ss) ->
-  gGood p1 ->
-  gGood p2 ->
   GLIFTpp1 (HDeclareX ff T x ss G) (GHDeclareX ff T x ss G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
+  inv H0.
   inv H2.
-  inv H4.
   
   set (app := [phiEq (ex x) (ev (defaultValue' T))]) in *.
   
   assert (gGood gp2') as g1.
-    apply H7.
+    apply H5.
   assert (gGood phi'') as g2.
-    apply H6.
+    apply H4.
   assert (gGood gp2) as g3.
-    inv H3.
+    inv H1.
     assumption.
   
   eexists. eexists.
@@ -808,22 +833,111 @@ Proof.
 
   split.
   - inv sl.
-    apply H10. auto.
-    inv H3.
+    apply H8. auto.
+    inv H1.
     repeat intro.
-    apply H13.
+    apply H11.
     unfold PLIFTp1 in *.
     unf.
     eex.
     eca.
-  - inv H3.
-    apply H10. auto.
+  - inv H1.
+    apply H8. auto.
     inv sl.
     repeat intro.
-    apply H12.
+    apply H10.
     unfold PLIFTp1 in *.
     unf.
-    inv H16.
+    inv H14.
+    eex.
+Qed.
+
+
+(* HSec *)
+Inductive HSecX : (Gamma -> list s -> phi -> phi -> Prop) -> list s ->
+              Gamma -> phi -> phi -> Prop :=
+| HSec : forall (ff : Gamma -> list s -> phi -> phi -> Prop) s1 s2 G(*\Gamma*) p q r,
+    ff G [s1]
+      p
+      q ->
+    ff G s2
+      q
+      r ->
+    HSecX ff ([s1] ++ s2)
+      G
+      p
+      r
+.
+
+Inductive GHSecX : (Gamma -> list s -> phi -> phi -> Prop) -> list s ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHSec : forall (ff : Gamma -> list s -> phi -> phi -> Prop) s1 s2 G(*\Gamma*) p q r,
+    simpleLift (ff G [s1])
+      p
+      q ->
+    simpleLift (ff G s2)
+      q
+      r ->
+    GHSecX ff ([s1] ++ s2)
+      G
+      p
+      r
+.
+
+Theorem GLIFT_GHSecX : forall ff s  G,
+  (forall s, liftable (ff G s)) ->
+  GLIFTpp1 (HSecX ff s G) (GHSecX ff s G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H0.
+  inv H2.
+  
+  assert (gGood q) as g1.
+    apply H0.
+  assert (gGood gp2') as g2.
+    apply H4.
+  assert (gGood gp2) as g3.
+    inv H1.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  assert (lt := liftableTrans
+    (ff G [s1])
+    (ff G s2)
+    (H _)
+    (H _)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        ff G [s1] x1 x2 ∧ ff G s2 x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+
+  split.
+  - inv sl.
+    apply H7. auto.
+    inv H1.
+    repeat intro.
+    apply H10.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
+  - inv H1.
+    apply H7. auto.
+    inv sl.
+    repeat intro.
+    apply H9.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H13.
     eex.
 Qed.
 

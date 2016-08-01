@@ -59,7 +59,7 @@ Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular
 
 \begin{mathpar}
 \inferrule* [Right=GHSec]
-{\Gamma~ \ghoare {\grad{\phi_p}} {s_1} {\grad{\phi_q}}\\\Gamma~ \ghoare {\grad{\phi_q}} {s_2} {\grad{\phi_r}}}
-{\Gamma~ \ghoare {\grad{\phi_p}} {{s_1}; {s_2}} {\grad{\phi_r}}}
+{\Gamma~ \ghoare {\grad{\phi_p}} {s_1} {\grad{\phi_q}}\\\Gamma~ \ghoare {\grad{\phi_q}} {\overline{s_2}} {\grad{\phi_r}}}
+{\Gamma~ \ghoare {\grad{\phi_p}} {{s_1}; \overline{s_2}} {\grad{\phi_r}}}
 \end{mathpar}
 

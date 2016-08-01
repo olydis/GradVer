@@ -635,7 +635,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi
       (sDeclare T x :: s)
       phi'
-| HSec : forall s1(*s_1*) s2(*s_2*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
+| HSec : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p s1 q ->
     hoare G q s2 r ->
     hoare G p (s1 ++ s2) r
