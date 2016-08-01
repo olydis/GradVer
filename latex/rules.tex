@@ -431,13 +431,15 @@ What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi
 \end{align*}
 
 \begin{align*}
+\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' &\in \gamma(\withqm{f(\phi'')}) \\
+\implies \\
 \forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \withqm{\phi'} &\sqsubseteq \,\,\withqm{f(\phi'')} \\
 \implies \\
 \forall \phi' \in \dom(f(\phi)), \exists \phi'' \in \dom(\phi), \withqm{\phi'} &\sqsubseteq \,\,\withqm{f(\phi'')} \\
 \implies \\
 \forall \phi' \in \dom(f(\phi)), \withqm{\phi'} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
 \iff \\
-\sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
+\sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}}
 \end{align*}
 
 \begin{align*}
@@ -445,10 +447,34 @@ What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi
 \implies \\
 \forall \phi' \in \dom(\phi), \withqm{f(\phi')} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
 \iff \\
-\sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)}))
 \end{align*}
 
-Therefore we require $\dom(f(\phi)) = \overline{f}(\dom(\phi))$ to hold.
+\subsection{Liftable Functions}
+We call a function liftable iff $\grad{f}(\withqm{\phi}) = \,\,\withqm{f(\phi)}$ holds for all $\phi$.
+This property is very desirable as it allows treating gradual formulas the same way you would treat static formulas.
+Note that $\grad{f}(\phi) = f(\phi)$ holds anyway, so we have $\grad{f}(\grad{\phi}) = f(\grad{\phi})$, with $f$ simply being applied to the static part of $\grad{\phi}$.\\
+
+A function $f$ has to have the following properties in order to be liftable:
+\begin{itemize}
+    \item Monotonicity
+    \item $\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' \in \gamma(\withqm{f(\phi'')})$ 
+\end{itemize}
+
+\subsubsection{Liftable composition}
+Given liftable functions $f$ and $g$, is $g \circ f$ liftable?
+Monotonicity is obviously preserved.
+
+Other condition:
+\begin{align*}
+\alpha(\dom(f(\phi))) &\sqsubseteq \alpha(\overline{f}(\dom(\phi))) \\
+\implies \\
+\alpha(\overline{g}(\dom(f(\phi)))) &\sqsubseteq \alpha(\overline{g}(\overline{f}(\dom(\phi)))) \\
+\implies \\
+\alpha(\dom(g(f(\phi)))) &\sqsubseteq \alpha(\overline{g}(\overline{f}(\dom(\phi)))) \\
+\implies \\
+\alpha(\dom((g \circ f)(\phi))) &\sqsubseteq \alpha(\overline{(g \circ f)}(\dom(\phi))) \\
+\end{align*}
 
 
 %\subsection{$(\phi, \implies)$ is semilattice}
