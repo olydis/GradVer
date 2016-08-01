@@ -250,6 +250,380 @@ Proof.
 Qed.
 
 
+(* HVarAssign *)
+Inductive HVarAssignX : x -> e -> 
+              Gamma -> phi -> phi -> Prop :=
+| HVarAssign : forall G(*\Gamma*) T phi(*\*) phi'(*\*) phi'' (x : x) (e : e),
+    liftableWOvar x phi phi' ->
+    NotIn x (FVe e) ->
+    hasStaticType G (ex x) T ->
+    hasStaticType G e T ->
+    phiImplies phi' (unfoldAcc e) ->
+    liftableAppend [phiEq (ex x) e] 
+      phi' phi'' ->
+    HVarAssignX x e
+      G
+      phi
+      phi''
+.
+
+Inductive GHVarAssignX : x -> e -> 
+              Gamma -> gphi -> gphi -> Prop :=
+| GHVarAssign : forall G(*\Gamma*) T phi(*\*) phi'(*\*) phi'' (x : x) (e : e),
+    simpleLift (liftableWOvar x) phi phi' ->
+    NotIn x (FVe e) ->
+    hasStaticType G (ex x) T ->
+    hasStaticType G e T ->
+    gphiImplies phi' (unfoldAcc e) ->
+    simpleLift (liftableAppend [phiEq (ex x) e])
+      phi' phi'' ->
+    GHVarAssignX x e
+      G
+      phi
+      phi''
+.
+
+(* Theorem GLIFT_GHVarAssignX : forall x e  G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HVarAssignX x e G) (GHVarAssignX x e G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H1.
+  inv H3.
+  
+  set (app := [phiEq (ex x) e]) in *.
+  
+  assert (gGood gp2') as g1.
+    apply H9.
+  assert (gGood phi') as g2.
+    apply H1.
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  assert (lt := liftableTrans
+    (liftableWOvar x)
+    (liftableAppend app)
+    (liftableWOvar_ _)
+    (liftableAppend_ _)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableWOvar x x1 x2 ∧ liftableAppend app x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+  
+  split.
+  - inv sl.
+    apply H12. auto.
+    inv H2.
+    repeat intro.
+    apply H15.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
+    admit. (* carry information of meet back to \grad{\phi} (WILL survive [w/o x] since [[e]] doesn't contain x!) *)
+  - inv H2.
+    apply H12. auto.
+    inv sl.
+    repeat intro.
+    apply H14.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    inv H18.
+    exists phi'0.
+    auto.
+Admitted. *)
+
+
+(* HReturn *)
+Inductive HReturnX : x ->
+              Gamma -> phi -> phi -> Prop :=
+| HReturn : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' (x : x) T,
+    liftableWOvar xresult phi phi' ->
+    hasStaticType G (ex x) T ->
+    hasStaticType G (ex xresult) T ->
+    liftableAppend [phiEq (ex xresult) (ex x)] 
+      phi' phi'' ->
+    HReturnX x
+      G
+      phi 
+      phi''
+.
+
+Inductive GHReturnX : x ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHReturn : forall G(*\Gamma*) phi(*\*) phi'(*\*) phi'' (x : x) T,
+    simpleLift (liftableWOvar xresult) phi phi' ->
+    hasStaticType G (ex x) T ->
+    hasStaticType G (ex xresult) T ->
+    simpleLift (liftableAppend [phiEq (ex xresult) (ex x)])
+      phi' phi'' ->
+    GHReturnX x
+      G
+      phi 
+      phi''
+.
+
+Theorem GLIFT_GHReturnX : forall x  G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HReturnX x G) (GHReturnX x G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H1.
+  inv H3.
+  
+  set (app := [phiEq (ex xresult) (ex x)]) in *.
+  
+  assert (gGood gp2') as g1.
+    apply H7.
+  assert (gGood phi') as g2.
+    apply H1.
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  assert (lt := liftableTrans
+    (liftableWOvar xresult)
+    (liftableAppend app)
+    (liftableWOvar_ _)
+    (liftableAppend_ _)).
+  assert (simpleLift (λ x1 x3, ∃ x2,
+        liftableWOvar xresult x1 x2 ∧ liftableAppend app x2 x3) gp1 gp2')
+  as sl.
+    unfold simpleLift in *. unf.
+    splau.
+    splau.
+  
+  apply simpleLift2lift in sl; auto.
+  
+  split.
+  - inv sl.
+    apply H10. auto.
+    inv H2.
+    repeat intro.
+    apply H13.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
+  - inv H2.
+    apply H10. auto.
+    inv sl.
+    repeat intro.
+    apply H12.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    inv H16.
+    exists phi'0.
+    auto.
+Qed.
+
+
+(* HApp *)
+(* Inductive HAppX : T -> m -> T -> x' -> gphi -> gphi ->
+              Gamma -> phi -> phi -> Prop :=
+| HApp : forall G(*\Gamma*) phiTMP phi(*\phi*) phi_p(*\*) phi'(*\*) phi'' phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hasStaticType G (ex y) (TClass C) ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
+    liftableWOvar xresult phi phiTMP ->
+    liftableWOaccs (staticFootprint phi_p) phiTMP phi' ->
+    listDistinct [x ; y ; z'] ->
+    liftablePS2 xthis y (xUserDef z) z' 
+      phi_pre phi_p ->
+    liftablePS3 xthis y (xUserDef z) z' xresult x 
+      phi_post phi_q ->
+    liftableAppend phi_q
+      phi' phi'' ->
+    HAppX T_r m T_p z (false, phi_pre) (false, phi_post)
+      G
+      phi
+      phi''
+.
+
+Inductive GHAppX : T -> m -> T -> x' -> gphi -> gphi ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHApp : forall G(*\Gamma*) phi''' phiTMP phi(*\phi*) phi_p(*\*) phi'(*\*) phi'' phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hasStaticType G (ex y) (TClass C) ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    gphiImplies phi (phiNeq (ex y) (ev vnull) :: (snd phi_p)) ->
+    simpleLift (liftableWOvar xresult) phi phiTMP ->
+    simpleLift (liftableWOaccs (staticFootprint phi_p)) phiTMP phi' ->
+    listDistinct [x ; y ; z'] ->
+    simpleLift (liftablePS2 xthis y (xUserDef z) z')
+      phi_pre phi_p ->
+    simpleLift (liftablePS3 xthis y (xUserDef z) z' xresult x)
+      phi_post phi_q ->
+    simpleLift (liftableAppend (snd phi_p))
+      phi' phi'' ->
+    phi''' = (fst phi'' || fst phi_p, snd phi'') ->
+    GHAppX T_r m T_p z (false, phi_pre) (false, phi_post)
+      G
+      phi
+      phi'''
+. *)
+
+Inductive HAppX : T -> m -> T -> x' -> gphi -> gphi ->
+              Gamma -> phi -> phi -> Prop :=
+| HApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hasStaticType G (ex y) (TClass C) ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
+    listDistinct [x ; y ; z'] ->
+    liftablePS2 xthis y (xUserDef z) z' 
+      phi_pre phi_p ->
+    liftablePS3 xthis y (xUserDef z) z' xresult x 
+      phi_post phi_q ->
+    HAppX T_r m T_p z (false, phi_pre) (false, phi_post)
+      G
+      phi
+      phi_q
+.
+
+Inductive GHAppX : T -> m -> T -> x' -> gphi -> gphi ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    hasStaticType G (ex y) (TClass C) ->
+    hasStaticType G (ex x) T_r ->
+    hasStaticType G (ex z') T_p ->
+    gphiImplies phi (phiNeq (ex y) (ev vnull) :: (snd phi_p)) ->
+    listDistinct [x ; y ; z'] ->
+    simpleLift (liftablePS2 xthis y (xUserDef z) z')
+      phi_pre phi_p ->
+    simpleLift (liftablePS3 xthis y (xUserDef z) z' xresult x)
+      phi_post phi_q ->
+    GHAppX T_r m T_p z phi_pre phi_post
+      G
+      phi
+      phi_p
+.
+
+(* Theorem GLIFT_GHAppX : forall T_r m T_p z phi_pre phi_post  G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HAppX T_r m T_p z phi_pre phi_post G) (GHAppX T_r m T_p z phi_pre phi_post G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H1.
+  inv H3.
+  
+  assert (gGood gp2') as g1.
+    apply H9.
+  assert (gGood phi_q) as g2.
+    apply H10.
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  apply simpleLift2lift in H9; auto.
+  apply simpleLift2lift in H10; auto.
+  
+  split.
+  - inv H9.
+    apply H13. auto.
+    inv H2.
+    repeat intro.
+    apply H15.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    eca.
+  - inv H2.
+    apply H10. auto.
+    inv sl.
+    repeat intro.
+    apply H12.
+    unfold PLIFTp1 in *.
+    unf.
+    eex.
+    inv H16.
+    exists phi'0.
+    auto.
+Qed. *)
+
+
+
+(* HAssert *)
+Inductive HAssertX : phi ->
+              Gamma -> phi -> phi -> Prop :=
+| HAssert : forall G(*\Gamma*) phi(*\*) phi'(*\*),
+    phiImplies phi phi' ->
+    HAssertX phi'
+      G
+      phi
+      phi
+.
+
+Inductive GHAssertX : phi ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHAssert : forall G(*\Gamma*) phi(*\*) phi'(*\*),
+    gphiImplies phi phi' ->
+    GHAssertX phi'
+      G
+      phi 
+      phi
+.
+
+Theorem GLIFT_GHAssertX : forall p  G p1 p2,
+  gGood p1 ->
+  gGood p2 ->
+  GLIFTpp1 (HAssertX p G) (GHAssertX p G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H1.
+  inv H3.
+  
+  assert (gGood gp2) as g3.
+    inv H2.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  split.
+  - inv H1. unf.
+    inv H2.
+    clear H8.
+  - inv H2.
+    apply H7. auto.
+    repeat intro.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H9.
+    assumption.
+Qed.
 
 
 

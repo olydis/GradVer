@@ -275,9 +275,55 @@ Definition liftableWOacc (a : A'_s) (p1 p2 : phi) : Prop :=
   (phiImplies p1 [phiAcc (fst a) (snd a)]) /\
   (good p1 -> good p2) /\
   (minWith (fun p => phiImplies p1 p /\ (forall px, phiImplies p px /\ ~ In a (staticFootprint px) /\ ~ In a (staticFootprintX px))) phiImplies p2).
-(* doesn't account for a.f = a.f thingy... *)
 
 Theorem liftableWOacc_ : forall x, liftable (liftableWOacc x).
+Proof.
+Admitted.
+
+Fixpoint liftableWOaccs (a : A_s) (p1 p2 : phi) : Prop :=
+  match a with
+  | [] => p1 = p2
+  | (a' :: a) => exists pp, liftableWOacc a' p1 pp /\
+                            liftableWOaccs a pp p2
+  end.
+  
+Theorem liftableWOaccs_ : forall x, liftable (liftableWOaccs x).
+Proof.
+  induction x.
+  - simpl.
+    split.
+      split; cut.
+    split.
+      unfold pmFun. intros. subst. auto.
+    unfold gFun. intros. subst. eex.
+  - simpl.
+    apply liftableTrans.
+    * apply liftableWOacc_.
+    * assumption.
+Qed.
+
+
+Definition liftablePS2 
+  (x1 : x) (y1 : x) 
+  (x2 : x) (y2 : x) 
+  (p1 p2 : phi) : Prop :=
+  p2 = phiSubsts2 x1 y1 x2 y2 p1
+  .
+
+Theorem liftablePS2_ : forall x1 y1 x2 y2, liftable (liftablePS2 x1 y1 x2 y2).
+Proof.
+Admitted.
+
+
+Definition liftablePS3 
+  (x1 : x) (y1 : x) 
+  (x2 : x) (y2 : x) 
+  (x3 : x) (y3 : x) 
+  (p1 p2 : phi) : Prop :=
+  p2 = phiSubsts3 x1 y1 x2 y2 x3 y3 p1
+  .
+
+Theorem liftablePS3_ : forall x1 y1 x2 y2 x3 y3, liftable (liftablePS3 x1 y1 x2 y2 x3 y3).
 Proof.
 Admitted.
 
