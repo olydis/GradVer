@@ -182,6 +182,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return res;
         };
         NormalizedEnv.prototype.createFormula = function () {
+            var _this = this;
             var objs = this.getNameableObjects();
             // BUILD
             var parts = [];
@@ -215,6 +216,12 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
                 var ex = getExpression(v);
                 if (ex)
                     parts.push(new VerificationFormula_1.FormulaPartEq(e, ex));
+            });
+            // not nulls
+            this.allExpressionDfs(function (e, v) {
+                if (v instanceof ValueExpression_1.ValueObject)
+                    if (_this.env.H[v.UID])
+                        parts.push(new VerificationFormula_1.FormulaPartNeq(e, Expression_1.Expression.getNull()));
             });
             // MINIFY
             for (var i = parts.length - 1; i >= 0; --i) {
@@ -372,16 +379,16 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             var ineq = this.ineq.slice();
             // augment implicit inequalities
             this.allExpressionDfs(function (e, v) {
-                if (_this.addEqV(v, new ValueExpression_1.ValueObject(o)) == null)
+                if (v instanceof ValueExpression_1.ValueObject && _this.addEqV(v, new ValueExpression_1.ValueObject(o)) == null)
                     ineq.push({ v1: v, v2: new ValueExpression_1.ValueObject(o) });
             });
             var env = cloneEvalEnv(this.env);
             env.A = env.A.filter(function (x) { return x.o != o || x.f != f; });
             var he = env.H[o];
             if (he)
-                // delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
-                if (he.fs[f] !== undefined)
-                    he.fs[f] = new ValueExpression_1.ValueObject();
+                delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
+            //if (he.fs[f] !== undefined)
+            //    he.fs[f] = new ValueObject();
             return NormalizedEnv.create(ineq, env);
         };
         NormalizedEnv.prototype.woAcc = function (e, f) {

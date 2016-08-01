@@ -18,14 +18,14 @@ var testProcs: (() => void)[] =
     // , testWoVarPreserveSat
     // , testWoVarPreserveSfrm
 
-    // , testWoAccWorks
+     , testWoAccWorks
     // , testWoAccMonotonic
-    // , testWoAccPreserveSat
-    // , testWoAccPreserveSfrm
+     , testWoAccPreserveSat
+     , testWoAccPreserveSfrm
 
-    , testSupImplies
-    , testSupComm
-    , testSupAssoc
+    // , testSupImplies
+    // , testSupComm
+    // , testSupAssoc
     ];
 
 export function testAll(iters: number = 10000)

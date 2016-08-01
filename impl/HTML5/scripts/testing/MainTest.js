@@ -1,9 +1,9 @@
-define(["require", "exports", "./TestSup", "./TestSup", "./TestSup"], function (require, exports, TestSup_1, TestSup_2, TestSup_3) {
+define(["require", "exports", "./TestWoAcc", "./TestWoAcc", "./TestWoAcc"], function (require, exports, TestWoAcc_1, TestWoAcc_2, TestWoAcc_3) {
     "use strict";
     var testProcs = [null,
-        TestSup_1.testSupImplies,
-        TestSup_2.testSupComm,
-        TestSup_3.testSupAssoc
+        TestWoAcc_1.testWoAccWorks,
+        TestWoAcc_2.testWoAccPreserveSat,
+        TestWoAcc_3.testWoAccPreserveSfrm
     ];
     function testAll(iters) {
         if (iters === void 0) { iters = 10000; }

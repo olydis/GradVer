@@ -246,6 +246,12 @@ export class NormalizedEnv {
             if (ex)
                 parts.push(new FormulaPartEq(e, ex));
         });
+        // not nulls
+        this.allExpressionDfs((e, v) => {
+            if (v instanceof ValueObject)
+                if (this.env.H[v.UID])
+                    parts.push(new FormulaPartNeq(e, Expression.getNull()));
+        });
         // MINIFY
         for (var i = parts.length - 1; i >= 0; --i)
         {
@@ -428,7 +434,7 @@ export class NormalizedEnv {
         var ineq = this.ineq.slice();
         // augment implicit inequalities
         this.allExpressionDfs((e, v) => {
-            if (this.addEqV(v, new ValueObject(o)) == null)
+            if (v instanceof ValueObject && this.addEqV(v, new ValueObject(o)) == null)
                 ineq.push({v1: v, v2: new ValueObject(o)});
         });
 
@@ -436,9 +442,9 @@ export class NormalizedEnv {
         env.A = env.A.filter(x => x.o != o || x.f != f);
         var he = env.H[o];
         if (he)
-            // delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
-            if (he.fs[f] !== undefined)
-                he.fs[f] = new ValueObject();
+            delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
+            //if (he.fs[f] !== undefined)
+            //    he.fs[f] = new ValueObject();
         return NormalizedEnv.create(ineq, env);
     }
     public woAcc(e: Expression, f: string): NormalizedEnv
