@@ -398,6 +398,7 @@ $$\gamma(\withqm{\phi}) = \bigcup_{\hat{\phi} \in \dom(f(\phi))} \gamma(\withqm{
 ~\\
 Lemmas:
 \begin{itemize}
+    \item $\dom(\phi) \subseteq \gamma(\withqm{\phi})$
     \item $\max \gamma(\withqm{\hat{\phi}}) = \hat{\phi}$
     \item $f : \phi \rightarrow \phi \text{ monotonic }  \implies  \max \overline{\phi} = \phi'  \implies  \max \overline{f(\phi)} = f(\phi')$
     \item $\max \overline{\phi} = \phi'  \implies  \alpha(\overline{\phi}) \in \{ \withqm{\phi'}, \phi' \}$
@@ -418,14 +419,35 @@ What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi
 &= \alpha(\gamma(\withqm{f(\phi)})) \\
 &= \alpha(\bigcup_{\hat{\phi} \in \dom(f(\phi))} \gamma(\withqm{\hat{\phi}})) \\
 &= \alpha(\bigcup_{\hat{\phi} \in \dom(f(\phi))} \{ \hat{\phi} \}) \\
-&= \alpha(\dom(f(\phi)))
+&= \alpha(\dom(f(\phi))) \\
+&= \sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} \\
 \end{align*}
 \begin{align*}
 \alpha(\overline{f}(\gamma(\withqm{\phi}))) 
 &= \alpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \gamma(\withqm{\hat{\phi}}))) \\
 &= \alpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \})) \\
-&= \alpha(\overline{f}(\dom(\phi)))
+&= \alpha(\overline{f}(\dom(\phi))) \\
+&= \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
 \end{align*}
+
+\begin{align*}
+\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \withqm{\phi'} &\sqsubseteq \,\,\withqm{f(\phi'')} \\
+\implies \\
+\forall \phi' \in \dom(f(\phi)), \exists \phi'' \in \dom(\phi), \withqm{\phi'} &\sqsubseteq \,\,\withqm{f(\phi'')} \\
+\implies \\
+\forall \phi' \in \dom(f(\phi)), \withqm{\phi'} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
+\iff \\
+\sup_{\sqsubseteq} {\{~ \withqm{\phi'} ~|~ \phi' \in \dom(f(\phi)) ~\}} &\sqsubseteq \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} \\
+\end{align*}
+
+\begin{align*}
+\withqm{f(\phi)} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\implies \\
+\forall \phi' \in \dom(\phi), \withqm{f(\phi')} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\iff \\
+\sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \alpha(\gamma(\withqm{f(\phi)})) \\
+\end{align*}
+
 Therefore we require $\dom(f(\phi)) = \overline{f}(\dom(\phi))$ to hold.
 
 
