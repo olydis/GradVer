@@ -2,24 +2,24 @@
 \begin{mathpar}
 \inferrule* [Right=WFTrue]
 {~}
-{{A} \sfrmphi {\true}}
+{{A} \sfrmphi {\phiTrue}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFEqual]
 {{A} \sfrme {e_1}\\{A} \sfrme {e_2}}
-{{A} \sfrmphi {({e_1} = {e_2})}}
+{{A} \sfrmphi {\phiEq {${e_1}$} {${e_2}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFNEqual]
 {{A} \sfrme {e_1}\\{A} \sfrme {e_2}}
-{{A} \sfrmphi {({e_1} \neq {e_2})}}
+{{A} \sfrmphi {\phiNeq {${e_1}$} {${e_2}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFAcc]
 {{A} \sfrme {e}}
-{{A} \sfrmphi {\acc({e}.{f})}}
+{{A} \sfrmphi {\phiAcc {${e}$} {${f}$}}}
 \end{mathpar}
 

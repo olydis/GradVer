@@ -1,55 +1,55 @@
 % Inductive Semantics.hoare
 \begin{mathpar}
 \inferrule* [Right=HNewObj]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\Gamma} \vdash {{x}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
-{{\Gamma} \hoare {\phi} {{{x} := \new {C}}} {{\phi'} * {{({{x}} \neq {{\vnull}})} * {\overline{\acc({x}, f_i)}}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{\Gamma} \vdash {\ex{${x}$}} : {{C}}\\{\fields({C})} = {{\overline{f}}}}
+{{\Gamma} \hoare {\phi} {{\sAlloc {${x}$} {${C}$}}} {\phiCons{${\phi'}$}{${\phiCons{${\phiNeq {${\ex{${x}$}}$} {${\ev{${\vnull}$}}$}}$}{${\overline{\acc({x}, f_i)}}$}}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HFieldAssign]
-{{\phi} \implies {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{\Gamma} \vdash {{x}} : {{C}}\\{\Gamma} \vdash {{y}} : {T}\\\vdash {C}.{f} : {T}}
-{{\Gamma} \hoare {\phi} {{{x}.{f} := {y}}} {{\phi'} * {{\acc({{x}}.{f})} * {{({{x}} \neq {{\vnull}})} * {{({{{x}}.{f}} = {{y}})}}}}}}
+{{\phi} \implies {\phiCons{${\phiAcc {${\ex{${x}$}}$} {${f}$}}$}{${\phi'}$}}\\{\emptyset} \sfrmphi {\phi'}\\{\Gamma} \vdash {\ex{${x}$}} : {{C}}\\{\Gamma} \vdash {\ex{${y}$}} : {T}\\\vdash {C}.{f} : {T}}
+{{\Gamma} \hoare {\phi} {{\sMemberSet {${x}$} {${f}$} {${y}$}}} {\phiCons{${\phi'}$}{${\phiCons{${\phiAcc {${\ex{${x}$}}$} {${f}$}}$}{${\phiCons{${\phiNeq {${\ex{${x}$}}$} {${\ev{${\vnull}$}}$}}$}{${\ensuremath{{\phiEq {${\edot{${\ex{${x}$}}$}{${f}$}}$} {${\ex{${y}$}}$}}}}$}}$}}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HVarAssign]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FV({e})}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\accFor {{e}}} \subseteq {\phi'}}
-{{\Gamma} \hoare {\phi} {{{x} := {e}}} {{\phi'} * {{({{x}} = {e})}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\{x} \not \in {FV({e})}\\{\Gamma} \vdash {\ex{${x}$}} : {T}\\{\Gamma} \vdash {e} : {T}\\{\accFor {{e}}} \subseteq {\phi'}}
+{{\Gamma} \hoare {\phi} {{\sAssign {${x}$} {${e}$}}} {\phiCons{${\phi'}$}{${\ensuremath{{\phiEq {${\ex{${x}$}}$} {${e}$}}}}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HReturn]
-{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{\xresult} \not \in {FV(\phi')}\\{\Gamma} \vdash {{x}} : {T}\\{\Gamma} \vdash {{\xresult}} : {T}}
-{{\Gamma} \hoare {\phi} {{\return {x}}} {{\phi'} * {{({{\xresult}} = {{x}})}}}}
+{{\phi} \implies {\phi'}\\{\emptyset} \sfrmphi {\phi'}\\{\xresult} \not \in {FV(\phi')}\\{\Gamma} \vdash {\ex{${x}$}} : {T}\\{\Gamma} \vdash {\ex{${\xresult}$}} : {T}}
+{{\Gamma} \hoare {\phi} {{\sReturn {${x}$}}} {\phiCons{${\phi'}$}{${\ensuremath{{\phiEq {${\ex{${\xresult}$}}$} {${\ex{${x}$}}$}}}}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HApp]
-{{\Gamma} \vdash {{y}} : {{C}}\\{\mmethod({C}, {m})} = {{{T_r}~{m}({T_p}~{z})~{\requires {\phi_{pre}};~\ensures {\phi_{post}};}~\{ {\_} \}}}\\{\Gamma} \vdash {{x}} : {T_r}\\{\Gamma} \vdash {{z'}} : {T_p}\\{\phi} \implies {{({{y}} \neq {{\vnull}})} * {{\phi_p} * {\phi'}}}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\x \neq y \wedge x \neq z'\\{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
-{{\Gamma} \hoare {\phi} {{{x} := {y}.{m}({z'})}} {{\phi'} * {\phi_q}}}
+{{\Gamma} \vdash {\ex{${y}$}} : {{C}}\\{\mmethod({C}, {m})} = {{\method {${T_r}$} {${m}$} {${T_p}$} {${z}$} {${\requires {\phi_{pre}};~\ensures {\phi_{post}};}$} {${\_}$}}}\\{\Gamma} \vdash {\ex{${x}$}} : {T_r}\\{\Gamma} \vdash {\ex{${z'}$}} : {T_p}\\{\phi} \implies {\phiCons{${\phiNeq {${\ex{${y}$}}$} {${\ev{${\vnull}$}}$}}$}{${\phiCons{${\phi_p}$}{${\phi'}$}}$}}\\{\emptyset} \sfrmphi {\phi'}\\{x} \not \in {FV(\phi')}\\x \neq y \wedge x \neq z'\\{\phi_p} = {{\phi_{pre}}[{y}, {z'} / {\xthis}, {{z}}]}\\{\phi_q} = {{\phi_{post}}[{y}, {z'}, {x} / {\xthis}, {{z}}, {\xresult}]}}
+{{\Gamma} \hoare {\phi} {{\sCall {${x}$} {${y}$} {${m}$} {${z'}$}}} {\phiCons{${\phi'}$}{${\phi_q}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HAssert]
 {{\phi} \implies {\phi'}}
-{{\Gamma} \hoare {\phi} {{\assert {\phi'}}} {\phi}}
+{{\Gamma} \hoare {\phi} {{\sAssert {${\phi'}$}}} {\phi}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HRelease]
-{{\phi} \implies {{\phi_r} * {\phi'}}\\{\emptyset} \sfrmphi {\phi'}}
-{{\Gamma} \hoare {\phi} {{\release {\phi_r}}} {\phi'}}
+{{\phi} \implies {\phiCons{${\phi_r}$}{${\phi'}$}}\\{\emptyset} \sfrmphi {\phi'}}
+{{\Gamma} \hoare {\phi} {{\sRelease {${\phi_r}$}}} {\phi'}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HDeclare]
-{{x} \not\in \dom({\Gamma})\\{{\Gamma}, {x} : {T}} \hoare {{({{x}} = {{\texttt{defaultValue}({T})}})} * {\phi}} {\overline{s}} {\phi'}}
-{{\Gamma} \hoare {\phi} {{{T}~{x}}; {\overline{s}}} {\phi'}}
+{{x} \not\in \dom({\Gamma})\\{{\Gamma}, {x} : {T}} \hoare {\phiCons{${\phiEq {${\ex{${x}$}}$} {${\ev{${\texttt{defaultValue}({T})}$}}$}}$}{${\phi}$}} {\overline{s}} {\phi'}}
+{{\Gamma} \hoare {\phi} {{\sDeclare {${T}$} {${x}$}} {\overline{s}}} {\phi'}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HSec]
-{{\Gamma} \hoare {\phi_p} {s_1} {\phi_q}\\{\Gamma} \hoare {\phi_q} {s_2} {\phi_r}}
-{{\Gamma} \hoare {\phi_p} {{s_1}; {s_2}} {\phi_r}}
+{{\Gamma} \hoare {\phi_p} {\overline{s_1}} {\phi_q}\\{\Gamma} \hoare {\phi_q} {\overline{s_2}} {\phi_r}}
+{{\Gamma} \hoare {\phi_p} {{\overline{s_1}}\ttt{;} {\overline{s_2}}} {\phi_r}}
 \end{mathpar}
 

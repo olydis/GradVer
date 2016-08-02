@@ -2,18 +2,18 @@
 \begin{mathpar}
 \inferrule* [Right=WFVar]
 {~}
-{{A} \sfrme {{x}}}
+{{A} \sfrme {\ex{${x}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFValue]
 {~}
-{{A} \sfrme {{v}}}
+{{A} \sfrme {\ev{${v}$}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=WFField]
 {{({e}, {f})} \in {A}\\{A} \sfrme {e}}
-{{A} \sfrme {{e}.{f}}}
+{{A} \sfrme {\edot{${e}$}{${f}$}}}
 \end{mathpar}
 

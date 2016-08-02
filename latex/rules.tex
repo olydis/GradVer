@@ -16,6 +16,7 @@
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{mathpartir}
+%\usepackage{fontspec}
 %\usepackage[pdftex]{graphicx}
 
 %\usetikzlibrary{positioning,calc}
@@ -25,6 +26,11 @@
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 \DeclareMathOperator*{\argmax}{\arg\!\max}
 
+%\setmonofont{lmmono8}
+%\setmainfont[Mapping=olydis]{Heuristica}
+\usepackage{newunicodechar}
+\newunicodechar{≠}{=\llap{/}}
+\newunicodechar{≔}{:\raisebox{-0.18ex}[\height][\depth]{=}}
 
 \def\extraVskip{3pt}
 \newenvironment{scprooftree}[1]%
@@ -55,8 +61,10 @@
 
 \newcommand{\Heap}{H}
 
-\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{sfrm}}}
-\newcommand{\sfrmphi}{\ensuremath{\vdash_\texttt{sfrm}}}
+\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{sfrm}}\,}
+\newcommand{\sfrmphi}{\ensuremath{\vdash_\texttt{sfrm}}\,}
+
+%DEPRECATED
 \newcommand{\true}{\ensuremath{\texttt{true}}}
 \newcommand{\vnull}{\ensuremath{\texttt{null}}}
 \newcommand{\Tint}{\ensuremath{\texttt{int}}}
@@ -67,13 +75,15 @@
 \newcommand{\release}{\ensuremath{\texttt{release}~}}
 \newcommand{\return}{\ensuremath{\texttt{return}~}}
 \newcommand{\acc}{\ensuremath{\texttt{acc}}}
-\newcommand{\fields}{\ensuremath{\texttt{fields}}}
-\newcommand{\mpre}{\ensuremath{\texttt{mpre}}}
-\newcommand{\mpost}{\ensuremath{\texttt{mpost}}}
-\newcommand{\mbody}{\ensuremath{\texttt{mbody}}}
-\newcommand{\mparam}{\ensuremath{\texttt{mparam}}}
-\newcommand{\mrettype}{\ensuremath{\texttt{mrettype}}}
-\newcommand{\mmethod}{\ensuremath{\texttt{mmethod}}}
+%DEPRECATED
+
+\newcommand{\fields}{\ensuremath{\textsf{fields}}}
+\newcommand{\mpre}{\ensuremath{\textsf{mpre}}}
+\newcommand{\mpost}{\ensuremath{\textsf{mpost}}}
+\newcommand{\mbody}{\ensuremath{\textsf{mbody}}}
+\newcommand{\mparam}{\ensuremath{\textsf{mparam}}}
+\newcommand{\mrettype}{\ensuremath{\textsf{mrettype}}}
+\newcommand{\mmethod}{\ensuremath{\textsf{mmethod}}}
 
 %\newcommand{\staticFP}[1]{\ensuremath{\texttt{static-footprint}(#1)}}
 %\newcommand{\dynamicFP}[3]{\ensuremath{\texttt{footprint}_{#1,#2}(#3)}}
@@ -100,32 +110,58 @@
 \newcommand{\gsc}{~\grad{*}~}
 \newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
 
-\section{Syntax}
+% typewriter stuff
+\newcommand{\ttt}{\texttt}
 
+% expressions
+\newcommand{\ev}[1]{\ttt{#1}}
+\newcommand{\ex}[1]{\ttt{#1}}
+\newcommand{\edot}[2]{\ttt{#1.#2}}
+% formulas
+\newcommand{\phiCons}[2]{\ttt{#1 * #2}}
+\newcommand{\phiFalse}[0]{\ttt{false}}
+\newcommand{\phiTrue}[0]{\ttt{true}}
+\newcommand{\phiEq}[2]{\ttt{(#1 = #2)}}
+\newcommand{\phiNeq}[2]{\ttt{(#1 ≠ #2)}}
+\newcommand{\phiAcc}[2]{\ttt{acc(#1.#2)}}
+% statements
+\newcommand{\sMemberSet}[3]{\ttt{#1.#2 ≔ #3;}}
+\newcommand{\sAssign}[2]{\ttt{#1 ≔ #2;}}
+\newcommand{\sAlloc}[2]{\ttt{#1 ≔ \new #2;}}
+\newcommand{\sCall}[4]{\ttt{#1 ≔ #2.#3(#4);}}
+\newcommand{\sReturn}[1]{\ttt{return #1;}}
+\newcommand{\sAssert}[1]{\ttt{assert #1;}}
+\newcommand{\sRelease}[1]{\ttt{release #1;}}
+\newcommand{\sDeclare}[2]{\ttt{#1~#2;}}
+
+% structure
+\newcommand{\method}[6]{\ttt{#1~#2(#3~#4)~#5~\{ #6 \}}}
+
+\section{Syntax}
 \begin{align*}
-\\ &program    	&&::= \overline{cls}~\overline{s}
-\\ &cls    		&&::= \class C~\{\overline{field}~\overline{method}\}
-\\ &field    	&&::= T~f;
-\\ &method		&&::= T~m(T~x)~contract~\{\overline{s}\}
-\\ &contract	&&::= \requires \phi;~\ensures \phi;
+\\ &program    	&&::= \ttt{$\overline{cls}$~$\overline{s}$}
+\\ &cls    		&&::= \ttt{\class $C$~\{ $\overline{field}$~$\overline{method}$ \}}
+\\ &field    	&&::= \ttt{$T$~$f$;}
+\\ &method		&&::= \method {$T$} {$m$} {$T$} {$x$} {$contract$} {$\overline{s}$}
+\\ &contract	&&::= \ttt{\requires $\phi$;~\ensures $\phi$;}
 \\ &T			&&::= \Tint ~|~ C
-\\ &s			&&::= x.f := y;
-				  ~|~ x := e; 
-				  ~|~ x := \new C; 
-				  ~|~ x := y.m(z);
+\\ &s			&&::= \sMemberSet {$x$} {$f$} {$y$}
+				  ~|~ \sAssign {$x$} {$e$}
+				  ~|~ \sAlloc {$x$} {$C$}
+				  ~|~ \sCall {$x$} {$y$} {$m$} {$z$}
 \\ & &&
-				  ~|~ \return x; 
-				  ~|~ \assert \phi; 
-				  ~|~ \release \phi;
-				  ~|~ T~x;
-\\ &\phi		&&::= \true
-				  ~|~ e = e
-				  ~|~ e \neq e
-				  ~|~ \acc(e.f)
-				  ~|~ \phi * \phi
-\\ &e			&&::= v
-				  ~|~ x
-				  ~|~ e.f
+				  ~|~ \sReturn {$x$}
+				  ~|~ \sAssert {$\phi$}
+				  ~|~ \sRelease {$\phi$}
+				  ~|~ \sDeclare {$T$} {$x$}
+\\ &\phi		&&::= \phiTrue
+                  ~|~ \phiEq {$e$} {$e$}
+				  ~|~ \phiNeq {$e$} {$e$}
+				  ~|~ \phiAcc {$e$} {$f$}
+				  ~|~ \phiCons {$\phi$} {$\phi$}
+\\ &e			&&::= \ev{$v$}
+				  ~|~ \ex{$x$}
+				  ~|~ \edot{$e$}{$f$}
 \\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other \rangle
 \\ &v			&&::= o ~|~ n ~|~ \vnull
 \\ &n			&&\in~~ \mathbb{Z}
@@ -199,11 +235,11 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \subsection{Footprint ($\staticFP {\phi} = A_s$)}
 \begin{align*}
- &\staticFP {\true}    		&&= \emptyset
-\\ &\staticFP {e_1 = e_2}     	&&= \emptyset
-\\ &\staticFP {e_1 \neq e_2}  	&&= \emptyset
-\\ &\staticFP {\acc(e.f)} 		&&= \{(e,f)\}
-\\ &\staticFP {\phi_1 * \phi_2} 	&&= \staticFP {\phi_1} \cup \staticFP {\phi_2}
+ &\staticFP {\phiTrue}    		                &&= \emptyset
+\\ &\staticFP {\phiEq {$e_1$} {$e_2$}}      	&&= \emptyset
+\\ &\staticFP {\phiNeq {$e_1$} {$e_2$}}      	&&= \emptyset
+\\ &\staticFP {\phiAcc {$e$} {$f$}} 	    	&&= \{(e,f)\}
+\\ &\staticFP {\phiCons {$\phi_1$} {$\phi_2$}} 	&&= \staticFP {\phi_1} \cup \staticFP {\phi_2}
 \end{align*}
 
 \newcommand{\sType}[3]{#1 \vdash #2 : #3}
@@ -234,7 +270,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \inferrule* [Right=STField]
 { \sType {\Gamma} {e} {C}
 \\ \vdash C.f : T}
-{\sType {\Gamma} {e.f} {T}}
+{\sType {\Gamma} {\edot{$e$}{$f$}} {T}}
 \end{mathpar}
 
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
@@ -285,7 +321,7 @@ A_1 = A \backslash A_2 \\
 \evalphix H \rho {A_1} {\phi_1} \\
 \evalphix H \rho {A_2} {\phi_2}
 }
-{\evalphi {\phi_1 * \phi_2}}
+{\evalphi {\phiCons {$\phi_1$} {$\phi_2$}}}
 \end{mathpar}
 
 We give a denotational semantics of formulas as $\valphi {\phi} = \{~ (H,\rho,A) ~|~ \evalphi {\phi} ~\}$

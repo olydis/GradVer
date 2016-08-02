@@ -48,44 +48,44 @@ Definition defaultValue' (T : T) : vex :=
 Definition defaultValue (T : T) : v := ve (defaultValue' T).
 
 Inductive e :=
-(*coq2latex: ev #v := #v *)
+(*coq2latex: ev #v := \ev{$#v$} *)
 | ev : vex -> e
-(*coq2latex: ex #x := #x *)
+(*coq2latex: ex #x := \ex{$#x$} *)
 | ex : x -> e
-(*coq2latex: edot #e #f := #e.#f *)
+(*coq2latex: edot #e #f := \edot{$#e$}{$#f$} *)
 | edot : e -> f -> e.
 Inductive phi' :=
-(*coq2latex: phiTrue := \true *)
+(*coq2latex: phiTrue := \phiTrue *)
 | phiTrue : phi'
-(*coq2latex: phiEq #a #b := (#a = #b) *)
+(*coq2latex: phiEq #a #b := \phiEq {$#a$} {$#b$} *)
 | phiEq : e -> e -> phi'
-(*coq2latex: phiNeq #a #b := (#a \neq #b) *)
+(*coq2latex: phiNeq #a #b := \phiNeq {$#a$} {$#b$} *)
 | phiNeq : e -> e -> phi'
-(*coq2latex: phiAcc #e #f := \acc(#e.#f) *)
+(*coq2latex: phiAcc #e #f := \phiAcc {$#e$} {$#f$} *)
 | phiAcc : e -> f -> phi'.
 Definition phi := list phi'.
 Inductive s :=
-(*coq2latex: sMemberSet #x #f #y := #x.#f := #y *)
+(*coq2latex: sMemberSet #x #f #y := \sMemberSet {$#x$} {$#f$} {$#y$} *)
 | sMemberSet : x -> f -> x -> s
-(*coq2latex: sAssign #x #e := #x := #e *)
+(*coq2latex: sAssign #x #e := \sAssign {$#x$} {$#e$} *)
 | sAssign : x -> e -> s
-(*coq2latex: sAlloc #x #C := #x := \new #C *)
+(*coq2latex: sAlloc #x #C := \sAlloc {$#x$} {$#C$} *)
 | sAlloc : x -> C -> s
-(*coq2latex: sCall #x #y #m #z := #x := #y.#m(#z) *)
+(*coq2latex: sCall #x #y #m #z := \sCall {$#x$} {$#y$} {$#m$} {$#z$} *)
 | sCall : x -> x -> m -> x -> s
-(*coq2latex: sReturn #x := \return #x *)
+(*coq2latex: sReturn #x := \sReturn {$#x$} *)
 | sReturn : x -> s
-(*coq2latex: sAssert #p := \assert #p *)
+(*coq2latex: sAssert #p := \sAssert {$#p$} *)
 | sAssert : phi -> s
-(*coq2latex: sRelease #p := \release #p *)
+(*coq2latex: sRelease #p := \sRelease {$#p$} *)
 | sRelease : phi -> s
-(*coq2latex: sDeclare #T #x := #T~#x *)
+(*coq2latex: sDeclare #T #x := \sDeclare {$#T$} {$#x$} *)
 | sDeclare : T -> x -> s.
 Inductive contract :=
 (*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
 | Contract : phi -> phi -> contract.
 Inductive method :=
-(*coq2latex: Method #Tr #m #Tp #xp #c #s := #Tr~#m(#Tp~#xp)~#c~\{ #s \} *)
+(*coq2latex: Method #Tr #m #Tp #xp #c #s := \method {$#Tr$} {$#m$} {$#Tp$} {$#xp$} {$#c$} {$#s$} *)
 | Method : T -> m -> T -> x' -> contract -> list s -> method.
 Inductive field :=
 | Field : T -> f -> field.
@@ -510,18 +510,17 @@ Definition accListApp (x : x) (f_bar : list f) : phi :=
 
 (*coq2latex: @incl phi' #p1 #p2 := #p1 \subseteq #p2 *)
 
-(*coq2latex: @app phi' #p1 #p2 := #p1 * #p2 *)
-(*coq2latex: @cons phi' #p1 (@nil phi') := #p1 *)
-(*coq2latex: @cons phi' #p1 #p2 := #p1 * #p2 *)
+(*coq2latex: @app phi' #p1 #p2 := \phiCons{$#p1$}{$#p2$} *)
+(*coq2latex: @cons phi' #p1 (@nil phi') := \ensuremath{#p1} *)
+(*coq2latex: @cons phi' #p1 #p2 := \phiCons{$#p1$}{$#p2$} *)
 
-(*coq2latex: @app s #p1 #p2 := #p1; #p2 *)
+(*coq2latex: @app s #p1 #p2 := #p1\ttt{;} #p2 *)
 (*coq2latex: @cons s #p1 (@nil s) := #p1 *)
-(*coq2latex: @cons s #p1 #p2 := #p1; #p2 *)
+(*coq2latex: @cons s #p1 #p2 := #p1 #p2 *)
 
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)
 (*coq2latex: @cons #_ #p1 #p2 := #p1 \cdot #p2 *)
-(*coq2latex: @appEnd phi' #xs #x := #xs * #x *)
 
 (*hacky: *)
 (*coq2latex: snd cf' := f_i *)
