@@ -7,13 +7,14 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
     "use strict";
     var EditStatement = (function (_super) {
         __extends(EditStatement, _super);
-        function EditStatement(initialSource) {
+        function EditStatement(initialSource, onChange) {
             var _this = this;
             if (initialSource === void 0) { initialSource = ""; }
             var stmtContainer = $("<span>");
             _super.call(this, stmtContainer, initialSource, function (source) {
                 _this.stmt = Statement_1.Statement.parse(source) || Statement_1.Statement.getNop();
                 var html = _this.stmt.createHTML();
+                onChange();
                 return {
                     source: html.text(),
                     html: html

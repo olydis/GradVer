@@ -391,6 +391,14 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? VerificationFormula.getFalse()
                 : nenv.woAcc(e, f).createFormula();
         };
+        VerificationFormula.prototype.append = function (part) {
+            var env = this.createNormalizedEnv();
+            if (env != null)
+                env = part.envAdd(env);
+            return env == null
+                ? VerificationFormula.getFalse()
+                : env.createFormula();
+        };
         return VerificationFormula;
     }());
     exports.VerificationFormula = VerificationFormula;

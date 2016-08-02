@@ -4,6 +4,7 @@ export abstract class Type
 {
     abstract createHTML(): JQuery;
     abstract defaultValue(): Expression;
+    abstract compatibleWith(other: Type): boolean;
     public toString(): string
     {
         return this.createHTML().text();
@@ -79,6 +80,10 @@ export class TypePrimitiveInt extends Type
     {
         return Expression.getZero();
     }
+    public compatibleWith(other: Type): boolean
+    {
+        return other instanceof TypePrimitiveInt;
+    }
 }
 
 export class TypeClass extends Type
@@ -102,5 +107,9 @@ export class TypeClass extends Type
     public defaultValue(): Expression
     {
         return Expression.getNull();
+    }
+    public compatibleWith(other: Type): boolean
+    {
+        return other === null || (other instanceof TypeClass && other.C == this.C);
     }
 }

@@ -443,4 +443,13 @@ export class VerificationFormula
             ? VerificationFormula.getFalse()
             : nenv.woAcc(e, f).createFormula();
     }
+    public append(part: FormulaPart): VerificationFormula
+    {
+        var env = this.createNormalizedEnv();
+        if (env != null)
+            env = part.envAdd(env);
+        return env == null
+            ? VerificationFormula.getFalse()
+            : env.createFormula();
+    }
 }

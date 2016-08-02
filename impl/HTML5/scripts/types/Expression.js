@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./ValueExpression"], function (require, exports, ValueExpression_1) {
+define(["require", "exports", "./ValueExpression", "./Type"], function (require, exports, ValueExpression_1, Type_1) {
     "use strict";
     var Expression = (function () {
         function Expression() {
@@ -16,6 +16,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 return b;
             else
                 return this;
+        };
+        Expression.prototype.necessaryFraming = function () {
+            return [];
         };
         Expression.eq = function (e1, e2) {
             return e1.toString() == e2.toString();
@@ -79,6 +82,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
         ExpressionV.prototype.eval = function (env) {
             return this.v;
         };
+        ExpressionV.prototype.getType = function (env, g) {
+            return this.v.getType();
+        };
         return ExpressionV;
     }(Expression));
     exports.ExpressionV = ExpressionV;
@@ -110,6 +116,9 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
         ExpressionX.prototype.FV = function () { return [this.x]; };
         ExpressionX.prototype.eval = function (env) {
             return env.r[this.x];
+        };
+        ExpressionX.prototype.getType = function (env, g) {
+            return g(this.x);
         };
         return ExpressionX;
     }(Expression));
@@ -167,6 +176,21 @@ define(["require", "exports", "./ValueExpression"], function (require, exports, 
                 return HEntry.fs[this.f];
             }
             return null;
+        };
+        ExpressionDot.prototype.getType = function (env, g) {
+            var inner = this.e.getType(env, g);
+            if (inner instanceof Type_1.TypeClass) {
+                var fieldType = env.fieldType(inner.C, this.f);
+                if (!fieldType)
+                    return undefined;
+                return fieldType;
+            }
+            return undefined;
+        };
+        ExpressionDot.prototype.necessaryFraming = function () {
+            var res = this.e.necessaryFraming();
+            res.push({ e: this.e, f: this.f });
+            return res;
         };
         return ExpressionDot;
     }(Expression));

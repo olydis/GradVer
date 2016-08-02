@@ -1,7 +1,8 @@
 import { EditStatement } from "./EditStatement";
 import { EditVerificationFormula } from "./EditVerificationFormula";
 
-//import { Hoare } from "./runtime/Hoare";
+import { Gamma, GammaNew } from "../runtime/Gamma";
+import { Hoare } from "../runtime/Hoare";
 import { GUIHelpers } from "../GUIHelpers";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
@@ -10,7 +11,7 @@ import { VerificationFormula } from "../types/VerificationFormula";
 export class EditInstructions
 {
     private statements: EditStatement[];
-    private verificationFormulas: EditVerificationFormula[];
+    private verificationFormulas: JQuery[];
 
     public loadEx1(): void
     {
@@ -30,15 +31,62 @@ export class EditInstructions
         return this.statements.length;
     }
 
+    private createDynVerElement(): JQuery
+    {
+        return $("<span>").addClass("dynCheck");
+    }
+
+    private condPre: VerificationFormulaGradual;
+    private condPost: VerificationFormulaGradual;
+
     public constructor(
-        private container: JQuery
-        //,private hoare: Hoare
+        private container: JQuery,
+        private hoare: Hoare
     )
     {
+        this.condPre = VerificationFormulaGradual.create(true, VerificationFormula.empty());
+        this.condPost = VerificationFormulaGradual.create(true, VerificationFormula.empty());
+
         this.statements = [];
         this.verificationFormulas = [];
-        this.verificationFormulas.push(new EditVerificationFormula());
+        this.verificationFormulas.push(this.createDynVerElement());
         this.insertInstruction(0);
+
+        this.updateGUI();
+    }
+
+    private update(): void
+    {
+        // clear messages
+        this.verificationFormulas.forEach(x => x.text(""));
+
+        var g = GammaNew;
+        var cond = this.condPre;
+        for (var i = 0; i < this.statements.length; ++i)
+        {
+            var s = this.statements[i].getStatement();
+            var errs = this.hoare.check(s, cond, g);
+            if (errs != null)
+            {
+                this.verificationFormulas[i].text(errs[0]);
+                return;
+            }
+
+            var res = this.hoare.post(s, cond, g);
+            this.verificationFormulas[i].append(res.dyn.createHTML());
+            cond = res.post;
+            g = res.postGamma;
+        }
+
+        var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
+        this.verificationFormulas[this.statements.length].append(lastDyn.createHTML());
+    }
+
+    public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void
+    {
+        this.condPre = pre;
+        this.condPost = post;
+        this.update();
     }
 
     private removeInstruction(index: number): void
@@ -50,58 +98,9 @@ export class EditInstructions
 
     private insertInstruction(index: number): void
     {
-        this.verificationFormulas.splice(index + 1, 0, new EditVerificationFormula());
-        this.statements.splice(index, 0, new EditStatement());
+        this.verificationFormulas.splice(index + 1, 0, this.createDynVerElement());
+        this.statements.splice(index, 0, new EditStatement(undefined, () => this.update()));
         this.updateGUI();
-    }
-
-    private checkStatement(index: number): { errs: string[], runtimeCheck: VerificationFormula }
-    {
-        var s = this.statements[index].getStatement();
-        var pre = this.verificationFormulas[index].getFormula();
-        var post = this.verificationFormulas[index + 1].getFormula();
-
-        return {errs: null, runtimeCheck: new VerificationFormula()}; //this.hoare.validate(s, pre, post);
-    }
-
-    public btnCheckAll(): void
-    {
-        for (var i = 0; i < this.numInstructions; ++i)
-            this.btnCheck(i);
-    }
-    public btnCheck(index: number): boolean
-    {
-        var ins = this.statements[index].stmtContainer;
-        var { errs, runtimeCheck } = this.checkStatement(index);
-        if (errs == null)
-            GUIHelpers.flashCorrect(ins/*, runtimeCheck.createHTML().text()*/);
-        else
-            GUIHelpers.flashError(ins, errs[0]);
-        return errs == null;
-    }
-
-    public btnPropDownAll(): void
-    {
-        for (var i = 0; i < this.numInstructions; ++i)
-            this.btnPropDown(i);
-    }
-    public btnPropDown(index: number): void
-    {
-        var stmt = this.statements[index].getStatement();
-        var pre = this.verificationFormulas[index].getFormula();
-        var post = this.verificationFormulas[index + 1].getFormula();
-        //var npost = this.hoare.genPost(stmt, pre, post);
-        //this.verificationFormulas[index + 1].setFormula(npost);
-    }
-
-    public btnResetAssertionsAll(grad: boolean): void
-    {
-        for (var i = 0; i <= this.numInstructions; ++i)
-            this.btnResetAssertions(grad, i);
-    }
-    public btnResetAssertions(grad: boolean, index: number): void
-    {
-        this.verificationFormulas[index].setFormula(VerificationFormulaGradual.create(grad, new VerificationFormula()));
     }
 
     private updateGUI(): void
@@ -120,29 +119,14 @@ export class EditInstructions
             ((i: number) =>
             {
                 this.container.append(createRightButton("+").click(() => this.insertInstruction(i)));
-                if (i != 0)
-                    this.container.append(createRightButton("↲").click(() => this.btnPropDown(i - 1)));
-                if (i != n)
-                    this.container.append(createRightButton("↰").click(() => {
-                        var stmt = this.statements[i].getStatement();
-                        var pre = this.verificationFormulas[i].getFormula();
-                        var post = this.verificationFormulas[i + 1].getFormula();
-                        //var npre = this.hoare.genPre(stmt, pre, post);
-                        //this.verificationFormulas[i].setFormula(npre);
-                    }));
-                this.container.append(this.verificationFormulas[i].createHTML());
+                this.container.append(this.verificationFormulas[i]);
                 if (i != n)
                 {
                     var ins = this.statements[i].createHTML();
                     this.container.append(createRightButton("-").click(() => this.removeInstruction(i)));
-                    this.container.append(createRightButton("✓").click(() => {
-                        this.btnCheck(i);
-                    }));
-                    // this.container.append(createRightButton("⇳").click(() => {
-
-                    // }));
                     this.container.append(ins);
                 }
             })(i);
+        this.update();
     }
 }

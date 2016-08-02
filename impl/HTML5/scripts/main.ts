@@ -3,7 +3,7 @@ import { EditVerificationFormula } from "./editors/EditVerificationFormula";
 import { EditableElement } from "./editors/EditableElement";
 import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
 import { Expression, ExpressionDot } from "./types/Expression";
-//import { Hoare } from "./runtime/Hoare";
+import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 import { testAll } from "./testing/MainTest";
 import { VerificationFormulaGradual } from "./types/VerificationFormulaGradual";
@@ -18,7 +18,25 @@ $(() =>
         main: []
     };
     var env = new ExecutionEnvironment(program);
-    //var hoare = new Hoare(env);
+    var hoare = new Hoare(env);
+
+    // containerHoare
+    (() => {
+        var code = new EditInstructions($("#containerHoareCode"), hoare);
+        var update = () => {};
+        var inputPre = new EditVerificationFormula("?", () => update());
+        var inputPost = new EditVerificationFormula("?", () => update());
+        update = () =>
+        {
+            var pPre = inputPre.getFormula();
+            var pPost = inputPost.getFormula();
+            code.updateConditions(pPre, pPost);
+        };
+        update();
+        $("#containerHoarePre").append(inputPre.createHTML());
+        $("#containerHoarePost").append(inputPost.createHTML());
+
+    })();
 
     // containerProps
     (() => {

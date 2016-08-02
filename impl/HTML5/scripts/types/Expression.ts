@@ -1,9 +1,12 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { ValueExpression, Value, ValueObject } from "./ValueExpression";
 import { FootprintStatic } from "./Footprint";
-import { Type } from "./Type";
+import { Type, TypeClass } from "./Type";
 
 import { EvalEnv } from "../runtime/EvalEnv";
+
+import { Gamma } from "../runtime/Gamma";
+import { ExecutionEnvironment } from "../runtime/ExecutionEnvironment";
 
 export abstract class Expression
 {
@@ -24,6 +27,11 @@ export abstract class Expression
     public abstract depth(): number;
     public abstract FV(): string[];
     public abstract eval(env: EvalEnv): Value;
+    public abstract getType(env: ExecutionEnvironment, g: Gamma): Type;
+    public necessaryFraming(): FootprintStatic
+    {
+        return [];
+    }
 
     public static eq(e1: Expression, e2: Expression): boolean
     {
@@ -97,6 +105,10 @@ export class ExpressionV extends Expression
     {
         return this.v;
     }
+    public getType(env: ExecutionEnvironment, g: Gamma): Type
+    {
+        return this.v.getType();
+    }
 }
 
 export class ExpressionX extends Expression
@@ -135,6 +147,10 @@ export class ExpressionX extends Expression
     public eval(env: EvalEnv): Value
     {
         return env.r[this.x];
+    }
+    public getType(env: ExecutionEnvironment, g: Gamma): Type
+    {
+        return g(this.x);
     }
 }
 
@@ -199,5 +215,22 @@ export class ExpressionDot extends Expression
             return HEntry.fs[this.f];
         } 
         return null;
+    }
+    public getType(env: ExecutionEnvironment, g: Gamma): Type
+    {
+        var inner = this.e.getType(env, g);
+        if (inner instanceof TypeClass)
+        {
+            var fieldType = env.fieldType(inner.C, this.f);
+            if (!fieldType) return undefined;
+            return fieldType;
+        }
+        return undefined;
+    }
+    public necessaryFraming(): FootprintStatic
+    {
+        var res = this.e.necessaryFraming();
+        res.push({ e: this.e, f: this.f });
+        return res;
     }
 }

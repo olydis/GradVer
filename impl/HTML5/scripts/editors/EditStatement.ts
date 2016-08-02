@@ -8,7 +8,8 @@ export class EditStatement extends EditableElement
     private stmt: Statement;
 
     public constructor(
-        initialSource: string = ""
+        initialSource: string = "",
+        onChange: () => void
     ) 
     {
         var stmtContainer = $("<span>");
@@ -19,6 +20,7 @@ export class EditStatement extends EditableElement
             (source: string) => {
                 this.stmt = Statement.parse(source) || Statement.getNop();
                 var html = this.stmt.createHTML();
+                onChange();
                 return {
                     source: html.text(),
                     html: html

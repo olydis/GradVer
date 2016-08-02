@@ -123,6 +123,10 @@ export class VerificationFormulaGradual
     {
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woAcc(e, f));
     }
+    public append(part: FormulaPart): VerificationFormulaGradual
+    { // TODO: doesn't fail in double acc case... but with hoare rules that cannot occur...
+        return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
+    }
 
     public impliesRuntime(phi: VerificationFormula): VerificationFormula
     {

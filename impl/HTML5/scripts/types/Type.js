@@ -76,6 +76,9 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         TypePrimitiveInt.prototype.defaultValue = function () {
             return Expression_1.Expression.getZero();
         };
+        TypePrimitiveInt.prototype.compatibleWith = function (other) {
+            return other instanceof TypePrimitiveInt;
+        };
         return TypePrimitiveInt;
     }(Type));
     exports.TypePrimitiveInt = TypePrimitiveInt;
@@ -97,6 +100,9 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         };
         TypeClass.prototype.defaultValue = function () {
             return Expression_1.Expression.getNull();
+        };
+        TypeClass.prototype.compatibleWith = function (other) {
+            return other === null || (other instanceof TypeClass && other.C == this.C);
         };
         return TypeClass;
     }(Type));

@@ -1,4 +1,4 @@
-define(["require", "exports", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./testing/MainTest", "./types/VerificationFormulaGradual"], function (require, exports, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, MainTest_1, VerificationFormulaGradual_1) {
+define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./testing/MainTest", "./types/VerificationFormulaGradual"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, MainTest_1, VerificationFormulaGradual_1) {
     "use strict";
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
@@ -7,7 +7,22 @@ define(["require", "exports", "./editors/EditVerificationFormula", "./editors/Ed
             main: []
         };
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);
-        //var hoare = new Hoare(env);
+        var hoare = new Hoare_1.Hoare(env);
+        // containerHoare
+        (function () {
+            var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
+            var update = function () { };
+            var inputPre = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
+            var inputPost = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
+            update = function () {
+                var pPre = inputPre.getFormula();
+                var pPost = inputPost.getFormula();
+                code.updateConditions(pPre, pPost);
+            };
+            update();
+            $("#containerHoarePre").append(inputPre.createHTML());
+            $("#containerHoarePost").append(inputPost.createHTML());
+        })();
         // containerProps
         (function () {
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function (phi) {

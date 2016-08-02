@@ -91,6 +91,9 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
         VerificationFormulaGradual.prototype.woAcc = function (e, f) {
             return VerificationFormulaGradual.create(this.gradual, this.staticFormula.woAcc(e, f));
         };
+        VerificationFormulaGradual.prototype.append = function (part) {
+            return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
+        };
         VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
             var _this = this;
             if (this.gradual) {
