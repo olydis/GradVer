@@ -94,14 +94,15 @@
 \newcommand{\dynamicFP}[3]{\ensuremath{\floor{#3}_{#1,#2}}}
 
 \newcommand{\rlabel}[1]{\RightLabel{\quad #1}}
-\newcommand{\dom}{\ensuremath{\texttt{dom}}}
+\newcommand{\dom}{\ensuremath{\text{dom}}}
 
 \newcommand{\class}{\ensuremath{\texttt{class}~}}
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
 \newcommand{\grad}[1]{\widetilde{#1}}
-\newcommand{\withqm}[1]{?\:*\:#1}
+\newcommand{\qm}{\ttt{?}}
+\newcommand{\withqm}[1]{\ttt{\qm\:*\:$#1$}}
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}
@@ -118,7 +119,7 @@
 \newcommand{\ex}[1]{\ttt{#1}}
 \newcommand{\edot}[2]{\ttt{#1.#2}}
 % formulas
-\newcommand{\phiCons}[2]{\ttt{#1 * #2}}
+\newcommand{\phiCons}[2]{\ttt{#1\:*\:#2}}
 \newcommand{\phiFalse}[0]{\ttt{false}}
 \newcommand{\phiTrue}[0]{\ttt{true}}
 \newcommand{\phiEq}[2]{\ttt{(#1 = #2)}}
@@ -143,7 +144,7 @@
 \\ &cls    		&&::= \ttt{\class $C$~\{ $\overline{field}$~$\overline{method}$ \}}
 \\ &field    	&&::= \ttt{$T$~$f$;}
 \\ &method		&&::= \method {$T$} {$m$} {$T$} {$x$} {$contract$} {$\overline{s}$}
-\\ &contract	&&::= \ttt{\requires $\phi$;~\ensures $\phi$;}
+\\ &contract	&&::= \ttt{requires $\phi$;~ensures $\phi$;}
 \\ &T			&&::= \Tint ~|~ C
 \\ &s			&&::= \sMemberSet {$x$} {$f$} {$y$}
 				  ~|~ \sAssign {$x$} {$e$}
@@ -174,8 +175,8 @@
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
 \end{align*}
 
-\newcommand{\OK}{~\texttt{OK}}
-\newcommand{\OKinC}{~\texttt{OK in}~C}
+\newcommand{\OK}{~\textsf{OK}}
+\newcommand{\OKinC}{~\textsf{OK in}~C}
 \section{Assumptions}
 All the rules in the following sections are implicitly parameterized over a $program p$ that is well-formed.
 
@@ -208,9 +209,9 @@ FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
 x : T_x, \xthis : C, \xresult : T_m \hoare {\phi_1} {\overline{s}} {\phi_2} \\
 \emptyset \sfrmphi {\phi_1} \\
 \emptyset \sfrmphi {\phi_2} \\
-\overline{\neg writesTo(s_i, x)}
+\overline{\neg \textsf{writesTo}(s_i, x)}
 }
-{(T_m~m(T_x~x)~\requires \phi_1;~\ensures \phi_2;~\{\overline{s}\}) \OKinC}
+{(\method {$T_m$} {$m$} {$T_x$} {$x$} {\requires $\phi_1$;~\ensures $\phi_2$;} {$\overline{s}$}) \OKinC}
 \end{mathpar}
 
 
@@ -508,13 +509,22 @@ We call functions $f$ satisfying above equality “auto-liftable”.
 
 Counterexamples:
 \begin{itemize}
-    \item $f(\phi) = \acc(x.f) * \phi$\\
-    $$\grad{f}(\withqm{x.f = 3}) = \,\,\withqm{\texttt{false}} \neq \,\,\withqm{\acc(x.f) * (x.f = 3)} = f(\withqm{(x.f = 3)})$$
-    Cause: $\gamma(\withqm{x.f = 3})$ only contains self-framed formulas, so access to $x.f$ is always included. Adding it another time results in duplicate access and therefore unsatisfiable formulas.
-    \item $f(\phi) = $ remove all terms containing $x$\\
-    $$\grad{f}(\withqm{a = 3}) = \,\,? \neq \,\,\withqm{(a = 3)} = f(\withqm{(a = 3)})$$
-    Cause: $(a = x) * (x = 3) \in \gamma(\withqm{a = 3})$ and $f((a = x) * (x = 3)) = \true$. Abstracting from a (non-singleton) set that contains $\true$ yields $?$.
-    \end{itemize}
+\item $f(\phi) = \phiCons{\phiAcc {x} {f}}{$\phi$}$ \\
+    \begin{equation*}
+    \grad{f}(\withqm{\phiEq{\edot{x}{f}}{3}}) = \withqm{\phiFalse} 
+    ~\neq~
+    \withqm{\phiCons{\phiAcc {x} {f}} {\phiEq{\edot{x}{f}}{3}}} = f(\withqm{\phiEq{\edot{x}{f}}{3}})
+    \end{equation*}
+    Cause: $\gamma(\withqm{\phiEq{\edot{x}{f}}{3}})$ only contains self-framed formulas, so access to $x.f$ is always included. Adding it another time results in duplicate access and therefore unsatisfiable formulas.
+\item $f(\phi) = $ remove all terms containing $\ttt{x}$ \\
+    \begin{equation*}
+    \grad{f}(\withqm{\phiEq{a}{3}}) = \qm 
+    ~\neq~
+    \withqm{\phiEq{a}{3}} = f(\withqm{\phiEq{a}{3}})
+    \end{equation*}
+    Cause: $\phiCons{\phiEq{a}{x}}{\phiEq{x}{3}} \in \gamma(\withqm{\phiEq{a}{3}})$ and $f(\phiCons{\phiEq{a}{x}}{\phiEq{x}{3}}) = \phiTrue$.
+    Abstracting from a (non-singleton) set that contains $\phiTrue$ yields $\qm$.
+\end{itemize}
 
 ~\\
 What is necessary to generalize this as $\alpha(\overline{f}(\gamma(\withqm{\phi}))) =\, \withqm{f(\phi)}$?
@@ -599,7 +609,7 @@ Other condition:
 \begin{mathpar}
 \inferrule* [Right=GSfrmGrad]
 {~}
-{A ~\grad{\sfrmphi}~ ?\:*\:\phi}
+{A ~\grad{\sfrmphi}~ \withqm{\phi}}
 \end{mathpar}
 
 \subsubsection{Implication}
@@ -613,8 +623,13 @@ Other condition:
 \inferrule* [Right=GImplGrad]
 {\hat{\phi_m} \implies \phi_2 \\
  \hat{\phi_m} \implies \phi_1}
-{?\:*\:\phi_1 ~\grad{\implies}~ \grad{\phi_2}}
+{\withqm{\phi_1} ~\grad{\implies}~ \grad{\phi_2}}
 \end{mathpar}
+
+
+\textbf{Minimum runtime checks}: For $\grad{\phi_1} \grad{\implies} \grad{\phi_2}$ to hold at runtime, practically just $\phi_2$ needs to hold. So that would be a valid assertion to check. Yet, we know statically that $\phi_1$ holds, so we can remove everything from the runtime check that is implied by $\phi_1$.
+So in a sense, we only need to check $\phi_2 \backslash \phi_1$ at runtime (the operator can be an approximation).
+
 
 %Remark: Whether second argument is gradual or not seems to be irrelevant. Interestingly, all of our later uses will also pass non-gradual formulas as second argument. Maybe the natural lifting of this predicate should only lift on first argument in the first place?
 
@@ -670,253 +685,6 @@ But maybe not even necessary with smarter hoare rules?
 % (forall p'',(good p'' /\ phiImplies p'' (snd gp1 ++ p)) ->
 % exists p' , good p'  /\ phiImplies p'  (snd gp1) /\ phiImplies p'' (p' ++ p))
 
-
-\subsection{Gradual Hoare: minimal static rule approach}
-
-\newcommand{\imp}[1]{\textcolor{red}{#1}}
-Example:
-
-\begin{mathpar}
-\inferrule* [Right=GHVarAssign]
-{
-\imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} \grad{\phi'}
-\\\imp{\emptyset \sfrmphi \grad{\phi'}}
-\\\imp{x \not \in FV(\grad{\phi'})}
-\\x \not \in FV(e)
-\\\imp{\epsilon \vdash\,} \grad{\phi} \vdash x : T
-\\\imp{\epsilon \vdash\,} \grad{\phi} \vdash e : T
-\\\imp{\epsilon \vdash\,} \staticFP {\grad{\phi'}} \sfrme e
-}
-{\hoare {\grad{\phi}} {x := e} {\grad{\phi'} * (x = e)}}
-\end{mathpar}
-
-Collapsing (hidden) gradual implications into a single one:
-\begin{mathpar}
-\inferrule* [Right=GHVarAssign]
-{
-\imp{\epsilon \vdash\,} \grad{\phi} \grad{\implies} (x : T) * \hasTypeFormula e T C * \grad{\phi'}
-\\\imp{\emptyset \sfrmphi \hasTypeFormula e T C * \grad{\phi'}}
-\\\imp{x \not \in FV(\grad{\phi'})}
-\\x \not \in FV(e)
-\\\hasTypePremise e T C
-}
-{\hoare {\grad{\phi}} {x := e} {\hasTypeFormula e T C * \grad{\phi'} * (x = e)}}
-\end{mathpar}
-
-When shifting implication responsibility to GHSec:
-\begin{mathpar}
-\inferrule* [Right=GHVarAssign]
-{
-\imp{x \not \in FV(\grad{\phi'})}
-\\x \not \in FV(e)
-\\\hasTypePremise e T C
-}
-{\hoare {(x : T) * \hasTypeFormula e T C * \grad{\phi'}} {x := e} {\hasTypeFormula e T C * \grad{\phi'} * (x = e)}}
-\end{mathpar}
-
-Example derivation:
-\begin{align*}
-\\& \{(x : T) * \textcolor{blue}{(y : C) * \acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'}\}
-\\& \{(x : T) * \textcolor{blue}{\hasTypeFormula {y.a.b.c} T C} * \grad{\phi'}\}
-\\& x := y.a.b.c;	\quad\quad\quad\quad\textcolor{gray}{\parbox{14cm}{
-\textcolor{red}{$x \not \in FV(\grad{\phi'})$}\\
-$x \not \in FV(y.a.b.c)$\\
-$\hasTypePremise {y.a.b.c} T C =
-~\vdash C_y = C 	\,\,\wedge 
-~\vdash C_y.a : C_a \,\,\wedge
-~\vdash C_a.b : C_b \,\,\wedge
-~\vdash C_b.c : T$}}
-\\& \{\textcolor{blue}{\hasTypeFormula {y.a.b.c} T C} * \grad{\phi'} * (x = y.a.b.c)\}
-\\& \{\textcolor{blue}{(y : C) * \acc(y.a) * \acc(y.a.b) * \acc(y.a.b.c)} * \grad{\phi'} * (x = y.a.b.c)\}
-\end{align*}
-
-\subsubsection{GHFieldAssign}
-
-\begin{mathpar}
-\inferrule* [Right=GHFieldAssign]
-{
-\sfrmphi \phi \\
-\vdash C.f : T \\
-\grad{\phi_1} \approx {(x : C) * (y : T) * (x \neq \vnull) * \phi * \acc(x.f)} \\
-\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x \neq \vnull) * (x.f = y) * \phi}
-}
-{\ghoare
-{\grad{\phi_1}} 
-{x.f := y} 
-{\grad{\phi_2}}}
-\end{mathpar}
-
-\subsubsection{GHSec - sound but obviously not complete!}
-
-\begin{mathpar}
-\inferrule* [Right=GHSec]
-{
- \ghoare {\grad{\phi_p}} {s_1} {\grad{\phi_{q1}}} \\ 
- \phi_{q1} \implies \phi_{q2} \\
- \emptyset \sfrmphi \phi_{q2} \\
- \ghoare {\phi_{q2}} {s_2} {\grad{\phi_r}}
-}
-{\ghoare {\grad{\phi_p}} {s_1;s_2} {\grad{\phi_r}}}
-\end{mathpar}
-
-\subsection{Gradual Hoare: minimal HSec approach (implications per rule)}
-
-\begin{mathpar}
-\inferrule* [Right=HFieldAssign]
-{
-\sfrmphi \phi \\
-\vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * \phi * \acc(x.f)} \\
-\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi}
-}
-{\hoare
-{\phi_1}
-{x.f := y}
-{\phi_2}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=GHFieldAssign]
-{
-\sfrmphi \phi \\
-\vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies} {(x : C) * (y : T) * \phi * \acc(x.f)} \\
-\grad{\phi_2} \approx {(x : C) * \acc(x.f) * (x.f = y) * \phi}
-}
-{\ghoare
-{\grad{\phi_1}}
-{x.f := y}
-{\grad{\phi_2}}}
-\end{mathpar}
-
-Note: With this alternative rule design $\grad{\implies}$ is consistently used with static formulas as second argument. 
-This plays nicely with the fact that $\grad{\implies}$ does not care about the gradualness of that argument.
-Might make sense to define lifting of $\implies$ as lifting on only the first parameter in the first place.\\
-
-\textbf{Minimum runtime checks}: For $\grad{\phi_1} \grad{\implies} \grad{\phi_2}$ to hold at runtime, practically just $\phi_2$ needs to hold. So that would be a valid assertion to check. Yet, we know statically that $\phi_1$ holds, so we can remove everything from the runtime check that is implied by $\phi_1$.
-So in a sense, we only need to check $\phi_2 \backslash \phi_1$ at runtime (the operator can be an approximation).
-
-
-\subsection{Gradual Hoare: deterministic approach}
-\subsubsection{HFieldAssign}
-
-\begin{mathpar}
-\inferrule* [Right=HFieldAssign]
-{
-\vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * \acc(x.f)} \\
-\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi_1[\textbf{w/o } \acc(x.f)]}
-}
-{\hoare
-{\phi_1}
-{x.f := y}
-{\phi_2}}
-\end{mathpar}
-
-Note: $\phi[\textbf{w/o } \acc(x.f)]$ removes $\acc(x.f)$ and all uses of $x.f$ from $\phi$. The result is self-framed given that $\phi$ is.\\
-
-\textbf{Attention}:
-This version is weaker than the other (pairwise equivalent) versions of HFieldAssign!
-
-Explanation: Above operator may remove more information than necessary from $\phi$.
-
-Example:
-\begin{itemize}
-\item Given: $\phi_1 = \acc(x.f) * (x.f = a) * (x.f = b)$
-\item Goal: $\phi_2 \implies (a = b)$
-\item \textbf{not provable} with this deterministic version of HFieldAssign
-\item \textbf{provable} with all other versions
-\end{itemize}
-
-Probably it's possible to apply the operator without information loss after expanding formula using equalities (transitive hull).
-
-\subsubsection{GHFieldAssign}
-(= gradual lifting of GHFieldAssign as function)
-
-\begin{mathpar}
-\inferrule* [Right=GHFieldAssign]
-{
-\grad{\phi_2} = \alpha(\{
-\phi_2
-~|~
-\phi_1 \in \gamma(\grad{\phi_1})
-~\wedge~
-\hoare
-{\phi_1}
-{x.f := y}
-{\phi_2}
-~
-\})
-}
-{
-\ghoare
-{\grad{\phi_1}}
-{x.f := y}
-{\grad{\phi_2}}
-}
-\end{mathpar}
-
-Which should be equivalent to this:
-\begin{mathpar}
-\inferrule* [Right=GHFA1]
-{
-\vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T) * \acc(x.f)} \\\\
-\phi_2 = {(x : C) * (y : T) * \acc(x.f) * (x.f = y) * \phi_1[\textbf{w/o } \acc(x.f)]}
-}
-{\ghoare
-{\phi_1}
-{x.f := y}
-{\phi_2}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=GHFA2]
-{
-\vdash C.f : T \\\\
-\withqm{\phi_1} \grad{\implies}_{\phi_m} {(x : C) * \acc(x.f)} \\\\
-\phi_2 = {(x : C) * \acc(x.f) * (x.f = y) * \phi_m[\textbf{w/o } \acc(x.f)]}
-}
-{\ghoare
-{\withqm{\phi_1}}
-{x.f := y}
-{\withqm{\phi_2}}}
-\end{mathpar}
-
-Which should be summarizable as this:
-\begin{mathpar}
-\inferrule* [Right=GHFA]
-{
-\vdash C.f : T \\\\
-\grad{\phi_1} \grad{\implies}_{\grad{\phi_m}} {(x : C) * (y : T) * \acc(x.f)} \\\\
-\grad{\phi_2} = {(x : C) * \acc(x.f) * (x.f = y) * \grad{\phi_m}[\textbf{w/o } \acc(x.f)]}
-}
-{\ghoare
-{\grad{\phi_1}}
-{x.f := y}
-{\grad{\phi_2}}}
-\end{mathpar}
-
-Which for well-formed programs is equivalent to:
-\begin{mathpar}
-\inferrule* [Right=GHFA]
-{
-\vdash C.f : T \\\\
-\phi_1 \implies {(x : C) * (y : T)} \\
-\grad{\phi_1} \grad{\implies} {\acc(x.f)} \\\\
-\grad{\phi_2} = {(x : C) * (y : T) * \acc(x.f) * (x.f = y) * \grad{\phi_1}[\textbf{w/o } \acc(x.f)]}
-}
-{\ghoare
-{\grad{\phi_1}}
-{x.f := y}
-{\grad{\phi_2}}}
-\end{mathpar}
-
-Observations:
-\begin{itemize}
-\item $\grad{\phi_m}$ is the interior (first argument) of the implication, effectively the meet of first and second argument.
-\item for the gradual rules to work, the \textbf{w/o}-operator \textbf{must} be implemented with minimal information loss
-\end{itemize}
 
 
 \subsection{Theorems}
