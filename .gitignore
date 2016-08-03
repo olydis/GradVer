@@ -217,3 +217,4 @@ ModelManifest.xml
 *.log
 *.aux
 *.synctex.gz
+latex/rules.txss

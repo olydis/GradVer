@@ -634,6 +634,98 @@ The gradual lifting will by definition mirror reductions caused by the implicati
 
 This definition turns out to be implementable trivially.
 
+\newcommand{\norm}{\textrm{norm}}
+\newcommand{\snorm}{\norm'}
+\subsection{Gradual Normal Form}
+TODO: make clear that this is specifically about GRADUAL formulas, i.e. ones containing $\qm$!!!
+
+TODO: declare some appropriate naming conventions to distinguish
+
+We cannot compare gradual formulas (in terms of inclusion or equality) by comparing their static parts:
+
+TODO: example of equal gradual formulas but non-equal static parts\\
+
+Fortunately, there exists a normal form $\norm(\withqm{\phi}) = \withqm{\snorm(\phi)}$ for any gradual formula $\withqm{\phi}$ that satisfies the following properties:
+\begin{itemize}
+	\item $\norm(\withqm{\phi}) = \withqm{\phi}$ (mandatory for any normal form)
+	\item $\snorm(\phi)$ is well defined modulo equivalence, i.e. the normal form is unique modulo equivalence of the static part
+	\item $\phi \implies \snorm(\phi)$
+	\item $\snorm(\phi)$ contains no access-terms and therefore no elements of linear logic
+	\item $\withqm{\phi_1} \sqsubseteq \withqm{\phi_2}  \quad\iff\quad  \snorm(\phi_1) \implies \snorm(\phi_2)$
+\end{itemize} 
+
+\subsubsection{Definition}
+Recall that gradual formulas $\withqm{\phi_1}$ and $\withqm{\phi_2}$ are considered equal iff $\gamma(\withqm{\phi_1}) = \gamma(\withqm{\phi_1})$.
+The normal form makes use of the fact that concretizations contain only self-framed formulas.
+
+Lemma:
+For any formula $\phi$ mentioning $\edot{$x$}{$f$}$:
+$$\forall \hat{\phi} \in \gamma(\withqm{\phi}), \hat{\phi} \implies \phiAcc{$x$}{$f$}$$
+
+In other words: Merely mentioning a field will make sure that the concretization contains appropriate framing.
+This is a good starting point to justify removal of access-terms from the static part.
+Note, however, that just dropping all access from the static part may not result in an equivalent gradual formula for two reasons:
+\begin{description}
+	\item[1. Mentioning]~\\
+	Dropping $\phiAcc{$x$}{$f$}$ might result in $\edot{$x$}{$f$}$ not being mentioned in the formula anymore, so there would be no more reason for the access to be restored by concretization.
+	
+	\item[2. Aliasing]~\\
+	In general there are different ways in which access to multiple fields can be restored (this is were linear logic plays in).
+	Example: Dropping all access from $\phiCons{\phiCons{\phiAcc{a}{f}}{\phiAcc{b}{f}}}{\phiCons{\phiEq{a.f}{3}}{\phiEq{b.f}{x}}}$
+	results in
+	$\phiCons{\phiEq{a.f}{3}}{\phiEq{b.f}{x}}$
+	which might be re-framed as
+	$\phiCons{\phiCons{\phiAcc{a}{f}}{\phiEq{a}{b}}}{\phiCons{\phiEq{a.f}{3}}{\phiEq{a.f}{x}}}$.
+	In other words, the possibility of aliasing may result in a variety of re-framed formulas that are not equivalent with the original one.
+	% Elaborate in more detail why this is bad?
+	% Also: this is where dominators play in... draw the line? How far?
+\end{description}
+
+Fortunately, we can prevent both problems from occurring by carefully preparing the static part before dropping all access, resulting in the following two-step approach:
+
+\begin{description}
+	\item[1. Enhancement]~\\
+	Enrich the static part to counteract above problems, i.e. to enforce that access is restored exactly the right way.
+	This is achieved by simply spelling out certain implications of the access-terms:
+	\begin{description}
+		\item [$\phiAcc{$x$}{$f$} \implies \phiEq{\edot{$x$}{$f$}}{\edot{$x$}{$f$}}$]~\\
+		Access to a field implicitly guarantees that it actually evaluates to some (arbitrary) value.
+		Note that $\phiEq{\edot{$x$}{$f$}}{\edot{$x$}{$f$}}$ is not a logical tautology (i.e. it is not implies by $\phiTrue$), since it indeed makes sure that $\edot{$x$}{$f$}$ evaluates, whereas $\phiTrue$ does not.
+		The bottom line is that $\edot{$x$}{$f$}$ is being mentioned even after dropping $\phiAcc{$x$}{$f$}$, therefore solving the first problem. 
+		\item [$\phiCons{\phiAcc{$x$}{$f$}}{\phiAcc{$y$}{$f$}} \implies \phiNeq{$x$}{$y$}$]~\\
+		Having access to the same field of different expressions actively prevents those expressions to ever alias.
+		Spelling out this restriction by adding the corresponding inequality also prevents re-framing in a way that relies on aliasing.
+		The bottom line is that any valid re-framing must restore two distinct access-terms, therefore solving the second problem.
+	\end{description}
+	We enhance the non-linear part of our formula by spelling out above implications in every possible way, i.e. accounting for all (pairs of) access-terms.
+	It is worth noting that this enhancement preserves equality of the formula as only terms are added that were implied by the original formula, anyway.
+	
+	\item[2. Delinearization]~\\
+	All access-terms are dropped.
+\end{description}
+
+
+
+\subsubsection{Properties}
+...prove properties postulated above.
+
+equality (results directly from last prop.)
+
+Intersection:
+\begin{align*}
+&\withqm{\phi_1} \sqcap \withqm{\phi_2} 
+  && := \alpha(\gamma(\withqm{\phi_1}) \cap \gamma(\withqm{\phi_2})) \\
+& &&  = \alpha(\gamma(\norm(\withqm{\phi_1})) \cap \gamma(\norm(\withqm{\phi_2}))) \\
+& &&  = \alpha(\gamma(\withqm{\snorm(\phi_1)}) \cap \gamma(\withqm{\snorm(\phi_2)})) \\
+& &&  = \alpha(\{~ \hat{\phi} ~|~ \hat{\phi} \implies \snorm(\phi_1) ~\} \cap \{~ \hat{\phi} ~|~ \hat{\phi} \implies \snorm(\phi_2) ~\}) \\
+& &&  = \alpha(\{~ \hat{\phi} ~|~ \hat{\phi} \implies \snorm(\phi_1) \wedge \hat{\phi} \implies \snorm(\phi_2) ~\}) \\
+& &&  = \alpha(\{~ \hat{\phi} ~|~ \hat{\phi} \implies \phiCons{$\snorm(\phi_1)$}{$\snorm(\phi_2)$} ~\}) \\
+& &&  = \alpha(\gamma(\withqm{\phiCons{$\snorm(\phi_1)$}{$\snorm(\phi_2)$}})) \\
+& &&  = \withqm{\phiCons{$\snorm(\phi_1)$}{$\snorm(\phi_2)$}} \\
+\end{align*}
+
+
+
 \subsection{Gradual Lifting}
 \subsubsection{Self framing}
 \begin{mathpar}
