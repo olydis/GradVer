@@ -1,4 +1,4 @@
-define(["require", "exports", "./VerificationFormula", "./Expression"], function (require, exports, VerificationFormula_1, Expression_1) {
+define(["require", "exports", "./VerificationFormula"], function (require, exports, VerificationFormula_1) {
     "use strict";
     var VerificationFormulaGradual = (function () {
         function VerificationFormulaGradual(source) {
@@ -70,19 +70,8 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
         VerificationFormulaGradual.prototype.norm = function () {
             var res = VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
             // gradual post-normalization
-            if (this.gradual) {
-                var linearPart = res.staticFormula.parts.filter(function (p) { return p instanceof VerificationFormula_1.FormulaPartAcc; });
-                var classicalPart = res.staticFormula.parts.filter(function (p) { return !(p instanceof VerificationFormula_1.FormulaPartAcc); });
-                // augment classical parts
-                for (var i = 0; i < linearPart.length; ++i) {
-                    for (var j = i + 1; j < linearPart.length; ++j)
-                        if (linearPart[i].f == linearPart[j].f)
-                            classicalPart.push(new VerificationFormula_1.FormulaPartNeq(linearPart[i].e, linearPart[j].e));
-                    var pivot = new Expression_1.ExpressionDot(linearPart[i].e, linearPart[i].f);
-                    classicalPart.push(new VerificationFormula_1.FormulaPartEq(pivot, pivot));
-                }
-                res = VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, classicalPart));
-            }
+            if (this.gradual)
+                res = VerificationFormulaGradual.create(true, this.staticFormula.snorm());
             return res;
         };
         VerificationFormulaGradual.prototype.woVar = function (x) {
@@ -94,47 +83,27 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
         VerificationFormulaGradual.prototype.append = function (part) {
             return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
         };
-        // MUST imply false if impolication impossible (for hoare rules to be gradual lifting!)
-        // on the otherhand, witnesses don't need to be optimal
-        VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
-            var _this = this;
+        VerificationFormulaGradual.prototype.implies = function (phi) {
             if (this.gradual) {
-                var linearPart = phi.parts.filter(function (p) { return p instanceof VerificationFormula_1.FormulaPartAcc; });
-                var classicalPart = phi.parts.filter(function (p) { return !(p instanceof VerificationFormula_1.FormulaPartAcc); });
-                // augment classical parts
-                for (var i = 0; i < linearPart.length; ++i) {
-                    var ee = new Expression_1.ExpressionDot(linearPart[i].e, linearPart[i].f);
-                    classicalPart.push(new VerificationFormula_1.FormulaPartEq(ee, ee));
-                    for (var j = i + 1; j < linearPart.length; ++j)
-                        if (linearPart[i].f == linearPart[j].f)
-                            classicalPart.push(new VerificationFormula_1.FormulaPartNeq(linearPart[i].e, linearPart[j].e));
-                }
-                // impossible to imply?
-                if (!new VerificationFormula_1.VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())
-                    return VerificationFormula_1.VerificationFormula.getFalse();
+                var staticIntersection = this.staticFormula.snorm().parts
+                    .concat(phi.snorm().parts);
+                // implication fails statically?
+                var res = new VerificationFormula_1.VerificationFormula(null, staticIntersection).norm();
+                if (!res.satisfiable())
+                    return null;
                 // simplify
-                classicalPart = classicalPart.filter(function (x) {
-                    return !_this.staticFormula.implies(new VerificationFormula_1.VerificationFormula(null, [x]));
-                });
-                linearPart = linearPart.filter(function (x) {
-                    return !_this.staticFormula.implies(new VerificationFormula_1.VerificationFormula(null, [x]));
-                });
-                // not required if more sophisticated:
-                // - create meet of A and B (structured disjunction)
-                // - eliminate unsatisfiable
-                // - simplify remaining
-                // BUT: that makes runtime checks more expensive!
-                return new VerificationFormula_1.VerificationFormula(null, classicalPart.concat(linearPart)).norm();
+                return VerificationFormulaGradual.create(true, res);
             }
             else
-                return this.staticFormula.impliesRuntime(phi);
+                return VerificationFormulaGradual.create(false, this.staticFormula.implies(phi));
         };
-        // may produce false negatives
-        VerificationFormulaGradual.prototype.impliesApprox = function (phi) {
-            if (this.gradual)
-                return VerificationFormula_1.VerificationFormula.intersect(this.staticFormula, phi).satisfiable();
-            else
-                return this.staticFormula.implies(phi);
+        // MUST return false if implication impossible (for hoare rules to be gradual lifting!)
+        // on the otherhand, witnesses don't need to be optimal
+        VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
+            var res = this.implies(phi);
+            return res == null
+                ? VerificationFormula_1.VerificationFormula.getFalse()
+                : res.staticFormula.simplifyAssuming(this.staticFormula);
         };
         return VerificationFormulaGradual;
     }());

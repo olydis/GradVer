@@ -115,15 +115,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             });
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, g, onErr) {
                 var dyn = pre.impliesRuntime(s.assertion);
-                // processing
-                for (var _i = 0, _a = s.assertion.footprintStatic(); _i < _a.length; _i++) {
-                    var fp = _a[_i];
-                    pre = pre.woAcc(fp.e, fp.f);
-                }
-                for (var _b = 0, _c = s.assertion.parts; _b < _c.length; _b++) {
-                    var part = _c[_b];
-                    pre = pre.append(part);
-                }
+                pre = pre.implies(s.assertion);
                 return {
                     post: pre,
                     dyn: dyn,

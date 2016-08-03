@@ -34,7 +34,7 @@ export class EditableElement
         
         var input = $("<input>");
         input.val(this.source);
-        input.on("change keyup", () => this.editedSource = input.val());
+        input.on("change keyup keydown", () => this.editedSource = input.val());
         input.keydown(eo => { if (eo.which == 13) this.editEnd(true); });
         input.keydown(eo => { if (eo.which == 27) this.editEnd(false); });
 

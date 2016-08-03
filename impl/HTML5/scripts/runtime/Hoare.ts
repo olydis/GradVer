@@ -203,12 +203,7 @@ export class Hoare
         this.addHandler<StatementAssert>("Assert", StatementAssert,
             (s, pre, g, onErr) => {
                 var dyn = pre.impliesRuntime(s.assertion);
-
-                // processing
-                for (var fp of s.assertion.footprintStatic())
-                    pre = pre.woAcc(fp.e, fp.f);
-                for (var part of s.assertion.parts)
-                    pre = pre.append(part);
+                pre = pre.implies(s.assertion);
                 
                 return {
                     post: pre,

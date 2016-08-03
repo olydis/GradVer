@@ -1,4 +1,4 @@
-import { Expression } from "./Expression";
+import { Expression, ExpressionDot } from "./Expression";
 import { ValueObject } from "./ValueExpression";
 import { Type } from "./Type";
 import { FootprintStatic, FootprintDynamic } from "./Footprint";
@@ -395,15 +395,11 @@ export class VerificationFormula
     {
         return this.createNormalizedEnv() != null;
     }
-    public implies(phi: VerificationFormula): boolean
+    public implies(phi: VerificationFormula): VerificationFormula
     {
-        return phi.envImpliedBy(this.createNormalizedEnv());
-    }
-    public impliesRuntime(phi: VerificationFormula): VerificationFormula
-    {
-        return this.implies(phi)
-            ? VerificationFormula.empty()
-            : VerificationFormula.getFalse();
+        return phi.envImpliedBy(this.createNormalizedEnv())
+            ? phi
+            : null;
     }
 
     public impliedEqualities(): FormulaPartEq[]
@@ -429,6 +425,23 @@ export class VerificationFormula
             ? VerificationFormula.getFalse()
             : nenv.createFormula();
     }
+    public snorm(): VerificationFormula
+    {
+        var linearPart = <FormulaPartAcc[]>
+            this.parts.filter(p => p instanceof FormulaPartAcc);
+        var classicalPart =
+            this.parts.filter(p => !(p instanceof FormulaPartAcc));
+        // augment classical parts
+        for (var i = 0; i < linearPart.length; ++i)
+        {
+            for (var j = i + 1; j < linearPart.length; ++j)
+                if (linearPart[i].f == linearPart[j].f)
+                    classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+            var pivot = new ExpressionDot(linearPart[i].e, linearPart[i].f);
+            classicalPart.push(new FormulaPartEq(pivot, pivot));
+        }
+        return new VerificationFormula(null, classicalPart).norm();
+    }
     public woVar(x: string): VerificationFormula
     {
         var nenv = this.createNormalizedEnv();
@@ -451,5 +464,20 @@ export class VerificationFormula
         return env == null
             ? VerificationFormula.getFalse()
             : env.createFormula();
+    }
+
+    public simplifyAssuming(assumption: VerificationFormula): VerificationFormula
+    {
+        var parts = this.parts;
+        for (var i = parts.length - 1; i >= 0; --i)
+        {
+            var staticIntersectionAssume = parts.filter((x, j) => j != i);
+            var known = assumption.parts.concat(staticIntersectionAssume);
+            if (new VerificationFormula(null, known).implies(
+                new VerificationFormula(null, [parts[i]])))
+                parts = staticIntersectionAssume;
+        }
+
+        return new VerificationFormula(null, parts).norm();
     }
 }

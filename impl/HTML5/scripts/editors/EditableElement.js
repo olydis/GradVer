@@ -26,7 +26,7 @@ define(["require", "exports"], function (require, exports) {
             this.editedSource = this.source;
             var input = $("<input>");
             input.val(this.source);
-            input.on("change keyup", function () { return _this.editedSource = input.val(); });
+            input.on("change keyup keydown", function () { return _this.editedSource = input.val(); });
             input.keydown(function (eo) { if (eo.which == 13)
                 _this.editEnd(true); });
             input.keydown(function (eo) { if (eo.which == 27)

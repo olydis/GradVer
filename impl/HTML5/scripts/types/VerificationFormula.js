@@ -354,12 +354,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             return this.createNormalizedEnv() != null;
         };
         VerificationFormula.prototype.implies = function (phi) {
-            return phi.envImpliedBy(this.createNormalizedEnv());
-        };
-        VerificationFormula.prototype.impliesRuntime = function (phi) {
-            return this.implies(phi)
-                ? VerificationFormula.empty()
-                : VerificationFormula.getFalse();
+            return phi.envImpliedBy(this.createNormalizedEnv())
+                ? phi
+                : null;
         };
         VerificationFormula.prototype.impliedEqualities = function () {
             var nenv = this.createNormalizedEnv();
@@ -378,6 +375,19 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             return nenv == null
                 ? VerificationFormula.getFalse()
                 : nenv.createFormula();
+        };
+        VerificationFormula.prototype.snorm = function () {
+            var linearPart = this.parts.filter(function (p) { return p instanceof FormulaPartAcc; });
+            var classicalPart = this.parts.filter(function (p) { return !(p instanceof FormulaPartAcc); });
+            // augment classical parts
+            for (var i = 0; i < linearPart.length; ++i) {
+                for (var j = i + 1; j < linearPart.length; ++j)
+                    if (linearPart[i].f == linearPart[j].f)
+                        classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+                var pivot = new Expression_1.ExpressionDot(linearPart[i].e, linearPart[i].f);
+                classicalPart.push(new FormulaPartEq(pivot, pivot));
+            }
+            return new VerificationFormula(null, classicalPart).norm();
         };
         VerificationFormula.prototype.woVar = function (x) {
             var nenv = this.createNormalizedEnv();
@@ -398,6 +408,16 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             return env == null
                 ? VerificationFormula.getFalse()
                 : env.createFormula();
+        };
+        VerificationFormula.prototype.simplifyAssuming = function (assumption) {
+            var parts = this.parts;
+            for (var i = parts.length - 1; i >= 0; --i) {
+                var staticIntersectionAssume = parts.filter(function (x, j) { return j != i; });
+                var known = assumption.parts.concat(staticIntersectionAssume);
+                if (new VerificationFormula(null, known).implies(new VerificationFormula(null, [parts[i]])))
+                    parts = staticIntersectionAssume;
+            }
+            return new VerificationFormula(null, parts).norm();
         };
         return VerificationFormula;
     }());

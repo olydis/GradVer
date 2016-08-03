@@ -97,22 +97,7 @@ export class VerificationFormulaGradual
         var res = VerificationFormulaGradual.create(this.gradual, this.staticFormula.norm());
         // gradual post-normalization
         if (this.gradual)
-        {
-            var linearPart = <FormulaPartAcc[]>
-                res.staticFormula.parts.filter(p => p instanceof FormulaPartAcc);
-            var classicalPart =
-                res.staticFormula.parts.filter(p => !(p instanceof FormulaPartAcc));
-            // augment classical parts
-            for (var i = 0; i < linearPart.length; ++i)
-            {
-                for (var j = i + 1; j < linearPart.length; ++j)
-                    if (linearPart[i].f == linearPart[j].f)
-                        classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
-                var pivot = new ExpressionDot(linearPart[i].e, linearPart[i].f);
-                classicalPart.push(new FormulaPartEq(pivot, pivot));
-            }
-            res = VerificationFormulaGradual.create(true, new VerificationFormula(null, classicalPart));
-        }
+            res = VerificationFormulaGradual.create(true, this.staticFormula.snorm());
         return res;
     }
     public woVar(x: string): VerificationFormulaGradual
@@ -128,54 +113,32 @@ export class VerificationFormulaGradual
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
     }
 
-    // MUST imply false if impolication impossible (for hoare rules to be gradual lifting!)
-    // on the otherhand, witnesses don't need to be optimal
-    public impliesRuntime(phi: VerificationFormula): VerificationFormula
+    public implies(phi: VerificationFormula): VerificationFormulaGradual
     {
         if (this.gradual)
         {
-            var linearPart = <FormulaPartAcc[]>
-                phi.parts.filter(p => p instanceof FormulaPartAcc);
-            var classicalPart =
-                phi.parts.filter(p => !(p instanceof FormulaPartAcc));
-
-            // augment classical parts
-            for (var i = 0; i < linearPart.length; ++i)
-            {
-                var ee = new ExpressionDot(linearPart[i].e, linearPart[i].f);
-                classicalPart.push(new FormulaPartEq(ee, ee));
-                for (var j = i + 1; j < linearPart.length; ++j)
-                    if (linearPart[i].f == linearPart[j].f)
-                        classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
-            }
-            
-            // impossible to imply?
-            if (!new VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())
-                return VerificationFormula.getFalse();
+            var staticIntersection: FormulaPart[] = this.staticFormula.snorm().parts
+                                            .concat(phi.snorm().parts);
+                        
+            // implication fails statically?
+            var res = new VerificationFormula(null, staticIntersection).norm();
+            if (!res.satisfiable())
+                return null;
 
             // simplify
-            classicalPart = classicalPart.filter(x => 
-                            !this.staticFormula.implies(new VerificationFormula(null, [x])));
-            linearPart = linearPart.filter(x => 
-                            !this.staticFormula.implies(new VerificationFormula(null, [x])));
-
-            // not required if more sophisticated:
-            // - create meet of A and B (structured disjunction)
-            // - eliminate unsatisfiable
-            // - simplify remaining
-            // BUT: that makes runtime checks more expensive!
-            return new VerificationFormula(null, classicalPart.concat(linearPart)).norm();
+            return VerificationFormulaGradual.create(true, res);
         }
         else
-            return this.staticFormula.impliesRuntime(phi);
+            return VerificationFormulaGradual.create(false, this.staticFormula.implies(phi));
     }
 
-    // may produce false negatives
-    public impliesApprox(phi: VerificationFormula): boolean
+    // MUST return false if implication impossible (for hoare rules to be gradual lifting!)
+    // on the otherhand, witnesses don't need to be optimal
+    public impliesRuntime(phi: VerificationFormula): VerificationFormula
     {
-        if (this.gradual)
-            return VerificationFormula.intersect(this.staticFormula, phi).satisfiable();
-        else
-            return this.staticFormula.implies(phi);
+        var res = this.implies(phi);
+        return res == null
+            ? VerificationFormula.getFalse()
+            : res.staticFormula.simplifyAssuming(this.staticFormula);
     }
 }

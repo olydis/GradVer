@@ -14,6 +14,7 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
             _super.call(this, stmtContainer, initialSource, function (source) {
                 _this.stmt = Statement_1.Statement.parse(source) || Statement_1.Statement.getNop();
                 var html = _this.stmt.createHTML();
+                console.log(html.text());
                 onChange();
                 return {
                     source: html.text(),
