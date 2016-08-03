@@ -598,6 +598,42 @@ Other condition:
 %& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \valphi{\phi'} \subseteq \valphi{\phi} ~\} \\
 %\end{align*}
 
+\subsection{Lifting implication}
+Implication is the only predicate on pairs of $\phi$ occurring in our Hoare rules.\\
+
+Looking at HAssert (the version with forwarding pre to post-condition) shows that the gradual lifting is not achieved by merely replacing the implication with gradual implication.
+The gradual lifting potentially has a stronger postcondition than precondition due to filtering out of all concrete formulas that don't satisfy the implication (i.e. where the partial function HAssert is undefined).
+TODO in thesis: Actually elaborate this in more detail (with example, etc.) AAAANNND show the alternative definition (that is actually correct but not ideal) that uses removal and readdition of the asserted formula!\\
+
+GHAssert could be defined using appropriate additional measures (e.g. manually fixing up the postcondition) but the problem can be tackled more elegantly by redesigning implication itself.\\
+
+In general, whenever implication is used, the set of potential formulas is reduced. Without mirroring this reduction in the static system, evidence is required to make sure the reduction does not contradict assertions down the road.\\
+
+We will create a partial function based on classical implication and give its gradual lifting.
+The gradual lifting will by definition mirror reductions caused by the implication, restoring the simplicity of HAssert and especially GHAssert and removing(?) the need of evidence.\\
+
+% The problem with arbitrary predicates (compared to partial functions) is that their lifting merely guarantees the possibility of succeeding at runtime, generating no further information about when it will succeed.
+% As a result evidence is required to provide the necessary information at runtime.
+
+\newcommand{\imp}{\text{imp}}
+\subsubsection{Implication as partial function $\imp : \phi \rightarrow \hat{\phi} \rightarrow \hat{\phi}$}
+\begin{align*}
+&\imp(\phi_a)(\hat{\phi}) = \hat{\phi}                   &&\text{if $\hat{\phi} \implies \phi_a$}\\
+&\imp(\phi_a)(\hat{\phi}) \textit{~undefined}      &&\text{otherwise}\\
+\end{align*}
+
+\subsubsection{Gradual lifting $\grad{\imp} : \phi \rightarrow \grad{\phi} \rightarrow \grad{\phi}$}
+\begin{align*}
+&\grad{\imp}(\phi_a)(\grad{\phi}) 
+  &&= \alpha(\overline{\imp(\phi_a)}(\gamma(\grad{\phi})))\\
+& &&= \alpha(\{~ \imp(\phi_a)(\hat{\phi}) ~|~ \hat{\phi} \in \gamma(\grad{\phi}) ~\})\\
+& &&= \alpha(\{~ \hat{\phi} ~|~ \hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi} \implies \phi_a ~\})\\
+& &&= \alpha(\{~ \hat{\phi} ~|~ \hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi} \in \gamma(\withqm{\phi_a}) ~\})\\
+& &&= \alpha(\gamma(\grad{\phi}) \cap \gamma(\withqm{\phi_a}))\\
+\end{align*}
+
+This definition turns out to be implementable trivially.
+
 \subsection{Gradual Lifting}
 \subsubsection{Self framing}
 \begin{mathpar}
