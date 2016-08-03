@@ -20,7 +20,6 @@ export class EditStatement extends EditableElement
             (source: string) => {
                 this.stmt = Statement.parse(source) || Statement.getNop();
                 var html = this.stmt.createHTML();
-                console.log(html.text());
                 onChange();
                 return {
                     source: html.text(),
