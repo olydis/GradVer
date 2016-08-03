@@ -55,10 +55,25 @@ export class EditInstructions
         this.updateGUI();
     }
 
+    private displayDynCondition(i: number, dyn: VerificationFormula, cond: VerificationFormulaGradual): boolean
+    {
+        if (!dyn.satisfiable())
+        {
+            this.verificationFormulas[i].text("implication cannot hold").addClass("err");
+            return false;
+        }
+        if (dyn.createHTML().text() != "true")
+            this.verificationFormulas[i].text("").append(dyn.createHTML());
+        
+        this.verificationFormulas[i].attr("title", cond.createHTML().text());
+
+        return true;
+    }
+
     private update(): void
     {
         // clear messages
-        this.verificationFormulas.forEach(x => x.text(""));
+        this.verificationFormulas.forEach(x => x.text(" ").removeClass("err").attr("title",null));
 
         var g = GammaNew;
         var cond = this.condPre;
@@ -68,18 +83,18 @@ export class EditInstructions
             var errs = this.hoare.check(s, cond, g);
             if (errs != null)
             {
-                this.verificationFormulas[i].text(errs[0]);
+                this.verificationFormulas[i].text(errs[0]).addClass("err");
                 return;
             }
 
             var res = this.hoare.post(s, cond, g);
-            this.verificationFormulas[i].append(res.dyn.createHTML());
+            if (!this.displayDynCondition(i, res.dyn, cond)) return;
             cond = res.post;
             g = res.postGamma;
         }
 
         var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
-        this.verificationFormulas[this.statements.length].append(lastDyn.createHTML());
+        if (!this.displayDynCondition(this.statements.length, lastDyn, cond)) return;
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void

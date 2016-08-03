@@ -33,25 +33,37 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
         EditInstructions.prototype.createDynVerElement = function () {
             return $("<span>").addClass("dynCheck");
         };
+        EditInstructions.prototype.displayDynCondition = function (i, dyn, cond) {
+            if (!dyn.satisfiable()) {
+                this.verificationFormulas[i].text("implication cannot hold").addClass("err");
+                return false;
+            }
+            if (dyn.createHTML().text() != "true")
+                this.verificationFormulas[i].text("").append(dyn.createHTML());
+            this.verificationFormulas[i].attr("title", cond.createHTML().text());
+            return true;
+        };
         EditInstructions.prototype.update = function () {
             // clear messages
-            this.verificationFormulas.forEach(function (x) { return x.text(""); });
+            this.verificationFormulas.forEach(function (x) { return x.text(" ").removeClass("err").attr("title", null); });
             var g = Gamma_1.GammaNew;
             var cond = this.condPre;
             for (var i = 0; i < this.statements.length; ++i) {
                 var s = this.statements[i].getStatement();
                 var errs = this.hoare.check(s, cond, g);
                 if (errs != null) {
-                    this.verificationFormulas[i].text(errs[0]);
+                    this.verificationFormulas[i].text(errs[0]).addClass("err");
                     return;
                 }
                 var res = this.hoare.post(s, cond, g);
-                this.verificationFormulas[i].append(res.dyn.createHTML());
+                if (!this.displayDynCondition(i, res.dyn, cond))
+                    return;
                 cond = res.post;
                 g = res.postGamma;
             }
             var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
-            this.verificationFormulas[this.statements.length].append(lastDyn.createHTML());
+            if (!this.displayDynCondition(this.statements.length, lastDyn, cond))
+                return;
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;

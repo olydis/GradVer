@@ -22,6 +22,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             update();
             $("#containerHoarePre").append(inputPre.createHTML());
             $("#containerHoarePost").append(inputPost.createHTML());
+            $("#btnEx1").click(function () { return code.loadEx1(); });
         })();
         // containerProps
         (function () {
@@ -109,7 +110,6 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         // $("#btnHammer").click(() => editor.btnPropDownAll());
         // $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
         // $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
-        // $("#btnE1").click(() => editor.loadEx1());
         // editor.loadEx1();
     });
 });

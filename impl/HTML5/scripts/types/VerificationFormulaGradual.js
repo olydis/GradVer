@@ -94,19 +94,21 @@ define(["require", "exports", "./VerificationFormula", "./Expression"], function
         VerificationFormulaGradual.prototype.append = function (part) {
             return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
         };
+        // MUST imply false if impolication impossible (for hoare rules to be gradual lifting!)
+        // on the otherhand, witnesses don't need to be optimal
         VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
             var _this = this;
             if (this.gradual) {
-                // impossible by itself?
-                if (!phi.satisfiable())
-                    return VerificationFormula_1.VerificationFormula.getFalse();
                 var linearPart = phi.parts.filter(function (p) { return p instanceof VerificationFormula_1.FormulaPartAcc; });
                 var classicalPart = phi.parts.filter(function (p) { return !(p instanceof VerificationFormula_1.FormulaPartAcc); });
                 // augment classical parts
-                for (var i = 0; i < linearPart.length; ++i)
+                for (var i = 0; i < linearPart.length; ++i) {
+                    var ee = new Expression_1.ExpressionDot(linearPart[i].e, linearPart[i].f);
+                    classicalPart.push(new VerificationFormula_1.FormulaPartEq(ee, ee));
                     for (var j = i + 1; j < linearPart.length; ++j)
                         if (linearPart[i].f == linearPart[j].f)
                             classicalPart.push(new VerificationFormula_1.FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+                }
                 // impossible to imply?
                 if (!new VerificationFormula_1.VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())
                     return VerificationFormula_1.VerificationFormula.getFalse();

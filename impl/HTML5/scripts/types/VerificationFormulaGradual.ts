@@ -128,23 +128,26 @@ export class VerificationFormulaGradual
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
     }
 
+    // MUST imply false if impolication impossible (for hoare rules to be gradual lifting!)
+    // on the otherhand, witnesses don't need to be optimal
     public impliesRuntime(phi: VerificationFormula): VerificationFormula
     {
         if (this.gradual)
         {
-            // impossible by itself?
-            if (!phi.satisfiable())
-                return VerificationFormula.getFalse();
-            
             var linearPart = <FormulaPartAcc[]>
                 phi.parts.filter(p => p instanceof FormulaPartAcc);
             var classicalPart =
                 phi.parts.filter(p => !(p instanceof FormulaPartAcc));
+
             // augment classical parts
             for (var i = 0; i < linearPart.length; ++i)
+            {
+                var ee = new ExpressionDot(linearPart[i].e, linearPart[i].f);
+                classicalPart.push(new FormulaPartEq(ee, ee));
                 for (var j = i + 1; j < linearPart.length; ++j)
                     if (linearPart[i].f == linearPart[j].f)
                         classicalPart.push(new FormulaPartNeq(linearPart[i].e, linearPart[j].e));
+            }
             
             // impossible to imply?
             if (!new VerificationFormula(null, this.staticFormula.parts.concat(classicalPart)).satisfiable())

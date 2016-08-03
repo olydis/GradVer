@@ -36,6 +36,7 @@ $(() =>
         $("#containerHoarePre").append(inputPre.createHTML());
         $("#containerHoarePost").append(inputPost.createHTML());
 
+        $("#btnEx1").click(() => code.loadEx1());
     })();
 
     // containerProps
@@ -137,6 +138,5 @@ $(() =>
     // $("#btnHammer").click(() => editor.btnPropDownAll());
     // $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
     // $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
-    // $("#btnE1").click(() => editor.loadEx1());
     // editor.loadEx1();
 });
