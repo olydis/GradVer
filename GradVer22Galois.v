@@ -190,9 +190,35 @@ Proof.
     * assert (x0 = p1).
         eapp det. subst.
       splau.
-    * admit.
+    * admit. (*contradictory*)
     * eapp det.
 Admitted.
+
+Definition liftableImplies (p : phi) (p1 p2 : phi) : Prop :=
+  p1 = p2 /\
+  phiImplies p1 p.
+
+Theorem liftableImplies_ : forall p, liftable (liftableImplies p).
+Proof.
+  split.
+    split; intros.
+      inv H. assumption.
+    inv H. inv H0. congruence.
+  split.
+    unfold pmFun. intros.
+    inv H. inv H0.
+    assumption.
+  unfold gFun. intros.
+  inv H.
+  exists p1.
+  exists p1.
+  splau.
+  splau.
+  splau.
+  eapp (phiImpliesTrans p1 pc p0).
+  unfold gGamma' in *. simpl in *.
+  destruct pa; unf; cut.
+Qed.
 
 Definition liftableAppend (p : phi) (p1 p2 : phi) : Prop :=
   p2 = p1 ++ p /\

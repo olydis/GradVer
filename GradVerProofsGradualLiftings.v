@@ -517,7 +517,7 @@ Inductive GHAppX : (T -> m -> T -> x' -> phi -> phi -> Prop) -> T -> m -> T -> x
       phi_q
 .
 
-Theorem GLIFT_GHAppX : forall me T_r m T_p z  G,
+(* Theorem GLIFT_GHAppX : forall me T_r m T_p z  G,
   liftable (me T_r m T_p z) ->
   GLIFTpp1 (HAppX me T_r m T_p z G) (GHAppX me T_r m T_p z G).
 Proof.
@@ -586,25 +586,23 @@ Proof.
     destruct gp1.
     destruct b.
     * inv H7.
-    eex.
-    eca.
-  - inv H0.
-    apply H8. auto.
+      admit.
+    * admit.
+  - inv H1.
+    apply H13. auto.
     inv sl.
     repeat intro.
-    apply H10.
+    apply H15.
     unfold PLIFTp1 in *.
     unf.
-    eex.
-    inv H14.
-    exists phi'0.
-    auto.
-Qed.
+    inv H19.
+    admit.
+Admitted. *)
 
 
 
-(* HAssert *)
-Inductive HAssertX : phi ->
+(* HAssert - old, non ideal way *)
+(* Inductive HAssertX : phi ->
               Gamma -> phi -> phi -> Prop :=
 | HAssert : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi' phi'',
     phiImplies phi phi_a -> (* implied by liftableWOaccsX *)
@@ -689,6 +687,73 @@ Proof.
     inv H13.
     exists phi'0.
     auto.
+Qed. *)
+
+(* HAssert *)
+Inductive HAssertX : phi ->
+              Gamma -> phi -> phi -> Prop :=
+| HAssert : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi',
+    liftableImplies phi_a
+      phi phi' ->
+    HAssertX phi_a
+      G
+      phi
+      phi'
+.
+
+Inductive GHAssertX : phi ->
+              Gamma -> gphi -> gphi -> Prop :=
+| GHAssert : forall G(*\Gamma*) phi(*\*) phi_a(*\*) phi',
+    simpleLift (liftableImplies phi_a)
+      phi phi' ->
+    GHAssertX phi_a
+      G
+      phi 
+      phi'
+.
+
+Theorem GLIFT_GHAssertX : forall p  G,
+  GLIFTpp1 (HAssertX p G) (GHAssertX p G).
+Proof.
+  unfold GLIFTpp1.
+  intros.
+  
+  inv H.
+  inv H1.
+  
+  assert (gGood gp2') as g1.
+    apply H.
+  assert (gGood gp2) as g3.
+    inv H0.
+    assumption.
+  
+  eexists. eexists.
+  split. eca.
+  split. eca.
+  
+  rename H into sl.
+  apply simpleLift2lift in sl; auto.
+  Focus 2. apply liftableImplies_.
+  
+  split.
+  - inv sl.
+    apply H4. auto.
+    inv H0.
+    repeat intro.
+    apply H7.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H10.
+    eex.
+  - inv H0.
+    apply H4. auto.
+    inv sl.
+    repeat intro.
+    apply H6.
+    unfold PLIFTp1 in *.
+    unf.
+    inv H10. inv H9.
+    eex.
 Qed.
 
 
