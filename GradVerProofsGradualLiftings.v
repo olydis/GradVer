@@ -477,73 +477,78 @@ Inductive GHAppX : T -> m -> T -> x' -> gphi -> gphi ->
       phi'''
 . *)
 
-Inductive HAppX : (T -> m -> T -> x' -> phi -> phi -> Prop) -> T -> m -> T -> x' ->
+Inductive HAppX : T -> m -> T -> x' -> phi -> phi -> x -> x -> x ->
               Gamma -> phi -> phi -> Prop :=
-| HApp : forall (me : T -> m -> T -> x' -> phi -> phi -> Prop) 
-                G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    (*method information*)
+    good phi_pre ->
+    good phi_post ->
+    
     hasStaticType G (ex y) (TClass C) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    me T_r m T_p z phi_pre phi_post ->
     phiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
     listDistinct [x ; y ; z'] ->
     liftablePS2 y xthis z' (xUserDef z)
       phi_p phi_pre ->
     liftablePS3 xthis y (xUserDef z) z' xresult x 
       phi_post phi_q ->
-    HAppX me T_r m T_p z
+    HAppX T_r m T_p z phi_pre phi_post x y z'
       G
       phi
       phi_q
 .
 
-Inductive GHAppX : (T -> m -> T -> x' -> phi -> phi -> Prop) -> T -> m -> T -> x' ->
+Inductive GHAppX : T -> m -> T -> x' -> phi -> phi -> x -> x -> x ->
               Gamma -> gphi -> gphi -> Prop :=
-| GHApp : forall (me : T -> m -> T -> x' -> phi -> phi -> Prop) 
-                G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| GHApp : forall G(*\Gamma*) phi(*\phi*) phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    good phi_pre ->
+    good phi_post ->
+    
     hasStaticType G (ex y) (TClass C) ->
     hasStaticType G (ex x) T_r ->
     hasStaticType G (ex z') T_p ->
-    simpleLift (me T_r m T_p z) phi_pre phi_post ->
-    gphiImplies phi (phiNeq (ex y) (ev vnull) :: (snd phi_p)) ->
+    gphiImplies phi (phiNeq (ex y) (ev vnull) :: phi_p) ->
     listDistinct [x ; y ; z'] ->
-    simpleLift (liftablePS2 y xthis z' (xUserDef z))
+    liftablePS2 y xthis z' (xUserDef z)
       phi_p phi_pre ->
-    simpleLift (liftablePS3 xthis y (xUserDef z) z' xresult x)
+    liftablePS3 xthis y (xUserDef z) z' xresult x
       phi_post phi_q ->
-    GHAppX me T_r m T_p z
+    GHAppX T_r m T_p z phi_pre phi_post x y z'
       G
       phi
-      phi_q
+      (false, phi_q)
 .
 
-(* Theorem GLIFT_GHAppX : forall me T_r m T_p z  G,
-  liftable (me T_r m T_p z) ->
-  GLIFTpp1 (HAppX me T_r m T_p z G) (GHAppX me T_r m T_p z G).
+Theorem GLIFT_GHAppX : forall T_r m T_p z p_pre p_post x y z'  G,
+  GLIFTpp1 (HAppX  T_r m T_p z p_pre p_post x y z' G) 
+           (GHAppX T_r m T_p z p_pre p_post x y z' G).
 Proof.
   unfold GLIFTpp1.
   intros.
   
-  inv H0.
-  inv H2.
+  inv H.
+  inv H1.
   
-  assert (gGood gp2') as g1.
-    apply H10.
-  assert (gGood phi_post) as g2.
-    apply H6.
-  assert (gGood phi_p) as g3.
-    apply H9.
-  assert (gGood phi_pre) as g4.
-    apply H9.
+  assert (gGood (false, phi_q)) as g1.
+    apply gGoodFalseGood.
+    assert (li := liftablePS3_ xthis y (xUserDef z) z' xresult x).
+    inv li. unf. inv H1. apply H11 in H10; auto.
+  assert (gGood (false, p_post)) as g2.
+    apply gGoodFalseGood. assumption.
+  assert (gGood (false, phi_p)) as g3.
+    admit. (*liftablePS2 invertible, ...*)
+  assert (gGood (false, p_pre)) as g4.
+    apply gGoodFalseGood. assumption.
   assert (gGood gp2) as g5.
-    inv H1.
+    inv H0.
     assumption.
   
   eexists. eexists.
   split. eca.
   split. eca.
   
-  set (op1 := liftablePS2 y xthis z' (xUserDef z)) in *.
+  (* set (op1 := liftablePS2 y xthis z' (xUserDef z)) in *.
   set (op2 := me T_r m T_p z) in *.
   set (op3 := liftablePS3 xthis y (xUserDef z) z' xresult x) in *.
   
@@ -566,38 +571,37 @@ Proof.
     unfold simpleLift in *. unf.
     splau.
     splau.
-    splau.
+    splau. *)
   
-  apply simpleLift2lift in sl; auto.
+(*   apply simpleLift2lift in sl; auto. *)
+  rename H9 into sl1.
+  rename H10 into sl2.
+  
+(*   apply simpleLift2lift in sl1; auto.
+  apply simpleLift2lift in sl1; auto. *)
   
   split.
-  - inv sl.
-    apply H13. auto.
-    inv H1.
-    repeat intro.
-    apply H16.
+  - repeat intro.
+    inv H1. simpl.
+    inv H0.
+    apply H10.
     unfold PLIFTp1 in *.
-    unf.
-    inv H7.
-    exists x3. unf.
+    inv H7. unf.
+    exists x0.
     splau.
-    eca. eca. eca. eca.
-    subst op1.
-    destruct gp1.
-    destruct b.
-    * inv H7.
-      admit.
-    * admit.
-  - inv H1.
-    apply H13. auto.
-    inv sl.
+    eca.
+  - inv H0.
+    apply H11. auto.
     repeat intro.
-    apply H15.
     unfold PLIFTp1 in *.
     unf.
-    inv H19.
-    admit.
-Admitted. *)
+    inv H13.
+    unfold gGamma'. simpl.
+    assert (li := liftablePS3_ xthis y (xUserDef z) z' xresult x).
+    inv li. unf.
+    inv H13.
+    eapply H25; eauto.
+Admitted.
 
 
 
