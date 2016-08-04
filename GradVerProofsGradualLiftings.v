@@ -505,6 +505,7 @@ Inductive HAppX : T -> m -> T -> x' -> phi -> phi -> x -> x -> x ->
 Inductive GHAppX : T -> m -> T -> x' -> phi -> phi -> x -> x -> x ->
               Gamma -> gphi -> gphi -> Prop :=
 | GHApp : forall G(*\Gamma*) phi(*\phi*) phi' phi'' phi_p(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+    (*method information*)
     good phi_pre ->
     good phi_post ->
     
