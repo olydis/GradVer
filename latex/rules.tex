@@ -110,6 +110,7 @@
 \newcommand{\hsc}{~\hat{*}~}
 \newcommand{\gsc}{~\grad{*}~}
 \newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
+\newcommand{\imp}{\text{imp}}
 
 % typewriter stuff
 \newcommand{\ttt}{\texttt}
@@ -615,7 +616,6 @@ The gradual lifting will by definition mirror reductions caused by the implicati
 % The problem with arbitrary predicates (compared to partial functions) is that their lifting merely guarantees the possibility of succeeding at runtime, generating no further information about when it will succeed.
 % As a result evidence is required to provide the necessary information at runtime.
 
-\newcommand{\imp}{\text{imp}}
 \subsubsection{Implication as partial function $\imp : \phi \rightarrow \hat{\phi} \rightarrow \hat{\phi}$}
 \begin{align*}
 &\imp(\phi_a)(\hat{\phi}) = \hat{\phi}                   &&\text{if $\hat{\phi} \implies \phi_a$}\\

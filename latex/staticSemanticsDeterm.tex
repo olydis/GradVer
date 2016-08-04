@@ -38,16 +38,22 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule* [Right=HAssertBAD (grad lifting non-trivial!)]
+\inferrule* [Right=HAssertIrregular (grad lifting not piecewise)]
 {\hat{\phi} \implies {\phi_a}}
 {{\Gamma} \hoare {\hat{\phi}} {{\assert {\phi_a}}} {\hat{\phi}}}
 \end{mathpar}
 
 \begin{mathpar}
-    \inferrule* [Right=HAssert]
+    \inferrule* [Right=HAssertBadIdea]
     {{\wo {\hat{\phi}} {\staticFP{\phi_a}}} = \hat{\phi'}\\
         \hat{\phi} \implies {\phi_a}}
     {{\Gamma} \hoare {\hat{\phi}} {{\assert {\phi_a}}} {\hat{\phi'} \hsc \phi_a}}
+\end{mathpar}
+
+\begin{mathpar}
+	\inferrule* [Right=HAssert]
+	{\imp(\phi_a)(\hat{\phi})(\hat{\phi'})}
+	{{\Gamma} \hoare {\hat{\phi}} {{\assert {\phi_a}}} {\hat{\phi'}}}
 \end{mathpar}
 
 \begin{mathpar}
