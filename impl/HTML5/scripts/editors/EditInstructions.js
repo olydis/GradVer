@@ -52,7 +52,7 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             this.verificationFormulas[i].text("").append(cond.createHTML().text());
             if (dyn.createHTML().text() != "true")
                 this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
-                    .text("&nbsp;&nbsp;+&nbsp;&nbsp;" + dyn.createHTML().text()));
+                    .text("   +   " + dyn.createHTML().text()));
             return true;
         };
         EditInstructions.prototype.update = function () {
