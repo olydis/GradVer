@@ -7,6 +7,8 @@ Definition PLIFTm1 (f : phi -> phi) : (pphi -> pphi) :=
   fun pp1 => fun p2 => exists p1, pp1 p1 /\ f p1 = p2.
 Definition PLIFTp1 (f : phi -> phi -> Prop) : (pphi -> pphi) :=
   fun pp1 => fun p2 => exists p1, pp1 p1 /\ f p1 p2.
+Definition PLIFTp3 (f : phi -> phi -> phi -> phi -> Prop) : (pphi -> pphi -> pphi -> pphi) :=
+  fun pp1 pp2 pp3 => fun px => exists p1 p2 p3, pp1 p1 /\ pp2 p2 /\ pp3 p3 /\ f p1 p2 p3 px.
 Definition GLIFTmp1 (f : phi -> phi) (gf : gphi -> gphi -> Prop) : Prop :=
   forall gp1 gp2 pp gp2',
   gGamma gp1 pp ->
@@ -29,6 +31,14 @@ Definition GLIFTpp1x (f : phi -> phi -> Prop) (gf : gphi -> gphi -> Prop) : Prop
   gGamma gp1 pp ->
   gf gp1 gp2 ->
   gAlpha (PLIFTp1 f pp) gp2.
+Definition GLIFTpp3 (f : phi -> phi -> phi -> phi -> Prop) (gf : gphi -> gphi -> gphi -> gphi -> Prop) : Prop :=
+  forall gp1 gp2 gp3 gpx pp1 pp2 pp3 gpx',
+  gGamma gp1 pp1 ->
+  gGamma gp2 pp2 ->
+  gGamma gp3 pp3 ->
+  gAlpha (PLIFTp3 f pp1 pp2 pp3) gpx ->
+  gf gp1 gp2 gp3 gpx' ->
+  gphiEquals gpx' gpx.
 
 (* (* monotonic function with respect to phiImplies *)
 Definition pmFun (f : phi -> phi -> Prop) : Prop :=
