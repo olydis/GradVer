@@ -23,6 +23,17 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             this.statements[3].setStatementX("x = y;");
             this.statements[4].setStatementX("assert (x = 3);");
         };
+        EditInstructions.prototype.loadEx2 = function () {
+            while (this.numInstructions > 5)
+                this.removeInstruction(0);
+            while (this.numInstructions < 5)
+                this.insertInstruction(0);
+            this.statements[0].setStatementX("int x;");
+            this.statements[1].setStatementX("int y;");
+            this.statements[2].setStatementX("y = 3;");
+            this.statements[3].setStatementX("x = y;");
+            this.statements[4].setStatementX("assert (x = 3);");
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;
@@ -38,9 +49,10 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
                 this.verificationFormulas[i].text("implication cannot hold").addClass("err");
                 return false;
             }
+            this.verificationFormulas[i].text("").append(cond.createHTML().text());
             if (dyn.createHTML().text() != "true")
-                this.verificationFormulas[i].text("").append(dyn.createHTML());
-            this.verificationFormulas[i].attr("title", cond.createHTML().text());
+                this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
+                    .text("&nbsp;&nbsp;+&nbsp;&nbsp;" + dyn.createHTML().text()));
             return true;
         };
         EditInstructions.prototype.update = function () {

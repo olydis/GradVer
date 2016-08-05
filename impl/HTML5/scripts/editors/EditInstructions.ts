@@ -25,6 +25,18 @@ export class EditInstructions
         this.statements[3].setStatementX("x = y;");
         this.statements[4].setStatementX("assert (x = 3);");
     }
+    public loadEx2(): void
+    {
+        while (this.numInstructions > 5)
+            this.removeInstruction(0);
+        while (this.numInstructions < 5)
+            this.insertInstruction(0);
+        this.statements[0].setStatementX("int x;");
+        this.statements[1].setStatementX("int y;");
+        this.statements[2].setStatementX("y = 3;");
+        this.statements[3].setStatementX("x = y;");
+        this.statements[4].setStatementX("assert (x = 3);");
+    }
 
     public get numInstructions(): number
     {
@@ -62,11 +74,11 @@ export class EditInstructions
             this.verificationFormulas[i].text("implication cannot hold").addClass("err");
             return false;
         }
+        this.verificationFormulas[i].text("").append(cond.createHTML().text());
         if (dyn.createHTML().text() != "true")
-            this.verificationFormulas[i].text("").append(dyn.createHTML());
+            this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
+                .text("&nbsp;&nbsp;+&nbsp;&nbsp;" + dyn.createHTML().text()));
         
-        this.verificationFormulas[i].attr("title", cond.createHTML().text());
-
         return true;
     }
 

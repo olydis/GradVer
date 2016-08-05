@@ -7,6 +7,7 @@ import { Hoare } from "./runtime/Hoare";
 import { Program } from "./runtime/Program";
 import { testAll } from "./testing/MainTest";
 import { VerificationFormulaGradual } from "./types/VerificationFormulaGradual";
+import { Type, TypeClass } from "./types/Type";
 import { VerificationFormula, FormulaPart, FormulaPartEq, FormulaPartNeq } from "./types/VerificationFormula";
 
 $(() =>
@@ -14,7 +15,33 @@ $(() =>
     $(window).click(() => EditableElement.editEndAll());
 
     var program: Program = {
-        classes: [],
+        classes: [
+        {
+            name: "Point",
+            fields: [
+            {
+                name: "x",
+                type: Type.getPrimitiveInt()
+            },
+            {
+                name: "y",
+                type: Type.getPrimitiveInt()
+            }],
+            methods: []
+        },
+        {
+            name: "Points",
+            fields: [
+            {
+                name: "h",
+                type: new TypeClass("Point")
+            },
+            {
+                name: "t",
+                type: new TypeClass("Points")
+            }],
+            methods: []
+        }],
         main: []
     };
     var env = new ExecutionEnvironment(program);

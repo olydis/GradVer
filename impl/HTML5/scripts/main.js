@@ -1,9 +1,35 @@
-define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./testing/MainTest", "./types/VerificationFormulaGradual"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, MainTest_1, VerificationFormulaGradual_1) {
+define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, MainTest_1, VerificationFormulaGradual_1, Type_1) {
     "use strict";
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
         var program = {
-            classes: [],
+            classes: [
+                {
+                    name: "Point",
+                    fields: [
+                        {
+                            name: "x",
+                            type: Type_1.Type.getPrimitiveInt()
+                        },
+                        {
+                            name: "y",
+                            type: Type_1.Type.getPrimitiveInt()
+                        }],
+                    methods: []
+                },
+                {
+                    name: "Points",
+                    fields: [
+                        {
+                            name: "h",
+                            type: new Type_1.TypeClass("Point")
+                        },
+                        {
+                            name: "t",
+                            type: new Type_1.TypeClass("Points")
+                        }],
+                    methods: []
+                }],
             main: []
         };
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);
