@@ -404,6 +404,8 @@ As long as $?$ is only legal in the front though: $\phi_1 * \grad{\phi_2}$ propa
 &\gamma(\phi) \text{ undefined otherwise} \\
 ~\\
 &\grad{\phi_1} \sqsubseteq \grad{\phi_2} \quad:\iff\quad \gamma(\grad{\phi_1}) \subseteq \gamma(\grad{\phi_2})
+\text{useful extension:}\\
+&\bot \sqsubseteq \bot
 \end{align*}
 
 \newcommand{\dalpha}{\dot{\alpha}}
@@ -426,6 +428,17 @@ Proved:
 	\item $\alpha(\gamma(\grad{\phi})) = \grad{\phi}$
     \item does this make $\langle \gamma, \alpha \rangle$ a (partial) “galois insertion”?
 \end{itemize}
+
+\subsection{Temp}
+$\dagger$:
+$$(\phi_1 \implies \phi_2) \implies f(\phi_1) \text{ defined} \implies f(\phi_2) \text{ defined}$$
+\begin{itemize}
+	\item Concat: the case
+	\item remove variable/access: total
+	\item substitution: total
+	\item implication: NOT the case
+\end{itemize}
+
 
 \subsection{Lifting functions}
 Gradual lifting $\grad{f} : \grad{\phi} \rightarrow \grad{\phi}$ of a function $f : \phi \rightarrow \phi$:
@@ -462,9 +475,9 @@ Consequence:
 Analogous, for monotonic $f$: 
 \begin{align*}
 &~~~~ \alpha(\overline{f}(\gamma(\withqm{\phi}))) \\
-&= \dalpha(\overline{f}(\gamma(\withqm{\phi}))) \\
+&\overset{f \text{ not narrowing to single element (also includes definedness!)}}{=} \dalpha(\overline{f}(\gamma(\withqm{\phi}))) \\
 &= \dalpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \gamma(\withqm{\hat{\phi}}))) \\
-&= \dalpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \})) \\
+&\overset{\dagger}{=} \dalpha(\overline{f}(\bigcup_{\hat{\phi} \in \dom(\phi)} \{ \hat{\phi} \})) \\
 &= \dalpha(\overline{f}(\dom(\phi))) \\
 &= \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}}
 \end{align*}
@@ -497,7 +510,6 @@ This observation raises the question whether it is possible to generalize the eq
 %$\alpha(\overline{f}(\gamma(\phi))) =\, f(\phi)$
 
 \subsubsection{Generalization: Auto-liftable functions}
-
 Goal:
 Get a definition of $\grad{f}$ that is even easier to handle and implement.
 Therefore we want to investigate whether, or under which circumstances 
@@ -547,11 +559,11 @@ Note:
 
 \begin{align*}
 \withqm{f(\phi)} &\sqsubseteq \,\,\withqm{f(\phi)} \\
-\implies \\
+\overset{\dagger}{\implies} \\
 \forall \phi' \in \dom(\phi), \withqm{f(\phi')} &\sqsubseteq \,\,\withqm{f(\phi)} \\
 \iff \\
 \sup_{\sqsubseteq} {\{~ \withqm{f(\phi')} ~|~ \phi' \in \dom(\phi) ~\}} &\sqsubseteq \,\,\withqm{f(\phi)} \\
-\iff \\
+\overset{\dagger}{\iff} \\
 \alpha(\overline{f}(\gamma(\withqm{\phi}))) &\sqsubseteq \,\,\withqm{f(\phi)}
 \end{align*}
 
@@ -559,10 +571,11 @@ For a function $f$ to be auto-liftable, the following properties are sufficient:
 \begin{itemize}
     \item Monotonicity
     \item $\forall \phi' \in \gamma(\withqm{f(\phi)}), \exists \phi'' \in \gamma(\withqm{\phi}), \phi' \in \gamma(\withqm{f(\phi'')})$ 
+    \item $\dagger$
 \end{itemize}
 
-\subsubsection{Liftable composition}
-Given liftable functions $f$ and $g$, is $g \circ f$ liftable?
+\subsubsection{Auto-liftable composition}
+Given auto-liftable functions $f$ and $g$, is $g \circ f$ auto-liftable?
 Monotonicity is obviously preserved.
 
 Other condition:
