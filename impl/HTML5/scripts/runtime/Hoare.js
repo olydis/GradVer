@@ -125,6 +125,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             this.addHandler("Release", Statement_1.StatementRelease, function (s, pre, g, onErr) {
                 var dyn = pre.impliesRuntime(s.assertion);
                 // processing
+                pre = pre.implies(s.assertion);
                 for (var _i = 0, _a = s.assertion.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
                     pre = pre.woAcc(fp.e, fp.f);

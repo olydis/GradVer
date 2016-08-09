@@ -216,6 +216,7 @@ export class Hoare
                 var dyn = pre.impliesRuntime(s.assertion);
 
                 // processing
+                pre = pre.implies(s.assertion);
                 for (var fp of s.assertion.footprintStatic())
                     pre = pre.woAcc(fp.e, fp.f);
                 

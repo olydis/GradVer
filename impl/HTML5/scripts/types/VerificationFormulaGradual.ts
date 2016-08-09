@@ -129,7 +129,12 @@ export class VerificationFormulaGradual
             return VerificationFormulaGradual.create(true, res);
         }
         else
-            return VerificationFormulaGradual.create(false, this.staticFormula.implies(phi));
+        {
+            var sf = this.staticFormula.implies(phi);
+            if (sf == null)
+                return null;
+            return VerificationFormulaGradual.create(false, sf);
+        }
     }
 
     // MUST return false if implication impossible (for hoare rules to be gradual lifting!)
