@@ -37,13 +37,21 @@ export abstract class FormulaPart
         source = source.replace(/\s/g, "");
         source = source.replace(/\(/g, "");
         source = source.replace(/\)/g, "");
-        var result: FormulaPart = null;
-        for (var sub of FormulaPart.subs)
+        try
         {
-            if (result) break;
-            result = sub.parse(source);
+            var result: FormulaPart = null;
+            for (var sub of FormulaPart.subs)
+            {
+                if (result) break;
+                result = sub.parse(source);
+            }
+            return result;
         }
-        return result;
+        catch(e)
+        {
+            console.error("parse error");
+            return new FormulaPartTrue();
+        }
     }
     public static eq(p1: FormulaPart, p2: FormulaPart): boolean
     {
@@ -325,7 +333,7 @@ export class VerificationFormula
 
     public createHTML(): JQuery
     {
-        return this.html;
+        return this.html.clone();
     }
     public substs(m: (x: string) => string): VerificationFormula
     {

@@ -74,7 +74,7 @@ export class VerificationFormulaGradual
 
     public createHTML(): JQuery
     {
-        return this.html;
+        return this.html.clone();
     }
     public sfrm(fp: FootprintStatic = []): boolean
     {

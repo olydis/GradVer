@@ -31,14 +31,20 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             source = source.replace(/\s/g, "");
             source = source.replace(/\(/g, "");
             source = source.replace(/\)/g, "");
-            var result = null;
-            for (var _i = 0, _a = FormulaPart.subs; _i < _a.length; _i++) {
-                var sub = _a[_i];
-                if (result)
-                    break;
-                result = sub.parse(source);
+            try {
+                var result = null;
+                for (var _i = 0, _a = FormulaPart.subs; _i < _a.length; _i++) {
+                    var sub = _a[_i];
+                    if (result)
+                        break;
+                    result = sub.parse(source);
+                }
+                return result;
             }
-            return result;
+            catch (e) {
+                console.error("parse error");
+                return new FormulaPartTrue();
+            }
         };
         FormulaPart.eq = function (p1, p2) {
             for (var _i = 0, _a = FormulaPart.subs; _i < _a.length; _i++) {
@@ -291,7 +297,7 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             }
         };
         VerificationFormula.prototype.createHTML = function () {
-            return this.html;
+            return this.html.clone();
         };
         VerificationFormula.prototype.substs = function (m) {
             var frm = new VerificationFormula();

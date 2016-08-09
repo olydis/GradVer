@@ -52,7 +52,7 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 this.html.append(this.staticFormula.createHTML());
         };
         VerificationFormulaGradual.prototype.createHTML = function () {
-            return this.html;
+            return this.html.clone();
         };
         VerificationFormulaGradual.prototype.sfrm = function (fp) {
             if (fp === void 0) { fp = []; }
