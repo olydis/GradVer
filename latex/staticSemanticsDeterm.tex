@@ -52,15 +52,15 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 
 \begin{mathpar}
 	\inferrule* [Right=HAssert]
-	{\imp(\phi_a)(\hat{\phi})(\hat{\phi'})}
+	{\imp(\phi_a)(\hat{\phi}) = \hat{\phi'}}
 	{{\Gamma} \hoare {\hat{\phi}} {{\assert {\phi_a}}} {\hat{\phi'}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=HRelease]
-{{\wo {\hat{\phi}} {\staticFP{\phi_r}}} = \hat{\phi'}\\
-    \hat{\phi} \implies {{\phi_r}}}
-{{\Gamma} \hoare {\hat{\phi}} {{\release {\phi_r}}} {\hat{\phi'}}}
+{\imp(\phi_r)(\hat{\phi}) = \hat{\phi'}\\
+{\wo {\hat{\phi'}} {\staticFP{\phi_r}}} = \hat{\phi''}}
+{{\Gamma} \hoare {\hat{\phi}} {{\release {\phi_r}}} {\hat{\phi''}}}
 \end{mathpar}
 
 \begin{mathpar}

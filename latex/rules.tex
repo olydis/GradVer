@@ -433,11 +433,15 @@ Proved:
 $\dagger$:
 $$(\phi_1 \implies \phi_2) \implies f(\phi_1) \text{ defined} \implies f(\phi_2) \text{ defined}$$
 \begin{itemize}
-	\item Concat: the case
+	\item Concat: the case (total in usage!)
 	\item remove variable/access: total
 	\item substitution: total
 	\item implication: NOT the case
 \end{itemize}
+The gradual Hoare rules (except GHSec) themselves are total apart from implication part!
+
+~\\
+Functions must preserve satisfiability and self-framing!
 
 
 \subsection{Lifting functions}
@@ -612,6 +616,89 @@ Other condition:
 %& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \phi' \implies \phi ~\} \\
 %& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \valphi{\phi'} \subseteq \valphi{\phi} ~\} \\
 %\end{align*}
+
+\subsubsection{Liftable Composition in general}
+Motivation: While composition works out great in most static Hoare rules it does not in HSec. Subtelty, etc., ...
+
+% EXAMPLE
+\newcommand{\phiSample}{\withqm{\phiNeq{x}{\vnull}}}
+\newcommand{\phiSampleX}{\withqm{\phiEq{x.f}{x.f}}}
+\newcommand{\sSample}{\sRelease{\phiAcc{x}{f}}}
+Example:
+\sSample~\sSample
+\begin{itemize}
+	\item not typable with any static precondition
+	\item typable with gradual precondition:
+	
+	\begin{mathpar}
+		\inferrule* [Right=GHRelease]
+		{\grad{\imp}(\phiAcc{x}{f})(\phiSample) = \phiSampleX\\
+			{\wo {(\phiSampleX)} {\phiAcc{x}{f}}} = \phiSample}
+		{\Gamma~ \ghoare {\phiSample} {\sSample} {\phiSample}}
+	\end{mathpar}
+	\begin{mathpar}
+		\inferrule* [Right=GHSec]
+		{
+			\Gamma~ \ghoare {\phiSample} {\sSample} {\phiSample}\\
+			\Gamma~ \ghoare {\phiSample} {\sSample} {\phiSample}
+		}
+		{\Gamma~ \ghoare {\phiSample} {\sSample~\sSample} {\phiSample}}
+	\end{mathpar}
+\end{itemize}
+
+Discussion, comparison with AGT:
+\begin{itemize}
+	\item 
+	AGT: reduction = composite terms (parts had explicit type annotations!) get simplified to single term.
+	For type derivations this means that ...
+	\item
+	GVER: 
+\end{itemize}
+
+%Known:
+%\begin{align*}
+%\forall \grad{\phi}, \grad{f}(\grad{\phi}) &= \alpha(\overline{f}(\gamma(\grad{\phi}))) \\
+%&\wedge\\
+%\forall \grad{\phi}, \grad{g}(\grad{\phi}) &= \alpha(\overline{g}(\gamma(\grad{\phi}))) \\
+%&\implies \\
+%\forall \grad{\phi}, \grad{f}(\grad{g}(\grad{\phi})) &= \alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) 
+%\end{align*}
+Goal:
+\begin{align*}
+\forall \grad{\phi}, 
+\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &= \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+&\iff \\
+\forall \grad{\phi}, 
+\grad{f}(\grad{g}(\grad{\phi})) &= \grad{f \circ g}(\grad{\phi})\\
+&\iff \\
+\text{piecewise lifting of HSec} &= \text{GHSec}\\
+\end{align*}
+
+Holds (since $\gamma \circ \alpha$ is widening):
+\begin{align*}
+\forall \grad{\phi}, 
+\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsupseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+\end{align*}
+
+Goal (solvable with $\dagger(f)$ but that is not the case for implication!):
+\begin{align*}
+\forall \grad{\phi}, 
+\forall \hat{\phi_1} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))), 
+\withqm{f(\hat{\phi_1})} &\sqsubseteq 
+\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
+&\iff \\
+\forall \grad{\phi}, 
+\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\} &\sqsubseteq 
+\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
+&\iff \\
+\forall \grad{\phi}, 
+\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\}) &\sqsubseteq
+\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\})\\
+&\iff \\
+\forall \grad{\phi}, 
+\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsubseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+\end{align*}
+
 
 \subsection{Lifting implication}
 Implication is the only predicate on pairs of $\phi$ occurring in our Hoare rules.\\

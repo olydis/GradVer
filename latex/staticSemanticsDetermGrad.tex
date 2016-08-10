@@ -46,15 +46,15 @@ Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular
 
 \begin{mathpar}
 \inferrule* [Right=GHAssert]
-{\grad{\imp}(\phi_a)(\grad{\phi})(\grad{\phi'})}
+{\grad{\imp}(\phi_a)(\grad{\phi}) = \grad{\phi'}}
 {\Gamma~ \ghoare {\grad{\phi}} {{\assert {\phi_a}}} {\grad{\phi'}}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=GHRelease]
-{{\wo {\grad{\phi}} {\staticFP{\phi_r}}} = \grad{\phi'}\\
-    \grad{\phi} \grad{\implies} {{\phi_r}}}
-{\Gamma~ \ghoare {\grad{\phi}} {{\release {\phi_r}}} {\grad{\phi'}}}
+{\grad{\imp}(\phi_r)(\grad{\phi}) = \grad{\phi'}\\
+	{\wo {\grad{\phi'}} {\staticFP{\phi_r}}} = \grad{\phi''}}
+{\Gamma~ \ghoare {\grad{\phi}} {{\release {\phi_r}}} {\grad{\phi''}}}
 \end{mathpar}
 
 \begin{mathpar}
