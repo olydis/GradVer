@@ -90,14 +90,6 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 return VerificationFormulaGradual.create(false, sf);
             }
         };
-        // MUST return false if implication impossible (for hoare rules to be gradual lifting!)
-        // on the otherhand, witnesses don't need to be optimal
-        VerificationFormulaGradual.prototype.impliesRuntime = function (phi) {
-            var res = this.implies(phi);
-            return res == null
-                ? VerificationFormula_1.VerificationFormula.getFalse()
-                : res.staticFormula.simplifyAssuming(this.staticFormula);
-        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;

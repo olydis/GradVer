@@ -7,7 +7,7 @@ import { NormalizedEnv, EvalEnv } from "../runtime/EvalEnv";
 
 export abstract class FormulaPart
 {
-    public abstract toString(): string
+    public abstract toString(): string;
     public abstract substs(m: (x: string) => string): FormulaPart;
     public footprintStatic(): FootprintStatic
     {
@@ -18,6 +18,7 @@ export abstract class FormulaPart
         return [];
     }
     public abstract sfrm(fp: FootprintStatic): boolean;
+    public abstract sfrmInv(): FootprintStatic;
     public abstract FV(): string[];
     public abstract envAdd(env: NormalizedEnv): NormalizedEnv;
     public envImpiledBy(env: NormalizedEnv): boolean { return this.eval(env.getEnv()); }
@@ -83,6 +84,10 @@ export class FormulaPartTrue extends FormulaPart
     {
         return true;
     }
+    public sfrmInv(): FootprintStatic
+    {
+        return [];
+    }
     public FV(): string[] { return []; }
     public envAdd(env: NormalizedEnv): NormalizedEnv { return env; }
     public eval(env: EvalEnv): boolean { return true; }
@@ -125,6 +130,10 @@ export class FormulaPartEq extends FormulaPart
     {
         return this.e1.sfrm(fp)
             && this.e2.sfrm(fp);
+    }
+    public sfrmInv(): FootprintStatic
+    {
+        return this.e1.necessaryFraming().concat(this.e2.necessaryFraming());
     }
     public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
     public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addEq(this.e1, this.e2); }
@@ -181,6 +190,10 @@ export class FormulaPartNeq extends FormulaPart
     {
         return this.e1.sfrm(fp)
             && this.e2.sfrm(fp);
+    }
+    public sfrmInv(): FootprintStatic
+    {
+        return this.e1.necessaryFraming().concat(this.e2.necessaryFraming());
     }
     public FV(): string[] { return this.e1.FV().concat(this.e2.FV()); }
     public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addIneq(this.e1, this.e2); }
@@ -246,6 +259,10 @@ export class FormulaPartAcc extends FormulaPart
     public sfrm(fp: FootprintStatic): boolean
     {
         return this.e.sfrm(fp);
+    }
+    public sfrmInv(): FootprintStatic
+    {
+        return this.e.necessaryFraming();
     }
     public FV(): string[] { return this.e.FV(); }
     public envAdd(env: NormalizedEnv): NormalizedEnv { return env.addAcc(this.e, this.f); }
@@ -349,6 +366,34 @@ export class VerificationFormula
         return true;
     }
 
+    public autoFramedChecks(known: VerificationFormula): VerificationFormula[]
+    {
+        var parts = this.snorm().parts;
+
+        // add framing
+        var framing: FootprintStatic = [];
+        for (var part of parts)
+            framing.push(...part.sfrmInv());
+        var framingFrm = framing.map(x => new FormulaPartAcc(x.e, x.f));
+        var framingFrmDistinct: FormulaPart[] = [];
+        for (var acc of framingFrm)
+            if (framingFrmDistinct.every(x => !FormulaPart.eq(acc, x)))
+                framingFrmDistinct.push(acc);
+        
+        // remove 
+
+        var parts = this.parts;
+        for (var i = parts.length - 1; i >= 0; --i)
+        {
+            var staticIntersectionAssume = parts.filter((x, j) => j != i);
+            var known = assumption.parts.concat(staticIntersectionAssume);
+            if (new VerificationFormula(null, known).implies(
+                new VerificationFormula(null, [parts[i]])))
+                parts = staticIntersectionAssume;
+        }
+        
+        return framingFrmDistinct.concat(parts);
+    }
     
     public envImpliedBy(env: NormalizedEnv): boolean
     {
@@ -443,20 +488,5 @@ export class VerificationFormula
         return env == null
             ? VerificationFormula.getFalse()
             : env.createFormula();
-    }
-
-    public simplifyAssuming(assumption: VerificationFormula): VerificationFormula
-    {
-        var parts = this.parts;
-        for (var i = parts.length - 1; i >= 0; --i)
-        {
-            var staticIntersectionAssume = parts.filter((x, j) => j != i);
-            var known = assumption.parts.concat(staticIntersectionAssume);
-            if (new VerificationFormula(null, known).implies(
-                new VerificationFormula(null, [parts[i]])))
-                parts = staticIntersectionAssume;
-        }
-
-        return new VerificationFormula(null, parts).norm();
     }
 }

@@ -328,10 +328,6 @@ export class NormalizedEnv {
         {
             var ineq = this.ineq.slice();
             var env = this.getEnv();
-            // for (var a of env.A)
-            //     if (a.f == f)
-            //         ineq.push({v1: v, v2: new ValueObject(a.o)});
-            //// above now handled by acc-removal (as it should be...)
             env.A.push({ o: v.UID, f: f });
             return NormalizedEnv.create(ineq, env);
         }

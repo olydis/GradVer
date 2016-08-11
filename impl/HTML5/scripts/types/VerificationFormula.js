@@ -76,6 +76,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartTrue.prototype.sfrm = function (fp) {
             return true;
         };
+        FormulaPartTrue.prototype.sfrmInv = function () {
+            return [];
+        };
         FormulaPartTrue.prototype.FV = function () { return []; };
         FormulaPartTrue.prototype.envAdd = function (env) { return env; };
         FormulaPartTrue.prototype.eval = function (env) { return true; };
@@ -114,6 +117,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartEq.prototype.sfrm = function (fp) {
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
+        };
+        FormulaPartEq.prototype.sfrmInv = function () {
+            return this.e1.necessaryFraming().concat(this.e2.necessaryFraming());
         };
         FormulaPartEq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
         FormulaPartEq.prototype.envAdd = function (env) { return env.addEq(this.e1, this.e2); };
@@ -167,6 +173,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartNeq.prototype.sfrm = function (fp) {
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
+        };
+        FormulaPartNeq.prototype.sfrmInv = function () {
+            return this.e1.necessaryFraming().concat(this.e2.necessaryFraming());
         };
         FormulaPartNeq.prototype.FV = function () { return this.e1.FV().concat(this.e2.FV()); };
         FormulaPartNeq.prototype.envAdd = function (env) { return env.addIneq(this.e1, this.e2); };
@@ -226,6 +235,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         };
         FormulaPartAcc.prototype.sfrm = function (fp) {
             return this.e.sfrm(fp);
+        };
+        FormulaPartAcc.prototype.sfrmInv = function () {
+            return this.e.necessaryFraming();
         };
         FormulaPartAcc.prototype.FV = function () { return this.e.FV(); };
         FormulaPartAcc.prototype.envAdd = function (env) { return env.addAcc(this.e, this.f); };
@@ -314,6 +326,31 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             }
             return true;
         };
+        VerificationFormula.prototype.autoFramedChecks = function (known) {
+            var parts = this.snorm().parts;
+            // add framing
+            var framing = [];
+            for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {
+                var part = parts_1[_i];
+                framing.push.apply(framing, part.sfrmInv());
+            }
+            var framingFrm = framing.map(function (x) { return new FormulaPartAcc(x.e, x.f); });
+            var framingFrmDistinct = [];
+            for (var _a = 0, framingFrm_1 = framingFrm; _a < framingFrm_1.length; _a++) {
+                var acc = framingFrm_1[_a];
+                if (framingFrmDistinct.every(function (x) { return !FormulaPart.eq(acc, x); }))
+                    framingFrmDistinct.push(acc);
+            }
+            // remove 
+            var parts = this.parts;
+            for (var i = parts.length - 1; i >= 0; --i) {
+                var staticIntersectionAssume = parts.filter(function (x, j) { return j != i; });
+                var known = assumption.parts.concat(staticIntersectionAssume);
+                if (new VerificationFormula(null, known).implies(new VerificationFormula(null, [parts[i]])))
+                    parts = staticIntersectionAssume;
+            }
+            return framingFrmDistinct.concat(parts);
+        };
         VerificationFormula.prototype.envImpliedBy = function (env) {
             if (env == null)
                 return true;
@@ -391,16 +428,6 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             return env == null
                 ? VerificationFormula.getFalse()
                 : env.createFormula();
-        };
-        VerificationFormula.prototype.simplifyAssuming = function (assumption) {
-            var parts = this.parts;
-            for (var i = parts.length - 1; i >= 0; --i) {
-                var staticIntersectionAssume = parts.filter(function (x, j) { return j != i; });
-                var known = assumption.parts.concat(staticIntersectionAssume);
-                if (new VerificationFormula(null, known).implies(new VerificationFormula(null, [parts[i]])))
-                    parts = staticIntersectionAssume;
-            }
-            return new VerificationFormula(null, parts).norm();
         };
         return VerificationFormula;
     }());

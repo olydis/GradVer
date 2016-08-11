@@ -15,7 +15,8 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
             _super.call(this, formulaContainer, initialSource, function (source) {
                 _this.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
                 onChange(_this.verForm);
-                var html = _this.verForm.createHTML();
+                var src = _this.verForm.toString();
+                var html = $("<span>").text(src);
                 // if (!this.verForm.sfrm())
                 //     html.addClass("errSfrm");
                 // // DEBUG: normalized data
@@ -24,7 +25,7 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
                 //     html.addClass("errFalse");
                 // // DEBUG end
                 return {
-                    source: html.text(),
+                    source: src,
                     html: html
                 };
             });
@@ -44,7 +45,7 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
         EditVerificationFormula.prototype.getFormula = function () { return this.verForm; };
         EditVerificationFormula.prototype.setFormula = function (frm) {
             this.verForm = frm;
-            this.source = frm.createHTML().text();
+            this.source = frm.toString();
             this.rerender();
         };
         return EditVerificationFormula;

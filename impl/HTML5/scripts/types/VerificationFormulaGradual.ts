@@ -120,14 +120,4 @@ export class VerificationFormulaGradual
             return VerificationFormulaGradual.create(false, sf);
         }
     }
-
-    // MUST return false if implication impossible (for hoare rules to be gradual lifting!)
-    // on the otherhand, witnesses don't need to be optimal
-    public impliesRuntime(phi: VerificationFormula): VerificationFormula
-    {
-        var res = this.implies(phi);
-        return res == null
-            ? VerificationFormula.getFalse()
-            : res.staticFormula.simplifyAssuming(this.staticFormula);
-    }
 }

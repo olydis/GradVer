@@ -19,7 +19,8 @@ export class EditVerificationFormula extends EditableElement
             (source: string) => {
                 this.verForm = new VerificationFormulaGradual(source);
                 onChange(this.verForm);
-                var html = this.verForm.createHTML();
+                var src = this.verForm.toString()
+                var html = $("<span>").text(src);
                 // if (!this.verForm.sfrm())
                 //     html.addClass("errSfrm");
                 // // DEBUG: normalized data
@@ -28,7 +29,7 @@ export class EditVerificationFormula extends EditableElement
                 //     html.addClass("errFalse");
                 // // DEBUG end
                 return {
-                    source: html.text(),
+                    source: src,
                     html: html
                 };
             }
@@ -53,7 +54,7 @@ export class EditVerificationFormula extends EditableElement
     public setFormula(frm: VerificationFormulaGradual): void
     {
         this.verForm = frm;
-        this.source = frm.createHTML().text();
+        this.source = frm.toString();
         this.rerender();
     }
 }

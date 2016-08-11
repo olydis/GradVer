@@ -10,9 +10,9 @@ define(["require", "exports", "../types/VerificationFormula", "./Random", "./Gen
             p2 = GeneratorFormula_1.generateVerificationFormula(Random_1.rand());
         while (!p2.implies(p3))
             p3 = GeneratorFormula_1.generateVerificationFormula(Random_1.rand());
-        var t1 = "{" + p1.createHTML().text() + "}";
-        var t2 = "{" + p2.createHTML().text() + "}";
-        var t3 = "{" + p3.createHTML().text() + "}";
+        var t1 = "{" + p1.toString() + "}";
+        var t2 = "{" + p2.toString() + "}";
+        var t3 = "{" + p3.toString() + "}";
         if (!p1.implies(p3))
             console.error("TestImplies transitivity", t1, t2, t3);
     }

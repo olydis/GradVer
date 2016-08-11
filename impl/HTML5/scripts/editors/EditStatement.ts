@@ -19,10 +19,11 @@ export class EditStatement extends EditableElement
             initialSource,
             (source: string) => {
                 this.stmt = Statement.parse(source) || Statement.getNop();
-                var html = this.stmt.createHTML();
+                var src = this.stmt.toString();
+                var html = $("<span>").text(src);
                 onChange();
                 return {
-                    source: html.text(),
+                    source: src,
                     html: html
                 };
             }
@@ -47,7 +48,7 @@ export class EditStatement extends EditableElement
     public setStatement(stmt: Statement): void
     {
         this.stmt = stmt;
-        this.source = stmt.createHTML().text();
+        this.source = stmt.toString();
         this.rerender();
     }
     public setStatementX(s: string): void

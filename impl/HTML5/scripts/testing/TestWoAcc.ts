@@ -19,10 +19,10 @@ export function testWoAccWorks(): void
 
     var p1x = new VerificationFormula(null, p2.parts.concat(p1wo2.parts));
 
-    var t1 = "{" + p1.createHTML().text() + "}";
-    var t2 = "{" + p2.createHTML().text() + "}";
-    var t12 = "{" + p1wo2.createHTML().text() + "}";
-    var t1x = "{" + p1x.createHTML().text() + "}";
+    var t1 = "{" + p1.toString() + "}";
+    var t2 = "{" + p2.toString() + "}";
+    var t12 = "{" + p1wo2.toString() + "}";
+    var t1x = "{" + p1x.toString() + "}";
 
     if (!p1.implies(p1x))// FAIL
         console.error("TestWoAcc works", t1, t2, t12, t1x);
@@ -41,11 +41,11 @@ export function testWoAccMonotonic(): void
     var p1x = p1.woAcc(new ExpressionX("a"), "f");
     var p2x = p2.woAcc(new ExpressionX("a"), "f");
 
-    var t1 = "{" + p1.createHTML().text() + "}";
-    var t2 = "{" + p2.createHTML().text() + "}";
+    var t1 = "{" + p1.toString() + "}";
+    var t2 = "{" + p2.toString() + "}";
 
-    var t1x = "{" + p1x.createHTML().text() + "}";
-    var t2x = "{" + p2x.createHTML().text() + "}";
+    var t1x = "{" + p1x.toString() + "}";
+    var t2x = "{" + p2x.toString() + "}";
 
     if (!p1x.implies(p2x))// FAIL
         console.error("TestWoAcc monotonic", t1, t2, t1x, t2x);
@@ -60,9 +60,9 @@ export function testWoAccPreserveSat(): void
 
     var p1x = p1.woAcc(new ExpressionX("a"), "f");
 
-    var t1 = "{" + p1.createHTML().text() + "}";
+    var t1 = "{" + p1.toString() + "}";
 
-    var t1x = "{" + p1x.createHTML().text() + "}";
+    var t1x = "{" + p1x.toString() + "}";
 
     if (!p1.implies(p1x))// FAIL
         console.error("TestWoAcc preserve sat", t1, t1x);
@@ -77,9 +77,9 @@ export function testWoAccPreserveSfrm(): void
 
     var p1x = p1.woAcc(new ExpressionX("a"), "f");
 
-    var t1 = "{" + p1.createHTML().text() + "}";
+    var t1 = "{" + p1.toString() + "}";
 
-    var t1x = "{" + p1x.createHTML().text() + "}";
+    var t1x = "{" + p1x.toString() + "}";
 
     if (!p1x.sfrm())// FAIL
         console.error("TestWoAcc preserve sfrm", t1, t1x);

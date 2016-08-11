@@ -71,7 +71,7 @@ $(() =>
         var input = new EditVerificationFormula("", phi => {
             $("#containerPropsOutSat").text(phi.satisfiable() ? "yes" : "no");
             $("#containerPropsOutSfrm").text(phi.sfrm() ? "yes" : "no");
-            $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
+            $("#containerPropsOutNorm").text(phi.norm().toString());
         });
         $("#containerPropsInput").append(input.createHTML());
     })();
@@ -86,7 +86,7 @@ $(() =>
         {
             var phi = input.getFormula();
             var x = inputVar.val();
-            $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
+            $("#containerWoVarOutput").text(phi.woVar(x).toString());
         };
         update();
         $("#containerWoVarInput").append(input.createHTML());
@@ -104,7 +104,7 @@ $(() =>
             var accText = inputAcc.val();
             var accE = Expression.parse(accText);
             if (accE instanceof ExpressionDot)
-                $("#containerWoAccOutput").text(phi.woAcc(accE.e, accE.f).createHTML().text());
+                $("#containerWoAccOutput").text(phi.woAcc(accE.e, accE.f).toString());
             else
                 $("#containerWoAccOutput").text("format error");
         };
@@ -121,7 +121,7 @@ $(() =>
         {
             var pA = inputA.getFormula();
             var pB = inputB.getFormula();
-            $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
+            $("#containerImpliesOutput").text(pA.implies(pB.staticFormula).toString());
         };
         update();
         $("#containerImpliesInputA").append(inputA.createHTML());
@@ -148,7 +148,7 @@ $(() =>
                 return;
             }
 
-            $("#containerSupOutput").text(VerificationFormulaGradual.supremum(pA, pB).createHTML().text());
+            $("#containerSupOutput").text(VerificationFormulaGradual.supremum(pA, pB).toString());
         };
         update();
         $("#containerSupInputA").append(inputA.createHTML());

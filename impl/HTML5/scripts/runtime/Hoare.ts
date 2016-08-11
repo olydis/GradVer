@@ -121,7 +121,7 @@ export class Hoare
 
                     // processing
                     var accPart = new FormulaPartAcc(ex, s.f);
-                    var dyn = pre.impliesRuntime(new VerificationFormula(null, [accPart]));
+                    var dyn = new VerificationFormula(null, [accPart]);
                     pre = pre.woAcc(ex, s.f);
                     pre = pre.append(accPart);
                     pre = pre.append(new FormulaPartNeq(ex, Expression.getNull()));
@@ -157,7 +157,7 @@ export class Hoare
                 // processing
                 pre = pre.woVar(s.x);
                 var accParts = s.e.necessaryFraming().map(a => new FormulaPartAcc(a.e, a.f));
-                var dyn = pre.impliesRuntime(new VerificationFormula(null, accParts));
+                var dyn = new VerificationFormula(null, accParts);
                 pre = pre.append(new FormulaPartEq(ex, s.e));
                 
                 return {
@@ -202,7 +202,7 @@ export class Hoare
             });
         this.addHandler<StatementAssert>("Assert", StatementAssert,
             (s, pre, g, onErr) => {
-                var dyn = pre.impliesRuntime(s.assertion);
+                var dyn = s.assertion;
                 pre = pre.implies(s.assertion);
                 if (pre == null)
                 {
@@ -218,7 +218,7 @@ export class Hoare
             });
         this.addHandler<StatementRelease>("Release", StatementRelease,
             (s, pre, g, onErr) => {
-                var dyn = pre.impliesRuntime(s.assertion);
+                var dyn = s.assertion;
 
                 // processing
                 pre = pre.implies(s.assertion);

@@ -42,17 +42,18 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             configurable: true
         });
         EditInstructions.prototype.createDynVerElement = function () {
-            return $("<span>").addClass("dynCheck");
+            return $("<span>").addClass("intermediateState");
         };
-        EditInstructions.prototype.displayPreCondition = function (i, dyn, cond) {
-            if (!dyn.satisfiable()) {
-                this.verificationFormulas[i].text("implication cannot hold").addClass("err");
-                return false;
+        EditInstructions.prototype.displayPreCondition = function (i, dynF, cond) {
+            var dyn = dynF.snorm().autoFramedChecks(cond.staticFormula);
+            if (dyn.some(function (x) { return !x.satisfiable(); })) {
+                throw "shouldn't have happened";
             }
             this.verificationFormulas[i].text("").append(cond.norm().toString());
-            if (dyn.toString() != "true")
-                this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
-                    .text("   +   " + dyn.toString()));
+            if (dyn.length > 0)
+                this.verificationFormulas[i].append($("<span>")
+                    .addClass("dynCheck")
+                    .text(dyn.join(", ")));
             return true;
         };
         EditInstructions.prototype.update = function () {
@@ -81,7 +82,7 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
                 cond = res.post;
                 g = res.postGamma;
             }
-            var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
+            var lastDyn = this.condPost.staticFormula;
             if (!this.displayPreCondition(this.statements.length, lastDyn, cond))
                 return;
         };

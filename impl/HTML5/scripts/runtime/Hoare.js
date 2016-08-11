@@ -48,7 +48,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                     }
                     // processing
                     var accPart = new VerificationFormula_1.FormulaPartAcc(ex, s.f);
-                    var dyn = pre.impliesRuntime(new VerificationFormula_1.VerificationFormula(null, [accPart]));
+                    var dyn = new VerificationFormula_1.VerificationFormula(null, [accPart]);
                     pre = pre.woAcc(ex, s.f);
                     pre = pre.append(accPart);
                     pre = pre.append(new VerificationFormula_1.FormulaPartNeq(ex, Expression_1.Expression.getNull()));
@@ -78,7 +78,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 // processing
                 pre = pre.woVar(s.x);
                 var accParts = s.e.necessaryFraming().map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); });
-                var dyn = pre.impliesRuntime(new VerificationFormula_1.VerificationFormula(null, accParts));
+                var dyn = new VerificationFormula_1.VerificationFormula(null, accParts);
                 pre = pre.append(new VerificationFormula_1.FormulaPartEq(ex, s.e));
                 return {
                     post: pre,
@@ -114,7 +114,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 // throw "not implemented";
             });
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, g, onErr) {
-                var dyn = pre.impliesRuntime(s.assertion);
+                var dyn = s.assertion;
                 pre = pre.implies(s.assertion);
                 if (pre == null) {
                     onErr("implication failure");
@@ -127,7 +127,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 };
             });
             this.addHandler("Release", Statement_1.StatementRelease, function (s, pre, g, onErr) {
-                var dyn = pre.impliesRuntime(s.assertion);
+                var dyn = s.assertion;
                 // processing
                 pre = pre.implies(s.assertion);
                 if (pre == null) {

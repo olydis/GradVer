@@ -6,7 +6,7 @@ import { Hoare } from "../runtime/Hoare";
 import { GUIHelpers } from "../GUIHelpers";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
-import { VerificationFormula } from "../types/VerificationFormula";
+import { VerificationFormula, FormulaPart } from "../types/VerificationFormula";
 
 export class EditInstructions
 {
@@ -45,7 +45,7 @@ export class EditInstructions
 
     private createDynVerElement(): JQuery
     {
-        return $("<span>").addClass("dynCheck");
+        return $("<span>").addClass("intermediateState");
     }
 
     private condPre: VerificationFormulaGradual;
@@ -67,17 +67,20 @@ export class EditInstructions
         this.updateGUI();
     }
 
-    private displayPreCondition(i: number, dyn: VerificationFormula, cond: VerificationFormulaGradual): boolean
+    private displayPreCondition(i: number, dynF: VerificationFormula, cond: VerificationFormulaGradual): boolean
     {
-        if (!dyn.satisfiable())
+        var dyn = dynF.snorm().autoFramedChecks(cond.staticFormula);
+        if (dyn.some(x => !x.satisfiable()))
         {
-            this.verificationFormulas[i].text("implication cannot hold").addClass("err");
-            return false;
+            throw "shouldn't have happened";
         }
+
         this.verificationFormulas[i].text("").append(cond.norm().toString());
-        if (dyn.toString() != "true")
-            this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
-                .text("   +   " + dyn.toString()));
+
+        if (dyn.length > 0)
+            this.verificationFormulas[i].append($("<span>")
+                .addClass("dynCheck")
+                .text(dyn.join(", ")));
         
         return true;
     }
@@ -116,7 +119,7 @@ export class EditInstructions
             g = res.postGamma;
         }
 
-        var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
+        var lastDyn = this.condPost.staticFormula;
         if (!this.displayPreCondition(this.statements.length, lastDyn, cond)) return;
     }
 

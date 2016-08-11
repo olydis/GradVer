@@ -10,9 +10,9 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
         var gp1 = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, p1);
         var gp2 = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, p2);
         var gps = VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp1, gp2);
-        var t1 = "{" + gp1.createHTML().text() + "}";
-        var t2 = "{" + gp2.createHTML().text() + "}";
-        var ts = "{" + gps.createHTML().text() + "}";
+        var t1 = "{" + gp1.toString() + "}";
+        var t2 = "{" + gp2.toString() + "}";
+        var ts = "{" + gps.toString() + "}";
         if (!p1.implies(gps.staticFormula)
             || !p2.implies(gps.staticFormula))
             console.error("testSupImplies", t1, t2, ts);
@@ -29,10 +29,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
         var gp2 = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, p2);
         var gps1 = VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp1, gp2);
         var gps2 = VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp2, gp1);
-        var t1 = "{" + gp1.createHTML().text() + "}";
-        var t2 = "{" + gp2.createHTML().text() + "}";
-        var ts1 = "{" + gps1.createHTML().text() + "}";
-        var ts2 = "{" + gps2.createHTML().text() + "}";
+        var t1 = "{" + gp1.toString() + "}";
+        var t2 = "{" + gp2.toString() + "}";
+        var ts1 = "{" + gps1.toString() + "}";
+        var ts2 = "{" + gps2.toString() + "}";
         if (!gps1.staticFormula.implies(gps2.staticFormula)
             || !gps2.staticFormula.implies(gps1.staticFormula))
             console.error("testSupComm", t1, t2, ts1, ts2);
@@ -53,11 +53,11 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
         var gp3 = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, p3);
         var gps1 = VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp1, VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp2, gp3));
         var gps2 = VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(gp1, gp2), gp3);
-        var t1 = "{" + gp1.createHTML().text() + "}";
-        var t2 = "{" + gp2.createHTML().text() + "}";
-        var t3 = "{" + gp3.createHTML().text() + "}";
-        var ts1 = "{" + gps1.createHTML().text() + "}";
-        var ts2 = "{" + gps2.createHTML().text() + "}";
+        var t1 = "{" + gp1.toString() + "}";
+        var t2 = "{" + gp2.toString() + "}";
+        var t3 = "{" + gp3.toString() + "}";
+        var ts1 = "{" + gps1.toString() + "}";
+        var ts2 = "{" + gps2.toString() + "}";
         if (!gps1.staticFormula.implies(gps2.staticFormula)
             || !gps2.staticFormula.implies(gps1.staticFormula))
             console.error("testSupAssoc", t1, t2, t3, ts1, ts2);

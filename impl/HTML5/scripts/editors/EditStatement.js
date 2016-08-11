@@ -13,10 +13,11 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
             var stmtContainer = $("<span>");
             _super.call(this, stmtContainer, initialSource, function (source) {
                 _this.stmt = Statement_1.Statement.parse(source) || Statement_1.Statement.getNop();
-                var html = _this.stmt.createHTML();
+                var src = _this.stmt.toString();
+                var html = $("<span>").text(src);
                 onChange();
                 return {
-                    source: html.text(),
+                    source: src,
                     html: html
                 };
             });
@@ -36,7 +37,7 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
         EditStatement.prototype.getStatement = function () { return this.stmt; };
         EditStatement.prototype.setStatement = function (stmt) {
             this.stmt = stmt;
-            this.source = stmt.createHTML().text();
+            this.source = stmt.toString();
             this.rerender();
         };
         EditStatement.prototype.setStatementX = function (s) {

@@ -65,7 +65,7 @@ input
     /*color: gray;*/
     font-weight: bold;
 }
-.dynCheck
+.intermediateState
 {
     font-family: monospace;
     font-size: 16px;
@@ -74,7 +74,22 @@ input
     /*height: 1.5em;*/
     font-style: italic;
     line-height: 1.5em;
-    color: #aaa;
+    color: #eee;
+}
+.intermediateState:hover
+{
+    color: #999;
+}
+.dynCheck::before
+{
+    content: "dyn check: ";
+}
+.dynCheck
+{
+    padding-left: 50px;
+    font-style: normal;
+    font-weight: bold;
+    color: blue;
 }
 
 .instructionStatement
@@ -118,11 +133,6 @@ tr td:first-child
 {
     font-style: italic;
     padding-left: 16px;
-}
-
-.sepConj
-{
-    
 }
 
 .rightFloat

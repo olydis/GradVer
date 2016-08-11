@@ -55,7 +55,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function (phi) {
                 $("#containerPropsOutSat").text(phi.satisfiable() ? "yes" : "no");
                 $("#containerPropsOutSfrm").text(phi.sfrm() ? "yes" : "no");
-                $("#containerPropsOutNorm").text(phi.norm().createHTML().text());
+                $("#containerPropsOutNorm").text(phi.norm().toString());
             });
             $("#containerPropsInput").append(input.createHTML());
         })();
@@ -68,7 +68,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             update = function () {
                 var phi = input.getFormula();
                 var x = inputVar.val();
-                $("#containerWoVarOutput").text(phi.woVar(x).createHTML().text());
+                $("#containerWoVarOutput").text(phi.woVar(x).toString());
             };
             update();
             $("#containerWoVarInput").append(input.createHTML());
@@ -84,7 +84,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                 var accText = inputAcc.val();
                 var accE = Expression_1.Expression.parse(accText);
                 if (accE instanceof Expression_1.ExpressionDot)
-                    $("#containerWoAccOutput").text(phi.woAcc(accE.e, accE.f).createHTML().text());
+                    $("#containerWoAccOutput").text(phi.woAcc(accE.e, accE.f).toString());
                 else
                     $("#containerWoAccOutput").text("format error");
             };
@@ -99,7 +99,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             update = function () {
                 var pA = inputA.getFormula();
                 var pB = inputB.getFormula();
-                $("#containerImpliesOutput").text(pA.impliesRuntime(pB.staticFormula).createHTML().text());
+                $("#containerImpliesOutput").text(pA.implies(pB.staticFormula).toString());
             };
             update();
             $("#containerImpliesInputA").append(inputA.createHTML());
@@ -121,7 +121,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                     inputB.setFormula(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, pB.staticFormula));
                     return;
                 }
-                $("#containerSupOutput").text(VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(pA, pB).createHTML().text());
+                $("#containerSupOutput").text(VerificationFormulaGradual_1.VerificationFormulaGradual.supremum(pA, pB).toString());
             };
             update();
             $("#containerSupInputA").append(inputA.createHTML());
