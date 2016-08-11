@@ -617,7 +617,7 @@ Other condition:
 %& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \valphi{\phi'} \subseteq \valphi{\phi} ~\} \\
 %\end{align*}
 
-\subsubsection{Liftable Composition in general}
+\subsubsection{No liftable composition for HSec - tictating runtime semantics}
 Motivation: While composition works out great in most static Hoare rules it does not in HSec. Subtelty, etc., ...
 
 % EXAMPLE
@@ -657,43 +657,44 @@ Discussion, comparison with AGT:
 	reduction = pushing an environment through, instruction by instruction (analogous to \ttt{ins1(ins2(ins3(env)))} in $\lambda$/AGT-setting).
 	
 	In other words: Instructions are \textit{not} combined with others to form “simpler” instructions.
-	The difference becomes more apparent if we imagined loops as being part of our language.
+	The behavior becomes more apparent if we imagined loops as being part of our language.
 	Although HSec is like a counterpart of TApp in constructing composite terms, the dynamic semantics are quite orthogonal.
-	HSec semantically would more closely correspond to a dedicated B-combinator in AGT which would then also not provide runtime semantics.
+	HSec semantically would more closely correspond to a dedicated B-combinator - which would then also not provide runtime semantics for AGT.
 	
 	The fundamental difference is that AGT is based typing terms, giving rules to construct these terms, whereas GVER is based on typing environments, giving rules to construct functions \textit{manipulating} these environments.
 	
-	Let's pretend we had instead given rules of constructing environments and see how to derive \textit{direct} runtime semantics from that.
+	Let's pretend we had instead given rules of constructing environments (i.e. environments as values, instructions as functions on these values) and see how to derive \textit{direct} runtime semantics from that.
 	In this setting, there would have to be a rule analogous to Tapp:
 	\begin{mathpar}
 		\inferrule* [Right=TappVER]
 		{
-			\Gamma \vdash s : \phi_{pre} \rightarrow \phi_{post}\\
-			\vdash env : \phi\\
-			\phi <: \phi_{pre}
+			\Gamma \vdash s : \hat{\phi_{pre}} \rightarrow \hat{\phi_{post}}\\
+			\vdash env : \hat{\phi}\\
+			\hat{\phi} <: \hat{\phi_{pre}}
 		}
-		{ \vdash s(env) : \phi_{post} }
+		{ \vdash s(env) : \hat{\phi_{post}} }
 	\end{mathpar}
 	Leveraging our syntax:
 	\begin{mathpar}
 		\inferrule* [Right=TappVER]
 		{
-			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
-			env \vdash \phi\\
-			\phi \implies \phi_{pre}
+			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
+			env \vdash \hat{\phi}\\
+			\hat{\phi} \implies \hat{\phi_{pre}}
 		}
-		{ s(env) \vdash \phi_{post}}
+		{ s(env) \vdash \hat{\phi_{post}}}
 	\end{mathpar}
-	Which is exactly the same as:
+	Which by definition of implication is exactly the same as:
 	\begin{mathpar}
 		\inferrule* [Right=TappVER]
 		{
-			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
-			env \vdash \phi_{pre}
+			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
+			env \vdash \hat{\phi_{pre}}
 		}
-		{ s(env) \vdash \phi_{post}}
+		{ s(env) \vdash \hat{\phi_{post}}}
 	\end{mathpar}
-	Gradual version:
+	Note that this is precisely the definition of soundness, ensuring progress ($s(env)$ being defined) and preservation ($\phi_{post}$ really holding for the new environment).
+	Gradual attempt:
 	\begin{mathpar}
 		\inferrule* [Right=$\grad{\text{T}}$appVER]
 		{
@@ -702,32 +703,57 @@ Discussion, comparison with AGT:
 		}
 		{ s(env) \vdash \grad{\phi_{post}} }
 	\end{mathpar}
-	Note that the only reasonable definition of $env \vdash \grad{\phi}$ would be to see if the static part of $\grad{\phi}$ evaluates under $env$ - there is no further meaning to \qm as soon as it is evaluated.
+	Note that the only reasonable definition of $env \vdash \withqm{\phi}$ is $env \vdash \phi$ since there is no further meaning to \qm~ as soon as it is being evaluated.
 	
-	Just as it is the case with $\grad{\text{T}}$app, this rule is imprecise, requiring additional measures to ensure 
+	Just as it is the case with $\grad{\text{T}}$app, this rule is imprecise, requiring additional measures to make guarantees about runtime behavior: The gradual Hoare premise might require a concretization of $\grad{\phi_{pre}}$ that does not evaluate in $env$. 
+	% TODO: example (something with access?)
 	
-	Under which circumstances might this rule fail at runtime, i.e. when is $s(env)$ stuck?
-	From soundness of the static hoare rules, we know that it can only be stuck when the Hoare-rules didn't apply.
-	The Hoare-rules turn out to be partial functions, being undefined only if $s$ itself is malformed (you could split that part of the static semantics apart from everything involving $\phi$!) or if the precondition violates some implication.
+	Unfortunately, the gradual Hoare predicate is not transparent about its requirements for $\grad{\phi_{pre}}$.
+	Let's taking a step back and look at the regular Hoare rules:
+	They are partial functions, being undefined only if $s$ itself is malformed (you could split that part of the static semantics apart from everything involving $\phi$!) or if the precondition violates some implication.
 	
-	Let's call the thing to be implied $\text{goal}(s)$ and define it as $\true$ whenever the Hoare-rule actually doesn't require any implication to hold. We can rewrite TappVER accordingly:
+	Now, the gradual Hoare rule guarantees the well-formedness of $s$ itself since the gradualization only affects formulas.
+	The critical part is the implication, which is getting weakened by the gradualization, subsequently resulting in $\grad{\text{T}}$appVER being imprecise as illustrated above.
+	
+	Let's reiterate TappVER, trying to track the precondition requirements explicitly:
 	\begin{mathpar}
 		\inferrule* [Right=TappVER]
 		{
-			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
-			\phi_{pre} \implies \text{goal}(s)\\
-			\vdash env : \phi\\
-			\phi \implies \phi_{pre}
+			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
+			\hat{\phi_{pre}} \implies \text{goal}(s)\\
+			env \vdash \hat{\phi_{pre}}
 		}
-		{\vdash s(env) : \phi_{post}}
+		{ s(env) \vdash \hat{\phi_{post}}}
 	\end{mathpar}
+	...where $\text{goal}(s)$ is supposed to be implied by $\phi_{pre}$ according to the Hoare rule for statement $s$
+	(for Hoare rules that don't have such requirement, we define $\text{goal}(s) = \true$).
+	This can be rewritten as:
+	\begin{mathpar}
+		\inferrule* [Right=TappVER]
+		{
+			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
+			env \vdash \text{goal}(s)\\
+			env \vdash \hat{\phi_{pre}}
+		}
+		{ s(env) \vdash \hat{\phi_{post}}}
+	\end{mathpar}
+	New gradual attempt:
+	\begin{mathpar}
+		\inferrule* [Right=$\grad{\text{T}}$appVER]
+		{
+			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
+			env \vdash \text{goal}(s)\\
+			env \vdash \grad{\phi_{pre}}
+		}
+		{ s(env) \vdash \grad{\phi_{post}} }
+	\end{mathpar}
+	This time, the lifting is actually precise.
+	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \text{goal}(s)$ ($\hat{\phi}$ was simplified away earlier).
+	However, in our setting we could simplify away the subtyping/implication-judgments that can be found in AGT:
+	Since checking whether an environment has a certain type is naturally defined as a conservative approximation (to whichever type describes the environment in most detail), type-judgments can always be combined with subtyping-judgments (just making the approximation a little worse).
 	
-	
-	
-	In other words $s$
-	Recall that $s$ is total, except when there is an implication on the precondition involved in its Hoare-rule.
-	Let's call the thing to be implied $\text{goal}(s)$ and define it as $\true$ whenever the Hoare-rule actually doesn't require any implication to hold.
-	
+	Bottom line, instead of introducing evidence we end up with an additional premise $env \vdash \text{goal}(s)$ which can easily be checked at runtime.
+	% Note: optimization.
 \end{description}
 
 %Known:
@@ -738,41 +764,42 @@ Discussion, comparison with AGT:
 %&\implies \\
 %\forall \grad{\phi}, \grad{f}(\grad{g}(\grad{\phi})) &= \alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) 
 %\end{align*}
-Goal:
-\begin{align*}
-\forall \grad{\phi}, 
-\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &= \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
-&\iff \\
-\forall \grad{\phi}, 
-\grad{f}(\grad{g}(\grad{\phi})) &= \grad{f \circ g}(\grad{\phi})\\
-&\iff \\
-\text{piecewise lifting of HSec} &= \text{GHSec}\\
-\end{align*}
 
-Holds (since $\gamma \circ \alpha$ is widening):
-\begin{align*}
-\forall \grad{\phi}, 
-\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsupseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
-\end{align*}
+%Goal:
+%\begin{align*}
+%\forall \grad{\phi}, 
+%\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &= \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+%&\iff \\
+%\forall \grad{\phi}, 
+%\grad{f}(\grad{g}(\grad{\phi})) &= \grad{f \circ g}(\grad{\phi})\\
+%&\iff \\
+%\text{piecewise lifting of HSec} &= \text{GHSec}\\
+%\end{align*}
 
-Goal (solvable with $\dagger(f)$ but that is not the case for implication!):
-\begin{align*}
-\forall \grad{\phi}, 
-\forall \hat{\phi_1} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))), 
-\withqm{f(\hat{\phi_1})} &\sqsubseteq 
-\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
-&\iff \\
-\forall \grad{\phi}, 
-\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\} &\sqsubseteq 
-\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
-&\iff \\
-\forall \grad{\phi}, 
-\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\}) &\sqsubseteq
-\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\})\\
-&\iff \\
-\forall \grad{\phi}, 
-\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsubseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
-\end{align*}
+%Holds (since $\gamma \circ \alpha$ is widening):
+%\begin{align*}
+%\forall \grad{\phi}, 
+%\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsupseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+%\end{align*}
+
+%Goal (solvable with $\dagger(f)$ but that is not the case for implication!):
+%\begin{align*}
+%\forall \grad{\phi}, 
+%\forall \hat{\phi_1} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))), 
+%\withqm{f(\hat{\phi_1})} &\sqsubseteq 
+%\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
+%&\iff \\
+%\forall \grad{\phi}, 
+%\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\} &\sqsubseteq 
+%\sup \{~ \withqm{f(\hat{\phi})} ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\}\\
+%&\iff \\
+%\forall \grad{\phi}, 
+%\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))) ~\}) &\sqsubseteq
+%\alpha(\{~ f(\hat{\phi}) ~|~ \hat{\phi} \in \overline{g}(\gamma(\grad{\phi})) ~\})\\
+%&\iff \\
+%\forall \grad{\phi}, 
+%\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsubseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
+%\end{align*}
 
 
 \subsection{Lifting implication}
