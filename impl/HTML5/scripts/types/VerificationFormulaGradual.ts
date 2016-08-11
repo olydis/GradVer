@@ -4,8 +4,6 @@ import { Expression, ExpressionDot } from "./Expression";
 
 export class VerificationFormulaGradual
 {
-    private html: JQuery;
-
     public gradual: boolean;
     public staticFormula: VerificationFormula;
 
@@ -14,7 +12,6 @@ export class VerificationFormulaGradual
         var res = new VerificationFormulaGradual();
         res.gradual = gradual;
         res.staticFormula = staticFormula;
-        res.updateHTML();
         return res;
     }
 
@@ -47,8 +44,6 @@ export class VerificationFormulaGradual
         source: string = "?"
     )
     {
-        this.html = $("<span>");
-
         source = source.trim();
         this.gradual = false;
         if (source.charAt(0) == "?")
@@ -57,24 +52,13 @@ export class VerificationFormulaGradual
             source = source.substr(1).trim().substr(1);
         }
         this.staticFormula = new VerificationFormula(source);
-        this.updateHTML();
     }
 
-    private updateHTML()
+    public toString(): string
     {
-        this.html.text("");
-        var grad = $("<span>").text("?");
-        if (!this.staticFormula.isEmpty())
-            grad.append($("<span>").addClass("sepConj").text(" * "));
-        if (this.gradual)
-            this.html.append(grad);
-        if (!this.gradual || !this.staticFormula.isEmpty())
-            this.html.append(this.staticFormula.createHTML());
-    }
-
-    public createHTML(): JQuery
-    {
-        return this.html.clone();
+        if (this.staticFormula.isEmpty() && this.gradual)
+            return "?";
+        return (this.gradual ? "? * " : "") + this.staticFormula.toString();
     }
     public sfrm(fp: FootprintStatic = []): boolean
     {

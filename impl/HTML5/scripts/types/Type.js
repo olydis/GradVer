@@ -8,9 +8,6 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
     var Type = (function () {
         function Type() {
         }
-        Type.prototype.toString = function () {
-            return this.createHTML().text();
-        };
         Type.parse = function (source) {
             source = source.replace(/\s/g, "");
             var result = null;
@@ -70,8 +67,8 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 ? new TypePrimitiveInt()
                 : null;
         };
-        TypePrimitiveInt.prototype.createHTML = function () {
-            return $("<span>").text("int");
+        TypePrimitiveInt.prototype.toString = function () {
+            return "int";
         };
         TypePrimitiveInt.prototype.defaultValue = function () {
             return Expression_1.Expression.getZero();
@@ -95,8 +92,8 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
                 return null;
             return new TypeClass(source);
         };
-        TypeClass.prototype.createHTML = function () {
-            return $("<span>").text(this.C);
+        TypeClass.prototype.toString = function () {
+            return this.C;
         };
         TypeClass.prototype.defaultValue = function () {
             return Expression_1.Expression.getNull();

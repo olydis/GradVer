@@ -44,15 +44,15 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
         EditInstructions.prototype.createDynVerElement = function () {
             return $("<span>").addClass("dynCheck");
         };
-        EditInstructions.prototype.displayDynCondition = function (i, dyn, cond) {
+        EditInstructions.prototype.displayPreCondition = function (i, dyn, cond) {
             if (!dyn.satisfiable()) {
                 this.verificationFormulas[i].text("implication cannot hold").addClass("err");
                 return false;
             }
-            this.verificationFormulas[i].text("").append(cond.createHTML().text());
-            if (dyn.createHTML().text() != "true")
+            this.verificationFormulas[i].text("").append(cond.norm().toString());
+            if (dyn.toString() != "true")
                 this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
-                    .text("   +   " + dyn.createHTML().text()));
+                    .text("   +   " + dyn.toString()));
             return true;
         };
         EditInstructions.prototype.update = function () {
@@ -61,6 +61,14 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             var g = Gamma_1.GammaNew;
             var cond = this.condPre;
             for (var i = 0; i < this.statements.length; ++i) {
+                if (!cond.satisfiable()) {
+                    this.verificationFormulas[i].text("pre-condition malformed: not satisfiable").addClass("err");
+                    return;
+                }
+                if (!cond.sfrm()) {
+                    this.verificationFormulas[i].text("pre-condition malformed: not self-framed").addClass("err");
+                    return;
+                }
                 var s = this.statements[i].getStatement();
                 var errs = this.hoare.check(s, cond, g);
                 if (errs != null) {
@@ -68,13 +76,13 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
                     return;
                 }
                 var res = this.hoare.post(s, cond, g);
-                if (!this.displayDynCondition(i, res.dyn, cond))
+                if (!this.displayPreCondition(i, res.dyn, cond))
                     return;
                 cond = res.post;
                 g = res.postGamma;
             }
             var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
-            if (!this.displayDynCondition(this.statements.length, lastDyn, cond))
+            if (!this.displayPreCondition(this.statements.length, lastDyn, cond))
                 return;
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {

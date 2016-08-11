@@ -76,8 +76,8 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         ValueExpressionN.prototype.equalTo = function (other) {
             return other instanceof ValueExpressionN && other.n == this.n;
         };
-        ValueExpressionN.prototype.createHTML = function () {
-            return $("<span>").text(this.n.toString());
+        ValueExpressionN.prototype.toString = function () {
+            return this.n.toString();
         };
         ValueExpressionN.prototype.getType = function () {
             return Type_1.Type.getPrimitiveInt();
@@ -98,8 +98,8 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         ValueExpressionNull.prototype.equalTo = function (other) {
             return other instanceof ValueExpressionNull;
         };
-        ValueExpressionNull.prototype.createHTML = function () {
-            return $("<span>").text("null");
+        ValueExpressionNull.prototype.toString = function () {
+            return "null";
         };
         ValueExpressionNull.prototype.getType = function () {
             return null;

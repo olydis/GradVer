@@ -7,7 +7,7 @@ import { NormalizedEnv, EvalEnv } from "../runtime/EvalEnv";
 
 export abstract class FormulaPart
 {
-    public abstract createHTML(): JQuery;
+    public abstract toString(): string
     public abstract substs(m: (x: string) => string): FormulaPart;
     public footprintStatic(): FootprintStatic
     {
@@ -71,9 +71,9 @@ export class FormulaPartTrue extends FormulaPart
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text("true");
+        return "true";
     }
     public substs(m: (x: string) => string): FormulaPart
     {
@@ -113,14 +113,9 @@ export class FormulaPartEq extends FormulaPart
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append($("<span>").text("("))
-            .append(this.e1.createHTML())
-            .append($("<span>").text(" = "))
-            .append(this.e2.createHTML())
-            .append($("<span>").text(")"));
+        return "(" + this.e1.toString() + " = " + this.e2.toString() + ")";
     }
     public substs(m: (x: string) => string): FormulaPart
     {
@@ -170,18 +165,13 @@ export class FormulaPartNeq extends FormulaPart
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        var e1 = this.e1.createHTML();
-        var e2 = this.e2.createHTML();
-        if (e1.text() == e2.text() && e1.text() == "null")
-            return $("<span>").text("false");
-        return $("<span>")
-            .append($("<span>").text("("))
-            .append(e1)
-            .append($("<span>").text(" ≠ "))
-            .append(e2)
-            .append($("<span>").text(")"));
+        var e1 = this.e1.toString();
+        var e2 = this.e2.toString();
+        if (e1 == e2 && e1 == "null")
+            return "false";
+        return "(" + e1 + " ≠ " + e2 + ")";
     }
     public substs(m: (x: string) => string): FormulaPart
     {
@@ -234,13 +224,9 @@ export class FormulaPartAcc extends FormulaPart
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append($("<span>").text("acc("))
-            .append(this.e.createHTML())
-            .append($("<span>").text("." + this.f))
-            .append($("<span>").text(")"));
+        return "acc(" + this.e.toString() + "." + this.f + ")";
     }
     public substs(m: (x: string) => string): FormulaPart
     {
@@ -295,15 +281,11 @@ export class VerificationFormula
         return p1.parts.every((p, i) => FormulaPart.eq(p, p2.parts[i]));
     }
 
-    private html: JQuery;
-
     public constructor(
         source: string = null,
         public parts: FormulaPart[] = []
     )
     {
-        this.html = $("<span>");
-
         if (source)
         {
             this.parts = [];
@@ -311,7 +293,6 @@ export class VerificationFormula
             if (source != "")
                 this.parts = source.split("*").map(FormulaPart.parse).filter(part => part != null);
         }
-        this.updateHTML();
     }
 
     public isEmpty(): boolean
@@ -319,21 +300,10 @@ export class VerificationFormula
         return this.parts.length == 0;
     }
 
-    private updateHTML()
+    public toString(): string
     {
         var parts = this.isEmpty() ? [new FormulaPartTrue()] : this.parts;
-        this.html.text("");
-        for (var i = 0; i < parts.length; ++i)
-        {
-            if (i > 0)
-                this.html.append($("<span>").addClass("sepConj").text(" * "));
-            this.html.append(parts[i].createHTML());
-        }
-    }
-
-    public createHTML(): JQuery
-    {
-        return this.html.clone();
+        return parts.join(" * ");
     }
     public substs(m: (x: string) => string): VerificationFormula
     {
@@ -403,10 +373,11 @@ export class VerificationFormula
     {
         return this.createNormalizedEnv() != null;
     }
+    // partial function "imp" of PDF!
     public implies(phi: VerificationFormula): VerificationFormula
     {
         return phi.envImpliedBy(this.createNormalizedEnv())
-            ? phi
+            ? this
             : null;
     }
 

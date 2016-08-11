@@ -10,10 +10,6 @@ import { ExecutionEnvironment } from "../runtime/ExecutionEnvironment";
 
 export abstract class Expression
 {
-    public createHTML(): JQuery
-    {
-        return $("<span>").text(this.toString());
-    }
     public abstract substs(m: (x: string) => string): Expression;
     public subste(a: Expression, b: Expression): Expression
     {
@@ -85,7 +81,7 @@ export class ExpressionV extends Expression
 
     public toString(): string
     {
-        return this.v.createHTML().text();
+        return this.v.toString();
     }
 
     public substs(m: (x: string) => string): Expression

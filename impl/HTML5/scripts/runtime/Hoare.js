@@ -116,6 +116,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, g, onErr) {
                 var dyn = pre.impliesRuntime(s.assertion);
                 pre = pre.implies(s.assertion);
+                if (pre == null) {
+                    onErr("implication failure");
+                    return null;
+                }
                 return {
                     post: pre,
                     dyn: dyn,
@@ -126,6 +130,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 var dyn = pre.impliesRuntime(s.assertion);
                 // processing
                 pre = pre.implies(s.assertion);
+                if (pre == null) {
+                    onErr("implication failure");
+                    return null;
+                }
                 for (var _i = 0, _a = s.assertion.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
                     pre = pre.woAcc(fp.e, fp.f);
@@ -143,6 +151,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                     onErr("already defined");
                     return null;
                 }
+                pre = pre.woVar(s.x);
                 pre = pre.append(new VerificationFormula_1.FormulaPartEq(ex, s.T.defaultValue()));
                 return {
                     post: pre,

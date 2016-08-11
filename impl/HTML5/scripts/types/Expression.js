@@ -8,9 +8,6 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
     var Expression = (function () {
         function Expression() {
         }
-        Expression.prototype.createHTML = function () {
-            return $("<span>").text(this.toString());
-        };
         Expression.prototype.subste = function (a, b) {
             if (Expression.eq(a, this))
                 return b;
@@ -67,7 +64,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
                 : null;
         };
         ExpressionV.prototype.toString = function () {
-            return this.v.createHTML().text();
+            return this.v.toString();
         };
         ExpressionV.prototype.substs = function (m) {
             return this;

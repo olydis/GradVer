@@ -4,7 +4,7 @@ import { Expression } from "./Expression";
 
 export abstract class Statement
 {
-    abstract createHTML(): JQuery;
+    abstract toString(): string
 
     public static parse(source: string): Statement
     {
@@ -67,13 +67,9 @@ export class StatementMemberSet extends Statement
         return new StatementMemberSet(x, f, b);
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.x + "." + this.f)
-            .append($("<span>").text(" := "))
-            .append(this.y)
-            .append($("<span>").text(";"));
+        return this.x + "." + this.f + " := " + this.y + ";";
     }
 }
 
@@ -104,13 +100,9 @@ export class StatementAssign extends Statement
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.x)
-            .append($("<span>").text(" := "))
-            .append(this.e.createHTML())
-            .append($("<span>").text(";"));
+        return this.x + " := " + this.e.toString() + ";";
     }
 }
 
@@ -140,13 +132,9 @@ export class StatementAlloc extends Statement
         return new StatementAlloc(a, b);
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.x)
-            .append($("<span>").text(" := new "))
-            .append(this.C)
-            .append($("<span>").text(";"));
+        return this.x + " := new " + this.C + ";";
     }
 }
 
@@ -188,13 +176,9 @@ export class StatementCall extends Statement
         return new StatementCall(x, y, m, z);
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.x)
-            .append($("<span>").text(" := "))
-            .append(this.y + "." + this.m + "(" + this.z + ")")
-            .append($("<span>").text(";"));
+        return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
     }
 }
 
@@ -213,12 +197,9 @@ export class StatementReturn extends Statement
         return new StatementReturn(source.substr(6));
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append($("<span>").text("return "))
-            .append(this.x)
-            .append($("<span>").text(";"));
+        return "return " + this.x + ";";
     }
 }
 
@@ -233,12 +214,9 @@ export class StatementAssert extends Statement
         return new StatementAssert(new VerificationFormula(source.substr(6)));
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append($("<span>").text("assert "))
-            .append(this.assertion.createHTML())
-            .append($("<span>").text(";"));
+        return "assert " + this.assertion.toString() + ";";
     }
 }
 
@@ -253,12 +231,9 @@ export class StatementRelease extends Statement
         return new StatementRelease(new VerificationFormula(source.substr(7)));
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append($("<span>").text("release "))
-            .append(this.assertion.createHTML())
-            .append($("<span>").text(";"));
+        return "release " + this.assertion.toString() + ";";
     }
 }
 
@@ -281,12 +256,8 @@ export class StatementDeclare extends Statement
         return new StatementDeclare(T, srcParts[1]);
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>")
-            .append(this.T.createHTML())
-            .append($("<span>").text(" "))
-            .append(this.x)
-            .append($("<span>").text(";"));
+        return this.T.toString() + " " + this.x + ";";
     }
 }

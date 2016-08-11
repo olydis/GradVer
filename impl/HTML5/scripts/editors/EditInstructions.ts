@@ -67,17 +67,17 @@ export class EditInstructions
         this.updateGUI();
     }
 
-    private displayDynCondition(i: number, dyn: VerificationFormula, cond: VerificationFormulaGradual): boolean
+    private displayPreCondition(i: number, dyn: VerificationFormula, cond: VerificationFormulaGradual): boolean
     {
         if (!dyn.satisfiable())
         {
             this.verificationFormulas[i].text("implication cannot hold").addClass("err");
             return false;
         }
-        this.verificationFormulas[i].text("").append(cond.createHTML().text());
-        if (dyn.createHTML().text() != "true")
+        this.verificationFormulas[i].text("").append(cond.norm().toString());
+        if (dyn.toString() != "true")
             this.verificationFormulas[i].append($("<b style='font-weight: bold'>")
-                .text("   +   " + dyn.createHTML().text()));
+                .text("   +   " + dyn.toString()));
         
         return true;
     }
@@ -91,6 +91,17 @@ export class EditInstructions
         var cond = this.condPre;
         for (var i = 0; i < this.statements.length; ++i)
         {
+            if (!cond.satisfiable())
+            {
+                this.verificationFormulas[i].text("pre-condition malformed: not satisfiable").addClass("err");
+                return;
+            }
+            if (!cond.sfrm())
+            {
+                this.verificationFormulas[i].text("pre-condition malformed: not self-framed").addClass("err");
+                return;
+            }
+
             var s = this.statements[i].getStatement();
             var errs = this.hoare.check(s, cond, g);
             if (errs != null)
@@ -100,13 +111,13 @@ export class EditInstructions
             }
 
             var res = this.hoare.post(s, cond, g);
-            if (!this.displayDynCondition(i, res.dyn, cond)) return;
+            if (!this.displayPreCondition(i, res.dyn, cond)) return;
             cond = res.post;
             g = res.postGamma;
         }
 
         var lastDyn = cond.impliesRuntime(this.condPost.staticFormula);
-        if (!this.displayDynCondition(this.statements.length, lastDyn, cond)) return;
+        if (!this.displayPreCondition(this.statements.length, lastDyn, cond)) return;
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void

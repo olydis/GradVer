@@ -3,7 +3,6 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
     var VerificationFormulaGradual = (function () {
         function VerificationFormulaGradual(source) {
             if (source === void 0) { source = "?"; }
-            this.html = $("<span>");
             source = source.trim();
             this.gradual = false;
             if (source.charAt(0) == "?") {
@@ -11,13 +10,11 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 source = source.substr(1).trim().substr(1);
             }
             this.staticFormula = new VerificationFormula_1.VerificationFormula(source);
-            this.updateHTML();
         }
         VerificationFormulaGradual.create = function (gradual, staticFormula) {
             var res = new VerificationFormulaGradual();
             res.gradual = gradual;
             res.staticFormula = staticFormula;
-            res.updateHTML();
             return res;
         };
         VerificationFormulaGradual.supremum = function (a, b) {
@@ -41,18 +38,10 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             var res = VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, parts));
             return res.norm();
         };
-        VerificationFormulaGradual.prototype.updateHTML = function () {
-            this.html.text("");
-            var grad = $("<span>").text("?");
-            if (!this.staticFormula.isEmpty())
-                grad.append($("<span>").addClass("sepConj").text(" * "));
-            if (this.gradual)
-                this.html.append(grad);
-            if (!this.gradual || !this.staticFormula.isEmpty())
-                this.html.append(this.staticFormula.createHTML());
-        };
-        VerificationFormulaGradual.prototype.createHTML = function () {
-            return this.html.clone();
+        VerificationFormulaGradual.prototype.toString = function () {
+            if (this.staticFormula.isEmpty() && this.gradual)
+                return "?";
+            return (this.gradual ? "? * " : "") + this.staticFormula.toString();
         };
         VerificationFormulaGradual.prototype.sfrm = function (fp) {
             if (fp === void 0) { fp = []; }

@@ -70,12 +70,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
             var f = a.substr(dotIndex + 1);
             return new StatementMemberSet(x, f, b);
         };
-        StatementMemberSet.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.x + "." + this.f)
-                .append($("<span>").text(" := "))
-                .append(this.y)
-                .append($("<span>").text(";"));
+        StatementMemberSet.prototype.toString = function () {
+            return this.x + "." + this.f + " := " + this.y + ";";
         };
         return StatementMemberSet;
     }(Statement));
@@ -104,12 +100,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 ? new StatementAssign(a, e)
                 : null;
         };
-        StatementAssign.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.x)
-                .append($("<span>").text(" := "))
-                .append(this.e.createHTML())
-                .append($("<span>").text(";"));
+        StatementAssign.prototype.toString = function () {
+            return this.x + " := " + this.e.toString() + ";";
         };
         return StatementAssign;
     }(Statement));
@@ -138,12 +130,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
             b = b.substr(3);
             return new StatementAlloc(a, b);
         };
-        StatementAlloc.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.x)
-                .append($("<span>").text(" := new "))
-                .append(this.C)
-                .append($("<span>").text(";"));
+        StatementAlloc.prototype.toString = function () {
+            return this.x + " := new " + this.C + ";";
         };
         return StatementAlloc;
     }(Statement));
@@ -185,12 +173,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
             var z = call.substr(braceIndex + 1).replace(")", "");
             return new StatementCall(x, y, m, z);
         };
-        StatementCall.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.x)
-                .append($("<span>").text(" := "))
-                .append(this.y + "." + this.m + "(" + this.z + ")")
-                .append($("<span>").text(";"));
+        StatementCall.prototype.toString = function () {
+            return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
         };
         return StatementCall;
     }(Statement));
@@ -208,11 +192,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 return null;
             return new StatementReturn(source.substr(6));
         };
-        StatementReturn.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("return "))
-                .append(this.x)
-                .append($("<span>").text(";"));
+        StatementReturn.prototype.toString = function () {
+            return "return " + this.x + ";";
         };
         return StatementReturn;
     }(Statement));
@@ -228,11 +209,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 return null;
             return new StatementAssert(new VerificationFormula_1.VerificationFormula(source.substr(6)));
         };
-        StatementAssert.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("assert "))
-                .append(this.assertion.createHTML())
-                .append($("<span>").text(";"));
+        StatementAssert.prototype.toString = function () {
+            return "assert " + this.assertion.toString() + ";";
         };
         return StatementAssert;
     }(Statement));
@@ -248,11 +226,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 return null;
             return new StatementRelease(new VerificationFormula_1.VerificationFormula(source.substr(7)));
         };
-        StatementRelease.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("release "))
-                .append(this.assertion.createHTML())
-                .append($("<span>").text(";"));
+        StatementRelease.prototype.toString = function () {
+            return "release " + this.assertion.toString() + ";";
         };
         return StatementRelease;
     }(Statement));
@@ -275,12 +250,8 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
                 return null;
             return new StatementDeclare(T, srcParts[1]);
         };
-        StatementDeclare.prototype.createHTML = function () {
-            return $("<span>")
-                .append(this.T.createHTML())
-                .append($("<span>").text(" "))
-                .append(this.x)
-                .append($("<span>").text(";"));
+        StatementDeclare.prototype.toString = function () {
+            return this.T.toString() + " " + this.x + ";";
         };
         return StatementDeclare;
     }(Statement));

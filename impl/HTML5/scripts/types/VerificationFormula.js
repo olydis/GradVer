@@ -67,8 +67,8 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? new FormulaPartTrue()
                 : null;
         };
-        FormulaPartTrue.prototype.createHTML = function () {
-            return $("<span>").text("true");
+        FormulaPartTrue.prototype.toString = function () {
+            return "true";
         };
         FormulaPartTrue.prototype.substs = function (m) {
             return this;
@@ -105,13 +105,8 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? new FormulaPartEq(ea, eb)
                 : null;
         };
-        FormulaPartEq.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("("))
-                .append(this.e1.createHTML())
-                .append($("<span>").text(" = "))
-                .append(this.e2.createHTML())
-                .append($("<span>").text(")"));
+        FormulaPartEq.prototype.toString = function () {
+            return "(" + this.e1.toString() + " = " + this.e2.toString() + ")";
         };
         FormulaPartEq.prototype.substs = function (m) {
             return new FormulaPartEq(this.e1.substs(m), this.e2.substs(m));
@@ -159,17 +154,12 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? new FormulaPartNeq(ea, eb)
                 : null;
         };
-        FormulaPartNeq.prototype.createHTML = function () {
-            var e1 = this.e1.createHTML();
-            var e2 = this.e2.createHTML();
-            if (e1.text() == e2.text() && e1.text() == "null")
-                return $("<span>").text("false");
-            return $("<span>")
-                .append($("<span>").text("("))
-                .append(e1)
-                .append($("<span>").text(" ≠ "))
-                .append(e2)
-                .append($("<span>").text(")"));
+        FormulaPartNeq.prototype.toString = function () {
+            var e1 = this.e1.toString();
+            var e2 = this.e2.toString();
+            if (e1 == e2 && e1 == "null")
+                return "false";
+            return "(" + e1 + " ≠ " + e2 + ")";
         };
         FormulaPartNeq.prototype.substs = function (m) {
             return new FormulaPartNeq(this.e1.substs(m), this.e2.substs(m));
@@ -219,12 +209,8 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 ? new FormulaPartAcc(e, f)
                 : null;
         };
-        FormulaPartAcc.prototype.createHTML = function () {
-            return $("<span>")
-                .append($("<span>").text("acc("))
-                .append(this.e.createHTML())
-                .append($("<span>").text("." + this.f))
-                .append($("<span>").text(")"));
+        FormulaPartAcc.prototype.toString = function () {
+            return "acc(" + this.e.toString() + "." + this.f + ")";
         };
         FormulaPartAcc.prototype.substs = function (m) {
             return new FormulaPartAcc(this.e.substs(m), this.f);
@@ -258,14 +244,12 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             if (source === void 0) { source = null; }
             if (parts === void 0) { parts = []; }
             this.parts = parts;
-            this.html = $("<span>");
             if (source) {
                 this.parts = [];
                 source = source.trim();
                 if (source != "")
                     this.parts = source.split("*").map(FormulaPart.parse).filter(function (part) { return part != null; });
             }
-            this.updateHTML();
         }
         VerificationFormula.getFalse = function () {
             return new VerificationFormula(null, [new FormulaPartNeq(Expression_1.Expression.getNull(), Expression_1.Expression.getNull())]);
@@ -287,17 +271,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         VerificationFormula.prototype.isEmpty = function () {
             return this.parts.length == 0;
         };
-        VerificationFormula.prototype.updateHTML = function () {
+        VerificationFormula.prototype.toString = function () {
             var parts = this.isEmpty() ? [new FormulaPartTrue()] : this.parts;
-            this.html.text("");
-            for (var i = 0; i < parts.length; ++i) {
-                if (i > 0)
-                    this.html.append($("<span>").addClass("sepConj").text(" * "));
-                this.html.append(parts[i].createHTML());
-            }
-        };
-        VerificationFormula.prototype.createHTML = function () {
-            return this.html.clone();
+            return parts.join(" * ");
         };
         VerificationFormula.prototype.substs = function (m) {
             var frm = new VerificationFormula();
@@ -359,9 +335,10 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         VerificationFormula.prototype.satisfiable = function () {
             return this.createNormalizedEnv() != null;
         };
+        // partial function "imp" of PDF!
         VerificationFormula.prototype.implies = function (phi) {
             return phi.envImpliedBy(this.createNormalizedEnv())
-                ? phi
+                ? this
                 : null;
         };
         VerificationFormula.prototype.impliedEqualities = function () {

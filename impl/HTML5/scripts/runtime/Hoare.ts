@@ -204,6 +204,11 @@ export class Hoare
             (s, pre, g, onErr) => {
                 var dyn = pre.impliesRuntime(s.assertion);
                 pre = pre.implies(s.assertion);
+                if (pre == null)
+                {
+                    onErr("implication failure");
+                    return null;
+                }
                 
                 return {
                     post: pre,
@@ -217,6 +222,11 @@ export class Hoare
 
                 // processing
                 pre = pre.implies(s.assertion);
+                if (pre == null)
+                {
+                    onErr("implication failure");
+                    return null;
+                }
                 for (var fp of s.assertion.footprintStatic())
                     pre = pre.woAcc(fp.e, fp.f);
                 
@@ -236,6 +246,7 @@ export class Hoare
                     return null;
                 }
 
+                pre = pre.woVar(s.x);
                 pre = pre.append(new FormulaPartEq(ex, s.T.defaultValue()));
 
                 return {

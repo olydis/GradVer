@@ -29,7 +29,7 @@ export class ValueObject extends Value {
 
 export abstract class ValueExpression extends Value
 {
-    abstract createHTML(): JQuery;
+    abstract toString(): string;
     abstract getType(): Type;
 
     public abstract equalTo(other: ValueExpression): boolean;
@@ -75,9 +75,9 @@ export class ValueExpressionN extends ValueExpression
         return other instanceof ValueExpressionN && other.n == this.n;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text(this.n.toString());
+        return this.n.toString();
     }
     public getType(): Type
     {
@@ -99,9 +99,9 @@ export class ValueExpressionNull extends ValueExpression
         return other instanceof ValueExpressionNull;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text("null");
+        return "null";
     }
     public getType(): Type
     {

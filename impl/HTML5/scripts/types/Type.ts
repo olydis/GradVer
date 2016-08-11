@@ -2,13 +2,9 @@ import { Expression, ExpressionV } from "./Expression";
 
 export abstract class Type
 {
-    abstract createHTML(): JQuery;
+    abstract toString(): string
     abstract defaultValue(): Expression;
     abstract compatibleWith(other: Type): boolean;
-    public toString(): string
-    {
-        return this.createHTML().text();
-    }
 
     public static parse(source: string): Type
     {
@@ -72,9 +68,9 @@ export class TypePrimitiveInt extends Type
             : null;
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text("int");
+        return "int";
     }
     public defaultValue(): Expression
     {
@@ -100,9 +96,9 @@ export class TypeClass extends Type
         return new TypeClass(source);
     }
 
-    public createHTML(): JQuery
+    public toString(): string
     {
-        return $("<span>").text(this.C);
+        return this.C;
     }
     public defaultValue(): Expression
     {
