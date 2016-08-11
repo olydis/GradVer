@@ -647,13 +647,88 @@ Example:
 \end{itemize}
 
 Discussion, comparison with AGT:
-\begin{itemize}
-	\item 
-	AGT: reduction = composite terms (parts had explicit type annotations!) get simplified to single term.
-	For type derivations this means that ...
-	\item
-	GVER: 
-\end{itemize}
+\begin{description}
+	\item [AGT]~\\
+	reduction = composite terms (parts had explicit type annotations!) get simplified to single term.
+	
+	For type derivations this means that stuff must still be compatible, i.e. the single term must still be typeable.
+	The constructor for composite terms ($\grad{\text{T}}$App predicate) is thus not the gradual lifting of TApp - it allows constructing terms which cannot succeed at runtime.
+	\item [GVER]~\\
+	reduction = pushing an environment through, instruction by instruction (analogous to \ttt{ins1(ins2(ins3(env)))} in $\lambda$/AGT-setting).
+	
+	In other words: Instructions are \textit{not} combined with others to form “simpler” instructions.
+	The difference becomes more apparent if we imagined loops as being part of our language.
+	Although HSec is like a counterpart of TApp in constructing composite terms, the dynamic semantics are quite orthogonal.
+	HSec semantically would more closely correspond to a dedicated B-combinator in AGT which would then also not provide runtime semantics.
+	
+	The fundamental difference is that AGT is based typing terms, giving rules to construct these terms, whereas GVER is based on typing environments, giving rules to construct functions \textit{manipulating} these environments.
+	
+	Let's pretend we had instead given rules of constructing environments and see how to derive \textit{direct} runtime semantics from that.
+	In this setting, there would have to be a rule analogous to Tapp:
+	\begin{mathpar}
+		\inferrule* [Right=TappVER]
+		{
+			\Gamma \vdash s : \phi_{pre} \rightarrow \phi_{post}\\
+			\vdash env : \phi\\
+			\phi <: \phi_{pre}
+		}
+		{ \vdash s(env) : \phi_{post} }
+	\end{mathpar}
+	Leveraging our syntax:
+	\begin{mathpar}
+		\inferrule* [Right=TappVER]
+		{
+			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
+			env \vdash \phi\\
+			\phi \implies \phi_{pre}
+		}
+		{ s(env) \vdash \phi_{post}}
+	\end{mathpar}
+	Which is exactly the same as:
+	\begin{mathpar}
+		\inferrule* [Right=TappVER]
+		{
+			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
+			env \vdash \phi_{pre}
+		}
+		{ s(env) \vdash \phi_{post}}
+	\end{mathpar}
+	Gradual version:
+	\begin{mathpar}
+		\inferrule* [Right=$\grad{\text{T}}$appVER]
+		{
+			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
+			env \vdash \grad{\phi_{pre}}
+		}
+		{ s(env) \vdash \grad{\phi_{post}} }
+	\end{mathpar}
+	Note that the only reasonable definition of $env \vdash \grad{\phi}$ would be to see if the static part of $\grad{\phi}$ evaluates under $env$ - there is no further meaning to \qm as soon as it is evaluated.
+	
+	Just as it is the case with $\grad{\text{T}}$app, this rule is imprecise, requiring additional measures to ensure 
+	
+	Under which circumstances might this rule fail at runtime, i.e. when is $s(env)$ stuck?
+	From soundness of the static hoare rules, we know that it can only be stuck when the Hoare-rules didn't apply.
+	The Hoare-rules turn out to be partial functions, being undefined only if $s$ itself is malformed (you could split that part of the static semantics apart from everything involving $\phi$!) or if the precondition violates some implication.
+	
+	Let's call the thing to be implied $\text{goal}(s)$ and define it as $\true$ whenever the Hoare-rule actually doesn't require any implication to hold. We can rewrite TappVER accordingly:
+	\begin{mathpar}
+		\inferrule* [Right=TappVER]
+		{
+			\Gamma \hoare {\phi_{pre}} {s} {\phi_{post}}\\
+			\phi_{pre} \implies \text{goal}(s)\\
+			\vdash env : \phi\\
+			\phi \implies \phi_{pre}
+		}
+		{\vdash s(env) : \phi_{post}}
+	\end{mathpar}
+	
+	
+	
+	In other words $s$
+	Recall that $s$ is total, except when there is an implication on the precondition involved in its Hoare-rule.
+	Let's call the thing to be implied $\text{goal}(s)$ and define it as $\true$ whenever the Hoare-rule actually doesn't require any implication to hold.
+	
+\end{description}
 
 %Known:
 %\begin{align*}
