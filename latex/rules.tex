@@ -650,6 +650,9 @@ Example:
 Trying to “fix” GHSec statically turns out to be hard - and moves our focus on dynamic semantics. 
 
 Discussion, comparison with AGT:
+\newcommand{\goal}{\ensuremath{\textrm{goal}_{\Gamma}}}
+\newcommand{\TappVER}{\ensuremath{\textrm{TappVER}}}
+\newcommand{\GTappVER}{\ensuremath{\grad{\textrm{T}}\textrm{appVER}}}
 \begin{description}
 	\item [AGT]~\\
 	reduction = composite terms (parts had explicit type annotations!) get simplified to single term.
@@ -670,7 +673,7 @@ Discussion, comparison with AGT:
 	Let's pretend we had instead given rules of constructing environments (i.e. environments as values, instructions as functions on these values) and see how to derive \textit{direct} runtime semantics from that.
 	In this setting, there would have to be a rule analogous to Tapp:
 	\begin{mathpar}
-		\inferrule* [Right=TappVER]
+		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \vdash s : \hat{\phi_{pre}} \rightarrow \hat{\phi_{post}}\\
 			\vdash env : \hat{\phi}\\
@@ -680,7 +683,7 @@ Discussion, comparison with AGT:
 	\end{mathpar}
 	Leveraging our syntax:
 	\begin{mathpar}
-		\inferrule* [Right=TappVER]
+		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
 			env \vdash \hat{\phi}\\
@@ -690,7 +693,7 @@ Discussion, comparison with AGT:
 	\end{mathpar}
 	Which by definition of implication is exactly the same as:
 	\begin{mathpar}
-		\inferrule* [Right=TappVER]
+		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
 			env \vdash \hat{\phi_{pre}}
@@ -701,7 +704,7 @@ Discussion, comparison with AGT:
 	Gradual attempt:
 	\newcommand{\gdash}{~\grad{\vdash}~}
 	\begin{mathpar}
-		\inferrule* [Right=$\grad{\text{T}}$appVER]
+		\inferrule* [Right=\GTappVER]
 		{
 			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
 			env \gdash \grad{\phi_{pre}}
@@ -722,7 +725,7 @@ Discussion, comparison with AGT:
 	
 	Let's reiterate TappVER, trying to track the precondition requirements explicitly:
 	\begin{mathpar}
-		\inferrule* [Right=TappVER]
+		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
 			\hat{\phi_{pre}} \implies \text{goal}(s)\\
@@ -735,7 +738,7 @@ Discussion, comparison with AGT:
 	
 	This can be rewritten as:
 	\begin{mathpar}
-		\inferrule* [Right=TappVER]
+		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
 			env \vdash \text{goal}(s)\\
@@ -754,7 +757,71 @@ Discussion, comparison with AGT:
 		{ s(env) \vdash \grad{\phi_{post}} }
 	\end{mathpar}
 	This time, the lifting is actually precise.
-	% nooope, need (some) framing of \text{goal}(s)
+	Proof:
+	% Note: not as lifted function, since $env \vdash \hat{\phi_{pre}}$ actually enforces more precise result than Hoare rule!!!
+	\begin{align*}
+	&\GTappVER(\grad{\phi_{pre}}, \grad{\phi_{post}})\\
+&\implies\\
+	&\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}} ~\wedge~
+	env \gdash \withqm{\goal(s)} ~\wedge~
+	env \gdash \grad{\phi_{pre}}\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\grad{H}_{\Gamma, s}(\grad{\phi_{pre}}) = \grad{\phi_{post}} ~\wedge~
+	env \gdash \withqm{\goal(s)} ~\wedge~
+	env \gdash \grad{\phi_{pre}}\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\grad{H}_{\Gamma, s}(\grad{\phi_{pre}}) = \grad{\phi_{post}} ~\wedge~
+	env \gdash \grad{\imp}(\goal(s))(\grad{\phi_{pre}})\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\alpha(\overline{K}_{\Gamma, s}(\gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}})))) = \grad{\phi_{post}} ~\wedge~
+	env \gdash \grad{\imp}(\goal(s))(\grad{\phi_{pre}})\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\gamma(\alpha(\overline{K}_{\Gamma, s}(\gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}}))))) = \gamma(\grad{\phi_{post}}) ~\wedge~
+	env \gdash \grad{\imp}(\goal(s))(\grad{\phi_{pre}})\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\gamma(\alpha(\overline{K}_{\Gamma, s}(\gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}}))))) = \gamma(\grad{\phi_{post}}) ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}})) : ~
+	&env \vdash \hat{\phi_{pre}}\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	&\gamma(\alpha(\overline{K}_{\Gamma, s}(\gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}}))))) = \gamma(\grad{\phi_{post}}) ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}})) : ~
+	&env \vdash \hat{\phi_{pre}} ~\wedge~
+	K_{\Gamma, s}(\hat{\phi_{pre}}) \in \overline{K}_{\Gamma, s}(\gamma(\imp(\goal(s))(\grad{\phi_{pre}}))) \\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}})) : ~
+	& env \vdash \hat{\phi_{pre}} ~\wedge~
+	K_{\Gamma, s}(\hat{\phi_{pre}}) \in \gamma(\grad{\phi_{post}}) \\
+&\implies\\ % because \grad{imp} is somewhat precise!?
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}) : ~
+	& \hat{\phi_{pre}} \implies \goal(s) ~\wedge~
+	env \vdash \hat{\phi_{pre}} ~\wedge~
+	K_{\Gamma, s}(\hat{\phi_{pre}}) \in \gamma(\grad{\phi_{post}}) \\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}) : ~
+	&H_{\Gamma, s}(\hat{\phi_{pre}}) \in \gamma(\grad{\phi_{post}}) ~\wedge~
+	env ~\vdash~ \hat{\phi_{pre}}\\
+&\implies\\
+	&\Gamma ~\vdash~ s ~\wedge~\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}), \hat{\phi_{post}} \in \gamma(\grad{\phi_{post}}) : ~
+	&H_{\Gamma, s}(\hat{\phi_{pre}}) = \hat{\phi_{post}} ~\wedge~
+	env ~\vdash~ \hat{\phi_{pre}}\\
+&\implies\\
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}), \hat{\phi_{post}} \in \gamma(\grad{\phi_{post}}) : ~
+	&\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}} ~\wedge~
+	env ~\vdash~ \hat{\phi_{pre}}\\
+&\implies\\
+	\exists \hat{\phi_{pre}} \in \grad{\phi_{pre}}, \hat{\phi_{post}} \in \grad{\phi_{post}} : 
+	&\TappVER(\hat{\phi_{pre}}, \hat{\phi_{post}})
+	\end{align*}
 	
 	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \text{goal}(s)$ ($\hat{\phi}$ was simplified away earlier).
 	However, in our setting we could simplify away the subtyping/implication-judgments that can be found in AGT:
