@@ -617,8 +617,9 @@ Other condition:
 %& ~&&= \{~ \valphi{\phi'} ~|~ \exists \phi' : \emptyset \neq \valphi{\phi'} \wedge \valphi{\phi'} \subseteq \valphi{\phi} ~\} \\
 %\end{align*}
 
-\subsubsection{No liftable composition for HSec - tictating runtime semantics}
-Motivation: While composition works out great in most static Hoare rules it does not in HSec. Subtelty, etc., ...
+\subsubsection{No liftable composition for HSec - emerging runtime semantics}
+Motivation: While compositional lifting (involving $\cdot \gsc \phi$, $\wo {~} {x}$ etc.) works out great in most static Hoare rules, it does not work in HSec.
+This is due to a subtlety ($\dagger$)... TODO
 
 % EXAMPLE
 \newcommand{\phiSample}{\withqm{\phiNeq{x}{\vnull}}}
@@ -646,6 +647,8 @@ Example:
 	\end{mathpar}
 \end{itemize}
 
+Trying to “fix” GHSec statically turns out to be hard - and moves our focus on dynamic semantics. 
+
 Discussion, comparison with AGT:
 \begin{description}
 	\item [AGT]~\\
@@ -653,6 +656,7 @@ Discussion, comparison with AGT:
 	
 	For type derivations this means that stuff must still be compatible, i.e. the single term must still be typeable.
 	The constructor for composite terms ($\grad{\text{T}}$App predicate) is thus not the gradual lifting of TApp - it allows constructing terms which cannot succeed at runtime.
+	
 	\item [GVER]~\\
 	reduction = pushing an environment through, instruction by instruction (analogous to \ttt{ins1(ins2(ins3(env)))} in $\lambda$/AGT-setting).
 	
@@ -695,15 +699,16 @@ Discussion, comparison with AGT:
 	\end{mathpar}
 	Note that this is precisely the definition of soundness, ensuring progress ($s(env)$ being defined) and preservation ($\phi_{post}$ really holding for the new environment).
 	Gradual attempt:
+	\newcommand{\gdash}{~\grad{\vdash}~}
 	\begin{mathpar}
 		\inferrule* [Right=$\grad{\text{T}}$appVER]
 		{
 			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
-			env \vdash \grad{\phi_{pre}}
+			env \gdash \grad{\phi_{pre}}
 		}
 		{ s(env) \vdash \grad{\phi_{post}} }
 	\end{mathpar}
-	Note that the only reasonable definition of $env \vdash \withqm{\phi}$ is $env \vdash \phi$ since there is no further meaning to \qm~ as soon as it is being evaluated.
+	Remark: $env \gdash \grad{\phi_{pre}}$ has a very simple implementation.
 	
 	Just as it is the case with $\grad{\text{T}}$app, this rule is imprecise, requiring additional measures to make guarantees about runtime behavior: The gradual Hoare premise might require a concretization of $\grad{\phi_{pre}}$ that does not evaluate in $env$. 
 	% TODO: example (something with access?)
@@ -727,6 +732,7 @@ Discussion, comparison with AGT:
 	\end{mathpar}
 	...where $\text{goal}(s)$ is supposed to be implied by $\phi_{pre}$ according to the Hoare rule for statement $s$
 	(for Hoare rules that don't have such requirement, we define $\text{goal}(s) = \true$).
+	
 	This can be rewritten as:
 	\begin{mathpar}
 		\inferrule* [Right=TappVER]
@@ -742,8 +748,8 @@ Discussion, comparison with AGT:
 		\inferrule* [Right=$\grad{\text{T}}$appVER]
 		{
 			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
-			env \vdash \text{goal}(s)\\
-			env \vdash \grad{\phi_{pre}}
+			env \gdash \withqm{\text{goal}(s)}\\
+			env \gdash \grad{\phi_{pre}}
 		}
 		{ s(env) \vdash \grad{\phi_{post}} }
 	\end{mathpar}
@@ -754,7 +760,7 @@ Discussion, comparison with AGT:
 	However, in our setting we could simplify away the subtyping/implication-judgments that can be found in AGT:
 	Since checking whether an environment has a certain type is naturally defined as a conservative approximation (to whichever type describes the environment in most detail), type-judgments can always be combined with subtyping-judgments (just making the approximation a little worse).
 	
-	Bottom line, instead of introducing evidence we end up with an additional premise $env \vdash \text{goal}(s)$ which can easily be checked at runtime.
+	Bottom line, instead of introducing evidence we end up with an additional premise $env \vdash \withqm{\text{goal}(s)}$ which can easily be checked at runtime.
 	% Note: optimization.
 \end{description}
 

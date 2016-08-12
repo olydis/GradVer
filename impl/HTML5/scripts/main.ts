@@ -121,7 +121,7 @@ $(() =>
         {
             var pA = inputA.getFormula();
             var pB = inputB.getFormula();
-            $("#containerImpliesOutput").text(pA.implies(pB.staticFormula).toString());
+            $("#containerImpliesOutput").text(pA.implies(pB.staticFormula) + "");
         };
         update();
         $("#containerImpliesInputA").append(inputA.createHTML());
