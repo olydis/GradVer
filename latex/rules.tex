@@ -647,7 +647,7 @@ Example:
 	\end{mathpar}
 \end{itemize}
 
-Trying to “fix” GHSec statically turns out to be hard - and moves our focus on dynamic semantics. 
+Trying to “fix” GHSec statically turns out to be impossible without runtime information. That moves our focus towards dynamic semantics. 
 
 Discussion, comparison with AGT:
 \newcommand{\goal}{\ensuremath{\textrm{goal}_{\Gamma}}}
@@ -798,7 +798,7 @@ Discussion, comparison with AGT:
 	\exists \hat{\phi_{pre}} \in \gamma(\grad{\imp}(\goal(s))(\grad{\phi_{pre}})) : ~
 	& env \vdash \hat{\phi_{pre}} ~\wedge~
 	K_{\Gamma, s}(\hat{\phi_{pre}}) \in \gamma(\grad{\phi_{post}}) \\
-&\implies\\ % because \grad{imp} is somewhat precise!?
+&\implies\\ % because \grad{imp} is somewhat precise! \overline{imp} not widened by (\gamma \circ \alpha)
 	&\Gamma ~\vdash~ s ~\wedge~\\
 	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}) : ~
 	& \hat{\phi_{pre}} \implies \goal(s) ~\wedge~
