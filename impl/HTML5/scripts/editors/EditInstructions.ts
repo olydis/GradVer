@@ -69,7 +69,9 @@ export class EditInstructions
 
     private displayPreCondition(i: number, dynF: VerificationFormula, cond: VerificationFormulaGradual): boolean
     {
-        var dyn = dynF.snorm().autoFramedChecks(cond.staticFormula);
+        var condx = [cond.staticFormula];
+        condx.push(...cond.staticFormula.autoFraming().map(x => x.asFormula()));
+        var dyn = dynF.autoFramedChecks(condx);
         if (dyn.some(x => !x.satisfiable()))
         {
             throw "shouldn't have happened";

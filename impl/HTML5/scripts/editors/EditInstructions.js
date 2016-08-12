@@ -45,7 +45,9 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             return $("<span>").addClass("intermediateState");
         };
         EditInstructions.prototype.displayPreCondition = function (i, dynF, cond) {
-            var dyn = dynF.snorm().autoFramedChecks(cond.staticFormula);
+            var condx = [cond.staticFormula];
+            condx.push.apply(condx, cond.staticFormula.autoFraming().map(function (x) { return x.asFormula(); }));
+            var dyn = dynF.autoFramedChecks(condx);
             if (dyn.some(function (x) { return !x.satisfiable(); })) {
                 throw "shouldn't have happened";
             }

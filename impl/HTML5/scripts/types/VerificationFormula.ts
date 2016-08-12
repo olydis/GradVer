@@ -61,6 +61,11 @@ export abstract class FormulaPart
                 return JSON.stringify(p1) == JSON.stringify(p2);
         return false;
     }
+
+    public asFormula(): VerificationFormula
+    {
+        return new VerificationFormula(null, [this]);
+    }
 }
 
 export class FormulaPartTrue extends FormulaPart
@@ -366,33 +371,40 @@ export class VerificationFormula
         return true;
     }
 
-    public autoFramedChecks(known: VerificationFormula): VerificationFormula[]
+    public autoFraming(): FormulaPart[]
+    {
+        var framing: FootprintStatic = [];
+        for (var part of this.snorm().parts)
+            framing.push(...part.sfrmInv());
+        var framingFrm = framing.map(x => new FormulaPartAcc(x.e, x.f));
+        var partsAcc : FormulaPart[] = [];
+        for (var acc of framingFrm)
+            if (partsAcc.every(x => !FormulaPart.eq(acc, x)))
+                partsAcc.push(acc);
+        return partsAcc;
+    }
+
+    public autoFramedChecks(knowns: VerificationFormula[]): VerificationFormula[]
     {
         var parts = this.snorm().parts;
 
         // add framing
-        var framing: FootprintStatic = [];
-        for (var part of parts)
-            framing.push(...part.sfrmInv());
-        var framingFrm = framing.map(x => new FormulaPartAcc(x.e, x.f));
-        var framingFrmDistinct: FormulaPart[] = [];
-        for (var acc of framingFrm)
-            if (framingFrmDistinct.every(x => !FormulaPart.eq(acc, x)))
-                framingFrmDistinct.push(acc);
-        
-        // remove 
+        var partsAcc = this.autoFraming();
 
-        var parts = this.parts;
-        for (var i = parts.length - 1; i >= 0; --i)
-        {
-            var staticIntersectionAssume = parts.filter((x, j) => j != i);
-            var known = assumption.parts.concat(staticIntersectionAssume);
-            if (new VerificationFormula(null, known).implies(
-                new VerificationFormula(null, [parts[i]])))
-                parts = staticIntersectionAssume;
-        }
-        
-        return framingFrmDistinct.concat(parts);
+        // simpl classical
+        parts = parts.filter(x => partsAcc.every(y => 
+                                        new VerificationFormula(null, [y]).implies(
+                                        new VerificationFormula(null, [x])) == null));
+
+        for (var known of knowns)
+            parts = parts.filter(x => known.implies(new VerificationFormula(null, [x])) == null);
+
+        // simpl framing
+        for (var known of knowns)
+            partsAcc = partsAcc.filter(x => new VerificationFormula(null, known.parts.concat(parts)).implies(
+                                            new VerificationFormula(null, [x])) == null);
+
+        return parts.concat(partsAcc).map(x => new VerificationFormula(null, [x]));
     }
     
     public envImpliedBy(env: NormalizedEnv): boolean

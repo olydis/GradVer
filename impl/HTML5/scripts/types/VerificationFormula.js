@@ -54,6 +54,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             }
             return false;
         };
+        FormulaPart.prototype.asFormula = function () {
+            return new VerificationFormula(null, [this]);
+        };
         return FormulaPart;
     }());
     exports.FormulaPart = FormulaPart;
@@ -326,30 +329,39 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             }
             return true;
         };
-        VerificationFormula.prototype.autoFramedChecks = function (known) {
-            var parts = this.snorm().parts;
-            // add framing
+        VerificationFormula.prototype.autoFraming = function () {
             var framing = [];
-            for (var _i = 0, parts_1 = parts; _i < parts_1.length; _i++) {
-                var part = parts_1[_i];
+            for (var _i = 0, _a = this.snorm().parts; _i < _a.length; _i++) {
+                var part = _a[_i];
                 framing.push.apply(framing, part.sfrmInv());
             }
             var framingFrm = framing.map(function (x) { return new FormulaPartAcc(x.e, x.f); });
-            var framingFrmDistinct = [];
-            for (var _a = 0, framingFrm_1 = framingFrm; _a < framingFrm_1.length; _a++) {
-                var acc = framingFrm_1[_a];
-                if (framingFrmDistinct.every(function (x) { return !FormulaPart.eq(acc, x); }))
-                    framingFrmDistinct.push(acc);
+            var partsAcc = [];
+            for (var _b = 0, framingFrm_1 = framingFrm; _b < framingFrm_1.length; _b++) {
+                var acc = framingFrm_1[_b];
+                if (partsAcc.every(function (x) { return !FormulaPart.eq(acc, x); }))
+                    partsAcc.push(acc);
             }
-            // remove 
-            var parts = this.parts;
-            for (var i = parts.length - 1; i >= 0; --i) {
-                var staticIntersectionAssume = parts.filter(function (x, j) { return j != i; });
-                var known = assumption.parts.concat(staticIntersectionAssume);
-                if (new VerificationFormula(null, known).implies(new VerificationFormula(null, [parts[i]])))
-                    parts = staticIntersectionAssume;
+            return partsAcc;
+        };
+        VerificationFormula.prototype.autoFramedChecks = function (knowns) {
+            var parts = this.snorm().parts;
+            // add framing
+            var partsAcc = this.autoFraming();
+            // simpl classical
+            parts = parts.filter(function (x) { return partsAcc.every(function (y) {
+                return new VerificationFormula(null, [y]).implies(new VerificationFormula(null, [x])) == null;
+            }); });
+            for (var _i = 0, knowns_1 = knowns; _i < knowns_1.length; _i++) {
+                var known = knowns_1[_i];
+                parts = parts.filter(function (x) { return known.implies(new VerificationFormula(null, [x])) == null; });
             }
-            return framingFrmDistinct.concat(parts);
+            // simpl framing
+            for (var _a = 0, knowns_2 = knowns; _a < knowns_2.length; _a++) {
+                var known = knowns_2[_a];
+                partsAcc = partsAcc.filter(function (x) { return new VerificationFormula(null, known.parts.concat(parts)).implies(new VerificationFormula(null, [x])) == null; });
+            }
+            return parts.concat(partsAcc).map(function (x) { return new VerificationFormula(null, [x]); });
         };
         VerificationFormula.prototype.envImpliedBy = function (env) {
             if (env == null)
