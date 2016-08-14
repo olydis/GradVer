@@ -164,7 +164,7 @@ export class Hoare
 
                 // processing
                 pre = pre.woVar(s.x);
-                var accParts = s.e.necessaryFraming().map(a => new FormulaPartAcc(a.e, a.f));
+                var accParts = s.e.necessaryFraming().slice(0,1).map(a => new FormulaPartAcc(a.e, a.f));
                 var dyn = new VerificationFormula(null, accParts);
                 pre = pre.implies(dyn);
                 if (pre == null)

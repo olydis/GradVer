@@ -226,7 +226,7 @@ export class ExpressionDot extends Expression
     public necessaryFraming(): FootprintStatic
     {
         var res = this.e.necessaryFraming();
-        res.push({ e: this.e, f: this.f });
+        res.unshift({ e: this.e, f: this.f });
         return res;
     }
 }

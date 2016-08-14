@@ -82,7 +82,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 }
                 // processing
                 pre = pre.woVar(s.x);
-                var accParts = s.e.necessaryFraming().map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); });
+                var accParts = s.e.necessaryFraming().slice(0, 1).map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); });
                 var dyn = new VerificationFormula_1.VerificationFormula(null, accParts);
                 pre = pre.implies(dyn);
                 if (pre == null) {

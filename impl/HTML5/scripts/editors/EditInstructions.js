@@ -54,8 +54,11 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             return $("<span>").addClass("intermediateState");
         };
         EditInstructions.prototype.displayPreCondition = function (i, dynF, cond) {
-            var condx = [cond.staticFormula];
-            condx.push.apply(condx, cond.staticFormula.autoFraming().map(function (x) { return x.asFormula(); }));
+            var condClassic = cond.staticFormula.snorm();
+            var condx = cond.staticFormula
+                .autoFraming()
+                .map(function (x) { return new VerificationFormula_1.VerificationFormula(null, [x].concat(condClassic.parts)); });
+            condx.push(cond.staticFormula);
             var dyn = dynF.autoFramedChecks(condx);
             if (dyn.some(function (x) { return !x.satisfiable(); })) {
                 throw "shouldn't have happened";
@@ -94,6 +97,11 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
                 g = res.postGamma;
             }
             var lastDyn = this.condPost.staticFormula;
+            var condPost = cond.implies(lastDyn);
+            if (condPost == null) {
+                this.verificationFormulas[i].text("implication failure").addClass("err");
+                return;
+            }
             if (!this.displayPreCondition(this.statements.length, lastDyn, cond))
                 return;
         };

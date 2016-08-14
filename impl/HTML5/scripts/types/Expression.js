@@ -186,7 +186,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         };
         ExpressionDot.prototype.necessaryFraming = function () {
             var res = this.e.necessaryFraming();
-            res.push({ e: this.e, f: this.f });
+            res.unshift({ e: this.e, f: this.f });
             return res;
         };
         return ExpressionDot;

@@ -78,8 +78,11 @@ export class EditInstructions
 
     private displayPreCondition(i: number, dynF: VerificationFormula, cond: VerificationFormulaGradual): boolean
     {
-        var condx = [cond.staticFormula];
-        condx.push(...cond.staticFormula.autoFraming().map(x => x.asFormula()));
+        var condClassic = cond.staticFormula.snorm();
+        var condx = cond.staticFormula
+            .autoFraming()
+            .map(x => new VerificationFormula(null, (<FormulaPart[]>[x]).concat(condClassic.parts)));
+        condx.push(cond.staticFormula);
         var dyn = dynF.autoFramedChecks(condx);
         if (dyn.some(x => !x.satisfiable()))
         {
@@ -131,6 +134,12 @@ export class EditInstructions
         }
 
         var lastDyn = this.condPost.staticFormula;
+        var condPost = cond.implies(lastDyn);
+        if (condPost == null)
+        {
+            this.verificationFormulas[i].text("implication failure").addClass("err");
+            return;
+        }
         if (!this.displayPreCondition(this.statements.length, lastDyn, cond)) return;
     }
 
