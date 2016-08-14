@@ -437,6 +437,14 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
             var env = this.createNormalizedEnv();
             if (env != null)
                 env = part.envAdd(env);
+            if (part instanceof FormulaPartAcc) {
+                var f = part.f;
+                for (var _i = 0, _a = this.autoFraming(); _i < _a.length; _i++) {
+                    var fx = _a[_i];
+                    if (fx.f == f && env != null)
+                        env = new FormulaPartNeq(fx.e, part.e).envAdd(env);
+                }
+            }
             return env == null
                 ? VerificationFormula.getFalse()
                 : env.createFormula();

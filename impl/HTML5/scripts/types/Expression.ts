@@ -47,7 +47,7 @@ export abstract class Expression
     public static isValidX(source: string): boolean
     {
         if (source == null) return false;
-        return source.search(/^[A-Za-z]+$/) == 0;
+        return source.search(/^[A-Za-z_][A-Za-z_0-9]*$/) == 0;
     }
 
     public static getNull(): Expression

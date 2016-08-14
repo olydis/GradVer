@@ -24,15 +24,24 @@ define(["require", "exports", "./EditStatement", "../runtime/Gamma", "../types/V
             this.statements[4].setStatementX("assert (x = 3);");
         };
         EditInstructions.prototype.loadEx2 = function () {
-            while (this.numInstructions > 5)
+            while (this.numInstructions > 14)
                 this.removeInstruction(0);
-            while (this.numInstructions < 5)
+            while (this.numInstructions < 14)
                 this.insertInstruction(0);
-            this.statements[0].setStatementX("int x;");
-            this.statements[1].setStatementX("int y;");
-            this.statements[2].setStatementX("y = 3;");
-            this.statements[3].setStatementX("x = y;");
-            this.statements[4].setStatementX("assert (x = 3);");
+            this.statements[0].setStatementX("int i1;");
+            this.statements[1].setStatementX("i1 := 1;");
+            this.statements[2].setStatementX("int i2;");
+            this.statements[3].setStatementX("i2 := 2;");
+            this.statements[4].setStatementX("Point p;");
+            this.statements[5].setStatementX("p = new Point;");
+            this.statements[6].setStatementX("p.x = i1;");
+            this.statements[7].setStatementX("p.y = i2;");
+            this.statements[8].setStatementX("Points ps;");
+            this.statements[9].setStatementX("ps = new Points;");
+            this.statements[10].setStatementX("ps.h = p;");
+            this.statements[11].setStatementX("ps.t = ps;");
+            this.statements[12].setStatementX("Point q;");
+            this.statements[13].setStatementX("q = ps.t.t.t.t.h;");
         };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {

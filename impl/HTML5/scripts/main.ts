@@ -64,6 +64,7 @@ $(() =>
         $("#containerHoarePost").append(inputPost.createHTML());
 
         $("#btnEx1").click(() => code.loadEx1());
+        $("#btnEx2").click(() => code.loadEx2());
     })();
 
     // containerProps

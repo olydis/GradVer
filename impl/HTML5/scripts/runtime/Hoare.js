@@ -49,6 +49,11 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                     // processing
                     var accPart = new VerificationFormula_1.FormulaPartAcc(ex, s.f);
                     var dyn = new VerificationFormula_1.VerificationFormula(null, [accPart]);
+                    pre = pre.implies(dyn);
+                    if (pre == null) {
+                        onErr("implication failure");
+                        return null;
+                    }
                     pre = pre.woAcc(ex, s.f);
                     pre = pre.append(accPart);
                     pre = pre.append(new VerificationFormula_1.FormulaPartNeq(ex, Expression_1.Expression.getNull()));
@@ -79,6 +84,11 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                 pre = pre.woVar(s.x);
                 var accParts = s.e.necessaryFraming().map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); });
                 var dyn = new VerificationFormula_1.VerificationFormula(null, accParts);
+                pre = pre.implies(dyn);
+                if (pre == null) {
+                    onErr("implication failure");
+                    return null;
+                }
                 pre = pre.append(new VerificationFormula_1.FormulaPartEq(ex, s.e));
                 return {
                     post: pre,

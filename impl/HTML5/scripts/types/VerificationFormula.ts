@@ -371,13 +371,13 @@ export class VerificationFormula
         return true;
     }
 
-    public autoFraming(): FormulaPart[]
+    public autoFraming(): FormulaPartAcc[]
     {
         var framing: FootprintStatic = [];
         for (var part of this.snorm().parts)
             framing.push(...part.sfrmInv());
         var framingFrm = framing.map(x => new FormulaPartAcc(x.e, x.f));
-        var partsAcc : FormulaPart[] = [];
+        var partsAcc : FormulaPartAcc[] = [];
         for (var acc of framingFrm)
             if (partsAcc.every(x => !FormulaPart.eq(acc, x)))
                 partsAcc.push(acc);
@@ -497,6 +497,13 @@ export class VerificationFormula
         var env = this.createNormalizedEnv();
         if (env != null)
             env = part.envAdd(env);
+        if (part instanceof FormulaPartAcc)
+        {
+            var f = part.f;
+            for (var fx of this.autoFraming())
+                if (fx.f == f && env != null)
+                    env = new FormulaPartNeq(fx.e, part.e).envAdd(env);
+        }
         return env == null
             ? VerificationFormula.getFalse()
             : env.createFormula();

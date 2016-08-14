@@ -49,6 +49,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#containerHoarePre").append(inputPre.createHTML());
             $("#containerHoarePost").append(inputPost.createHTML());
             $("#btnEx1").click(function () { return code.loadEx1(); });
+            $("#btnEx2").click(function () { return code.loadEx2(); });
         })();
         // containerProps
         (function () {

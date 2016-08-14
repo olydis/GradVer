@@ -34,7 +34,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         Expression.isValidX = function (source) {
             if (source == null)
                 return false;
-            return source.search(/^[A-Za-z]+$/) == 0;
+            return source.search(/^[A-Za-z_][A-Za-z_0-9]*$/) == 0;
         };
         Expression.getNull = function () {
             return new ExpressionV(ValueExpression_1.ValueExpression.getNull());

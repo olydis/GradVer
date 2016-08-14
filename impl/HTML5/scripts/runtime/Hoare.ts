@@ -33,7 +33,9 @@ export class Hoare
         rule: string,
         SS: Ctor<S>,
         check: (s: S, pre: VerificationFormulaGradual, preGamma: Gamma, onErr: (msg: string) => void) => 
-                { post: VerificationFormulaGradual, dyn: VerificationFormula, postGamma: Gamma }): void
+                { post: VerificationFormulaGradual
+                , dyn: VerificationFormula
+                , postGamma: Gamma }): void
     {
         var y = StatementAlloc;
         var x: typeof y;
@@ -122,6 +124,12 @@ export class Hoare
                     // processing
                     var accPart = new FormulaPartAcc(ex, s.f);
                     var dyn = new VerificationFormula(null, [accPart]);
+                    pre = pre.implies(dyn);
+                    if (pre == null)
+                    {
+                        onErr("implication failure");
+                        return null;
+                    }
                     pre = pre.woAcc(ex, s.f);
                     pre = pre.append(accPart);
                     pre = pre.append(new FormulaPartNeq(ex, Expression.getNull()));
@@ -158,6 +166,12 @@ export class Hoare
                 pre = pre.woVar(s.x);
                 var accParts = s.e.necessaryFraming().map(a => new FormulaPartAcc(a.e, a.f));
                 var dyn = new VerificationFormula(null, accParts);
+                pre = pre.implies(dyn);
+                if (pre == null)
+                {
+                    onErr("implication failure");
+                    return null;
+                }
                 pre = pre.append(new FormulaPartEq(ex, s.e));
                 
                 return {
