@@ -5,36 +5,38 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             var _this = this;
             this.env = env;
             this.ruleHandlers = [];
-            this.addHandler("NewObject", Statement_1.StatementAlloc, function (s, pre, g, onErr) {
+            this.addHandler("NewObject", Statement_1.StatementAlloc, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var fs = _this.env.fields(s.C);
-                // check
                 if (fs == null) {
                     onErr("class '" + s.C + "' not found");
                     return null;
                 }
-                if (!new Type_1.TypeClass(s.C).compatibleWith(ex.getType(env, g))) {
-                    onErr("type mismatch");
+                var exT = ex.getType(env, g);
+                if (!new Type_1.TypeClass(s.C).compatibleWith(exT)) {
+                    onErr("type mismatch: " + s.C + " <-> " + exT);
                     return null;
                 }
-                // processing
-                pre = pre.woVar(s.x);
-                pre = pre.append(new VerificationFormula_1.FormulaPartNeq(ex, Expression_1.Expression.getNull()));
-                for (var _i = 0, fs_1 = fs; _i < fs_1.length; _i++) {
-                    var f = fs_1[_i];
-                    pre = pre.append(new VerificationFormula_1.FormulaPartAcc(ex, f.name));
-                }
                 return {
-                    post: pre,
-                    dyn: VerificationFormula_1.VerificationFormula.empty(),
+                    info: {
+                        ex: ex,
+                        fs: fs
+                    },
                     postGamma: g
                 };
+            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull()));
+                for (var _i = 0, _a = info.fs; _i < _a.length; _i++) {
+                    var f = _a[_i];
+                    pre = pre.append(new VerificationFormula_1.FormulaPartAcc(info.ex, f.name));
+                }
+                return pre;
             });
-            this.addHandler("FieldAssign", Statement_1.StatementMemberSet, function (s, pre, g, onErr) {
+            this.addHandler("FieldAssign", Statement_1.StatementMemberSet, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var ey = new Expression_1.ExpressionX(s.y);
                 var CT = ex.getType(env, g);
-                // check
                 if (CT instanceof Type_1.TypeClass) {
                     var C = CT.C;
                     var fT = _this.env.fieldType(C, s.f);
@@ -42,141 +44,224 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
                         onErr("field not found");
                         return null;
                     }
-                    if (!fT.compatibleWith(ey.getType(env, g))) {
-                        onErr("type mismatch");
+                    var eyT = ey.getType(env, g);
+                    if (!fT.compatibleWith(eyT)) {
+                        onErr("type mismatch: " + fT + " <-> " + eyT);
                         return null;
                     }
-                    // processing
-                    var accPart = new VerificationFormula_1.FormulaPartAcc(ex, s.f);
-                    var dyn = new VerificationFormula_1.VerificationFormula(null, [accPart]);
-                    pre = pre.implies(dyn);
-                    if (pre == null) {
-                        onErr("implication failure");
-                        return null;
-                    }
-                    pre = pre.woAcc(ex, s.f);
-                    pre = pre.append(accPart);
-                    pre = pre.append(new VerificationFormula_1.FormulaPartNeq(ex, Expression_1.Expression.getNull()));
-                    pre = pre.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(ex, s.f), ey));
                     return {
-                        post: pre,
-                        dyn: dyn,
+                        info: {
+                            ex: ex,
+                            ey: ey,
+                            f: s.f
+                        },
                         postGamma: g
                     };
                 }
-                onErr("type error");
+                onErr(ex + " not declared (as class type)");
                 return null;
+            }, function (info) { return new VerificationFormula_1.FormulaPartAcc(info.ex, info.f).asFormula(); }, function (info, pre) {
+                pre = pre.woAcc(info.ex, info.f);
+                pre = pre.append(new VerificationFormula_1.FormulaPartAcc(info.ex, info.f));
+                pre = pre.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull()));
+                pre = pre.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, info.f), info.ey));
+                return pre;
             });
-            this.addHandler("VarAssign", Statement_1.StatementAssign, function (s, pre, g, onErr) {
+            this.addHandler("VarAssign", Statement_1.StatementAssign, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var xT = ex.getType(env, g);
                 var eT = s.e.getType(env, g);
-                // check
                 if (xT == null) {
-                    onErr("type error");
+                    onErr(ex + " not declared");
                     return null;
                 }
                 if (!xT.compatibleWith(eT)) {
-                    onErr("type mismatch");
+                    onErr("type mismatch: " + xT + " <-> " + eT);
                     return null;
                 }
-                // processing
-                pre = pre.woVar(s.x);
-                var accParts = s.e.necessaryFraming().slice(0, 1).map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); });
-                var dyn = new VerificationFormula_1.VerificationFormula(null, accParts);
-                pre = pre.implies(dyn);
-                if (pre == null) {
-                    onErr("implication failure");
+                if (s.e.FV().indexOf(s.x) != -1) {
+                    onErr("LHS not to appear in RHS");
                     return null;
                 }
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(ex, s.e));
                 return {
-                    post: pre,
-                    dyn: dyn,
+                    info: {
+                        ex: ex,
+                        e: s.e
+                    },
                     postGamma: g
                 };
+            }, function (info) { return new VerificationFormula_1.VerificationFormula(null, info.e.necessaryFraming().slice(0, 1).map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); })); }, function (info, pre) {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.e));
+                return pre;
             });
-            this.addHandler("Return", Statement_1.StatementReturn, function (s, pre, g, onErr) {
+            this.addHandler("Return", Statement_1.StatementReturn, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var er = new Expression_1.ExpressionX(Expression_1.Expression.getResult());
                 var xT = ex.getType(env, g);
                 var rT = er.getType(env, g);
-                // check
                 if (xT == null) {
-                    onErr("type error");
+                    onErr(ex + " not declared");
                     return null;
                 }
                 if (!xT.compatibleWith(rT)) {
-                    onErr("type mismatch");
+                    onErr("type mismatch: " + xT + " <-> " + rT);
                     return null;
                 }
-                // processing
-                pre = pre.woVar(Expression_1.Expression.getResult());
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(er, ex));
                 return {
-                    post: pre,
-                    dyn: VerificationFormula_1.VerificationFormula.empty(),
+                    info: {
+                        ex: ex,
+                        er: er
+                    },
                     postGamma: g
                 };
+            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
+                pre = pre.woVar(Expression_1.Expression.getResult());
+                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.er, info.ex));
+                return pre;
             });
-            this.addHandler("Call", Statement_1.StatementCall, function (s, pre, g, onErr) {
+            this.addHandler("Call", Statement_1.StatementCall, function (s, g, onErr) {
+                var ex = new Expression_1.ExpressionX(s.x);
+                var ey = new Expression_1.ExpressionX(s.y);
+                var ez = new Expression_1.ExpressionX(s.z);
+                var exT = ex.getType(env, g);
+                var eyT = ey.getType(env, g);
+                var ezT = ez.getType(env, g);
+                if (s.x == s.y || s.x == s.z) {
+                    onErr("LHS not to appear in RHS");
+                    return null;
+                }
+                if (eyT instanceof Type_1.TypeClass) {
+                    var C = eyT.C;
+                    var m = _this.env.mmethod(C, s.m);
+                    if (m == null) {
+                        onErr("method not found");
+                        return null;
+                    }
+                    if (!m.retType.compatibleWith(exT)) {
+                        onErr("type mismatch: " + m.retType + " <-> " + exT);
+                        return null;
+                    }
+                    if (!m.argType.compatibleWith(ezT)) {
+                        onErr("type mismatch: " + m.argType + " <-> " + ezT);
+                        return null;
+                    }
+                    var p_pre = m.frmPre.substs(function (xx) {
+                        if (xx == Expression_1.Expression.getThis())
+                            return s.y;
+                        if (xx == m.argName)
+                            return s.z;
+                        return xx;
+                    });
+                    var p_post = m.frmPost.substs(function (xx) {
+                        if (xx == Expression_1.Expression.getThis())
+                            return s.y;
+                        if (xx == m.argName)
+                            return s.z;
+                        if (xx == Expression_1.Expression.getResult())
+                            return s.x;
+                        return xx;
+                    });
+                    return {
+                        info: {
+                            pre: p_pre,
+                            post: p_post,
+                            ynn: new VerificationFormula_1.FormulaPartNeq(ey, Expression_1.Expression.getNull()),
+                            x: s.x
+                        },
+                        postGamma: g
+                    };
+                }
+                onErr(ex + " not declared (as class type)");
                 return null;
+            }, function (info) { return info.pre.append(info.ynn).staticFormula; }, function (info, pre) {
+                pre = pre.woVar(info.x);
+                if (info.pre.gradual)
+                    pre = pre;
+                else
+                    for (var _i = 0, _a = info.pre.staticFormula.footprintStatic(); _i < _a.length; _i++) {
+                        var fp = _a[_i];
+                        pre = pre.woAcc(fp.e, fp.f);
+                    }
+                for (var _b = 0, _c = info.post.staticFormula.parts; _b < _c.length; _b++) {
+                    var p_part = _c[_b];
+                    pre = pre.append(p_part);
+                }
+                // TODO: gradualness of info.post!
+                return pre;
                 // throw "not implemented";
             });
-            this.addHandler("Assert", Statement_1.StatementAssert, function (s, pre, g, onErr) {
-                var dyn = s.assertion;
-                pre = pre.implies(s.assertion);
-                if (pre == null) {
-                    onErr("implication failure");
-                    return null;
-                }
+            this.addHandler("Assert", Statement_1.StatementAssert, function (s, g, onErr) {
                 return {
-                    post: pre,
-                    dyn: dyn,
+                    info: s.assertion,
                     postGamma: g
                 };
+            }, function (info) { return info; }, function (info, pre) {
+                return pre;
             });
-            this.addHandler("Release", Statement_1.StatementRelease, function (s, pre, g, onErr) {
-                var dyn = s.assertion;
-                // processing
-                pre = pre.implies(s.assertion);
-                if (pre == null) {
-                    onErr("implication failure");
-                    return null;
-                }
-                for (var _i = 0, _a = s.assertion.footprintStatic(); _i < _a.length; _i++) {
+            this.addHandler("Release", Statement_1.StatementRelease, function (s, g, onErr) {
+                return {
+                    info: s.assertion,
+                    postGamma: g
+                };
+            }, function (info) { return info; }, function (info, pre) {
+                for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
                     pre = pre.woAcc(fp.e, fp.f);
                 }
-                return {
-                    post: pre,
-                    dyn: dyn,
-                    postGamma: g
-                };
+                return pre;
             });
-            this.addHandler("Declare", Statement_1.StatementDeclare, function (s, pre, g, onErr) {
+            this.addHandler("Declare", Statement_1.StatementDeclare, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var xT = ex.getType(env, g);
                 if (xT) {
-                    onErr("already defined");
+                    onErr("conflicting declaration");
                     return null;
                 }
-                pre = pre.woVar(s.x);
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(ex, s.T.defaultValue()));
                 return {
-                    post: pre,
-                    dyn: VerificationFormula_1.VerificationFormula.empty(),
+                    info: {
+                        ex: ex,
+                        T: s.T
+                    },
                     postGamma: Gamma_1.GammaAdd(s.x, s.T, g)
                 };
+            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.T.defaultValue()));
+                return pre;
+            });
+            this.addHandler("Cast", Statement_1.StatementCast, function (s, g, onErr) {
+                return {
+                    info: s.T,
+                    postGamma: g
+                };
+            }, function (info) { return info.staticFormula; }, function (info, pre) {
+                return info;
+            });
+            this.addHandler("Comment", Statement_1.StatementComment, function (s, g, onErr) {
+                return {
+                    info: {},
+                    postGamma: g
+                };
+            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
+                return pre;
             });
         }
-        Hoare.prototype.addHandler = function (rule, SS, check) {
+        Hoare.prototype.addHandler = function (rule, SS, 
+            // returns null on error
+            checkStrucural, 
+            // cannot fail
+            checkImplication, 
+            // cannot fail
+            checkPost) {
             var y = Statement_1.StatementAlloc;
             var x;
             this.ruleHandlers.push({
                 name: rule,
                 statementMatch: function (s) { return s instanceof SS; },
-                check: check
+                checkStrucural: checkStrucural,
+                checkImplication: checkImplication,
+                checkPost: checkPost
             });
         };
         Hoare.prototype.getRule = function (s) {
@@ -190,13 +275,30 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
         Hoare.prototype.check = function (s, pre, g) {
             var rule = this.getRule(s);
             var errs = [];
-            var res = rule.check(s, pre, g, function (msg) { return errs.push(msg); });
-            return res == null ? errs : null;
+            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); });
+            if (res == null)
+                return errs;
+            var dyn = rule.checkImplication(res.info);
+            pre = pre.implies(dyn);
+            if (pre == null)
+                return ["implication failure: " + pre + " => " + dyn];
+            return null;
         };
         Hoare.prototype.post = function (s, pre, g) {
             var rule = this.getRule(s);
             var errs = [];
-            return rule.check(s, pre, g, function (msg) { return errs.push(msg); });
+            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); });
+            if (res == null)
+                throw "call check first";
+            var dyn = rule.checkImplication(res.info);
+            pre = pre.implies(dyn);
+            if (pre == null)
+                throw "call check first";
+            return {
+                post: rule.checkPost(res.info, pre),
+                dyn: dyn,
+                postGamma: res.postGamma
+            };
         };
         return Hoare;
     }());

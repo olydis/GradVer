@@ -27,9 +27,9 @@ export class EditInstructions
     }
     public loadEx2(): void
     {
-        while (this.numInstructions > 14)
+        while (this.numInstructions > 15)
             this.removeInstruction(0);
-        while (this.numInstructions < 14)
+        while (this.numInstructions < 15)
             this.insertInstruction(0);
         this.statements[0].setStatementX("int i1;");
         this.statements[1].setStatementX("i1 := 1;");
@@ -45,6 +45,7 @@ export class EditInstructions
         this.statements[11].setStatementX("ps.t = ps;");
         this.statements[12].setStatementX("Point q;");
         this.statements[13].setStatementX("q = ps.t.t.t.t.h;");
+        this.statements[14].setStatementX("assert (q.x = 1) * (q.y = 2);");
     }
 
     public get numInstructions(): number

@@ -1,4 +1,5 @@
 import { VerificationFormula } from "./VerificationFormula";
+import { VerificationFormulaGradual } from "./VerificationFormulaGradual";
 import { Type } from "./Type";
 import { Expression } from "./Expression";
 
@@ -11,9 +12,11 @@ export abstract class Statement
         var result: Statement = null;
         source = source.replace(/;$/, "");
         var sourceWS = source;
-        source = source.replace(/\s/g, "");
         try
         {
+            if (!result) result = StatementComment.parse(source);
+            source = source.replace(/\s/g, "");
+            if (!result) result = StatementCast.parse(source);
             if (!result) result = StatementCall.parse(source);
             if (!result) result = StatementAlloc.parse(source);
             if (!result) result = StatementAssert.parse(source);
@@ -259,5 +262,57 @@ export class StatementDeclare extends Statement
     public toString(): string
     {
         return this.T.toString() + " " + this.x + ";";
+    }
+}
+
+// EXTENSIONS
+
+export class StatementCast extends Statement
+{
+    public constructor(
+        public T: VerificationFormulaGradual)
+    {
+        super();
+    }
+
+    public static parse(source: string): Statement
+    {
+        source = source.trim();
+        if (source.charAt(0) != '{')
+            return null;
+        if (source.charAt(source.length - 1) != '}')
+            return null;
+        source = source.slice(1, source.length - 1);
+        return new StatementCast(new VerificationFormulaGradual(source));
+    }
+
+    public toString(): string
+    {
+        return "{ " + this.T.toString() + " }";
+    }
+}
+
+export class StatementComment extends Statement
+{
+    public constructor(
+        public comment: string)
+    {
+        super();
+    }
+
+    public static parse(source: string): Statement
+    {
+        source = source.trim();
+        if (source.charAt(0) != '/')
+            return null;
+        if (source.charAt(1) != '/')
+            return null;
+        source = source.slice(2);
+        return new StatementComment(source);
+    }
+
+    public toString(): string
+    {
+        return "//" + this.comment;
     }
 }

@@ -8,7 +8,9 @@ import { Statement,
     StatementCall,
     StatementAssert,
     StatementRelease,
-    StatementDeclare
+    StatementDeclare,
+    StatementCast,
+    StatementComment
     } from "../types/Statement";
 import { Type, TypeClass } from "../types/Type";
 import { ExpressionX, Expression, ExpressionDot, ExpressionV } from "../types/Expression";
@@ -21,28 +23,42 @@ type Ctor<T> = { new(... args: any[]): T };
 type Rule = {
         name: string,
         statementMatch: (s: Statement) => boolean,
-        check: (s: Statement, pre: VerificationFormulaGradual, preGamma: Gamma, onErr: (msg: string) => void) => 
-                { post: VerificationFormulaGradual, dyn: VerificationFormula, postGamma: Gamma },
+        checkStrucural: (s: Statement, preGamma: Gamma, onErr: (msg: string) => void) => 
+                { info: any
+                , postGamma: Gamma },
+        checkImplication: (info: any) => 
+                VerificationFormula,
+        checkPost: (info: any, pre: VerificationFormulaGradual) => 
+                VerificationFormulaGradual
     };
 
 export class Hoare
 {
     private ruleHandlers: Rule[];
 
-    private addHandler<S extends Statement>(
+    private addHandler<S extends Statement, StructuralInfo>(
         rule: string,
         SS: Ctor<S>,
-        check: (s: S, pre: VerificationFormulaGradual, preGamma: Gamma, onErr: (msg: string) => void) => 
-                { post: VerificationFormulaGradual
-                , dyn: VerificationFormula
-                , postGamma: Gamma }): void
+        // returns null on error
+        checkStrucural: (s: S, preGamma: Gamma, onErr: (msg: string) => void) => 
+                { info: StructuralInfo
+                , postGamma: Gamma },
+        // cannot fail
+        checkImplication: (info: StructuralInfo) => 
+                VerificationFormula,
+        // cannot fail
+        checkPost: (info: StructuralInfo, pre: VerificationFormulaGradual) => 
+                VerificationFormulaGradual
+        ): void
     {
         var y = StatementAlloc;
         var x: typeof y;
         this.ruleHandlers.push({
             name: rule,
             statementMatch: s => s instanceof SS,
-            check: check
+            checkStrucural: checkStrucural,
+            checkImplication: checkImplication,
+            checkPost: checkPost
         });
     }
 
@@ -56,56 +72,83 @@ export class Hoare
     public check(s: Statement, pre: VerificationFormulaGradual, g: Gamma): string[]
     {
         var rule = this.getRule(s);
+
         var errs: string[] = [];
-        var res = rule.check(s, pre, g, msg => errs.push(msg));
-        return res == null ? errs : null;
+        var res = rule.checkStrucural(s, g, msg => errs.push(msg));
+        if (res == null) 
+            return errs;
+
+        var dyn = rule.checkImplication(res.info);
+        pre = pre.implies(dyn);
+        if (pre == null)
+            return ["implication failure: " + pre + " => " + dyn];
+
+        return null;
     }
     public post(s: Statement, pre: VerificationFormulaGradual, g: Gamma): { post: VerificationFormulaGradual, dyn: VerificationFormula, postGamma: Gamma }
     {
         var rule = this.getRule(s);
+
         var errs: string[] = [];
-        return rule.check(s, pre, g, msg => errs.push(msg));
+        var res = rule.checkStrucural(s, g, msg => errs.push(msg));
+        if (res == null) 
+            throw "call check first";
+
+        var dyn = rule.checkImplication(res.info);
+        pre = pre.implies(dyn);
+        if (pre == null)
+            throw "call check first";
+
+        return {
+            post: rule.checkPost(res.info, pre),
+            dyn: dyn,
+            postGamma: res.postGamma
+        };
     }
 
     constructor(private env: ExecutionEnvironment) {
         this.ruleHandlers = [];
 
-        this.addHandler<StatementAlloc>("NewObject", StatementAlloc,
-            (s, pre, g, onErr) => {
+        this.addHandler<StatementAlloc, { ex: ExpressionX, fs: Field[] }>("NewObject", StatementAlloc,
+            (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var fs = this.env.fields(s.C);
 
-                // check
                 if (fs == null)
                 {
                     onErr("class '" + s.C + "' not found");
                     return null;
                 }
-                if (!new TypeClass(s.C).compatibleWith(ex.getType(env, g)))
+                var exT = ex.getType(env, g);
+                if (!new TypeClass(s.C).compatibleWith(exT))
                 {
-                    onErr("type mismatch");
+                    onErr("type mismatch: " + s.C + " <-> " + exT);
                     return null;
                 }
 
-                // processing
-                pre = pre.woVar(s.x);
-                pre = pre.append(new FormulaPartNeq(ex, Expression.getNull()));
-                for (var f of fs)
-                    pre = pre.append(new FormulaPartAcc(ex, f.name));
-                
                 return {
-                    post: pre,
-                    dyn: VerificationFormula.empty(),
+                    info: {
+                        ex: ex,
+                        fs: fs
+                    },
                     postGamma: g
                 };
+            },
+            (info) => VerificationFormula.empty(),
+            (info, pre) => {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new FormulaPartNeq(info.ex, Expression.getNull()));
+                for (var f of info.fs)
+                    pre = pre.append(new FormulaPartAcc(info.ex, f.name));
+                
+                return pre;
             });
-        this.addHandler<StatementMemberSet>("FieldAssign", StatementMemberSet,
-            (s, pre, g, onErr) => {
+        this.addHandler<StatementMemberSet, { ex: ExpressionX, ey: ExpressionX, f: string }>("FieldAssign", StatementMemberSet,
+            (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var ey = new ExpressionX(s.y);
                 var CT = ex.getType(env, g);
 
-                // check
                 if (CT instanceof TypeClass)
                 {
                     var C = CT.C;
@@ -115,159 +158,250 @@ export class Hoare
                         onErr("field not found");
                         return null;
                     }
-                    if (!fT.compatibleWith(ey.getType(env, g)))
+                    var eyT = ey.getType(env, g);
+                    if (!fT.compatibleWith(eyT))
                     {
-                        onErr("type mismatch");
+                        onErr("type mismatch: " + fT + " <-> " + eyT);
                         return null;
                     }
 
-                    // processing
-                    var accPart = new FormulaPartAcc(ex, s.f);
-                    var dyn = new VerificationFormula(null, [accPart]);
-                    pre = pre.implies(dyn);
-                    if (pre == null)
-                    {
-                        onErr("implication failure");
-                        return null;
-                    }
-                    pre = pre.woAcc(ex, s.f);
-                    pre = pre.append(accPart);
-                    pre = pre.append(new FormulaPartNeq(ex, Expression.getNull()));
-                    pre = pre.append(new FormulaPartEq(new ExpressionDot(ex, s.f), ey));
-                    
                     return {
-                        post: pre,
-                        dyn: dyn,
+                        info: {
+                            ex: ex,
+                            ey: ey,
+                            f: s.f
+                        },
                         postGamma: g
                     };
                 }
-                onErr("type error");
+                onErr(ex + " not declared (as class type)");
                 return null;
+            },
+            (info) => new FormulaPartAcc(info.ex, info.f).asFormula(),
+            (info, pre) => {
+                pre = pre.woAcc(info.ex, info.f);
+                pre = pre.append(new FormulaPartAcc(info.ex, info.f));
+                pre = pre.append(new FormulaPartNeq(info.ex, Expression.getNull()));
+                pre = pre.append(new FormulaPartEq(new ExpressionDot(info.ex, info.f), info.ey));
+                return pre;
             });
-        this.addHandler<StatementAssign>("VarAssign", StatementAssign,
-            (s, pre, g, onErr) => {
+        this.addHandler<StatementAssign, { ex: ExpressionX, e: Expression }>("VarAssign", StatementAssign,
+            (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var xT = ex.getType(env, g);
                 var eT = s.e.getType(env, g);
 
-                // check
                 if (xT == null)
                 {
-                    onErr("type error");
+                    onErr(ex + " not declared");
                     return null;
                 }
                 if (!xT.compatibleWith(eT))
                 {
-                    onErr("type mismatch");
+                    onErr("type mismatch: " + xT + " <-> " + eT);
                     return null;
                 }
-
-                // processing
-                pre = pre.woVar(s.x);
-                var accParts = s.e.necessaryFraming().slice(0,1).map(a => new FormulaPartAcc(a.e, a.f));
-                var dyn = new VerificationFormula(null, accParts);
-                pre = pre.implies(dyn);
-                if (pre == null)
+                if (s.e.FV().indexOf(s.x) != -1)
                 {
-                    onErr("implication failure");
+                    onErr("LHS not to appear in RHS");
                     return null;
                 }
-                pre = pre.append(new FormulaPartEq(ex, s.e));
                 
                 return {
-                    post: pre,
-                    dyn: dyn,
+                    info: {
+                        ex: ex,
+                        e: s.e
+                    },
                     postGamma: g
                 };
+            },
+            (info) => new VerificationFormula(null, info.e.necessaryFraming().slice(0,1).map(a => new FormulaPartAcc(a.e, a.f))),
+            (info, pre) => {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new FormulaPartEq(info.ex, info.e));
+                return pre;
             });
-        this.addHandler<StatementReturn>("Return", StatementReturn,
-            (s, pre, g, onErr) => {
+        this.addHandler<StatementReturn, { ex: Expression, er: Expression }>("Return", StatementReturn,
+            (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var er = new ExpressionX(Expression.getResult());
                 var xT = ex.getType(env, g);
                 var rT = er.getType(env, g);
 
-                // check
                 if (xT == null)
                 {
-                    onErr("type error");
+                    onErr(ex + " not declared");
                     return null;
                 }
                 if (!xT.compatibleWith(rT))
                 {
-                    onErr("type mismatch");
+                    onErr("type mismatch: " + xT + " <-> " + rT);
+                    return null;
+                }
+                
+                return {
+                    info: {
+                        ex: ex,
+                        er: er
+                    },
+                    postGamma: g
+                };
+            },
+            (info) => VerificationFormula.empty(),
+            (info, pre) => {
+                pre = pre.woVar(Expression.getResult());
+                pre = pre.append(new FormulaPartEq(info.er, info.ex));
+                return pre;
+            });
+        this.addHandler<StatementCall, { pre: VerificationFormulaGradual, post: VerificationFormulaGradual, ynn: FormulaPart, x: string }>("Call", StatementCall,
+            (s, g, onErr) => {
+                var ex = new ExpressionX(s.x);
+                var ey = new ExpressionX(s.y);
+                var ez = new ExpressionX(s.z);
+                var exT = ex.getType(env, g);
+                var eyT = ey.getType(env, g);
+                var ezT = ez.getType(env, g);
+
+                if (s.x == s.y || s.x == s.z)
+                {
+                    onErr("LHS not to appear in RHS");
                     return null;
                 }
 
-                // processing
-                pre = pre.woVar(Expression.getResult());
-                pre = pre.append(new FormulaPartEq(er, ex));
-                
-                return {
-                    post: pre,
-                    dyn: VerificationFormula.empty(),
-                    postGamma: g
-                };
-            });
-        this.addHandler<StatementCall>("Call", StatementCall,
-            (s, pre, g, onErr) => {
+                if (eyT instanceof TypeClass)
+                {
+                    var C = eyT.C;
+                    var m = this.env.mmethod(C, s.m);
+                    if (m == null)
+                    {
+                        onErr("method not found");
+                        return null;
+                    }
+                    if (!m.retType.compatibleWith(exT))
+                    {
+                        onErr("type mismatch: " + m.retType + " <-> " + exT);
+                        return null;
+                    }
+                    if (!m.argType.compatibleWith(ezT))
+                    {
+                        onErr("type mismatch: " + m.argType + " <-> " + ezT);
+                        return null;
+                    }
+
+                    var p_pre = m.frmPre.substs(xx => {
+                        if (xx == Expression.getThis())
+                            return s.y;
+                        if (xx == m.argName)
+                            return s.z;
+                        return xx;
+                    });
+
+                    var p_post = m.frmPost.substs(xx => {
+                        if (xx == Expression.getThis())
+                            return s.y;
+                        if (xx == m.argName)
+                            return s.z;
+                        if (xx == Expression.getResult())
+                            return s.x;
+                        return xx;
+                    });
+
+                    return {
+                        info: {
+                            pre: p_pre,
+                            post: p_post,
+                            ynn: new FormulaPartNeq(ey, Expression.getNull()),
+                            x: s.x
+                        },
+                        postGamma: g
+                    };
+                }
+                onErr(ex + " not declared (as class type)");
                 return null;
+            },
+            (info) => info.pre.append(info.ynn).staticFormula,
+            (info, pre) => {
+                pre = pre.woVar(info.x);
+                if (info.pre.gradual)
+                    pre = pre;
+                else
+                    for (var fp of info.pre.staticFormula.footprintStatic())
+                        pre = pre.woAcc(fp.e, fp.f);
+                for (var p_part of info.post.staticFormula.parts)
+                    pre = pre.append(p_part);
+                // TODO: gradualness of info.post!
+                return pre;
                 // throw "not implemented";
             });
-        this.addHandler<StatementAssert>("Assert", StatementAssert,
-            (s, pre, g, onErr) => {
-                var dyn = s.assertion;
-                pre = pre.implies(s.assertion);
-                if (pre == null)
-                {
-                    onErr("implication failure");
-                    return null;
-                }
-                
+        this.addHandler<StatementAssert, VerificationFormula>("Assert", StatementAssert,
+            (s, g, onErr) => {
                 return {
-                    post: pre,
-                    dyn: dyn,
+                    info: s.assertion,
                     postGamma: g
                 };
+            },
+            (info) => info,
+            (info, pre) => {
+                return pre;
             });
-        this.addHandler<StatementRelease>("Release", StatementRelease,
-            (s, pre, g, onErr) => {
-                var dyn = s.assertion;
-
-                // processing
-                pre = pre.implies(s.assertion);
-                if (pre == null)
-                {
-                    onErr("implication failure");
-                    return null;
-                }
-                for (var fp of s.assertion.footprintStatic())
+        this.addHandler<StatementRelease, VerificationFormula>("Release", StatementRelease,
+            (s, g, onErr) => {
+                return {
+                    info: s.assertion,
+                    postGamma: g
+                };
+            },
+            (info) => info,
+            (info, pre) => {
+                for (var fp of info.footprintStatic())
                     pre = pre.woAcc(fp.e, fp.f);
-                
-                return {
-                    post: pre,
-                    dyn: dyn,
-                    postGamma: g
-                };
+                return pre;
             });
-        this.addHandler<StatementDeclare>("Declare", StatementDeclare,
-            (s, pre, g, onErr) => {
+        this.addHandler<StatementDeclare, { ex: ExpressionX, T: Type }>("Declare", StatementDeclare,
+            (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var xT = ex.getType(env, g);
                 if (xT)
                 {
-                    onErr("already defined");
+                    onErr("conflicting declaration");
                     return null;
                 }
 
-                pre = pre.woVar(s.x);
-                pre = pre.append(new FormulaPartEq(ex, s.T.defaultValue()));
-
                 return {
-                    post: pre,
-                    dyn: VerificationFormula.empty(),
+                    info: {
+                        ex: ex,
+                        T: s.T
+                    },
                     postGamma: GammaAdd(s.x, s.T, g)
                 };
+            },
+            (info) => VerificationFormula.empty(),
+            (info, pre) => {
+                pre = pre.woVar(info.ex.x);
+                pre = pre.append(new FormulaPartEq(info.ex, info.T.defaultValue()));
+                return pre;
+            });
+        this.addHandler<StatementCast, VerificationFormulaGradual>("Cast", StatementCast,
+            (s, g, onErr) => {
+                return {
+                    info: s.T,
+                    postGamma: g
+                };
+            },
+            (info) => info.staticFormula,
+            (info, pre) => {
+                return info;
+            });
+        this.addHandler<StatementComment, { }>("Comment", StatementComment,
+            (s, g, onErr) => {
+                return {
+                    info: { },
+                    postGamma: g
+                };
+            },
+            (info) => VerificationFormula.empty(),
+            (info, pre) => {
+                return pre;
             });
     }
 

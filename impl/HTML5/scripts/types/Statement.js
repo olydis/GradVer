@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"], function (require, exports, VerificationFormula_1, Type_1, Expression_1) {
+define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGradual", "./Type", "./Expression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Type_1, Expression_1) {
     "use strict";
     var Statement = (function () {
         function Statement() {
@@ -12,8 +12,12 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
             var result = null;
             source = source.replace(/;$/, "");
             var sourceWS = source;
-            source = source.replace(/\s/g, "");
             try {
+                if (!result)
+                    result = StatementComment.parse(source);
+                source = source.replace(/\s/g, "");
+                if (!result)
+                    result = StatementCast.parse(source);
                 if (!result)
                     result = StatementCall.parse(source);
                 if (!result)
@@ -256,4 +260,47 @@ define(["require", "exports", "./VerificationFormula", "./Type", "./Expression"]
         return StatementDeclare;
     }(Statement));
     exports.StatementDeclare = StatementDeclare;
+    // EXTENSIONS
+    var StatementCast = (function (_super) {
+        __extends(StatementCast, _super);
+        function StatementCast(T) {
+            _super.call(this);
+            this.T = T;
+        }
+        StatementCast.parse = function (source) {
+            source = source.trim();
+            if (source.charAt(0) != '{')
+                return null;
+            if (source.charAt(source.length - 1) != '}')
+                return null;
+            source = source.slice(1, source.length - 1);
+            return new StatementCast(new VerificationFormulaGradual_1.VerificationFormulaGradual(source));
+        };
+        StatementCast.prototype.toString = function () {
+            return "{ " + this.T.toString() + " }";
+        };
+        return StatementCast;
+    }(Statement));
+    exports.StatementCast = StatementCast;
+    var StatementComment = (function (_super) {
+        __extends(StatementComment, _super);
+        function StatementComment(comment) {
+            _super.call(this);
+            this.comment = comment;
+        }
+        StatementComment.parse = function (source) {
+            source = source.trim();
+            if (source.charAt(0) != '/')
+                return null;
+            if (source.charAt(1) != '/')
+                return null;
+            source = source.slice(2);
+            return new StatementComment(source);
+        };
+        StatementComment.prototype.toString = function () {
+            return "//" + this.comment;
+        };
+        return StatementComment;
+    }(Statement));
+    exports.StatementComment = StatementComment;
 });
