@@ -205,3 +205,10 @@ tr td:first-child
     content: " unsatisfiable ";
     font-size: 0.7em;
 }
+
+#containerHoareContext
+{
+    white-space: pre;
+    font-family: monospace;
+    padding: 8px;
+}

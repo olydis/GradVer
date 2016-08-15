@@ -4,10 +4,11 @@ import { EditableElement } from "./editors/EditableElement";
 import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
 import { Expression, ExpressionDot } from "./types/Expression";
 import { Hoare } from "./runtime/Hoare";
-import { Program } from "./runtime/Program";
+import { Program, printProgram } from "./runtime/Program";
 import { testAll } from "./testing/MainTest";
 import { VerificationFormulaGradual } from "./types/VerificationFormulaGradual";
 import { Type, TypeClass } from "./types/Type";
+import { Statement } from "./types/Statement";
 import { VerificationFormula, FormulaPart, FormulaPartEq, FormulaPartNeq } from "./types/VerificationFormula";
 
 $(() =>
@@ -17,29 +18,91 @@ $(() =>
     var program: Program = {
         classes: [
         {
+            name: "void",
+            fields: [],
+            methods: []
+        },
+        {
             name: "Point",
             fields: [
-            {
-                name: "x",
-                type: Type.getPrimitiveInt()
-            },
-            {
-                name: "y",
-                type: Type.getPrimitiveInt()
-            }],
-            methods: []
+                {
+                    name: "x",
+                    type: Type.getPrimitiveInt()
+                },
+                {
+                    name: "y",
+                    type: Type.getPrimitiveInt()
+                }
+            ],
+            methods: [
+                // {
+                //     name: "exchange",
+                //     retType: new TypeClass("Point"),
+                //     argType: new TypeClass("Point"),
+                //     argName: "p",
+                //     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(p.x) * acc(p.y)"),
+                //     frmPost: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(p.x) * acc(p.y) * acc(result.x) * acc(result.y) * this.x = p.x * this.y = p.y"),
+                //     body: [
+                //         Statement.parse("int t;"),
+                //         Statement.parse("Point res;"),
+                //         Statement.parse("res = new Point;"),
+                //         Statement.parse("t = this.x;"),
+                //         Statement.parse("res.x = t;"),
+                //         Statement.parse("t = this.y;"),
+                //         Statement.parse("res.y = t;"),
+                //         Statement.parse("t = p.x;"),
+                //         Statement.parse("this.x = t;"),
+                //         Statement.parse("t = p.y;"),
+                //         Statement.parse("this.y = t;"),
+                //         Statement.parse("return res;"),
+
+                //         // Statement.parse("Point res;"),
+                //         // Statement.parse("res = new Point;"),
+                //         // Statement.parse("res.x = this.x;"),
+                //         // Statement.parse("res.y = this.y;"),
+                //         // Statement.parse("this.x = p.x;"),
+                //         // Statement.parse("this.y = p.y;"),
+                //         // Statement.parse("return res;"),
+                //     ]
+                // },
+                {
+                    name: "swapXY",
+                    retType: new TypeClass("Point"),
+                    argType: new TypeClass("void"),
+                    argName: "_",
+                    frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                    frmPost: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
+                    body: [
+                        Statement.parse("int t;"),
+                        Statement.parse("Point res;"),
+                        Statement.parse("res = new Point;"),
+                        Statement.parse("t = this.y;"),
+                        Statement.parse("res.x = t;"),
+                        Statement.parse("t = this.x;"),
+                        Statement.parse("res.y = t;"),
+                        Statement.parse("return res;"),
+
+                        // Statement.parse("Point res;"),
+                        // Statement.parse("res = new Point;"),
+                        // Statement.parse("res.x = this.y;"),
+                        // Statement.parse("res.y = this.x;"),
+                        // Statement.parse("return res;"),
+                    ]
+                }
+            ]
         },
         {
             name: "Points",
             fields: [
-            {
-                name: "h",
-                type: new TypeClass("Point")
-            },
-            {
-                name: "t",
-                type: new TypeClass("Points")
-            }],
+                {
+                    name: "h",
+                    type: new TypeClass("Point")
+                },
+                {
+                    name: "t",
+                    type: new TypeClass("Points")
+                }
+            ],
             methods: []
         }],
         main: []
@@ -65,6 +128,8 @@ $(() =>
 
         $("#btnEx1").click(() => code.loadEx1());
         $("#btnEx2").click(() => code.loadEx2());
+
+        $("#containerHoareContext").text(printProgram(program));
     })();
 
     // containerProps

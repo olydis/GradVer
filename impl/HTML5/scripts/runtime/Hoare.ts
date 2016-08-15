@@ -323,15 +323,20 @@ export class Hoare
             (info, pre) => {
                 pre = pre.woVar(info.x);
                 if (info.pre.gradual)
-                    pre = pre;
+                    for (var fp of pre.staticFormula.footprintStatic())
+                        pre = pre.woAcc(fp.e, fp.f);
                 else
                     for (var fp of info.pre.staticFormula.footprintStatic())
                         pre = pre.woAcc(fp.e, fp.f);
                 for (var p_part of info.post.staticFormula.parts)
                     pre = pre.append(p_part);
-                // TODO: gradualness of info.post!
+
+                // gradualness of info.post and info.pre
+                pre = VerificationFormulaGradual.create(
+                    info.pre.gradual || info.post.gradual || pre.gradual, 
+                    pre.staticFormula);
+
                 return pre;
-                // throw "not implemented";
             });
         this.addHandler<StatementAssert, VerificationFormula>("Assert", StatementAssert,
             (s, g, onErr) => {

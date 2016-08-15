@@ -1,9 +1,14 @@
-define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, MainTest_1, VerificationFormulaGradual_1, Type_1) {
+define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./runtime/Program", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type", "./types/Statement"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, Program_1, MainTest_1, VerificationFormulaGradual_1, Type_1, Statement_1) {
     "use strict";
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
         var program = {
             classes: [
+                {
+                    name: "void",
+                    fields: [],
+                    methods: []
+                },
                 {
                     name: "Point",
                     fields: [
@@ -14,8 +19,57 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "y",
                             type: Type_1.Type.getPrimitiveInt()
-                        }],
-                    methods: []
+                        }
+                    ],
+                    methods: [
+                        // {
+                        //     name: "exchange",
+                        //     retType: new TypeClass("Point"),
+                        //     argType: new TypeClass("Point"),
+                        //     argName: "p",
+                        //     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(p.x) * acc(p.y)"),
+                        //     frmPost: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(p.x) * acc(p.y) * acc(result.x) * acc(result.y) * this.x = p.x * this.y = p.y"),
+                        //     body: [
+                        //         Statement.parse("int t;"),
+                        //         Statement.parse("Point res;"),
+                        //         Statement.parse("res = new Point;"),
+                        //         Statement.parse("t = this.x;"),
+                        //         Statement.parse("res.x = t;"),
+                        //         Statement.parse("t = this.y;"),
+                        //         Statement.parse("res.y = t;"),
+                        //         Statement.parse("t = p.x;"),
+                        //         Statement.parse("this.x = t;"),
+                        //         Statement.parse("t = p.y;"),
+                        //         Statement.parse("this.y = t;"),
+                        //         Statement.parse("return res;"),
+                        //         // Statement.parse("Point res;"),
+                        //         // Statement.parse("res = new Point;"),
+                        //         // Statement.parse("res.x = this.x;"),
+                        //         // Statement.parse("res.y = this.y;"),
+                        //         // Statement.parse("this.x = p.x;"),
+                        //         // Statement.parse("this.y = p.y;"),
+                        //         // Statement.parse("return res;"),
+                        //     ]
+                        // },
+                        {
+                            name: "swapXY",
+                            retType: new Type_1.TypeClass("Point"),
+                            argType: new Type_1.TypeClass("void"),
+                            argName: "_",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
+                            body: [
+                                Statement_1.Statement.parse("int t;"),
+                                Statement_1.Statement.parse("Point res;"),
+                                Statement_1.Statement.parse("res = new Point;"),
+                                Statement_1.Statement.parse("t = this.y;"),
+                                Statement_1.Statement.parse("res.x = t;"),
+                                Statement_1.Statement.parse("t = this.x;"),
+                                Statement_1.Statement.parse("res.y = t;"),
+                                Statement_1.Statement.parse("return res;"),
+                            ]
+                        }
+                    ]
                 },
                 {
                     name: "Points",
@@ -27,7 +81,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "t",
                             type: new Type_1.TypeClass("Points")
-                        }],
+                        }
+                    ],
                     methods: []
                 }],
             main: []
@@ -50,6 +105,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#containerHoarePost").append(inputPost.createHTML());
             $("#btnEx1").click(function () { return code.loadEx1(); });
             $("#btnEx2").click(function () { return code.loadEx2(); });
+            $("#containerHoareContext").text(Program_1.printProgram(program));
         })();
         // containerProps
         (function () {

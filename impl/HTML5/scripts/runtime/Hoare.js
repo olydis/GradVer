@@ -1,4 +1,4 @@
-define(["require", "exports", "../types/VerificationFormula", "../types/Statement", "../types/Type", "../types/Expression", "./Gamma"], function (require, exports, VerificationFormula_1, Statement_1, Type_1, Expression_1, Gamma_1) {
+define(["require", "exports", "../types/VerificationFormula", "../types/VerificationFormulaGradual", "../types/Statement", "../types/Type", "../types/Expression", "./Gamma"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Statement_1, Type_1, Expression_1, Gamma_1) {
     "use strict";
     var Hoare = (function () {
         function Hoare(env) {
@@ -177,19 +177,22 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Statemen
             }, function (info) { return info.pre.append(info.ynn).staticFormula; }, function (info, pre) {
                 pre = pre.woVar(info.x);
                 if (info.pre.gradual)
-                    pre = pre;
-                else
-                    for (var _i = 0, _a = info.pre.staticFormula.footprintStatic(); _i < _a.length; _i++) {
+                    for (var _i = 0, _a = pre.staticFormula.footprintStatic(); _i < _a.length; _i++) {
                         var fp = _a[_i];
                         pre = pre.woAcc(fp.e, fp.f);
                     }
-                for (var _b = 0, _c = info.post.staticFormula.parts; _b < _c.length; _b++) {
-                    var p_part = _c[_b];
+                else
+                    for (var _b = 0, _c = info.pre.staticFormula.footprintStatic(); _b < _c.length; _b++) {
+                        var fp = _c[_b];
+                        pre = pre.woAcc(fp.e, fp.f);
+                    }
+                for (var _d = 0, _e = info.post.staticFormula.parts; _d < _e.length; _d++) {
+                    var p_part = _e[_d];
                     pre = pre.append(p_part);
                 }
-                // TODO: gradualness of info.post!
+                // gradualness of info.post and info.pre
+                pre = VerificationFormulaGradual_1.VerificationFormulaGradual.create(info.pre.gradual || info.post.gradual || pre.gradual, pre.staticFormula);
                 return pre;
-                // throw "not implemented";
             });
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, g, onErr) {
                 return {
