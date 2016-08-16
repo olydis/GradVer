@@ -90,6 +90,12 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 return VerificationFormulaGradual.create(false, sf);
             }
         };
+        VerificationFormulaGradual.prototype.eval = function (env) {
+            var frm = this.staticFormula.autoFraming();
+            if (!this.staticFormula.eval(env))
+                return false;
+            return frm.every(function (acc) { return acc.eval(env); });
+        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;

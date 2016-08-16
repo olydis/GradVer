@@ -12,12 +12,14 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             res[o] = cloneHeapEntry(H[o]);
         return res;
     }
+    exports.cloneHeap = cloneHeap;
     function cloneRho(rho) {
         var res = {};
         for (var x in rho)
             res[x] = rho[x];
         return res;
     }
+    exports.cloneRho = cloneRho;
     function cloneAccess(A) {
         var res = [];
         for (var _i = 0, A_1 = A; _i < A_1.length; _i++) {
@@ -26,11 +28,13 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
         }
         return res;
     }
+    exports.cloneAccess = cloneAccess;
     function cloneEvalEnv(env) {
         return { H: cloneHeap(env.H),
             r: cloneRho(env.r),
             A: cloneAccess(env.A) };
     }
+    exports.cloneEvalEnv = cloneEvalEnv;
     var NormalizedEnv = (function () {
         function NormalizedEnv(ineq, env) {
             if (ineq === void 0) { ineq = []; }

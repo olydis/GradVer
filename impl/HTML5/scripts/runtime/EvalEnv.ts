@@ -23,28 +23,28 @@ function cloneHeapEntry(He: HeapEntry): HeapEntry
         res.fs[f] = He.fs[f];
     return res;
 }
-function cloneHeap(H: Heap): Heap
+export function cloneHeap(H: Heap): Heap
 {
     var res: Heap = {};
     for (var o in H)
         res[o] = cloneHeapEntry(H[o]);
     return res;
 }
-function cloneRho(rho: Rho): Rho
+export function cloneRho(rho: Rho): Rho
 {
     var res: Rho = {};
     for (var x in rho)
         res[x] = rho[x];
     return res;
 }
-function cloneAccess(A: FootprintDynamic): FootprintDynamic
+export function cloneAccess(A: FootprintDynamic): FootprintDynamic
 {
     var res: FootprintDynamic = [];
     for (var a of A)
         res.push({o: a.o, f: a.f});
     return res;
 }
-function cloneEvalEnv(env: EvalEnv): EvalEnv
+export function cloneEvalEnv(env: EvalEnv): EvalEnv
 {
     return { H: cloneHeap(env.H)
            , r: cloneRho(env.r)

@@ -3,7 +3,7 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGradual", "./Type", "./Expression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Type_1, Expression_1) {
+define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGradual", "./Type", "./Expression", "../runtime/StackEnv", "./ValueExpression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Type_1, Expression_1, StackEnv_1, ValueExpression_1) {
     "use strict";
     var Statement = (function () {
         function Statement() {
@@ -77,6 +77,27 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementMemberSet.prototype.toString = function () {
             return this.x + "." + this.f + " := " + this.y + ";";
         };
+        StatementMemberSet.prototype.smallStep = function (env, context) {
+            var _this = this;
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            var o = new Expression_1.ExpressionX(this.x).eval(envx);
+            if (o instanceof ValueExpression_1.ValueObject) {
+                if (!envx.A.some(function (a) { return a.o == o.UID && a.f == _this.f; }))
+                    return null;
+                var v = new Expression_1.ExpressionX(this.y).eval(envx);
+                if (v == null)
+                    return null;
+                var Hentry = env.H[o.UID];
+                if (Hentry == null || Hentry.fs == null)
+                    return null;
+                Hentry.fs[this.f] = v;
+                return env;
+            }
+            return null;
+        };
         return StatementMemberSet;
     }(Statement));
     exports.StatementMemberSet = StatementMemberSet;
@@ -107,6 +128,17 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementAssign.prototype.toString = function () {
             return this.x + " := " + this.e.toString() + ";";
         };
+        StatementAssign.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            var v = this.e.eval(envx);
+            if (v == null)
+                return null;
+            StackEnv_1.topEnv(env).r[this.x] = v;
+            return env;
+        };
         return StatementAssign;
     }(Statement));
     exports.StatementAssign = StatementAssign;
@@ -136,6 +168,27 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         };
         StatementAlloc.prototype.toString = function () {
             return this.x + " := new " + this.C + ";";
+        };
+        StatementAlloc.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            var vo = new ValueExpression_1.ValueObject();
+            var o = vo.UID;
+            if (envx.H[o] != null)
+                return null;
+            var fs = context.fields(this.C);
+            if (fs == null)
+                return null;
+            StackEnv_1.topEnv(env).H[o] = { C: this.C, fs: {} };
+            StackEnv_1.topEnv(env).r[this.x] = vo;
+            for (var _i = 0, fs_1 = fs; _i < fs_1.length; _i++) {
+                var f = fs_1[_i];
+                StackEnv_1.topEnv(env).H[o].fs[f.name] = f.type.defaultValue().eval(envx);
+                StackEnv_1.topEnv(env).A.push({ o: o, f: f.name });
+            }
+            return env;
         };
         return StatementAlloc;
     }(Statement));
@@ -180,6 +233,56 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementCall.prototype.toString = function () {
             return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
         };
+        StatementCall.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            var vo = new Expression_1.ExpressionX(this.y).eval(envx);
+            if (vo instanceof ValueExpression_1.ValueObject) {
+                var o = vo.UID;
+                var Hentry = envx.H[o];
+                if (Hentry == null)
+                    return null;
+                var m = context.mmethod(Hentry.C, this.m);
+                if (m == null || m.name != this.m)
+                    return null;
+                if (env.S[env.S.length - 1].ss.length != 0) {
+                    if (env.S[env.S.length - 1].ss[0] != this)
+                        throw "dispatch failure";
+                    var v = new Expression_1.ExpressionX(this.z).eval(envx);
+                    if (v == null)
+                        return null;
+                    var rr = {};
+                    rr[Expression_1.Expression.getResult()] = m.retType.defaultValue().eval(envx);
+                    rr[Expression_1.Expression.getThis()] = vo;
+                    rr[m.argName] = v;
+                    if (!m.frmPre.eval(envx))
+                        return null;
+                    var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
+                    StackEnv_1.topEnv(env).A = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+                    env.S.push({
+                        r: rr,
+                        A: AA,
+                        ss: m.body
+                    });
+                }
+                else {
+                    env.S.pop();
+                    if (env.S[env.S.length - 1].ss.shift() != this)
+                        throw "dispatch failure";
+                    if (!m.frmPost.eval(envx))
+                        return null;
+                    var vr = new Expression_1.ExpressionX(Expression_1.Expression.getResult()).eval(envx);
+                    if (vr == null)
+                        return null;
+                    StackEnv_1.topEnv(env).r[this.x] = vr;
+                    (_a = StackEnv_1.topEnv(env).A).push.apply(_a, envx.A);
+                }
+                return env;
+            }
+            else
+                return null;
+            var _a;
+        };
         return StatementCall;
     }(Statement));
     exports.StatementCall = StatementCall;
@@ -199,6 +302,17 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementReturn.prototype.toString = function () {
             return "return " + this.x + ";";
         };
+        StatementReturn.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            var v = new Expression_1.ExpressionX(this.x).eval(envx);
+            if (v == null)
+                return null;
+            StackEnv_1.topEnv(env).r[Expression_1.Expression.getResult()] = v;
+            return env;
+        };
         return StatementReturn;
     }(Statement));
     exports.StatementReturn = StatementReturn;
@@ -216,6 +330,15 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementAssert.prototype.toString = function () {
             return "assert " + this.assertion.toString() + ";";
         };
+        StatementAssert.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            if (!this.assertion.eval(envx))
+                return null;
+            return env;
+        };
         return StatementAssert;
     }(Statement));
     exports.StatementAssert = StatementAssert;
@@ -232,6 +355,17 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         };
         StatementRelease.prototype.toString = function () {
             return "release " + this.assertion.toString() + ";";
+        };
+        StatementRelease.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            if (!this.assertion.eval(envx))
+                return null;
+            var AA = this.assertion.footprintDynamic(envx);
+            StackEnv_1.topEnv(env).A = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+            return env;
         };
         return StatementRelease;
     }(Statement));
@@ -257,6 +391,14 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementDeclare.prototype.toString = function () {
             return this.T.toString() + " " + this.x + ";";
         };
+        StatementDeclare.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
+            StackEnv_1.topEnv(env).r[this.x] = this.T.defaultValue().eval(envx);
+            return env;
+        };
         return StatementDeclare;
     }(Statement));
     exports.StatementDeclare = StatementDeclare;
@@ -279,6 +421,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementCast.prototype.toString = function () {
             return "{ " + this.T.toString() + " }";
         };
+        StatementCast.prototype.smallStep = function (env, context) {
+            return env;
+        };
         return StatementCast;
     }(Statement));
     exports.StatementCast = StatementCast;
@@ -299,6 +444,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         };
         StatementComment.prototype.toString = function () {
             return "//" + this.comment;
+        };
+        StatementComment.prototype.smallStep = function (env, context) {
+            return env;
         };
         return StatementComment;
     }(Statement));

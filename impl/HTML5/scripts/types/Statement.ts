@@ -1,11 +1,16 @@
 import { VerificationFormula } from "./VerificationFormula";
 import { VerificationFormulaGradual } from "./VerificationFormulaGradual";
 import { Type } from "./Type";
-import { Expression } from "./Expression";
+import { Expression, ExpressionX } from "./Expression";
+import { StackEnv, cloneStackEnv, topEnv } from "../runtime/StackEnv";
+import { ExecutionEnvironment } from "../runtime/ExecutionEnvironment";
+import { Rho } from "../runtime/EvalEnv";
+import { ValueObject } from "./ValueExpression";
 
 export abstract class Statement
 {
-    abstract toString(): string
+    abstract toString(): string;
+    public abstract smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv;
 
     public static parse(source: string): Statement
     {
@@ -74,6 +79,32 @@ export class StatementMemberSet extends Statement
     {
         return this.x + "." + this.f + " := " + this.y + ";";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        var o = new ExpressionX(this.x).eval(envx);
+        if (o instanceof ValueObject)
+        {
+            if (!envx.A.some(a => a.o == o.UID && a.f == this.f))
+                return null;
+
+            var v = new ExpressionX(this.y).eval(envx);
+            if (v == null)
+                return null;
+
+            var Hentry = env.H[o.UID];
+            if (Hentry == null || Hentry.fs == null)
+                return null;
+
+            Hentry.fs[this.f] = v;
+            return env;
+        }
+        return null;
+    }
 }
 
 export class StatementAssign extends Statement
@@ -107,6 +138,20 @@ export class StatementAssign extends Statement
     {
         return this.x + " := " + this.e.toString() + ";";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        var v = this.e.eval(envx);
+        if (v == null)
+            return null;
+
+        topEnv(env).r[this.x] = v;
+        return env;
+    }
 }
 
 export class StatementAlloc extends Statement
@@ -138,6 +183,32 @@ export class StatementAlloc extends Statement
     public toString(): string
     {
         return this.x + " := new " + this.C + ";";
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        var vo = new ValueObject();
+        var o = vo.UID;
+        if (envx.H[o] != null)
+            return null;
+
+        var fs = context.fields(this.C);
+        if (fs == null)
+            return null;
+
+        topEnv(env).H[o] = { C: this.C, fs: { } };
+
+        topEnv(env).r[this.x] = vo;
+        for (var f of fs)
+        {
+            topEnv(env).H[o].fs[f.name] = f.type.defaultValue().eval(envx);
+            topEnv(env).A.push({ o: o, f: f.name });
+        }
+        return env;
     }
 }
 
@@ -183,6 +254,71 @@ export class StatementCall extends Statement
     {
         return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+
+        var vo = new ExpressionX(this.y).eval(envx);
+        if (vo instanceof ValueObject)
+        {
+            var o = vo.UID;
+
+            var Hentry = envx.H[o];
+            if (Hentry == null)
+                return null;
+
+            var m = context.mmethod(Hentry.C, this.m);
+            if (m == null || m.name != this.m)
+                return null;
+
+            if (env.S[env.S.length - 1].ss.length != 0)
+            { // ESApp
+                if (env.S[env.S.length - 1].ss[0] != this)
+                    throw "dispatch failure";
+
+                var v = new ExpressionX(this.z).eval(envx);
+                if (v == null)
+                    return null;
+
+                var rr: Rho = {};
+                rr[Expression.getResult()] = m.retType.defaultValue().eval(envx);
+                rr[Expression.getThis()] = vo;
+                rr[m.argName] = v;
+
+                if (!m.frmPre.eval(envx))
+                    return null;
+
+                var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
+                topEnv(env).A = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
+                env.S.push({
+                    r: rr,
+                    A: AA,
+                    ss: m.body
+                });
+            }
+            else
+            { // ESAppFinish
+                env.S.pop();
+                if (env.S[env.S.length - 1].ss.shift() != this)
+                    throw "dispatch failure";
+
+                if (!m.frmPost.eval(envx))
+                    return null;
+
+                var vr = new ExpressionX(Expression.getResult()).eval(envx);
+                if (vr == null)
+                    return null;
+
+                topEnv(env).r[this.x] = vr;
+                topEnv(env).A.push(...envx.A);
+            }
+
+            return env;
+        }
+        else
+            return null;
+    }
 }
 
 export class StatementReturn extends Statement
@@ -204,6 +340,20 @@ export class StatementReturn extends Statement
     {
         return "return " + this.x + ";";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        var v = new ExpressionX(this.x).eval(envx);
+        if (v == null)
+            return null;
+
+        topEnv(env).r[Expression.getResult()] = v;
+        return env;
+    }
 }
 
 export class StatementAssert extends Statement
@@ -221,6 +371,18 @@ export class StatementAssert extends Statement
     {
         return "assert " + this.assertion.toString() + ";";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        if (!this.assertion.eval(envx))
+            return null;
+
+        return env;
+    }
 }
 
 export class StatementRelease extends Statement
@@ -237,6 +399,20 @@ export class StatementRelease extends Statement
     public toString(): string
     {
         return "release " + this.assertion.toString() + ";";
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        if (!this.assertion.eval(envx))
+            return null;
+
+        var AA = this.assertion.footprintDynamic(envx);
+        topEnv(env).A = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
+        return env;
     }
 }
 
@@ -262,6 +438,16 @@ export class StatementDeclare extends Statement
     public toString(): string
     {
         return this.T.toString() + " " + this.x + ";";
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
+        topEnv(env).r[this.x] = this.T.defaultValue().eval(envx);
+        return env;
     }
 }
 
@@ -290,6 +476,10 @@ export class StatementCast extends Statement
     {
         return "{ " + this.T.toString() + " }";
     }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        return env;
+    }
 }
 
 export class StatementComment extends Statement
@@ -314,5 +504,9 @@ export class StatementComment extends Statement
     public toString(): string
     {
         return "//" + this.comment;
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        return env;
     }
 }

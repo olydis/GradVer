@@ -1,6 +1,7 @@
 import { VerificationFormula, FormulaPartAcc, FormulaPartNeq, FormulaPartEq, FormulaPart } from "./VerificationFormula";
 import { FootprintStatic } from "./Footprint";
 import { Expression, ExpressionDot } from "./Expression";
+import { EvalEnv } from "../runtime/EvalEnv";
 
 export class VerificationFormulaGradual
 {
@@ -119,5 +120,13 @@ export class VerificationFormulaGradual
                 return null;
             return VerificationFormulaGradual.create(false, sf);
         }
+    }
+
+    public eval(env: EvalEnv): boolean
+    {
+        var frm = this.staticFormula.autoFraming();
+        if (!this.staticFormula.eval(env))
+            return false;
+        return frm.every(acc => acc.eval(env));
     }
 }
