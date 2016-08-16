@@ -164,9 +164,10 @@
 \\ &e			&&::= \ev{$v$}
 				  ~|~ \ex{$x$}
 				  ~|~ \edot{$e$}{$f$}
-\\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other \rangle
+\\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other~name \rangle
 \\ &v			&&::= o ~|~ n ~|~ \vnull
 \\ &n			&&\in~~ \mathbb{Z}
+\\ &C, f, m		&&::=  \langle name \rangle
 \\				  
 \\ &H			&&\in~~ (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
 \\ &\rho		&&\in~~ (x \rightharpoonup v)
@@ -728,7 +729,7 @@ Discussion, comparison with AGT:
 		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
-			\hat{\phi_{pre}} \implies \text{goal}(s)\\
+			\hat{\phi_{pre}} \implies \goal(s)\\
 			env \vdash \hat{\phi_{pre}}
 		}
 		{ s(env) \vdash \hat{\phi_{post}}}
@@ -741,7 +742,7 @@ Discussion, comparison with AGT:
 		\inferrule* [Right=\TappVER]
 		{
 			\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}}\\
-			env \vdash \text{goal}(s)\\
+			env \vdash \goal(s)\\
 			env \vdash \hat{\phi_{pre}}
 		}
 		{ s(env) \vdash \hat{\phi_{post}}}
@@ -751,7 +752,7 @@ Discussion, comparison with AGT:
 		\inferrule* [Right=$\grad{\text{T}}$appVER]
 		{
 			\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}}\\
-			env \gdash \withqm{\text{goal}(s)}\\
+			env \gdash \withqm{\goal(s)}\\
 			env \gdash \grad{\phi_{pre}}
 		}
 		{ s(env) \vdash \grad{\phi_{post}} }
@@ -760,7 +761,7 @@ Discussion, comparison with AGT:
 	Proof:
 	% Note: not as lifted function, since $env \vdash \hat{\phi_{pre}}$ actually enforces more precise result than Hoare rule!!!
 	\begin{align*}
-	&\GTappVER(\grad{\phi_{pre}}, \grad{\phi_{post}})\\
+	&\GTappVER_{\Gamma, s, env}(\grad{\phi_{pre}}, \grad{\phi_{post}})\\
 &\implies\\
 	&\Gamma~ \ghoare {\grad{\phi_{pre}}} {s} {\grad{\phi_{post}}} ~\wedge~
 	env \gdash \withqm{\goal(s)} ~\wedge~
@@ -819,8 +820,8 @@ Discussion, comparison with AGT:
 	&\Gamma \hoare {\hat{\phi_{pre}}} {s} {\hat{\phi_{post}}} ~\wedge~
 	env ~\vdash~ \hat{\phi_{pre}}\\
 &\implies\\
-	\exists \hat{\phi_{pre}} \in \grad{\phi_{pre}}, \hat{\phi_{post}} \in \grad{\phi_{post}} : 
-	&\TappVER(\hat{\phi_{pre}}, \hat{\phi_{post}})
+	\exists \hat{\phi_{pre}} \in \gamma(\grad{\phi_{pre}}), \hat{\phi_{post}} \in \gamma(\grad{\phi_{post}}) : ~
+	&\TappVER_{\Gamma, s, env}(\hat{\phi_{pre}}, \hat{\phi_{post}})
 	\end{align*}
 	
 	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \text{goal}(s)$ ($\hat{\phi}$ was simplified away earlier).
@@ -876,6 +877,10 @@ Discussion, comparison with AGT:
 %\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsubseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
 %\end{align*}
 
+\subsection{Curry-Howard Table}
+\begin{tabular}{lll}
+	content...
+\end{tabular}
 
 \subsection{Lifting implication}
 Implication is the only predicate on pairs of $\phi$ occurring in our Hoare rules.\\
