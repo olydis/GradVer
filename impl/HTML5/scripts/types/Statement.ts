@@ -26,6 +26,7 @@ export abstract class Statement
             if (!result) result = StatementAlloc.parse(source);
             if (!result) result = StatementAssert.parse(source);
             if (!result) result = StatementRelease.parse(source);
+            if (!result) result = StatementReturn.parse(source);
             if (!result) result = StatementMemberSet.parse(source);
             if (!result) result = StatementAssign.parse(source);
             if (!result) result = StatementDeclare.parse(sourceWS);
@@ -260,7 +261,11 @@ export class StatementCall extends Statement
         var envx = topEnv(env);
         env = cloneStackEnv(env);
 
-        var vo = new ExpressionX(this.y).eval(envx);
+        var isEntry = env.S[env.S.length - 1].ss.length != 0;
+        if (!isEntry)
+            env.S.pop();
+
+        var vo = new ExpressionX(this.y).eval(topEnv(env));
         if (vo instanceof ValueObject)
         {
             var o = vo.UID;
@@ -273,7 +278,7 @@ export class StatementCall extends Statement
             if (m == null || m.name != this.m)
                 return null;
 
-            if (env.S[env.S.length - 1].ss.length != 0)
+            if (isEntry)
             { // ESApp
                 if (env.S[env.S.length - 1].ss[0] != this)
                     throw "dispatch failure";
@@ -287,7 +292,7 @@ export class StatementCall extends Statement
                 rr[Expression.getThis()] = vo;
                 rr[m.argName] = v;
 
-                if (!m.frmPre.eval(envx))
+                if (!m.frmPre.eval({ H: envx.H, r: rr, A: envx.A }))
                     return null;
 
                 var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
@@ -300,7 +305,6 @@ export class StatementCall extends Statement
             }
             else
             { // ESAppFinish
-                env.S.pop();
                 if (env.S[env.S.length - 1].ss.shift() != this)
                     throw "dispatch failure";
 

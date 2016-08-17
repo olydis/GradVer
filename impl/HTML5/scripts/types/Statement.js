@@ -27,6 +27,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 if (!result)
                     result = StatementRelease.parse(source);
                 if (!result)
+                    result = StatementReturn.parse(source);
+                if (!result)
                     result = StatementMemberSet.parse(source);
                 if (!result)
                     result = StatementAssign.parse(source);
@@ -237,7 +239,10 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementCall.prototype.smallStep = function (env, context) {
             var envx = StackEnv_1.topEnv(env);
             env = StackEnv_1.cloneStackEnv(env);
-            var vo = new Expression_1.ExpressionX(this.y).eval(envx);
+            var isEntry = env.S[env.S.length - 1].ss.length != 0;
+            if (!isEntry)
+                env.S.pop();
+            var vo = new Expression_1.ExpressionX(this.y).eval(StackEnv_1.topEnv(env));
             if (vo instanceof ValueExpression_1.ValueObject) {
                 var o = vo.UID;
                 var Hentry = envx.H[o];
@@ -246,7 +251,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 var m = context.mmethod(Hentry.C, this.m);
                 if (m == null || m.name != this.m)
                     return null;
-                if (env.S[env.S.length - 1].ss.length != 0) {
+                if (isEntry) {
                     if (env.S[env.S.length - 1].ss[0] != this)
                         throw "dispatch failure";
                     var v = new Expression_1.ExpressionX(this.z).eval(envx);
@@ -256,7 +261,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     rr[Expression_1.Expression.getResult()] = m.retType.defaultValue().eval(envx);
                     rr[Expression_1.Expression.getThis()] = vo;
                     rr[m.argName] = v;
-                    if (!m.frmPre.eval(envx))
+                    if (!m.frmPre.eval({ H: envx.H, r: rr, A: envx.A }))
                         return null;
                     var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
                     StackEnv_1.topEnv(env).A = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
@@ -267,7 +272,6 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     });
                 }
                 else {
-                    env.S.pop();
                     if (env.S[env.S.length - 1].ss.shift() != this)
                         throw "dispatch failure";
                     if (!m.frmPost.eval(envx))
