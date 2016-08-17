@@ -5,7 +5,7 @@ import { EditableElement } from "./EditableElement";
 import { Gamma, GammaNew } from "../runtime/Gamma";
 import { Hoare } from "../runtime/Hoare";
 import { StackEnv, topEnv } from "../runtime/StackEnv";
-import { printEnv } from "../runtime/EvalEnv";
+import { EvalEnv, printEnv } from "../runtime/EvalEnv";
 import { GUIHelpers } from "../GUIHelpers";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
@@ -32,15 +32,19 @@ export class EditInstructions
             this.removeInstruction(0, false);
         while (this.numInstructions < n)
             this.insertInstruction(0, false);
-        this.updateGUI();
     }
     private setInstructions(s: string[]): void
     {
-        EditableElement.editEndAll();
+        this.suppressAnalysis = true;
+        {
+            EditableElement.editEndAll();
 
-        this.setNumInstructions(s.length);
-        for (var i = 0; i < s.length; ++i)
-            this.statements[i].setStatementX(s[i]);
+            this.setNumInstructions(s.length);
+            for (var i = 0; i < s.length; ++i)
+                this.statements[i].setStatementX(s[i]);
+        }
+        this.suppressAnalysis = false;
+        this.updateGUI();
     }
 
     public loadEx1(): void
@@ -166,13 +170,16 @@ export class EditInstructions
             jqEnv.text("BLOCKED");
     }
 
+    private suppressAnalysis: boolean = false;
     private analyze(): void
     {
-        console.group("analyze");
+        if (this.suppressAnalysis)
+            return;
 
         // clear messages
-        this.verificationFormulas.forEach(x => x.text("").removeClass("err").attr("title", null));
+        this.verificationFormulas.forEach(x => x.text("").attr("title", null));
         $(".clearMe").text("");
+        $(".err").removeClass("err");
 
         var statements = this.statements.map(x => x.getStatement());
         statements.push(new StatementCast(this.condPost));
@@ -180,14 +187,22 @@ export class EditInstructions
         var g = GammaNew;
         var cond = this.condPre;
 
-        var dynEnv: StackEnv = { H: {}, S: [{ r: {}, A: [], ss: statements }] };
+        var pivotEnv: EvalEnv;
+        {
+            var nenv = this.condPre.createNormalizedEnv();
+            if (nenv)
+                pivotEnv = this.condPre.createNormalizedEnv().getPivotEnv();
+            else
+                pivotEnv = { H: {}, r: {}, A: [] };
+        }
+        var dynEnv: StackEnv = { H: pivotEnv.H, S: [{ r: pivotEnv.r, A: pivotEnv.A, ss: statements }] };
         var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).reverse().filter(x => x.length > 0)[0][0];
         var dynStepInto: () => void = () => 
         { 
             if (dynEnv == null) return;
             var stmt = dynEnvNextStmt();
-            console.log("State: ", printEnv(topEnv(dynEnv)));
-            console.log("Statement: ", stmt + "");
+            //console.log("State: ", printEnv(topEnv(dynEnv)));
+            //console.log("Statement: ", stmt + "");
             dynEnv = stmt.smallStep(dynEnv, this.hoare.env);
         };
         var dynStepOver: () => void = () => { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1) dynStepInto(); };
@@ -201,12 +216,12 @@ export class EditInstructions
 
             if (!cond.satisfiable())
             {
-                $("#frm" + i).text("pre-condition malformed: not satisfiable").addClass("err");
+                $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                 return;
             }
             if (!cond.sfrm())
             {
-                $("#frm" + i).text("pre-condition malformed: not self-framed").addClass("err");
+                $("#ins" + i).text("pre-condition malformed: not self-framed").addClass("err");
                 return;
             }
 
@@ -230,8 +245,6 @@ export class EditInstructions
             if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }
-
-        console.groupEnd();
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void

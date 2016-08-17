@@ -81,7 +81,7 @@ export class Hoare
         var dyn = rule.checkImplication(res.info);
         var prex = pre.implies(dyn);
         if (prex == null)
-            return ["implication failure: " + pre + " => " + dyn];
+            return ["could not prove: " + dyn];
 
         return null;
     }

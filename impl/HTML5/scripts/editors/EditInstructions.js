@@ -12,6 +12,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         function EditInstructions(container, hoare) {
             this.container = container;
             this.hoare = hoare;
+            this.suppressAnalysis = false;
             this.condPre = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, VerificationFormula_1.VerificationFormula.empty());
             this.condPost = VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, VerificationFormula_1.VerificationFormula.empty());
             this.statements = [];
@@ -25,13 +26,17 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 this.removeInstruction(0, false);
             while (this.numInstructions < n)
                 this.insertInstruction(0, false);
-            this.updateGUI();
         };
         EditInstructions.prototype.setInstructions = function (s) {
-            EditableElement_1.EditableElement.editEndAll();
-            this.setNumInstructions(s.length);
-            for (var i = 0; i < s.length; ++i)
-                this.statements[i].setStatementX(s[i]);
+            this.suppressAnalysis = true;
+            {
+                EditableElement_1.EditableElement.editEndAll();
+                this.setNumInstructions(s.length);
+                for (var i = 0; i < s.length; ++i)
+                    this.statements[i].setStatementX(s[i]);
+            }
+            this.suppressAnalysis = false;
+            this.updateGUI();
         };
         EditInstructions.prototype.loadEx1 = function () {
             this.setInstructions([
@@ -117,22 +122,32 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.analyze = function () {
             var _this = this;
-            console.group("analyze");
+            if (this.suppressAnalysis)
+                return;
             // clear messages
-            this.verificationFormulas.forEach(function (x) { return x.text("").removeClass("err").attr("title", null); });
+            this.verificationFormulas.forEach(function (x) { return x.text("").attr("title", null); });
             $(".clearMe").text("");
+            $(".err").removeClass("err");
             var statements = this.statements.map(function (x) { return x.getStatement(); });
             statements.push(new Statement_1.StatementCast(this.condPost));
             var g = Gamma_1.GammaNew;
             var cond = this.condPre;
-            var dynEnv = { H: {}, S: [{ r: {}, A: [], ss: statements }] };
+            var pivotEnv;
+            {
+                var nenv = this.condPre.createNormalizedEnv();
+                if (nenv)
+                    pivotEnv = this.condPre.createNormalizedEnv().getPivotEnv();
+                else
+                    pivotEnv = { H: {}, r: {}, A: [] };
+            }
+            var dynEnv = { H: pivotEnv.H, S: [{ r: pivotEnv.r, A: pivotEnv.A, ss: statements }] };
             var dynEnvNextStmt = function () { return dynEnv.S.map(function (x) { return x.ss; }).reverse().filter(function (x) { return x.length > 0; })[0][0]; };
             var dynStepInto = function () {
                 if (dynEnv == null)
                     return;
                 var stmt = dynEnvNextStmt();
-                console.log("State: ", EvalEnv_1.printEnv(StackEnv_1.topEnv(dynEnv)));
-                console.log("Statement: ", stmt + "");
+                //console.log("State: ", printEnv(topEnv(dynEnv)));
+                //console.log("Statement: ", stmt + "");
                 dynEnv = stmt.smallStep(dynEnv, _this.hoare.env);
             };
             var dynStepOver = function () { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1)
@@ -143,11 +158,11 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 this.displayPreCond(i, cond);
                 this.displayDynState(i, dynEnv);
                 if (!cond.satisfiable()) {
-                    $("#frm" + i).text("pre-condition malformed: not satisfiable").addClass("err");
+                    $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                     return;
                 }
                 if (!cond.sfrm()) {
-                    $("#frm" + i).text("pre-condition malformed: not self-framed").addClass("err");
+                    $("#ins" + i).text("pre-condition malformed: not self-framed").addClass("err");
                     return;
                 }
                 var s = statements[i];
@@ -167,7 +182,6 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 if (dynSuccess && dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
-            console.groupEnd();
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;

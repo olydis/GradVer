@@ -298,6 +298,21 @@ export class NormalizedEnv {
 
     public getEnv(): EvalEnv { return cloneEvalEnv(this.env); }
 
+    public getPivotEnv(): EvalEnv
+    {
+        var res = this.getEnv();
+        for (var x in res.r)
+        {
+            var v = res.r[x];
+            if (v instanceof ValueObject)
+            {
+                if (res.H[v.UID] == null)
+                    res.r[x] = ValueExpression.getNull();
+            }
+        }
+        return res;
+    }
+
     // consistent
     private getConsistentAcc(): boolean
     {

@@ -284,7 +284,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             var dyn = rule.checkImplication(res.info);
             var prex = pre.implies(dyn);
             if (prex == null)
-                return ["implication failure: " + pre + " => " + dyn];
+                return ["could not prove: " + dyn];
             return null;
         };
         Hoare.prototype.post = function (s, pre, g) {

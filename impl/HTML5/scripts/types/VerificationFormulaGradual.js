@@ -53,6 +53,14 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             frm.staticFormula = this.staticFormula.substs(m);
             return frm;
         };
+        VerificationFormulaGradual.prototype.createNormalizedEnv = function () {
+            var env = this.staticFormula.createNormalizedEnv();
+            for (var _i = 0, _a = this.staticFormula.autoFraming(); _i < _a.length; _i++) {
+                var acc = _a[_i];
+                env = acc.envAdd(env) || env;
+            }
+            return env;
+        };
         VerificationFormulaGradual.prototype.satisfiable = function () {
             return this.staticFormula.satisfiable();
         };
@@ -77,11 +85,11 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 var staticIntersection = this.staticFormula.snorm().parts
                     .concat(phi.snorm().parts);
                 // implication fails statically?
-                var res = new VerificationFormula_1.VerificationFormula(null, staticIntersection).norm();
+                var res = new VerificationFormula_1.VerificationFormula(null, staticIntersection);
                 if (!res.satisfiable())
                     return null;
                 // simplify
-                return VerificationFormulaGradual.create(true, res);
+                return VerificationFormulaGradual.create(true, res.norm());
             }
             else {
                 var sf = this.staticFormula.implies(phi);

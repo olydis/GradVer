@@ -1,7 +1,7 @@
 import { VerificationFormula, FormulaPartAcc, FormulaPartNeq, FormulaPartEq, FormulaPart } from "./VerificationFormula";
 import { FootprintStatic } from "./Footprint";
 import { Expression, ExpressionDot } from "./Expression";
-import { EvalEnv } from "../runtime/EvalEnv";
+import { EvalEnv, NormalizedEnv } from "../runtime/EvalEnv";
 
 export class VerificationFormulaGradual
 {
@@ -73,6 +73,14 @@ export class VerificationFormulaGradual
         return frm;
     }
 
+    public createNormalizedEnv(): NormalizedEnv
+    {
+        var env = this.staticFormula.createNormalizedEnv();
+        for (var acc of this.staticFormula.autoFraming())
+            env = acc.envAdd(env) || env;
+        return env;
+    }
+
     public satisfiable(): boolean
     {
         return this.staticFormula.satisfiable();
@@ -106,12 +114,12 @@ export class VerificationFormulaGradual
                                             .concat(phi.snorm().parts);
                         
             // implication fails statically?
-            var res = new VerificationFormula(null, staticIntersection).norm();
+            var res = new VerificationFormula(null, staticIntersection);
             if (!res.satisfiable())
                 return null;
 
             // simplify
-            return VerificationFormulaGradual.create(true, res);
+            return VerificationFormulaGradual.create(true, res.norm());
         }
         else
         {

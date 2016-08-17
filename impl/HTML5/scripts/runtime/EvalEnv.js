@@ -263,6 +263,17 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return new VerificationFormula_1.VerificationFormula(null, parts);
         };
         NormalizedEnv.prototype.getEnv = function () { return cloneEvalEnv(this.env); };
+        NormalizedEnv.prototype.getPivotEnv = function () {
+            var res = this.getEnv();
+            for (var x in res.r) {
+                var v = res.r[x];
+                if (v instanceof ValueExpression_1.ValueObject) {
+                    if (res.H[v.UID] == null)
+                        res.r[x] = ValueExpression_1.ValueExpression.getNull();
+                }
+            }
+            return res;
+        };
         // consistent
         NormalizedEnv.prototype.getConsistentAcc = function () {
             var a = [];
