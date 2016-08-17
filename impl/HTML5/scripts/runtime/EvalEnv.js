@@ -1,5 +1,30 @@
 define(["require", "exports", "../types/Expression", "../types/ValueExpression", "../types/VerificationFormula"], function (require, exports, Expression_1, ValueExpression_1, VerificationFormula_1) {
     "use strict";
+    function printHeapEntry(Hentry) {
+        var fs = Object.getOwnPropertyNames(Hentry);
+        return "{" + fs.map(function (f) { return f + "=" + Hentry[f]; }).join(",") + "}";
+    }
+    function printHeap(H) {
+        var objs = Object.getOwnPropertyNames(H).map(function (so) { return parseInt(so); });
+        return "{" + objs.map(function (o) { return o + ":" + H[o].C + "=" + printHeapEntry(H[o].fs); }).join(",") + "}";
+    }
+    function printRho(r) {
+        var vars = Object.getOwnPropertyNames(r);
+        return "{" + vars.map(function (v) { return v + "=" + r[v]; }).join(",") + "}";
+    }
+    function printAccess(A) {
+        return "{" + A.map(function (a) { return "(" + new ValueExpression_1.ValueObject(a.o) + "." + a.f + ")"; }).join(",") + "}";
+    }
+    function printEnv(env) {
+        return "(" +
+            printHeap(env.H) +
+            ", " +
+            printRho(env.r) +
+            ", " +
+            printAccess(env.A) +
+            ")";
+    }
+    exports.printEnv = printEnv;
     function cloneHeapEntry(He) {
         var res = { C: He.C, fs: {} };
         for (var f in He.fs)

@@ -282,8 +282,8 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             if (res == null)
                 return errs;
             var dyn = rule.checkImplication(res.info);
-            pre = pre.implies(dyn);
-            if (pre == null)
+            var prex = pre.implies(dyn);
+            if (prex == null)
                 return ["implication failure: " + pre + " => " + dyn];
             return null;
         };

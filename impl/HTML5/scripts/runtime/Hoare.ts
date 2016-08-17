@@ -79,8 +79,8 @@ export class Hoare
             return errs;
 
         var dyn = rule.checkImplication(res.info);
-        pre = pre.implies(dyn);
-        if (pre == null)
+        var prex = pre.implies(dyn);
+        if (prex == null)
             return ["implication failure: " + pre + " => " + dyn];
 
         return null;
@@ -106,7 +106,7 @@ export class Hoare
         };
     }
 
-    constructor(private env: ExecutionEnvironment) {
+    constructor(public env: ExecutionEnvironment) {
         this.ruleHandlers = [];
 
         this.addHandler<StatementAlloc, { ex: ExpressionX, fs: Field[] }>("NewObject", StatementAlloc,

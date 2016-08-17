@@ -16,6 +16,36 @@ export type Rho = { [x: string]: Value };
 
 export type EvalEnv = { H: Heap, r: Rho, A: FootprintDynamic };
 
+function printHeapEntry(Hentry: {[f:string]: Value})
+{
+    var fs: string[] = Object.getOwnPropertyNames(Hentry);
+    return "{" + fs.map(f => f + "=" + Hentry[f]).join(",") + "}";
+}
+function printHeap(H: Heap)
+{
+    var objs: number[] = Object.getOwnPropertyNames(H).map(so => parseInt(so));
+    return "{" + objs.map(o => o + ":" + H[o].C + "=" + printHeapEntry(H[o].fs)).join(",") + "}";
+}
+function printRho(r: Rho)
+{
+    var vars: string[] = Object.getOwnPropertyNames(r);
+    return "{" + vars.map(v => v + "=" + r[v]).join(",") + "}";
+}
+function printAccess(A: FootprintDynamic)
+{
+    return "{" + A.map(a => "(" + new ValueObject(a.o) + "." + a.f + ")").join(",") + "}";
+}
+export function printEnv(env: EvalEnv)
+{
+    return "(" +
+        printHeap(env.H) +
+        ", " + 
+        printRho(env.r) +
+        ", " + 
+        printAccess(env.A) + 
+    ")";
+}
+
 function cloneHeapEntry(He: HeapEntry): HeapEntry
 {
     var res: HeapEntry = { C: He.C, fs: {} };

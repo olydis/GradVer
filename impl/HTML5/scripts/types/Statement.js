@@ -174,10 +174,11 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             env = StackEnv_1.cloneStackEnv(env);
             if (env.S[env.S.length - 1].ss.shift() != this)
                 throw "dispatch failure";
-            var vo = new ValueExpression_1.ValueObject();
-            var o = vo.UID;
-            if (envx.H[o] != null)
-                return null;
+            // find first free object
+            var o = 0;
+            while (envx.H[o] != null)
+                o++;
+            var vo = new ValueExpression_1.ValueObject(o);
             var fs = context.fields(this.C);
             if (fs == null)
                 return null;
@@ -422,6 +423,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             return "{ " + this.T.toString() + " }";
         };
         StatementCast.prototype.smallStep = function (env, context) {
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
             return env;
         };
         return StatementCast;
@@ -446,6 +450,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             return "//" + this.comment;
         };
         StatementComment.prototype.smallStep = function (env, context) {
+            env = StackEnv_1.cloneStackEnv(env);
+            if (env.S[env.S.length - 1].ss.shift() != this)
+                throw "dispatch failure";
             return env;
         };
         return StatementComment;

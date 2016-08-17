@@ -3,7 +3,7 @@ body
     background-color: #FAFAFA;
     font-family: sans-serif;
 
-    padding: 50px 15%;
+    padding: 50px;
 }
 
 input
@@ -86,18 +86,51 @@ input
 }
 .dynCheck
 {
-    padding-left: 50px;
-    font-style: normal;
     font-weight: bold;
+}
+.dynCheck0
+{
+    color: red;
+}
+.dynCheck1
+{
+    color: green;
+}
+.dynEnv
+{
     color: blue;
 }
+
+.instructionTable
+{
+    font-family: monospace;
+    width: 100%;
+}
+.instructionTable tr
+{
+    height: 24px;
+}
+.instructionTable tr td:nth-child(1)
+{
+    width: auto;
+}
+.instructionTable tr td:nth-child(2)
+{
+    width: auto;
+}
+.instructionTable tr td:nth-child(3)
+{
+    width: 30px;
+}
+
+
 
 .instructionStatement
 {
     font-family: monospace;
     font-size: 18px;
     display: block;
-    width: calc(100% - 30px);
+    width: 100%;
     /*height: 1.5em;*/
     line-height: 1.5em;
 }
@@ -109,22 +142,22 @@ h1
     font-weight: bold;
     padding: 8px;
 }
-table
+.containerTable
 {
     width: 100%;
     margin: 16px;
 }
-td
+.containerTable > tbody > tr > td
 {
     padding-top: 8px;
     padding-right: 20px;
     vertical-align: middle;
 }
-tr
+.containerTable > tbody > tr
 {
     height: 35px;
 }
-tr td:first-child
+.containerTable > tbody > tr > td:first-child
 {
     width: 100px;
 }

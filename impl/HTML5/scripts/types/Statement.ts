@@ -191,10 +191,11 @@ export class StatementAlloc extends Statement
         if (env.S[env.S.length - 1].ss.shift() != this)
             throw "dispatch failure";
 
-        var vo = new ValueObject();
-        var o = vo.UID;
-        if (envx.H[o] != null)
-            return null;
+        // find first free object
+        var o = 0;
+        while (envx.H[o] != null)
+            o++;
+        var vo = new ValueObject(o);
 
         var fs = context.fields(this.C);
         if (fs == null)
@@ -478,6 +479,10 @@ export class StatementCast extends Statement
     }
     public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
     {
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
         return env;
     }
 }
@@ -507,6 +512,10 @@ export class StatementComment extends Statement
     }
     public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
     {
+        env = cloneStackEnv(env);
+        if (env.S[env.S.length - 1].ss.shift() != this)
+            throw "dispatch failure";
+
         return env;
     }
 }

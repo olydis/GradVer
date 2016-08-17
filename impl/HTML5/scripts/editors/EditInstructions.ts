@@ -1,51 +1,68 @@
 import { EditStatement } from "./EditStatement";
 import { EditVerificationFormula } from "./EditVerificationFormula";
+import { EditableElement } from "./EditableElement"; 
 
 import { Gamma, GammaNew } from "../runtime/Gamma";
 import { Hoare } from "../runtime/Hoare";
+import { StackEnv, topEnv } from "../runtime/StackEnv";
+import { printEnv } from "../runtime/EvalEnv";
 import { GUIHelpers } from "../GUIHelpers";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
 import { VerificationFormula, FormulaPart } from "../types/VerificationFormula";
+import { Statement, StatementCast } from "../types/Statement";
 
 export class EditInstructions
 {
     private statements: EditStatement[];
     private verificationFormulas: JQuery[];
 
+    private setNumInstructions(n: number): void
+    {
+        while (this.numInstructions > n)
+            this.removeInstruction(0, false);
+        while (this.numInstructions < n)
+            this.insertInstruction(0, false);
+        this.updateGUI();
+    }
+    private setInstructions(s: string[]): void
+    {
+        EditableElement.editEndAll();
+
+        this.setNumInstructions(s.length);
+        for (var i = 0; i < s.length; ++i)
+            this.statements[i].setStatementX(s[i]);
+    }
+
     public loadEx1(): void
     {
-        while (this.numInstructions > 5)
-            this.removeInstruction(0);
-        while (this.numInstructions < 5)
-            this.insertInstruction(0);
-        this.statements[0].setStatementX("int x;");
-        this.statements[1].setStatementX("int y;");
-        this.statements[2].setStatementX("y = 3;");
-        this.statements[3].setStatementX("x = y;");
-        this.statements[4].setStatementX("assert (x = 3);");
+        this.setInstructions([
+            "int x;",
+            "int y;",
+            "y = 3;",
+            "x = y;",
+            "assert (x = 3);"
+        ]);
     }
     public loadEx2(): void
     {
-        while (this.numInstructions > 15)
-            this.removeInstruction(0);
-        while (this.numInstructions < 15)
-            this.insertInstruction(0);
-        this.statements[0].setStatementX("int i1;");
-        this.statements[1].setStatementX("i1 := 1;");
-        this.statements[2].setStatementX("int i2;");
-        this.statements[3].setStatementX("i2 := 2;");
-        this.statements[4].setStatementX("Point p;");
-        this.statements[5].setStatementX("p = new Point;");
-        this.statements[6].setStatementX("p.x = i1;");
-        this.statements[7].setStatementX("p.y = i2;");
-        this.statements[8].setStatementX("Points ps;");
-        this.statements[9].setStatementX("ps = new Points;");
-        this.statements[10].setStatementX("ps.h = p;");
-        this.statements[11].setStatementX("ps.t = ps;");
-        this.statements[12].setStatementX("Point q;");
-        this.statements[13].setStatementX("q = ps.t.t.t.t.h;");
-        this.statements[14].setStatementX("assert (q.x = 1) * (q.y = 2);");
+        this.setInstructions([
+            "int i1;",
+            "i1 := 1;",
+            "int i2;",
+            "i2 := 2;",
+            "Point p;",
+            "p = new Point;",
+            "p.x = i1;",
+            "p.y = i2;",
+            "Points ps;",
+            "ps = new Points;",
+            "ps.h = p;",
+            "ps.t = ps;",
+            "Point q;",
+            "q = ps.t.t.t.t.h;",
+            "assert (q.x = 1) * (q.y = 2);"
+        ]);
     }
 
     public get numInstructions(): number
@@ -77,8 +94,20 @@ export class EditInstructions
         this.updateGUI();
     }
 
-    private displayPreCondition(i: number, dynF: VerificationFormula, cond: VerificationFormulaGradual): boolean
+    private displayPreCond(
+        i: number, 
+        cond: VerificationFormulaGradual): void
     {
+        this.verificationFormulas[i].text("").append(cond.norm().toString());
+    }
+    private displayDynCond(
+        i: number, 
+        cond: VerificationFormulaGradual, 
+        dynF: VerificationFormula,
+        dynEnv: StackEnv, 
+        dynSuccess: boolean): void
+    {
+        // dynamic check minimization
         var condClassic = cond.staticFormula.snorm();
         var condx = cond.staticFormula
             .autoFraming()
@@ -90,105 +119,155 @@ export class EditInstructions
             throw "shouldn't have happened";
         }
 
-        this.verificationFormulas[i].text("").append(cond.norm().toString());
-
+        // output
+        var jqDyn = $("#ins" + i);
         if (dyn.length > 0)
-            this.verificationFormulas[i].append($("<span>")
+            jqDyn.append($("<span>")
                 .addClass("dynCheck")
+                .addClass(dynEnv != null ? (dynSuccess ? "dynCheck1" : "dynCheck0") : "")
                 .text(dyn.join(", ")));
-        
-        return true;
     }
 
-    private update(): void
+    private displayDynState(
+        i: number, 
+        dynEnv: StackEnv
+        ): void
+    {
+        var jqEnv = $("#frm" + i);
+
+        if (dynEnv != null)
+            jqEnv.append($("<span>")
+                .addClass("dynEnv")
+                .text(printEnv(topEnv(dynEnv))));
+        else
+            jqEnv.append($("<span>")
+                .addClass("dynEnv")
+                .text("BLOCKED"));
+    }
+
+    private analyze(): void
     {
         // clear messages
-        this.verificationFormulas.forEach(x => x.text(" ").removeClass("err").attr("title",null));
+        this.verificationFormulas.forEach(x => x.text("").removeClass("err").attr("title", null));
+        $(".clearMe").text("");
+
+        var statements = this.statements.map(x => x.getStatement());
+        statements.push(new StatementCast(this.condPost));
 
         var g = GammaNew;
         var cond = this.condPre;
-        for (var i = 0; i < this.statements.length; ++i)
+
+        var dynEnv: StackEnv = { H: {}, S: [{ r: {}, A: [], ss: statements }] };
+        var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).filter(x => x.length > 0)[0][0];
+        var dynStepInto: () => void = () => { dynEnv = dynEnv == null ? null : dynEnvNextStmt().smallStep(dynEnv, this.hoare.env); };
+        var dynStepOver: () => void = () => { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1) dynStepInto(); };
+        var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
+        var dynSuccess = true;
+
+        for (var i = 0; i < statements.length; ++i)
         {
+            this.displayPreCond(i, cond);
+            this.displayDynState(i, dynEnv);
+
             if (!cond.satisfiable())
             {
-                this.verificationFormulas[i].text("pre-condition malformed: not satisfiable").addClass("err");
+                $("#frm" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                 return;
             }
             if (!cond.sfrm())
             {
-                this.verificationFormulas[i].text("pre-condition malformed: not self-framed").addClass("err");
+                $("#frm" + i).text("pre-condition malformed: not self-framed").addClass("err");
                 return;
             }
 
-            var s = this.statements[i].getStatement();
+            var s = statements[i];
             var errs = this.hoare.check(s, cond, g);
             if (errs != null)
             {
-                this.verificationFormulas[i].text(errs[0]).addClass("err");
+                $("#ins" + i).text(errs[0]).addClass("err");
                 return;
             }
 
             var res = this.hoare.post(s, cond, g);
-            if (!this.displayPreCondition(i, res.dyn, cond)) return;
+            this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess = dynSuccess && dynCheckDyn(res.dyn));
             cond = res.post;
             g = res.postGamma;
-        }
 
-        var lastDyn = this.condPost.staticFormula;
-        var condPost = cond.implies(lastDyn);
-        if (condPost == null)
-        {
-            this.verificationFormulas[i].text("implication failure").addClass("err");
-            return;
+            // dyn
+            dynStepOver();
+            if (dynSuccess && dynEnv == null)
+                throw "progress broke";
+            if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
+                throw "preservation broke";
         }
-        if (!this.displayPreCondition(this.statements.length, lastDyn, cond)) return;
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void
     {
         this.condPre = pre;
         this.condPost = post;
-        this.update();
+        this.analyze();
     }
 
-    private removeInstruction(index: number): void
+    private removeInstruction(index: number, update: boolean = true): void
     {
         this.verificationFormulas.splice(index + 1, 1);
         this.statements.splice(index, 1);
-        this.updateGUI();
+        if (update)
+            this.updateGUI();
     }
 
-    private insertInstruction(index: number): void
+    private insertInstruction(index: number, update: boolean = true): void
     {
         this.verificationFormulas.splice(index + 1, 0, this.createDynVerElement());
-        this.statements.splice(index, 0, new EditStatement(undefined, () => this.update()));
-        this.updateGUI();
+        this.statements.splice(index, 0, new EditStatement(undefined, () => this.analyze()));
+        if (update)
+            this.updateGUI();
     }
 
     private updateGUI(): void
     {
-        var createRightButton = (s: string) =>
+        var createButton = (s: string) =>
             $("<span>")
-                .addClass("rightFloat")
-                .append($("<span>")
                     .addClass("button")
                     .addClass("buttonAutohide")
-                    .text(s));
+                    .text(s);
 
         this.container.text("");
+
+        var table = $("<table>")
+            .addClass("instructionTable")
+            .appendTo(this.container);
+
         var n = this.numInstructions;
         for (var i = 0; i <= n; ++i)
             ((i: number) =>
             {
-                this.container.append(createRightButton("+").click(() => this.insertInstruction(i)));
-                this.container.append(this.verificationFormulas[i]);
+                {
+                    var tr = $("<tr>").appendTo(table);
+                    tr.append($("<td>").append(
+                        this.verificationFormulas[i]));
+                    tr.append($("<td>").attr("id", "frm" + i).addClass("clearMe"));
+                    tr.append($("<td>").append(
+                        createButton("+").click(() => this.insertInstruction(i))));
+                }
                 if (i != n)
                 {
-                    var ins = this.statements[i].createHTML();
-                    this.container.append(createRightButton("-").click(() => this.removeInstruction(i)));
-                    this.container.append(ins);
+                    var tr = $("<tr>").appendTo(table);
+                    tr.append($("<td>").append(
+                        this.statements[i].createHTML()));
+                    tr.append($("<td>").attr("id", "ins" + i).addClass("clearMe"));
+                    tr.append($("<td>").append(
+                        createButton("-").click(() => this.removeInstruction(i))));
+                }
+                else
+                {
+                    var tr = $("<tr>").appendTo(table);
+                    tr.append($("<td>"));
+                    tr.append($("<td>").attr("id", "ins" + i).addClass("clearMe"));
+                    tr.append($("<td>"));
                 }
             })(i);
-        this.update();
+        this.analyze();
     }
 }
