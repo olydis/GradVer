@@ -112,8 +112,7 @@ $(() =>
 
     // containerHoare
     (() => {
-        var container = $("#containerHoareCode");
-        var code = new EditInstructions(container, hoare);
+        var code = new EditInstructions($("#containerHoareCode"), hoare);
         var update = () => {};
         var inputPre = new EditVerificationFormula("?", () => update());
         var inputPost = new EditVerificationFormula("?", () => update());
@@ -129,9 +128,11 @@ $(() =>
 
         $("#btnEx1").click(() => code.loadEx1());
         $("#btnEx2").click(() => code.loadEx2());
+        $("#btnEx3").click(() => code.loadEx3());
 
-        $("#btnToggleDyn").mouseenter(x => container.addClass("showDynamic"));
-        $("#btnToggleDyn").mouseleave(x => container.removeClass("showDynamic"));
+        $("#btnToggleDyn").click(x => $("#containerHoare").toggleClass("showDynamic"));
+        $("#btnToggleDyn").mouseenter(x => $("#containerHoare").addClass("showSem"));
+        $("#btnToggleDyn").mouseleave(x => $("#containerHoare").removeClass("showSem"));
 
         $("#containerHoareContext").text(printProgram(program));
     })();

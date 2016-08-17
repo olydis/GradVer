@@ -68,15 +68,14 @@ input
 .intermediateState
 {
     font-family: monospace;
-    font-size: 16px;
+    font-size: 12px;
     display: block;
     width: 100%;
     /*height: 1.5em;*/
-    font-style: italic;
-    line-height: 1.5em;
+    /*font-style: italic;*/
     color: #eee;
 }
-.intermediateState:hover
+.intermediateState:hover, .showSem .intermediateState
 {
     color: #999;
 }
@@ -88,11 +87,11 @@ input
 {
     font-weight: bold;
 }
-.dynCheck0
+.showDynamic .dynCheck0
 {
     color: red;
 }
-.dynCheck1
+.showDynamic .dynCheck1
 {
     color: green;
 }
@@ -107,9 +106,15 @@ input
     width: 100%;
     white-space: nowrap;
 }
-.instructionTable > tbody > tr
+.instructionTable > tbody > tr:nth-child(odd)
 {
+    line-height: 24px;
     height: 24px;
+}
+.instructionTable > tbody > tr:nth-child(even)
+{
+    line-height: 27px;
+    height: 27px;
 }
 .instructionTable > tbody > tr > td:nth-child(1)
 {
@@ -177,6 +182,15 @@ table.splitStaticDynamic > tbody > tr > td:last-child
     width: 100%;
     /*height: 1.5em;*/
     line-height: 1.5em;
+}
+
+#btnToggleDyn:after
+{
+    content: "static";
+}
+.showDynamic #btnToggleDyn:after
+{
+    content: "dynamic";
 }
 
 h1

@@ -91,8 +91,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         var hoare = new Hoare_1.Hoare(env);
         // containerHoare
         (function () {
-            var container = $("#containerHoareCode");
-            var code = new EditInstructions_1.EditInstructions(container, hoare);
+            var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
             var update = function () { };
             var inputPre = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
             var inputPost = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
@@ -106,8 +105,10 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#containerHoarePost").append(inputPost.createHTML());
             $("#btnEx1").click(function () { return code.loadEx1(); });
             $("#btnEx2").click(function () { return code.loadEx2(); });
-            $("#btnToggleDyn").mouseenter(function (x) { return container.addClass("showDynamic"); });
-            $("#btnToggleDyn").mouseleave(function (x) { return container.removeClass("showDynamic"); });
+            $("#btnEx3").click(function () { return code.loadEx3(); });
+            $("#btnToggleDyn").click(function (x) { return $("#containerHoare").toggleClass("showDynamic"); });
+            $("#btnToggleDyn").mouseenter(function (x) { return $("#containerHoare").addClass("showSem"); });
+            $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });
             $("#containerHoareContext").text(Program_1.printProgram(program));
         })();
         // containerProps
