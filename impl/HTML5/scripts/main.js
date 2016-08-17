@@ -91,7 +91,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         var hoare = new Hoare_1.Hoare(env);
         // containerHoare
         (function () {
-            var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
+            var container = $("#containerHoareCode");
+            var code = new EditInstructions_1.EditInstructions(container, hoare);
             var update = function () { };
             var inputPre = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
             var inputPost = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
@@ -105,6 +106,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#containerHoarePost").append(inputPost.createHTML());
             $("#btnEx1").click(function () { return code.loadEx1(); });
             $("#btnEx2").click(function () { return code.loadEx2(); });
+            $("#btnToggleDyn").mouseenter(function (x) { return container.addClass("showDynamic"); });
+            $("#btnToggleDyn").mouseleave(function (x) { return container.removeClass("showDynamic"); });
             $("#containerHoareContext").text(Program_1.printProgram(program));
         })();
         // containerProps

@@ -105,25 +105,69 @@ input
 {
     font-family: monospace;
     width: 100%;
+    white-space: nowrap;
 }
-.instructionTable tr
+.instructionTable > tbody > tr
 {
     height: 24px;
 }
-.instructionTable tr td:nth-child(1)
+.instructionTable > tbody > tr > td:nth-child(1)
+{
+    width: 20px;
+}
+.instructionTable > tbody > tr > td:nth-child(2)
+{
+    width: auto;
+    padding-left: 8px;
+}
+.instructionTable > tbody > tr > td:nth-child(3)
 {
     width: auto;
 }
-.instructionTable tr td:nth-child(2)
+
+.instructionTable > tbody > tr:nth-child(odd) > td:nth-child(1):hover ~ td
+{
+    background: #F8FFF8;
+}
+.instructionTable > tbody > tr:nth-child(even) > td:nth-child(1):hover ~ td
+{
+    background: #FFF8F8;
+}
+
+table.splitStmtDyn
+{
+    width: 100%;
+}
+table.splitStmtDyn > tbody > tr > td:first-child
 {
     width: auto;
 }
-.instructionTable tr td:nth-child(3)
+table.splitStmtDyn > tbody > tr > td:last-child
 {
-    width: 30px;
+    width: 1px;
+    padding-right: 16px;
 }
 
-
+table.splitStaticDynamic
+{
+    width: 100%;
+}
+table.splitStaticDynamic > tbody > tr > td:first-child
+{
+    display: initial;
+}
+table.splitStaticDynamic > tbody > tr > td:last-child
+{
+    display: none;
+}
+.showDynamic table.splitStaticDynamic > tbody > tr > td:first-child
+{
+    display: none;
+}
+.showDynamic table.splitStaticDynamic > tbody > tr > td:last-child
+{
+    display: initial;
+}
 
 .instructionStatement
 {

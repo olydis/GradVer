@@ -1,5 +1,13 @@
 define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1) {
     "use strict";
+    function splitCell(left, right, cls) {
+        if (cls === void 0) { cls = ""; }
+        return $("<table>")
+            .addClass(cls)
+            .append($("<tr>")
+            .append($("<td>").append(left))
+            .append($("<td>").append(right)));
+    }
     var EditInstructions = (function () {
         function EditInstructions(container, hoare) {
             this.container = container;
@@ -178,21 +186,18 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 (function (i) {
                     {
                         var tr = $("<tr>").appendTo(table);
-                        tr.append($("<td>").append(_this.verificationFormulas[i]));
-                        tr.append($("<td>").attr("id", "frm" + i).addClass("clearMe"));
                         tr.append($("<td>").append(createButton("+").click(function () { return _this.insertInstruction(i); })));
+                        tr.append($("<td>").append(splitCell(_this.verificationFormulas[i], $("<span>").attr("id", "frm" + i).addClass("clearMe"), "splitStaticDynamic")));
                     }
                     if (i != n) {
                         var tr = $("<tr>").appendTo(table);
-                        tr.append($("<td>").append(_this.statements[i].createHTML()));
-                        tr.append($("<td>").attr("id", "ins" + i).addClass("clearMe"));
                         tr.append($("<td>").append(createButton("-").click(function () { return _this.removeInstruction(i); })));
+                        tr.append($("<td>").append(splitCell(_this.statements[i].createHTML(), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
                     }
                     else {
                         var tr = $("<tr>").appendTo(table);
                         tr.append($("<td>"));
-                        tr.append($("<td>").attr("id", "ins" + i).addClass("clearMe"));
-                        tr.append($("<td>"));
+                        tr.append($("<td>").append(splitCell($("<span>"), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
                     }
                 })(i);
             this.analyze();
