@@ -73,6 +73,22 @@ export class EditInstructions
             "assert (q.x = 1) * (q.y = 2);"
         ]);
     }
+    public loadEx3(): void
+    {
+        this.setInstructions([
+            "void v;",
+            "int x;",
+            "int y;",
+            "x := 3;",
+            "y := 4;",
+            "Point p;",
+            "p := new Point;",
+            "p.x := x;",
+            "p.y := y;",
+            "Point q;",
+            "q := p.swapXY(v);"
+        ]);
+    }
 
     public get numInstructions(): number
     {
@@ -81,7 +97,7 @@ export class EditInstructions
 
     private createDynVerElement(): JQuery
     {
-        return $("<span>").addClass("intermediateState");
+        return $("<span>");
     }
 
     private condPre: VerificationFormulaGradual;
@@ -145,17 +161,15 @@ export class EditInstructions
         var jqEnv = $("#frm" + i);
 
         if (dynEnv != null)
-            jqEnv.append($("<span>")
-                .addClass("dynEnv")
-                .text(printEnv(topEnv(dynEnv))));
+            jqEnv.text(printEnv(topEnv(dynEnv)));
         else
-            jqEnv.append($("<span>")
-                .addClass("dynEnv")
-                .text("BLOCKED"));
+            jqEnv.text("BLOCKED");
     }
 
     private analyze(): void
     {
+        console.group("analyze");
+
         // clear messages
         this.verificationFormulas.forEach(x => x.text("").removeClass("err").attr("title", null));
         $(".clearMe").text("");
@@ -167,8 +181,15 @@ export class EditInstructions
         var cond = this.condPre;
 
         var dynEnv: StackEnv = { H: {}, S: [{ r: {}, A: [], ss: statements }] };
-        var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).filter(x => x.length > 0)[0][0];
-        var dynStepInto: () => void = () => { dynEnv = dynEnv == null ? null : dynEnvNextStmt().smallStep(dynEnv, this.hoare.env); };
+        var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).reverse().filter(x => x.length > 0)[0][0];
+        var dynStepInto: () => void = () => 
+        { 
+            if (dynEnv == null) return;
+            var stmt = dynEnvNextStmt();
+            console.log("State: ", printEnv(topEnv(dynEnv)));
+            console.log("Statement: ", stmt + "");
+            dynEnv = stmt.smallStep(dynEnv, this.hoare.env);
+        };
         var dynStepOver: () => void = () => { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1) dynStepInto(); };
         var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
         var dynSuccess = true;
@@ -209,6 +230,8 @@ export class EditInstructions
             if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }
+
+        console.groupEnd();
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void
@@ -232,6 +255,13 @@ export class EditInstructions
         this.statements.splice(index, 0, new EditStatement(undefined, () => this.analyze()));
         if (update)
             this.updateGUI();
+    }
+
+    private selectInstruction(index: number): void
+    {
+        while (index >= this.statements.length)
+            this.insertInstruction(this.statements.length);
+        this.statements[index].editBegin();
     }
 
     private updateGUI(): void
@@ -262,7 +292,7 @@ export class EditInstructions
                             this.verificationFormulas[i], 
                             $("<span>").attr("id", "frm" + i).addClass("clearMe"), 
                             "splitStaticDynamic")
-                        ));
+                        ).addClass("intermediateState"));
                 }
                 if (i != n)
                 {
@@ -272,7 +302,9 @@ export class EditInstructions
                         createButton("-").click(() => this.removeInstruction(i))));
                     tr.append($("<td>").append(
                         splitCell(
-                            this.statements[i].createHTML(), 
+                            this.statements[i]
+                                .createHTML()
+                                .keydown(eo => { if (eo.which == 13) this.selectInstruction(i + 1); }), 
                             $("<span>").attr("id", "ins" + i).addClass("clearMe"), 
                             "splitStmtDyn")
                         ));

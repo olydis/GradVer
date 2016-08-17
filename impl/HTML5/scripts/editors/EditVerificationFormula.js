@@ -14,7 +14,6 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
             var formulaContainer = $("<span>");
             _super.call(this, formulaContainer, initialSource, function (source) {
                 _this.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
-                onChange(_this.verForm);
                 var src = _this.verForm.toString();
                 var html = $("<span>").text(src);
                 // if (!this.verForm.sfrm())
@@ -28,7 +27,7 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
                     source: src,
                     html: html
                 };
-            });
+            }, function () { return onChange(_this.verForm); });
             this.formulaContainer = formulaContainer;
         }
         EditVerificationFormula.prototype.createHTML = function () {

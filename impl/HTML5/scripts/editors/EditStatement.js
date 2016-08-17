@@ -12,15 +12,15 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
             if (initialSource === void 0) { initialSource = ""; }
             var stmtContainer = $("<span>");
             _super.call(this, stmtContainer, initialSource, function (source) {
-                _this.stmt = Statement_1.Statement.parse(source) || Statement_1.Statement.getNop();
-                var src = _this.stmt.toString();
-                var html = $("<span>").text(src);
-                onChange();
+                var parsed = Statement_1.Statement.parse(source);
+                _this.stmt = parsed || Statement_1.Statement.getNop();
+                var src = parsed ? _this.stmt.toString() : "";
+                var html = $("<span>").text(_this.stmt.toString());
                 return {
                     source: src,
                     html: html
                 };
-            });
+            }, function () { return onChange(); });
             this.stmtContainer = stmtContainer;
         }
         EditStatement.prototype.createHTML = function () {

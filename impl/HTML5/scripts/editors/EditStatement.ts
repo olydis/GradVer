@@ -18,15 +18,16 @@ export class EditStatement extends EditableElement
             stmtContainer,
             initialSource,
             (source: string) => {
-                this.stmt = Statement.parse(source) || Statement.getNop();
-                var src = this.stmt.toString();
-                var html = $("<span>").text(src);
-                onChange();
+                var parsed = Statement.parse(source);
+                this.stmt = parsed || Statement.getNop();
+                var src = parsed ? this.stmt.toString() : "";
+                var html = $("<span>").text(this.stmt.toString());
                 return {
                     source: src,
                     html: html
                 };
-            }
+            },
+            () => onChange()
         );
 
         this.stmtContainer = stmtContainer;

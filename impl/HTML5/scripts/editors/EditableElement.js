@@ -1,11 +1,12 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
     var EditableElement = (function () {
-        function EditableElement(container, source, render, editMode) {
+        function EditableElement(container, source, render, onChange, editMode) {
             if (editMode === void 0) { editMode = false; }
             this.container = container;
             this.source = source;
             this.render = render;
+            this.onChange = onChange;
             this.editMode = editMode;
             EditableElement.elems.push(this);
             this.editedSource = null;
@@ -36,8 +37,9 @@ define(["require", "exports"], function (require, exports) {
         };
         EditableElement.prototype.editEnd = function (accept) {
             if (accept === void 0) { accept = true; }
-            if (accept && this.editedSource != null) {
-                this.source = this.editedSource;
+            if (this.editedSource != null) {
+                if (accept)
+                    this.source = this.editedSource;
                 this.editedSource = null;
                 this.rerender();
             }
@@ -46,6 +48,7 @@ define(["require", "exports"], function (require, exports) {
             var rendered = this.render(this.source);
             this.source = rendered.source;
             this.container.text("").append(rendered.html);
+            this.onChange();
         };
         EditableElement.elems = [];
         return EditableElement;

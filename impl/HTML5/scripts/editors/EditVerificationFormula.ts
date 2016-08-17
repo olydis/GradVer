@@ -18,7 +18,6 @@ export class EditVerificationFormula extends EditableElement
             initialSource,
             (source: string) => {
                 this.verForm = new VerificationFormulaGradual(source);
-                onChange(this.verForm);
                 var src = this.verForm.toString()
                 var html = $("<span>").text(src);
                 // if (!this.verForm.sfrm())
@@ -32,7 +31,8 @@ export class EditVerificationFormula extends EditableElement
                     source: src,
                     html: html
                 };
-            }
+            },
+            () => onChange(this.verForm)
         );
 
         this.formulaContainer = formulaContainer;

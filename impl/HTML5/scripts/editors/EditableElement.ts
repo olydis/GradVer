@@ -11,6 +11,7 @@ export class EditableElement
         private container: JQuery, 
         protected source: string,
         private render: (source: string) => { source: string, html: JQuery },
+        private onChange: () => void,
         private editMode: boolean = false
     )
     {
@@ -44,9 +45,10 @@ export class EditableElement
 
     public editEnd(accept: boolean = true): void
     {
-        if (accept && this.editedSource != null)
+        if (this.editedSource != null)
         {
-            this.source = this.editedSource;
+            if (accept)
+                this.source = this.editedSource;
             this.editedSource = null;
             this.rerender();
         }
@@ -57,5 +59,6 @@ export class EditableElement
         var rendered = this.render(this.source);
         this.source = rendered.source;
         this.container.text("").append(rendered.html);
+        this.onChange();
     }
 }

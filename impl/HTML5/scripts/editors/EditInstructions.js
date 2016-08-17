@@ -61,6 +61,21 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "assert (q.x = 1) * (q.y = 2);"
             ]);
         };
+        EditInstructions.prototype.loadEx3 = function () {
+            this.setInstructions([
+                "void v;",
+                "int x;",
+                "int y;",
+                "x := 3;",
+                "y := 4;",
+                "Point p;",
+                "p := new Point;",
+                "p.x := x;",
+                "p.y := y;",
+                "Point q;",
+                "q := p.swapXY(v);"
+            ]);
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;
@@ -69,7 +84,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             configurable: true
         });
         EditInstructions.prototype.createDynVerElement = function () {
-            return $("<span>").addClass("intermediateState");
+            return $("<span>");
         };
         EditInstructions.prototype.displayPreCond = function (i, cond) {
             this.verificationFormulas[i].text("").append(cond.norm().toString());
@@ -96,16 +111,13 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         EditInstructions.prototype.displayDynState = function (i, dynEnv) {
             var jqEnv = $("#frm" + i);
             if (dynEnv != null)
-                jqEnv.append($("<span>")
-                    .addClass("dynEnv")
-                    .text(EvalEnv_1.printEnv(StackEnv_1.topEnv(dynEnv))));
+                jqEnv.text(EvalEnv_1.printEnv(StackEnv_1.topEnv(dynEnv)));
             else
-                jqEnv.append($("<span>")
-                    .addClass("dynEnv")
-                    .text("BLOCKED"));
+                jqEnv.text("BLOCKED");
         };
         EditInstructions.prototype.analyze = function () {
             var _this = this;
+            console.group("analyze");
             // clear messages
             this.verificationFormulas.forEach(function (x) { return x.text("").removeClass("err").attr("title", null); });
             $(".clearMe").text("");
@@ -114,8 +126,15 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var g = Gamma_1.GammaNew;
             var cond = this.condPre;
             var dynEnv = { H: {}, S: [{ r: {}, A: [], ss: statements }] };
-            var dynEnvNextStmt = function () { return dynEnv.S.map(function (x) { return x.ss; }).filter(function (x) { return x.length > 0; })[0][0]; };
-            var dynStepInto = function () { dynEnv = dynEnv == null ? null : dynEnvNextStmt().smallStep(dynEnv, _this.hoare.env); };
+            var dynEnvNextStmt = function () { return dynEnv.S.map(function (x) { return x.ss; }).reverse().filter(function (x) { return x.length > 0; })[0][0]; };
+            var dynStepInto = function () {
+                if (dynEnv == null)
+                    return;
+                var stmt = dynEnvNextStmt();
+                console.log("State: ", EvalEnv_1.printEnv(StackEnv_1.topEnv(dynEnv)));
+                console.log("Statement: ", stmt + "");
+                dynEnv = stmt.smallStep(dynEnv, _this.hoare.env);
+            };
             var dynStepOver = function () { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1)
                 dynStepInto(); };
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
@@ -148,6 +167,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 if (dynSuccess && dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
+            console.groupEnd();
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;
@@ -169,6 +189,11 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             if (update)
                 this.updateGUI();
         };
+        EditInstructions.prototype.selectInstruction = function (index) {
+            while (index >= this.statements.length)
+                this.insertInstruction(this.statements.length);
+            this.statements[index].editBegin();
+        };
         EditInstructions.prototype.updateGUI = function () {
             var _this = this;
             var createButton = function (s) {
@@ -187,12 +212,15 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     {
                         var tr = $("<tr>").appendTo(table);
                         tr.append($("<td>").append(createButton("+").click(function () { return _this.insertInstruction(i); })));
-                        tr.append($("<td>").append(splitCell(_this.verificationFormulas[i], $("<span>").attr("id", "frm" + i).addClass("clearMe"), "splitStaticDynamic")));
+                        tr.append($("<td>").append(splitCell(_this.verificationFormulas[i], $("<span>").attr("id", "frm" + i).addClass("clearMe"), "splitStaticDynamic")).addClass("intermediateState"));
                     }
                     if (i != n) {
                         var tr = $("<tr>").appendTo(table);
                         tr.append($("<td>").append(createButton("-").click(function () { return _this.removeInstruction(i); })));
-                        tr.append($("<td>").append(splitCell(_this.statements[i].createHTML(), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
+                        tr.append($("<td>").append(splitCell(_this.statements[i]
+                            .createHTML()
+                            .keydown(function (eo) { if (eo.which == 13)
+                            _this.selectInstruction(i + 1); }), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
                     }
                     else {
                         var tr = $("<tr>").appendTo(table);
