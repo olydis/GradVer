@@ -234,7 +234,11 @@ export class EditInstructions
             }
 
             var res = this.hoare.post(s, cond, g);
-            this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess = dynSuccess && dynCheckDyn(res.dyn));
+            dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
+            this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
+            if (!dynSuccess)
+                dynEnv = null;
+
             cond = res.post;
             g = res.postGamma;
 
