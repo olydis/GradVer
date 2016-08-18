@@ -52,12 +52,30 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         //     ]
                         // },
                         {
-                            name: "swapXY",
+                            name: "swapXYweak",
                             retType: new Type_1.TypeClass("Point"),
                             argType: new Type_1.TypeClass("void"),
                             argName: "_",
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
+                            body: [
+                                Statement_1.Statement.parse("int t;"),
+                                Statement_1.Statement.parse("Point res;"),
+                                Statement_1.Statement.parse("res = new Point;"),
+                                Statement_1.Statement.parse("t = this.y;"),
+                                Statement_1.Statement.parse("res.x = t;"),
+                                Statement_1.Statement.parse("t = this.x;"),
+                                Statement_1.Statement.parse("res.y = t;"),
+                                Statement_1.Statement.parse("return res;"),
+                            ]
+                        },
+                        {
+                            name: "swapXYstrong",
+                            retType: new Type_1.TypeClass("Point"),
+                            argType: new Type_1.TypeClass("void"),
+                            argName: "_",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                             body: [
                                 Statement_1.Statement.parse("int t;"),
                                 Statement_1.Statement.parse("Point res;"),
@@ -93,8 +111,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         (function () {
             var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
             var update = function () { };
-            var inputPre = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
-            var inputPost = new EditVerificationFormula_1.EditVerificationFormula("?", function () { return update(); });
+            var inputPre = new EditVerificationFormula_1.EditVerificationFormula("true", function () { return update(); });
+            var inputPost = new EditVerificationFormula_1.EditVerificationFormula("true", function () { return update(); });
             update = function () {
                 var pPre = inputPre.getFormula();
                 var pPost = inputPost.getFormula();

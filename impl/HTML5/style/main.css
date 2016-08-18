@@ -207,8 +207,8 @@ h1
 }
 .containerTable > tbody > tr > td
 {
+    padding-right: 16px;
     padding-top: 8px;
-    padding-right: 20px;
     vertical-align: middle;
 }
 .containerTable > tbody > tr
@@ -217,7 +217,14 @@ h1
 }
 .containerTable > tbody > tr > td:first-child
 {
-    width: 100px;
+    width: 70px;
+    font-size: 0.8em;
+    color: gray;
+    border-right: 1px solid gray;
+}
+.containerTable > tbody > tr > td:last-child
+{
+    padding-left: 8px;
 }
 
 .derived

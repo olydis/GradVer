@@ -50,6 +50,8 @@ export class EditInstructions
     public loadEx1(): void
     {
         this.setInstructions([
+            "// ♦ Basics ♦",
+            "// • Can you change the assertion in order to make static|dynamic checks fail?",
             "int x;",
             "int y;",
             "y = 3;",
@@ -60,6 +62,7 @@ export class EditInstructions
     public loadEx2(): void
     {
         this.setInstructions([
+            "// ♦ Fun with infinite linked list ♦",
             "int i1;",
             "i1 := 1;",
             "int i2;",
@@ -80,6 +83,7 @@ export class EditInstructions
     public loadEx3(): void
     {
         this.setInstructions([
+            "// ♦ Method call ♦",
             "void v;",
             "int x;",
             "int y;",
@@ -90,15 +94,23 @@ export class EditInstructions
             "p.x := x;",
             "p.y := y;",
             "Point q;",
-            "q := p.swapXY(v);"
+            "// • Due to syntax limitations, 'swapXYweak' has a weak static postcondition",
+            "q := p.swapXYweak(v);",
+            "// • As a result, the following assertion cannot be proved statically",
+            "assert (p.x = 3) * (p.y = 4) * (q.x = 4) * (q.y = 3);",
+            "// • Gradualization to the rescue! Two choices:",
+            "//     - use 'swapXYstrong', it has a gradual postcondition",
+            "//     - gradualize the call site (introduce '?' via cast or as precondition)"
         ]);
     }
     public loadEx4(): void
     {
         this.setInstructions([
+            "// ♦ Casts ♦",
             "int a;",
             "a := 43;",
-            "// comment this in to convert static to dynamic failure: { ? }",
+            "// • comment the following in to convert static to dynamic failure:",
+            "// { ? }",
             "assert (a = 42);",
         ]);
     }

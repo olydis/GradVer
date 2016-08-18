@@ -66,12 +66,36 @@ $(() =>
                 //     ]
                 // },
                 {
-                    name: "swapXY",
+                    name: "swapXYweak",
                     retType: new TypeClass("Point"),
                     argType: new TypeClass("void"),
                     argName: "_",
                     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                     frmPost: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
+                    body: [
+                        Statement.parse("int t;"),
+                        Statement.parse("Point res;"),
+                        Statement.parse("res = new Point;"),
+                        Statement.parse("t = this.y;"),
+                        Statement.parse("res.x = t;"),
+                        Statement.parse("t = this.x;"),
+                        Statement.parse("res.y = t;"),
+                        Statement.parse("return res;"),
+
+                        // Statement.parse("Point res;"),
+                        // Statement.parse("res = new Point;"),
+                        // Statement.parse("res.x = this.y;"),
+                        // Statement.parse("res.y = this.x;"),
+                        // Statement.parse("return res;"),
+                    ]
+                },
+                {
+                    name: "swapXYstrong",
+                    retType: new TypeClass("Point"),
+                    argType: new TypeClass("void"),
+                    argName: "_",
+                    frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                    frmPost: new VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                     body: [
                         Statement.parse("int t;"),
                         Statement.parse("Point res;"),
@@ -114,8 +138,8 @@ $(() =>
     (() => {
         var code = new EditInstructions($("#containerHoareCode"), hoare);
         var update = () => {};
-        var inputPre = new EditVerificationFormula("?", () => update());
-        var inputPost = new EditVerificationFormula("?", () => update());
+        var inputPre = new EditVerificationFormula("true", () => update());
+        var inputPost = new EditVerificationFormula("true", () => update());
         update = () =>
         {
             var pPre = inputPre.getFormula();

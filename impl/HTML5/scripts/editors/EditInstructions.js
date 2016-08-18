@@ -40,6 +40,8 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx1 = function () {
             this.setInstructions([
+                "// ♦ Basics ♦",
+                "// • Can you change the assertion in order to make static|dynamic checks fail?",
                 "int x;",
                 "int y;",
                 "y = 3;",
@@ -49,6 +51,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx2 = function () {
             this.setInstructions([
+                "// ♦ Fun with infinite linked list ♦",
                 "int i1;",
                 "i1 := 1;",
                 "int i2;",
@@ -68,6 +71,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx3 = function () {
             this.setInstructions([
+                "// ♦ Method call ♦",
                 "void v;",
                 "int x;",
                 "int y;",
@@ -78,14 +82,22 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "p.x := x;",
                 "p.y := y;",
                 "Point q;",
-                "q := p.swapXY(v);"
+                "// • Due to syntax limitations, 'swapXYweak' has a weak static postcondition",
+                "q := p.swapXYweak(v);",
+                "// • As a result, the following assertion cannot be proved statically",
+                "assert (p.x = 3) * (p.y = 4) * (q.x = 4) * (q.y = 3);",
+                "// • Gradualization to the rescue! Two choices:",
+                "//     - use 'swapXYstrong', it has a gradual postcondition",
+                "//     - gradualize the call site (introduce '?' via cast or as precondition)"
             ]);
         };
         EditInstructions.prototype.loadEx4 = function () {
             this.setInstructions([
+                "// ♦ Casts ♦",
                 "int a;",
                 "a := 43;",
-                "// comment this in to convert static to dynamic failure: { ? }",
+                "// • comment the following in to convert static to dynamic failure:",
+                "// { ? }",
                 "assert (a = 42);",
             ]);
         };
