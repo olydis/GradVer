@@ -896,6 +896,7 @@ Lemmas $\forall \grad{\phi}, \hat{\phi'}$:
 \end{displaymath}
 
 
+Interior of implication:
 \begin{align*}
 \mathcal{I}_{\implies}(\grad{\phi_1}, \grad{\phi_2})
 = \langle 
@@ -912,13 +913,10 @@ Lemmas $\forall \grad{\phi}, \hat{\phi'}$:
 \rangle\\
 \end{align*}
 
-
+Interior of consistent transitivity:
 \begin{align*}
 \Delta^{\implies}(\grad{\phi_1}, \grad{\phi_2}, \grad{\phi_3})
 =~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\}) \\
-=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2})). \hat{\phi_1} \implies \hat{\phi_2} ~\}) \\
-=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2}))}) ~\}) \\
-=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2}))}) ~\}) \\
 = \langle 
 &\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_3} \in \gamma(\grad{\phi_3}), \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\}),\\
 &\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}), \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\})
@@ -933,20 +931,32 @@ Lemmas $\forall \grad{\phi}, \hat{\phi'}$:
 \rangle\\
 = \langle 
 &\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})). \hat{\phi_1} \implies \hat{\phi_2} ~\}),\\
-&\alpha(?)
+&\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}). \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2}))}) ~\})
 \rangle\\
 = \langle 
 &\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2}))}) ~\}),\\
-&\alpha(?)
+&\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \gamma(\grad{\imp}(static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2})))(\gamma(\grad{\phi_1}))) \neq \emptyset  ~\})
 \rangle\\
 = \langle 
 &\alpha(\gamma(\grad{\imp}(static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})))(\grad{\phi_1}))), \\
-&\alpha(?)
+&\grad{\phi_3}
 \rangle\\
 = \langle 
 &\grad{\imp}(static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})))(\grad{\phi_1}), \\
-&\alpha(?)
+&\grad{\phi_3}
 \rangle\\
+\end{align*}
+         
+Evidence combination (invariant: $\grad{\phi_{22}} \sqsubseteq \grad{\phi_{21}}$):
+\begin{align*}
+   &\langle \grad{\phi_1}, \grad{\phi_{21}} \rangle \circ^{\implies} \langle \grad{\phi_{22}}, \grad{\phi_3} \rangle \\
+=~ &\Delta^{\implies}(\grad{\phi_1}, \grad{\phi_{21}} \sqcap \grad{\phi_{22}}, \grad{\phi_3}) \\
+=~ &\Delta^{\implies}(\grad{\phi_1}, \grad{\phi_{22}}, \grad{\phi_3}) \\
+=~ &
+\langle 
+\grad{\imp}(static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_{22}})))(\grad{\phi_1}),
+\grad{\phi_3}
+\rangle
 \end{align*}
          
 \subsection{Lifting implication}
