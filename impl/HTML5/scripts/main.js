@@ -106,6 +106,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#btnEx1").click(function () { return code.loadEx1(); });
             $("#btnEx2").click(function () { return code.loadEx2(); });
             $("#btnEx3").click(function () { return code.loadEx3(); });
+            $("#btnEx4").click(function () { return code.loadEx4(); });
             $("#btnToggleDyn").click(function (x) { return $("#containerHoare").toggleClass("showDynamic"); });
             $("#btnToggleDyn").mouseenter(function (x) { return $("#containerHoare").addClass("showSem"); });
             $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });

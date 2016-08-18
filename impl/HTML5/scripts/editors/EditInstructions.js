@@ -81,6 +81,14 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "q := p.swapXY(v);"
             ]);
         };
+        EditInstructions.prototype.loadEx4 = function () {
+            this.setInstructions([
+                "int a;",
+                "a := 43;",
+                "// comment this in to convert static to dynamic failure: { ? }",
+                "assert (a = 42);",
+            ]);
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;

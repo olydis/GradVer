@@ -93,6 +93,15 @@ export class EditInstructions
             "q := p.swapXY(v);"
         ]);
     }
+    public loadEx4(): void
+    {
+        this.setInstructions([
+            "int a;",
+            "a := 43;",
+            "// comment this in to convert static to dynamic failure: { ? }",
+            "assert (a = 42);",
+        ]);
+    }
 
     public get numInstructions(): number
     {

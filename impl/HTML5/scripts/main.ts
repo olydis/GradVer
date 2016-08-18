@@ -129,6 +129,7 @@ $(() =>
         $("#btnEx1").click(() => code.loadEx1());
         $("#btnEx2").click(() => code.loadEx2());
         $("#btnEx3").click(() => code.loadEx3());
+        $("#btnEx4").click(() => code.loadEx4());
 
         $("#btnToggleDyn").click(x => $("#containerHoare").toggleClass("showDynamic"));
         $("#btnToggleDyn").mouseenter(x => $("#containerHoare").addClass("showSem"));
