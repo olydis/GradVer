@@ -824,7 +824,7 @@ Discussion, comparison with AGT:
 	&\TappVER_{\Gamma, s, env}(\hat{\phi_{pre}}, \hat{\phi_{post}})
 	\end{align*}
 	
-	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \goal(s)$ ($\hat{\phi}$ was simplified away earlier).
+	Note that it implicitly ensures $\grad{\phi} \grad{\implies} \grad{\phi_{pre}} \grad{\implies} \goal(s)$ ($\hat{\phi}$ was simplified away earlier).
 	However, in our setting we could simplify away the subtyping/implication-judgments that can be found in AGT:
 	Since checking whether an environment has a certain type is naturally defined as a conservative approximation (to whichever type describes the environment in most detail), type-judgments can always be combined with subtyping-judgments (just making the approximation a little worse).
 	
@@ -879,21 +879,19 @@ Discussion, comparison with AGT:
 
 \subsubsection{Alternative angle: evidence = interior}
 Lemmas $\forall \grad{\phi}, \hat{\phi'}$:
-\begin{displaymath}
-\exists \hat{\phi} \in \gamma(\grad{\phi}). \hat{\phi'} \implies \hat{\phi}
+\begin{align*}
+\exists \hat{\phi}. 
+&\hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi'} \implies \hat{\phi}
 \quad\quad
 \iff
 \quad\quad
-\hat{\phi'} \in \gamma(\withqm{static(\grad{\phi})})
-\end{displaymath}
-
-\begin{displaymath}
-\hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi} \implies \hat{\phi'}
+\hat{\phi'} \in \gamma(\withqm{static(\grad{\phi})})\\
+&\hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi} \implies \hat{\phi'}
 \quad\quad
 \iff
 \quad\quad
-\hat{\phi} \in \gamma(\grad{\imp}(\hat{\phi'})(\grad{\phi}))
-\end{displaymath}
+\hat{\phi} \in \gamma(\grad{\imp}(\hat{\phi'})(\grad{\phi}))\\
+\end{align*}
 
 
 Interior of implication:
