@@ -94,7 +94,7 @@
 \newcommand{\dynamicFP}[3]{\ensuremath{\floor{#3}_{#1,#2}}}
 
 \newcommand{\rlabel}[1]{\RightLabel{\quad #1}}
-\newcommand{\dom}{\ensuremath{\text{dom}}}
+\newcommand{\dom}{\ensuremath{\textrm{dom}}}
 
 \newcommand{\class}{\ensuremath{\texttt{class}~}}
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
@@ -110,7 +110,7 @@
 \newcommand{\hsc}{~\hat{*}~}
 \newcommand{\gsc}{~\grad{*}~}
 \newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
-\newcommand{\imp}{\text{imp}}
+\newcommand{\imp}{\textrm{imp}}
 
 % typewriter stuff
 \newcommand{\ttt}{\texttt}
@@ -824,11 +824,11 @@ Discussion, comparison with AGT:
 	&\TappVER_{\Gamma, s, env}(\hat{\phi_{pre}}, \hat{\phi_{post}})
 	\end{align*}
 	
-	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \text{goal}(s)$ ($\hat{\phi}$ was simplified away earlier).
+	Note that it implicitly ensures the consistent transitivity of the gradual version of $\hat{\phi} \implies \hat{\phi_{pre}} \implies \goal(s)$ ($\hat{\phi}$ was simplified away earlier).
 	However, in our setting we could simplify away the subtyping/implication-judgments that can be found in AGT:
 	Since checking whether an environment has a certain type is naturally defined as a conservative approximation (to whichever type describes the environment in most detail), type-judgments can always be combined with subtyping-judgments (just making the approximation a little worse).
 	
-	Bottom line, instead of introducing evidence we end up with an additional premise $env \vdash \withqm{\text{goal}(s)}$ which can easily be checked at runtime.
+	Bottom line, instead of introducing evidence we end up with an additional premise $env \vdash \withqm{\goal(s)}$ which can easily be checked at runtime.
 	% Note: optimization.
 \end{description}
 
@@ -877,11 +877,78 @@ Discussion, comparison with AGT:
 %\alpha(\overline{f}(\gamma(\alpha(\overline{g}(\gamma(\grad{\phi})))))) &\sqsubseteq \alpha(\overline{f}(\overline{g}(\gamma(\grad{\phi}))))\\
 %\end{align*}
 
-\subsection{Curry-Howard Table}
-\begin{tabular}{lll}
-	content...
-\end{tabular}
+\subsubsection{Alternative angle}
+Lemmas $\forall \grad{\phi}, \hat{\phi'}$:
+\begin{displaymath}
+\exists \hat{\phi} \in \gamma(\grad{\phi}). \hat{\phi'} \implies \hat{\phi}
+\quad\quad
+\iff
+\quad\quad
+\hat{\phi'} \in \gamma(\withqm{static(\grad{\phi})})
+\end{displaymath}
 
+\begin{displaymath}
+\hat{\phi} \in \gamma(\grad{\phi}) \wedge \hat{\phi} \implies \hat{\phi'}
+\quad\quad
+\iff
+\quad\quad
+\hat{\phi} \in \gamma(\grad{\imp}(\hat{\phi'})(\grad{\phi}))
+\end{displaymath}
+
+
+\begin{align*}
+\mathcal{I}_{\implies}(\grad{\phi_1}, \grad{\phi_2})
+= \langle 
+    &\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} ~\}),
+    &&\alpha(\{~ \hat{\phi_2} \in \gamma(\grad{\phi_2}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}). \hat{\phi_1} \implies \hat{\phi_2} ~\}) 
+\rangle\\
+= \langle 
+    &\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\phi_2})}) ~\}),
+    &&\grad{\phi_2} 
+\rangle\\
+= \langle 
+    &\grad{\imp}(static(\grad{\phi_2}))(\grad{\phi_1}),
+    &&\grad{\phi_2} 
+\rangle\\
+\end{align*}
+
+
+\begin{align*}
+\Delta^{\implies}(\grad{\phi_1}, \grad{\phi_2}, \grad{\phi_3})
+=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\}) \\
+=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2})). \hat{\phi_1} \implies \hat{\phi_2} ~\}) \\
+=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2}))}) ~\}) \\
+=~&\alpha^2(\{~ \langle \hat{\phi_1}, \hat{\phi_3} \rangle \in \gamma^2(\grad{\phi_1}, \grad{\phi_3}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2}))}) ~\}) \\
+= \langle 
+&\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_3} \in \gamma(\grad{\phi_3}), \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\}),\\
+&\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}), \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\})
+\rangle\\
+= \langle 
+&\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge (\exists \hat{\phi_3} \in \gamma(\grad{\phi_3}). \hat{\phi_2} \implies \hat{\phi_3}) ~\}),\\
+&\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}), \hat{\phi_2}. \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \in \gamma(\grad{\phi_2}) \wedge \hat{\phi_2} \implies \hat{\phi_3} ~\})
+\rangle\\
+= \langle 
+&\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\phi_2}). \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \in \gamma(\withqm{static(\grad{\phi_3})}) ~\}),\\
+&\alpha(\{~ \hat{\phi_3} \in \gamma(\grad{\phi_3}) ~|~ \exists \hat{\phi_1} \in \gamma(\grad{\phi_1}), \hat{\phi_2}. \hat{\phi_1} \implies \hat{\phi_2} \wedge \hat{\phi_2} \in \gamma(\grad{\imp}(\hat{\phi_3})(\grad{\phi_2})) ~\})
+\rangle\\
+= \langle 
+&\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \exists \hat{\phi_2} \in \gamma(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})). \hat{\phi_1} \implies \hat{\phi_2} ~\}),\\
+&\alpha(?)
+\rangle\\
+= \langle 
+&\alpha(\{~ \hat{\phi_1} \in \gamma(\grad{\phi_1}) ~|~ \hat{\phi_1} \in \gamma(\withqm{static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2}))}) ~\}),\\
+&\alpha(?)
+\rangle\\
+= \langle 
+&\alpha(\gamma(\grad{\imp}(static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})))(\grad{\phi_1}))), \\
+&\alpha(?)
+\rangle\\
+= \langle 
+&\grad{\imp}(static(\grad{\imp}(static(\grad{\phi_3}))(\grad{\phi_2})))(\grad{\phi_1}), \\
+&\alpha(?)
+\rangle\\
+\end{align*}
+         
 \subsection{Lifting implication}
 Implication is the only predicate on pairs of $\phi$ occurring in our Hoare rules.\\
 
