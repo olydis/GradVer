@@ -69,6 +69,9 @@ input
     border: none;
 
     width: 100%;
+	box-shadow: 0 0 2px var(--main-color), 
+                0 0 2px var(--main-color) inset;
+    outline: none;
 }
 
 .overlay
