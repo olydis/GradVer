@@ -34,25 +34,22 @@
 
 \def\extraVskip{3pt}
 \newenvironment{scprooftree}[1]%
-  {\gdef\scalefactor{#1}\begin{center}\proofSkipAmount \leavevmode}%
-  {\scalebox{\scalefactor}{\DisplayProof}\proofSkipAmount \end{center} }
+{\gdef\scalefactor{#1}\begin{center}\proofSkipAmount \leavevmode}%
+    {\scalebox{\scalefactor}{\DisplayProof}\proofSkipAmount \end{center} }
 
 \makeatletter
 \providecommand{\bigsqcap}{%
-  \mathop{%
-    \mathpalette\@updown\bigsqcup
-  }%
+    \mathop{%
+        \mathpalette\@updown\bigsqcup
+    }%
 }
 \newcommand*{\@updown}[2]{%
-  \rotatebox[origin=c]{180}{$\m@th#1#2$}%
+    \rotatebox[origin=c]{180}{$\m@th#1#2$}%
 }
 \makeatother
 
 \setlength{\parindent}{0cm}
 
-%\includeonly{staticSemanticsDetermGrad}
-\begin{document}
-\pagenumbering{arabic}
 
 
 \newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
@@ -139,6 +136,16 @@
 % structure
 \newcommand{\method}[6]{\ttt{#1~#2(#3~#4)~#5~\{ #6 \}}}
 
+\newcommand{\OK}{~\textsf{OK}}
+\newcommand{\OKinC}{~\textsf{OK in}~C}
+
+\newcommand{\goal}{\ensuremath{\textrm{goal}_{\Gamma}}}
+\newcommand{\TappVER}{\ensuremath{\textrm{TappVER}}}
+\newcommand{\GTappVER}{\ensuremath{\grad{\textrm{T}}\textrm{appVER}}}
+
+\begin{document}
+\pagenumbering{arabic}
+
 \section{Syntax}
 \begin{align*}
 \\ &program    	&&::= \ttt{$\overline{cls}$~$\overline{s}$}
@@ -177,8 +184,6 @@
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
 \end{align*}
 
-\newcommand{\OK}{~\textsf{OK}}
-\newcommand{\OKinC}{~\textsf{OK in}~C}
 \section{Assumptions}
 All the rules in the following sections are implicitly parameterized over a $program p$ that is well-formed.
 
@@ -651,9 +656,6 @@ Example:
 Trying to “fix” GHSec statically turns out to be impossible without runtime information. That moves our focus towards dynamic semantics. 
 
 Discussion, comparison with AGT:
-\newcommand{\goal}{\ensuremath{\textrm{goal}_{\Gamma}}}
-\newcommand{\TappVER}{\ensuremath{\textrm{TappVER}}}
-\newcommand{\GTappVER}{\ensuremath{\grad{\textrm{T}}\textrm{appVER}}}
 \begin{description}
 	\item [AGT]~\\
 	reduction = composite terms (parts had explicit type annotations!) get simplified to single term.
