@@ -1,5 +1,48 @@
-define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./runtime/Program", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type", "./types/Statement"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, Program_1, MainTest_1, VerificationFormulaGradual_1, Type_1, Statement_1) {
+define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./runtime/Gamma", "./runtime/Program", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type", "./types/Statement", "./types/VerificationFormula"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, Gamma_1, Program_1, MainTest_1, VerificationFormulaGradual_1, Type_1, Statement_1, VerificationFormula_1) {
     "use strict";
+    function unique(list) {
+        for (var i = 0; i < list.length; ++i)
+            if (list.indexOf(list[i], i + 1) != -1)
+                return false;
+        return true;
+    }
+    function wellFormedProgram(p, hoare) {
+        var res = null;
+        if (res == null)
+            res = hoare.checkMethod(Gamma_1.GammaNew, p.main, new VerificationFormulaGradual_1.VerificationFormulaGradual("true"), new VerificationFormulaGradual_1.VerificationFormulaGradual("true"));
+        if (res == null)
+            res = p.classes.map(function (c) { return wellFormedClass(c, hoare); }).filter(function (x) { return x != null; })[0];
+        return res;
+    }
+    function wellFormedClass(c, hoare) {
+        var res = null;
+        if (res == null)
+            res = unique(c.fields.map(function (x) { return x.name; })) ? null : "fields not unique";
+        if (res == null)
+            res = unique(c.methods.map(function (x) { return x.name; })) ? null : "methods not unique";
+        if (res == null)
+            res = c.methods.map(function (m) { return wellFormedMethod(c, m, hoare); }).filter(function (x) { return x != null; })[0];
+        return res;
+    }
+    function wellFormedMethod(c, m, hoare) {
+        var augmentPre = new VerificationFormula_1.FormulaPartNeq(new Expression_1.ExpressionX(Expression_1.Expression.getThis()), Expression_1.Expression.getNull());
+        var res = null;
+        if (res == null)
+            res = m.frmPre.staticFormula.FV().every(function (x) { return x == m.argName || x == Expression_1.Expression.getThis(); })
+                ? null : "precodiction contains unknown variables: " + m.frmPre;
+        if (res == null)
+            res = m.frmPost.staticFormula.FV().every(function (x) { return x == m.argName || x == Expression_1.Expression.getThis() || x == Expression_1.Expression.getResult(); })
+                ? null : "postcodiction contains unknown variables: " + m.frmPost;
+        if (res == null)
+            res = hoare.checkMethod(Gamma_1.GammaAdd(m.argName, m.argType, Gamma_1.GammaAdd(Expression_1.Expression.getThis(), new Type_1.TypeClass(c.name), Gamma_1.GammaAdd(Expression_1.Expression.getResult(), m.retType, Gamma_1.GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost);
+        if (res == null)
+            res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
+        if (res == null)
+            res = m.frmPost.sfrm() ? null : "postcondition not self-framed: " + m.frmPost;
+        if (res == null)
+            res = m.body.filter(function (s) { return s.writesTo(m.argName); }).map(function (s) { return s + " writes to " + m.argName; })[0];
+        return res;
+    }
     $(function () {
         $(window).click(function () { return EditableElement_1.EditableElement.editEndAll(); });
         var program = {
@@ -101,12 +144,104 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             type: new Type_1.TypeClass("Points")
                         }
                     ],
-                    methods: []
+                    methods: [
+                        {
+                            name: "insertAfter",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("Point"),
+                            argName: "p",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.t)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.t) * acc(this.t.h) * acc(this.t.t)"),
+                            body: [
+                                Statement_1.Statement.parse("Points t;"),
+                                Statement_1.Statement.parse("t = new Points;"),
+                                Statement_1.Statement.parse("t.h = p;"),
+                                Statement_1.Statement.parse("Points temp;"),
+                                Statement_1.Statement.parse("temp = this.t;"),
+                                Statement_1.Statement.parse("t.t = temp;"),
+                                Statement_1.Statement.parse("this.t = t;")
+                            ]
+                        },
+                        {
+                            name: "insertHere",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("Point"),
+                            argName: "p",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
+                            body: [
+                                Statement_1.Statement.parse("Points t;"),
+                                Statement_1.Statement.parse("t = new Points;"),
+                                Statement_1.Statement.parse("Point temp1;"),
+                                Statement_1.Statement.parse("temp1 = this.h;"),
+                                Statement_1.Statement.parse("t.h = temp1;"),
+                                Statement_1.Statement.parse("Points temp2;"),
+                                Statement_1.Statement.parse("temp2 = this.t;"),
+                                Statement_1.Statement.parse("t.t = temp2;"),
+                                Statement_1.Statement.parse("this.t = t;"),
+                                Statement_1.Statement.parse("this.h = p;")
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "FramingChallenge",
+                    fields: [],
+                    methods: [
+                        {
+                            name: "baz",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("Point"),
+                            argName: "p",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("?"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("?"),
+                            body: [
+                                Statement_1.Statement.parse("int i;"),
+                                Statement_1.Statement.parse("i = -1;"),
+                                Statement_1.Statement.parse("p.x = i;"),
+                                Statement_1.Statement.parse("p.y = i;")
+                            ]
+                        },
+                        {
+                            name: "bar",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("Point"),
+                            argName: "p",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
+                            body: [
+                                Statement_1.Statement.parse("void _;"),
+                                Statement_1.Statement.parse("_ = this.baz(p);")
+                            ]
+                        },
+                        {
+                            name: "foo",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("void"),
+                            argName: "__",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
+                            body: [
+                                Statement_1.Statement.parse("void _;"),
+                                Statement_1.Statement.parse("int i0;"),
+                                Statement_1.Statement.parse("Point p;"),
+                                Statement_1.Statement.parse("p = new Point;"),
+                                Statement_1.Statement.parse("p.x = i0;"),
+                                Statement_1.Statement.parse("p.y = i0;"),
+                                Statement_1.Statement.parse("assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)"),
+                                Statement_1.Statement.parse("_ = this.bar(p);"),
+                                Statement_1.Statement.parse("assert acc(p.y) * (p.y = 0)"),
+                            ]
+                        }
+                    ]
                 }],
             main: []
         };
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);
         var hoare = new Hoare_1.Hoare(env);
+        var wellFormedMessage = wellFormedProgram(program, hoare);
+        if (wellFormedMessage != null)
+            window.alert("program not well formed: " + wellFormedMessage);
         // containerHoare
         (function () {
             var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
@@ -125,6 +260,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#btnEx2").click(function () { return code.loadEx2(); });
             $("#btnEx3").click(function () { return code.loadEx3(); });
             $("#btnEx4").click(function () { return code.loadEx4(); });
+            $("#btnEx5").click(function () { return code.loadEx5(); });
             $("#btnToggleDyn").click(function (x) { return $("#containerHoare").toggleClass("showDynamic"); });
             $("#btnToggleDyn").mouseenter(function (x) { return $("#containerHoare").addClass("showSem"); });
             $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });

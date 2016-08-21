@@ -2,14 +2,57 @@ import { EditInstructions } from "./editors/EditInstructions";
 import { EditVerificationFormula } from "./editors/EditVerificationFormula";
 import { EditableElement } from "./editors/EditableElement";
 import { ExecutionEnvironment } from "./runtime/ExecutionEnvironment";
-import { Expression, ExpressionDot } from "./types/Expression";
+import { Expression, ExpressionDot, ExpressionX } from "./types/Expression";
 import { Hoare } from "./runtime/Hoare";
-import { Program, printProgram } from "./runtime/Program";
+import { GammaNew, GammaAdd } from "./runtime/Gamma";
+import { Program, printProgram, Class, Method } from "./runtime/Program";
 import { testAll } from "./testing/MainTest";
 import { VerificationFormulaGradual } from "./types/VerificationFormulaGradual";
 import { Type, TypeClass } from "./types/Type";
 import { Statement } from "./types/Statement";
 import { VerificationFormula, FormulaPart, FormulaPartEq, FormulaPartNeq } from "./types/VerificationFormula";
+
+function unique<T>(list: T[]): boolean
+{
+    for (var i = 0; i < list.length; ++i)
+        if (list.indexOf(list[i], i + 1) != -1)
+            return false;
+    return true;
+}
+
+function wellFormedProgram(p: Program, hoare: Hoare): string
+{
+    var res: string = null;
+    if (res == null) res = hoare.checkMethod(GammaNew, p.main, new VerificationFormulaGradual("true"), new VerificationFormulaGradual("true"));
+    if (res == null) res = p.classes.map(c => wellFormedClass(c, hoare)).filter(x => x != null)[0];
+    return res;
+}
+function wellFormedClass(c: Class, hoare: Hoare): string
+{
+    var res: string = null;
+    if (res == null) res = unique(c.fields.map(x => x.name)) ? null : "fields not unique";
+    if (res == null) res = unique(c.methods.map(x => x.name)) ? null : "methods not unique";
+    if (res == null) res = c.methods.map(m => wellFormedMethod(c, m, hoare)).filter(x => x != null)[0];
+    return res;
+}
+function wellFormedMethod(c: Class, m: Method, hoare: Hoare): string
+{
+    var augmentPre = new FormulaPartNeq(new ExpressionX(Expression.getThis()), Expression.getNull());
+
+    var res: string = null;
+    if (res == null) res = m.frmPre.staticFormula.FV().every(x => x == m.argName || x == Expression.getThis())
+                                ? null : "precodiction contains unknown variables: " + m.frmPre;
+    if (res == null) res = m.frmPost.staticFormula.FV().every(x => x == m.argName || x == Expression.getThis() || x == Expression.getResult())
+                                ? null : "postcodiction contains unknown variables: " + m.frmPost;
+    if (res == null) res = hoare.checkMethod(
+        GammaAdd(m.argName, m.argType, 
+        GammaAdd(Expression.getThis(), new TypeClass(c.name), 
+        GammaAdd(Expression.getResult(), m.retType, GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost);
+    if (res == null) res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
+    if (res == null) res = m.frmPost.sfrm() ? null : "postcondition not self-framed: " + m.frmPost;
+    if (res == null) res = m.body.filter(s => s.writesTo(m.argName)).map(s => s + " writes to " + m.argName)[0];
+    return res;
+}
 
 $(() =>
 {
@@ -127,12 +170,104 @@ $(() =>
                     type: new TypeClass("Points")
                 }
             ],
-            methods: []
+            methods: [
+                {
+                    name: "insertAfter",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("Point"),
+                    argName: "p",
+                    frmPre: new VerificationFormulaGradual("acc(this.t)"),
+                    frmPost: new VerificationFormulaGradual("acc(this.t) * acc(this.t.h) * acc(this.t.t)"),
+                    body: [
+                        Statement.parse("Points t;"),
+                        Statement.parse("t = new Points;"),
+                        Statement.parse("t.h = p;"),
+                        Statement.parse("Points temp;"),
+                        Statement.parse("temp = this.t;"),
+                        Statement.parse("t.t = temp;"),
+                        Statement.parse("this.t = t;")
+                    ]
+                },
+                {
+                    name: "insertHere",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("Point"),
+                    argName: "p",
+                    frmPre: new VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
+                    frmPost: new VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
+                    body: [
+                        Statement.parse("Points t;"),
+                        Statement.parse("t = new Points;"),
+                        Statement.parse("Point temp1;"),
+                        Statement.parse("temp1 = this.h;"),
+                        Statement.parse("t.h = temp1;"),
+                        Statement.parse("Points temp2;"),
+                        Statement.parse("temp2 = this.t;"),
+                        Statement.parse("t.t = temp2;"),
+                        Statement.parse("this.t = t;"),
+                        Statement.parse("this.h = p;")
+                    ]
+                }
+            ]
+        },
+        {
+            name: "FramingChallenge",
+            fields: [],
+            methods: [
+                {
+                    name: "baz",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("Point"),
+                    argName: "p",
+                    frmPre: new VerificationFormulaGradual("?"),
+                    frmPost: new VerificationFormulaGradual("?"),
+                    body: [
+                        Statement.parse("int i;"),
+                        Statement.parse("i = -1;"),
+                        Statement.parse("p.x = i;"),
+                        Statement.parse("p.y = i;")
+                    ]
+                },
+                {
+                    name: "bar",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("Point"),
+                    argName: "p",
+                    frmPre: new VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
+                    frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
+                    body: [
+                        Statement.parse("void _;"),
+                        Statement.parse("_ = this.baz(p);")
+                    ]
+                },
+                {
+                    name: "foo",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("void"),
+                    argName: "__",
+                    frmPre: new VerificationFormulaGradual("true"),
+                    frmPost: new VerificationFormulaGradual("true"),
+                    body: [
+                        Statement.parse("void _;"),
+                        Statement.parse("int i0;"),
+                        Statement.parse("Point p;"),
+                        Statement.parse("p = new Point;"),
+                        Statement.parse("p.x = i0;"),
+                        Statement.parse("p.y = i0;"),
+                        Statement.parse("assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)"),
+                        Statement.parse("_ = this.bar(p);"),
+                        Statement.parse("assert acc(p.y) * (p.y = 0)"),
+                    ]
+                }
+            ]
         }],
         main: []
     };
     var env = new ExecutionEnvironment(program);
     var hoare = new Hoare(env);
+    var wellFormedMessage = wellFormedProgram(program, hoare);
+    if (wellFormedMessage != null)
+        window.alert("program not well formed: " + wellFormedMessage);
 
     // containerHoare
     (() => {
@@ -154,6 +289,7 @@ $(() =>
         $("#btnEx2").click(() => code.loadEx2());
         $("#btnEx3").click(() => code.loadEx3());
         $("#btnEx4").click(() => code.loadEx4());
+        $("#btnEx5").click(() => code.loadEx5());
 
         $("#btnToggleDyn").click(x => $("#containerHoare").toggleClass("showDynamic"));
         $("#btnToggleDyn").mouseenter(x => $("#containerHoare").addClass("showSem"));
