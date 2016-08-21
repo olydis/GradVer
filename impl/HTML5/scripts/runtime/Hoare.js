@@ -172,7 +172,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                         postGamma: g
                     };
                 }
-                onErr(ex + " not declared (as class type)");
+                onErr(ey + " not declared (as class type)");
                 return null;
             }, function (info) { return info.pre.append(info.ynn).staticFormula; }, function (info, pre) {
                 pre = pre.woVar(info.x);
@@ -274,6 +274,20 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     return rule;
             }
             throw "unknown statement type";
+        };
+        Hoare.prototype.checkMethod = function (g, s, pre, post) {
+            s = s.slice();
+            s.push(new Statement_1.StatementCast(post));
+            for (var _i = 0, s_1 = s; _i < s_1.length; _i++) {
+                var ss = s_1[_i];
+                var err = this.check(ss, pre, g);
+                if (err != null)
+                    return ss + " failed check: " + err.join(", ");
+                var res = this.post(ss, pre, g);
+                pre = res.post;
+                g = res.postGamma;
+            }
+            return null;
         };
         Hoare.prototype.check = function (s, pre, g) {
             var rule = this.getRule(s);

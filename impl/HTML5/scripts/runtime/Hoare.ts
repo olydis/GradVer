@@ -69,6 +69,21 @@ export class Hoare
                 return rule;
         throw "unknown statement type";
     }
+    public checkMethod(g: Gamma, s: Statement[], pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string
+    {
+        s = s.slice();
+        s.push(new StatementCast(post));
+        for (var ss of s)
+        {
+            var err = this.check(ss, pre, g);
+            if (err != null)
+                return ss + " failed check: " + err.join(", ");
+            var res = this.post(ss, pre, g);
+            pre = res.post;
+            g = res.postGamma;
+        }
+        return null;
+    }
     public check(s: Statement, pre: VerificationFormulaGradual, g: Gamma): string[]
     {
         var rule = this.getRule(s);
@@ -316,7 +331,7 @@ export class Hoare
                         postGamma: g
                     };
                 }
-                onErr(ex + " not declared (as class type)");
+                onErr(ey + " not declared (as class type)");
                 return null;
             },
             (info) => info.pre.append(info.ynn).staticFormula,
