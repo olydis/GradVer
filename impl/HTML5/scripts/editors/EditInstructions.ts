@@ -114,6 +114,22 @@ export class EditInstructions
             "assert (a = 42);",
         ]);
     }
+    public loadEx5(): void
+    {
+        this.setInstructions([
+            "FramingChallenge fc;",
+            "fc = new FramingChallenge;",
+            "void _;",
+            "int i0;",
+            "Point p;",
+            "p = new Point;",
+            "p.x = i0;",
+            "p.y = i0;",
+            "assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)",
+            "_ = fc.bar(p);",
+            "assert acc(p.y) * (p.y = 0)",
+        ]);
+    }
 
     public get numInstructions(): number
     {
@@ -266,7 +282,10 @@ export class EditInstructions
             // dyn
             dynStepOver();
             if (dynSuccess && dynEnv == null)
-                throw "progress broke";
+            {
+                $("#ins" + i).text("dynCheck failed within method call").addClass("err");
+                dynSuccess = false
+            }
             if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }

@@ -101,6 +101,21 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "assert (a = 42);",
             ]);
         };
+        EditInstructions.prototype.loadEx5 = function () {
+            this.setInstructions([
+                "FramingChallenge fc;",
+                "fc = new FramingChallenge;",
+                "void _;",
+                "int i0;",
+                "Point p;",
+                "p = new Point;",
+                "p.x = i0;",
+                "p.y = i0;",
+                "assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)",
+                "_ = fc.bar(p);",
+                "assert acc(p.y) * (p.y = 0)",
+            ]);
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;
@@ -200,8 +215,10 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 g = res.postGamma;
                 // dyn
                 dynStepOver();
-                if (dynSuccess && dynEnv == null)
-                    throw "progress broke";
+                if (dynSuccess && dynEnv == null) {
+                    $("#ins" + i).text("dynCheck failed within method call").addClass("err");
+                    dynSuccess = false;
+                }
                 if (dynSuccess && dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
