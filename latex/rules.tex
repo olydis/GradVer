@@ -135,6 +135,7 @@
 
 % structure
 \newcommand{\method}[6]{\ttt{#1~#2(#3~#4)~#5~\{ #6 \}}}
+\newcommand{\contract}[2]{\ttt{requires {#1}; ensures {#2};}}
 
 \newcommand{\OK}{~\textsf{OK}}
 \newcommand{\OKinC}{~\textsf{OK in}~C}
@@ -143,10 +144,28 @@
 \newcommand{\TappVER}{\ensuremath{\textrm{TappVER}}}
 \newcommand{\GTappVER}{\ensuremath{\grad{\textrm{T}}\textrm{appVER}}}
 
+% dyn
+\newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
+\newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
+\newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
+\newcommand{\evalphi}{\evalphix H \rho A}
+\newcommand{\valphi}[1]{\llbracket #1 \rrbracket}
+
+\newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
+
+\newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
+\newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
+\newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}} 
+\newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
+\newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
+
+\newcommand{\Tfs}{\overline{T}~\overline{f}}
+
+
 \begin{document}
 \pagenumbering{arabic}
 
-\section{Syntax}
+\section{Syntax}%%
 \begin{align*}
 \\ &program    	&&::= \ttt{$\overline{cls}$~$\overline{s}$}
 \\ &cls    		&&::= \ttt{\class $C$~\{ $\overline{field}$~$\overline{method}$ \}}
@@ -184,43 +203,8 @@
 \\ &S			&&::= (\rho, A_d, \overline{s}) \cdot S ~|~ nil
 \end{align*}
 
-\section{Assumptions}
+\section{Assumptions}%%
 All the rules in the following sections are implicitly parameterized over a $program p$ that is well-formed.
-
-\subsubsection{Well-formed program ($program \OK$)}
-\begin{mathpar}
-\inferrule* [Right=OKProgram]
-{
-\overline{cls_i \OK}
-}
-{(\overline{cls_i}~\overline{s}) \OK}
-\end{mathpar}
-
-\subsubsection{Well-formed class ($cls \OK$)}
-\begin{mathpar}
-\inferrule* [Right=OKClass]
-{
-\text{unique $field$-names} \\
-\text{unique $method$-names} \\
-\overline{method_i \OKinC}
-}
-{(\class C~\{\overline{field_i}~\overline{method_i}\}) \OK}
-\end{mathpar}
-
-\subsubsection{Well-formed method ($method \OKinC$)}
-\begin{mathpar}
-\inferrule* [Right=OKMethod]
-{
-FV(\phi_1) \subseteq \{ x, \xthis \} \\
-FV(\phi_2) \subseteq \{ x, \xthis, \xresult \} \\
-x : T_x, \xthis : C, \xresult : T_m \hoare {\phi_1} {\overline{s}} {\phi_2} \\
-\emptyset \sfrmphi {\phi_1} \\
-\emptyset \sfrmphi {\phi_2} \\
-\overline{\neg \textsf{writesTo}(s_i, x)}
-}
-{(\method {$T_m$} {$m$} {$T_x$} {$x$} {\requires $\phi_1$;~\ensures $\phi_2$;} {$\overline{s}$}) \OKinC}
-\end{mathpar}
-
 
 \section{Static semantics}
 \subsection{Expressions ($A_s \sfrme e$)}
@@ -294,8 +278,6 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \input{staticSemanticsDetermGrad}
 
 \section{Dynamic semantics}
-\newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
-\newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
 \subsection{Expressions ($\evale {e} {v}$)}
 
 \begin{mathpar}
@@ -316,9 +298,6 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 {\evale {e.f} {H(o)(f)}}
 \end{mathpar}
 
-\newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
-\newcommand{\evalphi}{\evalphix H \rho A}
-\newcommand{\valphi}[1]{\llbracket #1 \rrbracket}
 \subsection{Formulas ($\evalphi \phi$)}
 \input{dynamicFormula}
 
@@ -374,15 +353,6 @@ Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equir
 \\ &\dynamicFP {H} {\rho} {\phi_1 * \phi_2} &&= \dynamicFP {H} {\rho} {\phi_1} \cup \dynamicFP {H} {\rho} {\phi_2}
 \end{align*}
 
-\newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
-
-\newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
-\newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
-\newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}} 
-\newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
-\newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
-
-\newcommand{\Tfs}{\overline{T}~\overline{f}}
 \subsection{Small-step ($\sstep H S H S$)}
 \input{dynamicSemantics}
 %\input{dynamicSemanticsX}

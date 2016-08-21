@@ -24,14 +24,49 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESApp]
-{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mmethod(C,m) = T_r~m(T~w)~\requires{\phi};~\ensures{\_};~\{\overline{r}\} }\\ \rho' = [\xresult{\:\mapsto\:}\texttt{defaultValue}(T_r),\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}\\\textcolor{gray}{ A' = \dynamicFP{\Heap}{\rho'}{\phi} }}
-{{( \Heap , ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \overline{r} ) \cdot ( \rho ,\textcolor{gray}{ A{\:\backslash\:}A' }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )}}
+{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}
+\\ \Heap(o) = ( C , \_ ) 
+\\ \mmethod(C,m) = \method {$T_r$} {$m$} {$T$} {$w$} {\contract {$\phi$} {$\_$}} {$\overline{r}$} 
+\\ \rho' = [\xresult{\:\mapsto\:}\texttt{defaultValue}(T_r),\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] 
+\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}
+\\\textcolor{gray}{A' = 
+\dynamicFP{\Heap}{\rho'}{\phi} }
+}
+{{( \Heap , ( \rho , \textcolor{gray}{A} , x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' , \textcolor{gray}{A'}, \overline{r} ) \cdot ( \rho , \textcolor{gray}{A{\:\backslash\:}A'}, x{\::=\:}y.m(z); \overline{s} ) \cdot S )}}
 \end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=GESApp]
+{\evalex {\Heap} {\rho} {y} {o}\\\evalex {\Heap} {\rho} {z} {v}
+    \\ \Heap(o) = ( C , \_ ) 
+    \\ \mmethod(C,m) = \method {$T_r$} {$m$} {$T$} {$w$} {\contract {$\grad{\phi}$} {$\_$}} {$\overline{r}$} 
+    \\ \rho' = [\xresult{\:\mapsto\:}\texttt{defaultValue}(T_r),\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] 
+    \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}
+    \\A' = { 
+        \begin{cases}
+        	\dynamicFP{\Heap}{\rho'}{static(\grad{\phi})} & isStatic(\grad{\phi}) \\
+        	A                                             & otherwise
+        \end{cases} 
+       }
+}
+{
+    ( \Heap , ( \rho , A , x{\::=\:}y.m(z); \overline{s} ) \cdot S ) \rightarrow 
+    ( \Heap , ( \rho' , A', \overline{r} ) \cdot ( \rho , A{\:\backslash\:}A', x{\::=\:}y.m(z); \overline{s} ) \cdot S )
+}
+\end{mathpar}
+
 
 \begin{mathpar}
 \inferrule* [Right=ESAppFinish]
 {\evalex {\Heap} {\rho} {y} {o}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\textcolor{gray}{ A'' = \dynamicFP{\Heap}{\rho'}{\phi} }\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
 {{( \Heap , ( \rho' ,\textcolor{gray}{ A' }, \emptyset ) \cdot ( \rho ,\textcolor{gray}{ A }, x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,\textcolor{gray}{ A * A'' }, \overline{s} ) \cdot S )}}
+\end{mathpar}
+
+
+\begin{mathpar}
+    \inferrule* [Right=GESAppFinish]
+    {\evalex {\Heap} {\rho} {y} {o}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
+    {{( \Heap , ( \rho' , A' , \emptyset ) \cdot ( \rho , A , x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,A * A', \overline{s} ) \cdot S )}}
 \end{mathpar}
 
 \begin{mathpar}
