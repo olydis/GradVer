@@ -277,9 +277,9 @@ $(() =>
     };
     var env = new ExecutionEnvironment(program);
     var hoare = new Hoare(env);
-    var wellFormedMessage = wellFormedProgram(program, hoare);
-    if (wellFormedMessage != null)
-        window.alert("program not well formed: " + wellFormedMessage);
+    // var wellFormedMessage = wellFormedProgram(program, hoare);
+    // if (wellFormedMessage != null)
+    //     window.alert("program not well formed: " + wellFormedMessage);
 
     // containerHoare
     (() => {
@@ -309,7 +309,10 @@ $(() =>
 
         $("#containerHoareContext").text(printProgram(program));
     })();
+});
 
+function additionalInit()
+{
     // containerProps
     (() => {
         var input = new EditVerificationFormula("", phi => {
@@ -410,4 +413,4 @@ $(() =>
     // $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
     // $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
     // editor.loadEx1();
-});
+}

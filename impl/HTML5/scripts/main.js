@@ -251,9 +251,9 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         };
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);
         var hoare = new Hoare_1.Hoare(env);
-        var wellFormedMessage = wellFormedProgram(program, hoare);
-        if (wellFormedMessage != null)
-            window.alert("program not well formed: " + wellFormedMessage);
+        // var wellFormedMessage = wellFormedProgram(program, hoare);
+        // if (wellFormedMessage != null)
+        //     window.alert("program not well formed: " + wellFormedMessage);
         // containerHoare
         (function () {
             var code = new EditInstructions_1.EditInstructions($("#containerHoareCode"), hoare);
@@ -278,6 +278,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });
             $("#containerHoareContext").text(Program_1.printProgram(program));
         })();
+    });
+    function additionalInit() {
         // containerProps
         (function () {
             var input = new EditVerificationFormula_1.EditVerificationFormula("", function (phi) {
@@ -365,5 +367,5 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         // $("#btnReset").click(() => editor.btnResetAssertionsAll(false));
         // $("#btnResetQ").click(() => editor.btnResetAssertionsAll(true));
         // editor.loadEx1();
-    });
+    }
 });
