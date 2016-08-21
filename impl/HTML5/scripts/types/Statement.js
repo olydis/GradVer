@@ -8,6 +8,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var Statement = (function () {
         function Statement() {
         }
+        Statement.prototype.writesTo = function (x) {
+            return false;
+        };
         Statement.parse = function (source) {
             var result = null;
             source = source.replace(/;$/, "");
@@ -15,9 +18,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             try {
                 if (!result)
                     result = StatementComment.parse(source);
-                source = source.replace(/\s/g, "");
                 if (!result)
                     result = StatementCast.parse(source);
+                source = source.replace(/\s/g, "");
                 if (!result)
                     result = StatementCall.parse(source);
                 if (!result)
@@ -114,6 +117,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (e == null)
                 throw "null arg";
         }
+        StatementAssign.prototype.writesTo = function (x) {
+            return this.x == x;
+        };
         StatementAssign.parse = function (source) {
             var eqIndex = source.indexOf(":=");
             if (eqIndex == -1)
@@ -155,6 +161,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (!Expression_1.Expression.isValidX(C))
                 throw "null arg";
         }
+        StatementAlloc.prototype.writesTo = function (x) {
+            return this.x == x;
+        };
         StatementAlloc.parse = function (source) {
             var eqIndex = source.indexOf(":=");
             if (eqIndex == -1)
@@ -213,6 +222,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (!Expression_1.Expression.isValidX(z))
                 throw "null arg";
         }
+        StatementCall.prototype.writesTo = function (x) {
+            return this.x == x;
+        };
         StatementCall.parse = function (source) {
             var eqIndex = source.indexOf(":=");
             if (eqIndex == -1)
@@ -299,6 +311,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
         }
+        StatementReturn.prototype.writesTo = function (x) {
+            return Expression_1.Expression.getResult() == x;
+        };
         StatementReturn.parse = function (source) {
             if (source.substr(0, 6) != "return")
                 return null;
@@ -384,6 +399,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
         }
+        StatementDeclare.prototype.writesTo = function (x) {
+            return this.x == x;
+        };
         StatementDeclare.parse = function (source) {
             var srcParts = source.trim().split(" ");
             if (srcParts.length != 2)
@@ -463,3 +481,32 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     }(Statement));
     exports.StatementComment = StatementComment;
 });
+// export class StatementSugar extends Statement
+// {
+//     public constructor(
+//         public children: Statement[])
+//     {
+//         super();
+//     }
+//     public static parse(source: string): Statement
+//     {
+//         source = source.trim();
+//         if (source.charAt(0) != '/')
+//             return null;
+//         if (source.charAt(1) != '/')
+//             return null;
+//         source = source.slice(2);
+//         return new StatementComment(source);
+//     }
+//     public toString(): string
+//     {
+//         return "";
+//     }
+//     public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+//     {
+//         env = cloneStackEnv(env);
+//         if (env.S[env.S.length - 1].ss.shift() != this)
+//             throw "dispatch failure";
+//         return env;
+//     }
+// } 

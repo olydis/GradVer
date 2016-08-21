@@ -12,6 +12,11 @@ export abstract class Statement
     abstract toString(): string;
     public abstract smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv;
 
+    public writesTo(x: string): boolean
+    {
+        return false;
+    }
+
     public static parse(source: string): Statement
     {
         var result: Statement = null;
@@ -20,8 +25,8 @@ export abstract class Statement
         try
         {
             if (!result) result = StatementComment.parse(source);
-            source = source.replace(/\s/g, "");
             if (!result) result = StatementCast.parse(source);
+            source = source.replace(/\s/g, "");
             if (!result) result = StatementCall.parse(source);
             if (!result) result = StatementAlloc.parse(source);
             if (!result) result = StatementAssert.parse(source);
@@ -118,6 +123,10 @@ export class StatementAssign extends Statement
         if (!Expression.isValidX(x)) throw "null arg";
         if (e == null) throw "null arg";
     }
+    public writesTo(x: string): boolean
+    {
+        return this.x == x;
+    }
 
     public static parse(source: string): Statement
     {
@@ -164,6 +173,10 @@ export class StatementAlloc extends Statement
         super();
         if (!Expression.isValidX(x)) throw "null arg";
         if (!Expression.isValidX(C)) throw "null arg";
+    }
+    public writesTo(x: string): boolean
+    {
+        return this.x == x;
     }
 
     public static parse(source: string): Statement
@@ -227,6 +240,10 @@ export class StatementCall extends Statement
         if (!Expression.isValidX(y)) throw "null arg";
         if (!Expression.isValidX(m)) throw "null arg";
         if (!Expression.isValidX(z)) throw "null arg";
+    }
+    public writesTo(x: string): boolean
+    {
+        return this.x == x;
     }
 
     public static parse(source: string): Statement
@@ -333,6 +350,10 @@ export class StatementReturn extends Statement
         super(); 
         if (!Expression.isValidX(x)) throw "null arg";
     }
+    public writesTo(x: string): boolean
+    {
+        return Expression.getResult() == x;
+    }
 
     public static parse(source: string): Statement
     {
@@ -430,6 +451,10 @@ export class StatementDeclare extends Statement
         super();
         if (!Expression.isValidX(x)) throw "null arg";
     }
+    public writesTo(x: string): boolean
+    {
+        return this.x == x;
+    }
 
     public static parse(source: string): Statement
     {
@@ -523,3 +548,36 @@ export class StatementComment extends Statement
         return env;
     }
 }
+
+// export class StatementSugar extends Statement
+// {
+//     public constructor(
+//         public children: Statement[])
+//     {
+//         super();
+//     }
+
+//     public static parse(source: string): Statement
+//     {
+//         source = source.trim();
+//         if (source.charAt(0) != '/')
+//             return null;
+//         if (source.charAt(1) != '/')
+//             return null;
+//         source = source.slice(2);
+//         return new StatementComment(source);
+//     }
+
+//     public toString(): string
+//     {
+//         return "";
+//     }
+//     public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+//     {
+//         env = cloneStackEnv(env);
+//         if (env.S[env.S.length - 1].ss.shift() != this)
+//             throw "dispatch failure";
+
+//         return env;
+//     }
+// }
