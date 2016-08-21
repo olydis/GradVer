@@ -338,11 +338,11 @@ export class Hoare
             (info, pre) => {
                 pre = pre.woVar(info.x);
                 if (info.pre.gradual)
-                    for (var fp of pre.staticFormula.footprintStatic())
-                        pre = pre.woAcc(fp.e, fp.f);
+                    for (var fp1 of pre.staticFormula.autoFraming())
+                        pre = pre.woAcc(fp1.e, fp1.f);
                 else
-                    for (var fp of info.pre.staticFormula.footprintStatic())
-                        pre = pre.woAcc(fp.e, fp.f);
+                    for (var fp2 of info.pre.staticFormula.footprintStatic())
+                        pre = pre.woAcc(fp2.e, fp2.f);
                 for (var p_part of info.post.staticFormula.parts)
                     pre = pre.append(p_part);
 

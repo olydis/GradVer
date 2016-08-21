@@ -177,14 +177,14 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             }, function (info) { return info.pre.append(info.ynn).staticFormula; }, function (info, pre) {
                 pre = pre.woVar(info.x);
                 if (info.pre.gradual)
-                    for (var _i = 0, _a = pre.staticFormula.footprintStatic(); _i < _a.length; _i++) {
-                        var fp = _a[_i];
-                        pre = pre.woAcc(fp.e, fp.f);
+                    for (var _i = 0, _a = pre.staticFormula.autoFraming(); _i < _a.length; _i++) {
+                        var fp1 = _a[_i];
+                        pre = pre.woAcc(fp1.e, fp1.f);
                     }
                 else
                     for (var _b = 0, _c = info.pre.staticFormula.footprintStatic(); _b < _c.length; _b++) {
-                        var fp = _c[_b];
-                        pre = pre.woAcc(fp.e, fp.f);
+                        var fp2 = _c[_b];
+                        pre = pre.woAcc(fp2.e, fp2.f);
                     }
                 for (var _d = 0, _e = info.post.staticFormula.parts; _d < _e.length; _d++) {
                     var p_part = _e[_d];

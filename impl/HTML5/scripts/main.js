@@ -215,6 +215,18 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             ]
                         },
                         {
+                            name: "barg",
+                            retType: new Type_1.TypeClass("void"),
+                            argType: new Type_1.TypeClass("Point"),
+                            argName: "p",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
+                            body: [
+                                Statement_1.Statement.parse("void _;"),
+                                Statement_1.Statement.parse("_ = this.baz(p);")
+                            ]
+                        },
+                        {
                             name: "foo",
                             retType: new Type_1.TypeClass("void"),
                             argType: new Type_1.TypeClass("void"),

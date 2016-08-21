@@ -241,6 +241,18 @@ $(() =>
                     ]
                 },
                 {
+                    name: "barg",
+                    retType: new TypeClass("void"),
+                    argType: new TypeClass("Point"),
+                    argName: "p",
+                    frmPre: new VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
+                    frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
+                    body: [
+                        Statement.parse("void _;"),
+                        Statement.parse("_ = this.baz(p);")
+                    ]
+                },
+                {
                     name: "foo",
                     retType: new TypeClass("void"),
                     argType: new TypeClass("void"),
