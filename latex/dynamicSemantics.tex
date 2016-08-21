@@ -41,7 +41,7 @@
     \\ \Heap(o) = ( C , \_ ) 
     \\ \mmethod(C,m) = \method {$T_r$} {$m$} {$T$} {$w$} {\contract {$\grad{\phi}$} {$\_$}} {$\overline{r}$} 
     \\ \rho' = [\xresult{\:\mapsto\:}\texttt{defaultValue}(T_r),\xthis{\:\mapsto\:}o,w{\:\mapsto\:}v] 
-    \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\phi}}
+    \\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A} {\grad{\phi}}}
     \\A' = { 
         \begin{cases}
         	\dynamicFP{\Heap}{\rho'}{static(\grad{\phi})} & isStatic(\grad{\phi}) \\
@@ -65,7 +65,7 @@
 
 \begin{mathpar}
     \inferrule* [Right=GESAppFinish]
-    {\evalex {\Heap} {\rho} {y} {o}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mpost(C,m) = \phi }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\phi}}\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
+    {\evalex {\Heap} {\rho} {y} {o}\\ \Heap(o) = ( C , \_ ) \\\textcolor{gray}{ \mpost(C,m) = \grad{\phi} }\\\textcolor{gray}{\evalphix {\Heap} {\rho'} {A'} {\grad{\phi}}}\\\evalex {\Heap} {\rho'} {\xresult} {v_r}}
     {{( \Heap , ( \rho' , A' , \emptyset ) \cdot ( \rho , A , x{\::=\:}y.m(z); \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho[x{\:\mapsto\:}v_r] ,A * A', \overline{s} ) \cdot S )}}
 \end{mathpar}
 
