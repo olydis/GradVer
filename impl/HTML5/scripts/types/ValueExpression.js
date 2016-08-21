@@ -65,7 +65,7 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
             this.n = n;
             if (n == null)
                 throw "null arg";
-            this.n = Math.max(0, Math.round(this.n));
+            this.n = Math.round(this.n);
         }
         ValueExpressionN.parse = function (source) {
             var n = parseInt(source);

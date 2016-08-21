@@ -59,7 +59,7 @@ export class ValueExpressionN extends ValueExpression
     { 
         super(); 
         if (n == null) throw "null arg";
-        this.n = Math.max(0, Math.round(this.n)); 
+        this.n = Math.round(this.n); 
     }
 
     public static parse(source: string): ValueExpression
