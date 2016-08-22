@@ -54,6 +54,7 @@ Proof.
       apply InAexcept in H4.
       assumption.
     * eapply IHss in dss; eauto.
+    * admit.
 Admitted.
 
 Lemma evalphiComposeDisjointFP : forall H r A1 A2 p1 p2,
@@ -139,6 +140,7 @@ Proof.
       apply InAexcept in H0.
       auto.
     * eapply IHss in dss; eauto.
+    * admit.
 Admitted.
 
 Lemma dynSemStarNotModifies : forall x ss H1 H2 r1 r2 A1 A2,
@@ -181,6 +183,7 @@ Proof.
       dec (x_dec x0 x1); try tauto.
       contradict wt1.
       constructor.
+    * admit.
 Admitted.
 
 Lemma dynSemStarNotModifiesH : forall ss H1 H2 r1 r2 A1 A2 A v,
@@ -231,6 +234,7 @@ Proof.
       apply InAexcept in H3.
       assumption.
     * eapply IHss in dss; eauto.
+    * admit.
 Admitted.
 (* 
 Lemma dynSemStarNotModifiesHX' : forall ss H1 H2 r1 r2 r A1 A2 A p,
@@ -599,6 +603,7 @@ Proof.
       intro. contradict H0.
       eapp InAexcept.
     * eappIn IHss H8.
+    * admit.
 Admitted.
 
 (*

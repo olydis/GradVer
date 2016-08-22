@@ -80,7 +80,9 @@ Inductive s :=
 (*coq2latex: sRelease #p := \sRelease {$#p$} *)
 | sRelease : phi -> s
 (*coq2latex: sDeclare #T #x := \sDeclare {$#T$} {$#x$} *)
-| sDeclare : T -> x -> s.
+| sDeclare : T -> x -> s
+(*coq2latex: sHold #h #ss := \sHold {$#h$} {$#ss$} *)
+| sHold : phi -> list s -> s.
 Inductive contract :=
 (*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
 | Contract : phi -> phi -> contract.
@@ -634,6 +636,14 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi
       (sDeclare T x :: s)
       phi'
+| HHold : forall s(*\overline{s}*) G(*\Gamma*) p(*\phi_p*) px(*\p_x*) phi(*\*) phix(*\phi_x*) phi'(*\*),
+    phiImplies phi (phix ++ px) ->
+    phiImplies px p ->
+    hoare G phix s phi' ->
+    hoare G 
+      phi 
+      [sHold p s]
+      (phi' ++ px)
 | HSec : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p s1 q ->
     hoare G q s2 r ->
@@ -710,6 +720,12 @@ Inductive dynSem : execState -> execState -> Prop :=
 | ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*\overline{s}*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
     dynSem (H, (rho, A, sDeclare T x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
+| ESHold : forall H rho(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*\overline{s}*) S,
+    evalphi H rho A phi ->
+    A' = footprint H rho phi ->
+    dynSem (H, (rho, A, sHold phi s :: s_bar) :: S) (H, (rho, Aexcept A A', s) :: (rho, A', sHold phi s :: s_bar) :: S)
+| ESHoldFinish : forall H rho(*\*) rho'(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*\overline{s}*) S,
+    dynSem (H, (rho', A', []) :: (rho, A, sHold phi s :: s_bar) :: S) (H, (rho', A ++ A', s_bar) :: S)
 .
 
 (* helper definitions *)

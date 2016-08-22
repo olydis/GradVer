@@ -530,6 +530,14 @@ Proof.
     simpl in H15.
     contradict H15.
     auto with arith.
+  - apply lengthId in H15.
+    simpl in H15.
+    contradict H15.
+    auto with arith.
+  - apply lengthId in H15.
+    simpl in H15.
+    contradict H15.
+    auto with arith.
 Qed.
 
 Axiom RhoGetsMoreSpecific : forall r1 r2 a1 a2 s1 s2 S (H1 H2 : H) v1 (x : x),
