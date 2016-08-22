@@ -13,7 +13,7 @@
 
 \begin{mathpar}
 \inferrule* [Right=ESNewObj]
-{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{o}}]}\\{A'} = {@app(A'_d, A, @map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs))}\\{H'} = {{H}[{o} \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]]}}
+{{o} \not\in \dom({H})\\{\fields({C})} = {{Tfs}}\\{\rho'} = {{\rho}[{x} \mapsto {{o}}]}\\{A'} = {{A} * {@map(prod(T, f), prod(o, f), fun(cf', :, prod, T, f, =>, @pair, o, f, o, @snd(T, f, cf')), Tfs)}}\\{H'} = {{H}[{o} \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]]}}
 {{({H}, {{({{\rho}, {A}}, {{\sAlloc {${x}$} {${C}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H'}, {{({{\rho'}, {A'}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 
@@ -26,13 +26,13 @@
 \begin{mathpar}
 \inferrule* [Right=ESApp]
 {\evalex {H} {\rho} {\ex{${y}$}} {{o}}\\\evalex {H} {\rho} {\ex{${z}$}} {v}\\{H(o)} = {{({C}, {\_})}}\\{\mmethod({C}, {m})} = {{\method {${T_r}$} {${m}$} {${T}$} {${w}$} {${\requires {phi};~\ensures {\_};}$} {${\overline{r}}$}}}\\{\rho'} = {[{\xresult} \mapsto {\texttt{defaultValue}({T_r})}, {\xthis} \mapsto {{o}}, {{w}} \mapsto {v}]}\\\evalphix {H} {\rho'} {A} {phi}\\{A'} = {\dynamicFP {H} {\rho'} {phi}}}
-{{({H}, {{({{\rho}, {A}}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A'}}, {\overline{r}})} \cdot {{({({\rho}, {{A} \backslash {A'}})}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}}})}}
+{{({H}, {{({{\rho}, {A}}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A'}}, {\overline{r}})} \cdot {{({{\rho}, {{A} \backslash {A'}}}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}}})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=ESAppFinish]
 {\evalex {H} {\rho} {\ex{${y}$}} {{o}}\\{H(o)} = {{({C}, {\_})}}\\{\mpost({C}, {m})} = {{\phi}}\\\evalphix {H} {\rho'} {A'} {\phi}\\{A''} = {\dynamicFP {H} {\rho'} {\phi}}\\\evalex {H} {\rho'} {\ex{${\xresult}$}} {v_r}}
-{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({({{\rho}[{x} \mapsto {v_r}]}, {@app(A'_d, A, A'')})}, {\overline{s}})} \cdot {S}})}}
+{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{\sCall {${x}$} {${y}$} {${m}$} {${z}$}} {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({{{\rho}[{x} \mapsto {v_r}]}, {{A} * {A''}}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -44,12 +44,24 @@
 \begin{mathpar}
 \inferrule* [Right=ESRelease]
 {\evalphix {H} {\rho} {A} {\phi}\\{A'} = {{A} \backslash {\dynamicFP {H} {\rho} {\phi}}}}
-{{({H}, {{({{\rho}, {A}}, {{\sRelease {${\phi}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({({\rho}, {A'})}, {\overline{s}})} \cdot {S}})}}
+{{({H}, {{({{\rho}, {A}}, {{\sRelease {${\phi}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho}, {A'}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule* [Right=ESDeclare]
 {{\rho'} = {{\rho}[{x} \mapsto {\texttt{defaultValue}({T})}]}}
 {{({H}, {{({{\rho}, {A}}, {{\sDeclare {${T}$} {${x}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho'}, {A}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESHold]
+{\evalphix {H} {\rho} {A} {\phi}\\{A'} = {\dynamicFP {H} {\rho} {\phi}}}
+{{({H}, {{({{\rho}, {A}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho}, {{A} \backslash {A'}}}, {\overline{s'}})} \cdot {{({{\rho}, {A'}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}}})}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule* [Right=ESHoldFinish]
+{~}
+{{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({{\rho'}, {{A} * {A'}}}, {\overline{s}})} \cdot {S}})}}
 \end{mathpar}
 

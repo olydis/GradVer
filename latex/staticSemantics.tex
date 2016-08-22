@@ -48,6 +48,12 @@
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule* [Right=HHold]
+{{\phi_f} \implies {\phiCons{${\phi_r}$}{${\phi'}$}}\\{\phi'} \implies {\phi}\\{\Gamma} \hoare {\phi_r} {\overline{s}} {\phi_r'}}
+{{\Gamma} \hoare {\phi_f} {{\sHold {${\phi}$} {${\overline{s}}$}}} {\phiCons{${\phi_r'}$}{${\phi'}$}}}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule* [Right=HSec]
 {{\Gamma} \hoare {\phi_p} {\overline{s_1}} {\phi_q}\\{\Gamma} \hoare {\phi_q} {\overline{s_2}} {\phi_r}}
 {{\Gamma} \hoare {\phi_p} {{\overline{s_1}}\ttt{;} {\overline{s_2}}} {\phi_r}}

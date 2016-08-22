@@ -70,6 +70,17 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 \end{mathpar}
 
 \begin{mathpar}
+\inferrule* [Right=HHold]
+{
+\imp(\phi)(\hat{\phi_f}) = \hat{\phi_f'}\\
+\wo {\hat{\phi_f'}} {\staticFP{\phi}} = \hat{\phi_r}\\
+\wo {\hat{\phi_f'}} {\staticFP{\hat{\phi_r}}} = \hat{\phi'}\\
+{\Gamma} \hoare {\hat{\phi_r}} {\overline{s}} {\hat {\phi_r'}}
+}
+{{\Gamma} \hoare {\hat{\phi_f}} {{\sHold {$\phi$} {${\overline{s}}$}}} {\phiCons{$\hat{\phi_r'}$}{$\hat{\phi'}$}}}
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule* [Right=HSec]
 {{\Gamma} \hoare {\hat{\phi_p}} {s_1} {\hat{\phi_q}}\\{\Gamma} \hoare {\hat{\phi_q}} {\overline{s_2}} {\hat{\phi_r}}}
 {{\Gamma} \hoare {\hat{\phi_p}} {{s_1}; \overline{s_2}} {\hat{\phi_r}}}

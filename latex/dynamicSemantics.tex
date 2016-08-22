@@ -87,3 +87,14 @@
 {{( \Heap , ( \rho ,\textcolor{gray}{ A }, T{\:}x; \overline{s} ) \cdot S )} \rightarrow {( \Heap , ( \rho' ,\textcolor{gray}{ A }, \overline{s} ) \cdot S )}}
 \end{mathpar}
 
+\begin{mathpar}
+    \inferrule* [Right=ESHold]
+    {\evalphix {H} {\rho} {A} {\phi}\\{A'} = {\dynamicFP {H} {\rho} {\phi}}}
+    {{({H}, {{({{\rho}, {A}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}})} \rightarrow {({H}, {{({{\rho}, {{A} \backslash {A'}}}, {\overline{s'}})} \cdot {{({{\rho}, {A'}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}}})}}
+\end{mathpar}
+
+\begin{mathpar}
+    \inferrule* [Right=ESHoldFinish]
+    {~}
+    {{({H}, {{({{\rho'}, {A'}}, {\emptyset})} \cdot {{({{\rho}, {A}}, {{\sHold {${\phi}$} {${\overline{s'}}$}} {\overline{s}}})} \cdot {S}}})} \rightarrow {({H}, {{({{\rho'}, {{A} * {A'}}}, {\overline{s}})} \cdot {S}})}}
+\end{mathpar}
