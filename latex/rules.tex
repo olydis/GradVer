@@ -124,7 +124,7 @@
 \newcommand{\phiNeq}[2]{\ttt{(#1 ≠ #2)}}
 \newcommand{\phiAcc}[2]{\ttt{acc(#1.#2)}}
 % statements
-\newcommand{\sMemberSet}[3]{\ttt{#1.#2 ≔ #3;}}
+\newcommand{\sFieldAssig}[3]{\ttt{#1.#2 ≔ #3;}}
 \newcommand{\sAssign}[2]{\ttt{#1 ≔ #2;}}
 \newcommand{\sAlloc}[2]{\ttt{#1 ≔ \new #2;}}
 \newcommand{\sCall}[4]{\ttt{#1 ≔ #2.#3(#4);}}
@@ -174,7 +174,7 @@
 \\ &method		&&::= \method {$T$} {$m$} {$T$} {$x$} {$contract$} {$\overline{s}$}
 \\ &contract	&&::= \ttt{requires $\phi$;~ensures $\phi$;}
 \\ &T			&&::= \Tint ~|~ C
-\\ &s			&&::= \sMemberSet {$x$} {$f$} {$y$}
+\\ &s			&&::= \sFieldAssign {$x$} {$f$} {$y$}
 				  ~|~ \sAssign {$x$} {$e$}
 				  ~|~ \sAlloc {$x$} {$C$}
 				  ~|~ \sCall {$x$} {$y$} {$m$} {$z$}
