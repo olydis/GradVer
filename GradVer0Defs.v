@@ -65,10 +65,10 @@ Inductive phi' :=
 | phiAcc : e -> f -> phi'.
 Definition phi := list phi'.
 Inductive s :=
-(*coq2latex: sMemberSet #x #f #y := \sMemberSet {$#x$} {$#f$} {$#y$} *)
-| sMemberSet : x -> f -> x -> s
-(*coq2latex: sAssign #x #e := \sAssign {$#x$} {$#e$} *)
-| sAssign : x -> e -> s
+(*coq2latex: sFieldAssign #x #f #y := \sFieldAssign {$#x$} {$#f$} {$#y$} *)
+| sFieldAssign : x -> f -> x -> s
+(*coq2latex: sVarAssign #x #e := \sVarAssign {$#x$} {$#e$} *)
+| sVarAssign : x -> e -> s
 (*coq2latex: sAlloc #x #C := \sAlloc {$#x$} {$#C$} *)
 | sAlloc : x -> C -> s
 (*coq2latex: sCall #x #y #m #z := \sCall {$#x$} {$#y$} {$#m$} {$#z$} *)
@@ -569,7 +569,7 @@ Definition GammaNotSetAt (G : Gamma) (x : x) : Prop := G x = None.
 
 (*coq2latex: hoare #G #p1 #s #p2 := #G \hoare #p1 #s #p2 *)
 Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
-| HNewObj : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
+| HAlloc : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
@@ -587,7 +587,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     hasStaticType G (ex x) (TClass C) ->
     hasStaticType G (ex y) T ->
     fieldHasType C f T ->
-    hoare G phi [sMemberSet x f y]
+    hoare G phi [sFieldAssign x f y]
       (phi' ++ phiAcc (ex x) f ::
        phiNeq (ex x) (ev vnull) ::
        phiEq (edot (ex x) f) (ex y) :: [])
@@ -599,7 +599,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     hasStaticType G (ex x) T ->
     hasStaticType G e T ->
     incl (unfoldAcc e) phi' ->
-    hoare G phi [sAssign x e] (phi' ++ [phiEq (ex x) e])
+    hoare G phi [sVarAssign x e] (phi' ++ [phiEq (ex x) e])
 | HReturn : forall G(*\Gamma*) phi(*\*) phi'(*\*) (x : x) T,
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
@@ -610,7 +610,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi 
       [sReturn x]
       (phi' ++ phiEq (ex xresult) (ex x) :: [])
-| HApp : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi'(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HCall : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi'(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType G (ex x) T_r ->
@@ -647,7 +647,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi_f
       [sHold phi s]
       (phi_r' ++ phi')
-| HSec : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
+| HSeq : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p s1 q ->
     hoare G q s2 r ->
     hoare G p (s1 ++ s2) r
@@ -680,12 +680,12 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho (ex y) v_y ->
     In (o, f) A ->
     H' = HSubst o f v_y H ->
-    dynSem (H, (rho, A, sMemberSet x f y :: s_bar) :: S) (H', (rho, A, s_bar) :: S)
+    dynSem (H, (rho, A, sFieldAssign x f y :: s_bar) :: S) (H', (rho, A, s_bar) :: S)
 | ESVarAssign : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (e : e) (v : v),
     evale H rho e v ->
     rho' = rhoSubst x v rho ->
-    dynSem (H, (rho, A, sAssign x e :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESNewObj : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs,
+    dynSem (H, (rho, A, sVarAssign x e :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
+| ESAlloc : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs,
     HeapNotSetAt H o ->
     fields C = Some Tfs ->
     rho' = rhoSubst x (vo o) rho ->
@@ -696,7 +696,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESApp : forall underscore2(*\_*) phi H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
+| ESCall : forall underscore2(*\_*) phi H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
     evale H rho (ex y) (vo o) ->
     evale H rho (ex z) v ->
     H o = Some (C, underscore) ->
@@ -705,7 +705,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi H rho' A phi ->
     A' = footprint H rho' phi ->
     dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESAppFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
+| ESCallFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
     evale H rho (ex y) (vo o) ->
     H o = Some (C, underscore) ->
     mpost C m = Some phi ->
@@ -761,7 +761,7 @@ Definition newAccess : A_d := [].
 
 
 Inductive writesTo : x -> s -> Prop :=
-| wtAssign : forall x e, writesTo x (sAssign x e)
+| wtVarAssign : forall x e, writesTo x (sVarAssign x e)
 | wtAlloc : forall x C, writesTo x (sAlloc x C)
 | wtCall : forall x y m z, writesTo x (sCall x y m z)
 | wtReturn : forall x, writesTo xresult (sReturn x)
