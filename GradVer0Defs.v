@@ -520,7 +520,10 @@ Definition accListApp (x : x) (f_bar : list f) : phi :=
 (*coq2latex: @cons s #p1 (@nil s) := #p1 *)
 (*coq2latex: @cons s #p1 #p2 := #p1 #p2 *)
 
+(*coq2latex: @app A'_d #A1 #A2 := #A1 * #A2 *)
+
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
+(*coq2latex: @pair rho (list A'_d) #a #b := #a, #b *)
 (*coq2latex: @In phi' #x #xs := #xs \implies #x *)
 (*coq2latex: @cons #_ #p1 #p2 := #p1 \cdot #p2 *)
 
@@ -636,14 +639,14 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi
       (sDeclare T x :: s)
       phi'
-| HHold : forall s(*\overline{s}*) G(*\Gamma*) p(*\phi_p*) px(*\p_x*) phi(*\*) phix(*\phi_x*) phi'(*\*),
-    phiImplies phi (phix ++ px) ->
-    phiImplies px p ->
-    hoare G phix s phi' ->
+| HHold : forall s(*\overline{s}*) G(*\Gamma*) phi_f(*\*) phi_r(*\*) phi(*\*) phi_r'(*\*) phi'(*\*),
+    phiImplies phi_f (phi_r ++ phi') ->
+    phiImplies phi' phi ->
+    hoare G phi_r s phi_r' ->
     hoare G 
-      phi 
-      [sHold p s]
-      (phi' ++ px)
+      phi_f
+      [sHold phi s]
+      (phi_r' ++ phi')
 | HSec : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p s1 q ->
     hoare G q s2 r ->
