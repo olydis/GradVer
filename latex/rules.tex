@@ -51,6 +51,79 @@
 \setlength{\parindent}{0cm}
 
 
+%% ALIASES
+% fonts
+\newcommand{\std}{\textrm}
+\newcommand{\ttt}{\texttt}
+\newcommand{\tset}{\textsc}
+\newcommand{\predicate}{\textsf}
+% names
+\newcommand{\svl}{\std{SVL}}
+\newcommand{\dvl}{\std{DVL}}
+\newcommand{\gvl}{\std{GVL}}
+
+% sets
+\newcommand{\setProgram}{\tset{Program}}
+\newcommand{\setClass}{\tset{Class}}
+\newcommand{\setField}{\tset{Field}}
+\newcommand{\setMethod}{\tset{Method}}
+\newcommand{\setContract}{\tset{Contract}}
+\newcommand{\setType}{\tset{Type}}
+\newcommand{\setStmt}{\tset{Stmt}}
+\newcommand{\setFormula}{\tset{Formula}}
+\newcommand{\setExpr}{\tset{Expr}}
+\newcommand{\setVal}{\tset{Val}}
+\newcommand{\setVar}{\tset{Var}}
+% expressions
+\newcommand{\ev}[1]{\ttt{#1}}
+\newcommand{\ex}[1]{\ttt{#1}}
+\newcommand{\edot}[2]{\ttt{#1.#2}}
+\newcommand{\ethis}{\ex{this}}
+\newcommand{\eresult}{\ex{result}}
+\newcommand{\enull}{\ttt{null}}
+% formulas
+\newcommand{\phiCons}[2]{\ttt{#1\:*\:#2}}
+\newcommand{\phiFalse}[0]{\ttt{false}}
+\newcommand{\phiTrue}[0]{\ttt{true}}
+\newcommand{\phiEq}[2]{\ttt{(#1 = #2)}}
+\newcommand{\phiNeq}[2]{\ttt{(#1 ≠ #2)}}
+\newcommand{\phiAcc}[2]{\ttt{acc(#1.#2)}}
+% statements
+\newcommand{\sFieldAssign}[3]{\ttt{#1.#2 ≔ #3;}}
+\newcommand{\sVarAssign}[2]{\ttt{#1 ≔ #2;}}
+\newcommand{\sAlloc}[2]{\ttt{#1 ≔ new #2;}}
+\newcommand{\sCall}[4]{\ttt{#1 ≔ #2.#3(#4);}}
+\newcommand{\sReturn}[1]{\ttt{return #1;}}
+\newcommand{\sAssert}[1]{\ttt{assert #1;}}
+\newcommand{\sRelease}[1]{\ttt{release #1;}}
+\newcommand{\sDeclare}[2]{\ttt{#1~#2;}}
+\newcommand{\sHold}[2]{\ttt{hold #1~\{ #2 \};}}
+% type
+\newcommand{\type}[1]{\ttt{#1}}
+\newcommand{\Tint}{\type{int}}
+% composite syntax
+\newcommand{\class}[3]{\ttt{class {#1}~\{ {#2} {#3} \}}}
+\newcommand{\method}[6]{\ttt{{#1}~{#2}({#3}~{#4})~{#5}~\{ {#6} \}}}
+\newcommand{\contract}[2]{\ttt{requires {#1}; ensures {#2};}}
+%% predicates
+% well-formed
+\newcommand{\OK}{~\predicate{OK}}
+\newcommand{\OKinC}{~\predicate{OK in}~C}
+% framing
+\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{sfrm}}\,}
+\newcommand{\sfrmphi}{\ensuremath{\vdash_\texttt{sfrm}}\,}
+% evaluation
+\newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
+\newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
+\newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
+\newcommand{\evalphi}{\evalphix H \rho A}
+%other
+\newcommand{\writesTo}{\predicate{writesTo}}
+
+\newcommand{\thoare}[4]{{#1} \vdash \{{#2}\} {#3} \{{#4}\}}
+
+
+% OLD:
 
 \newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
 \newcommand{\hasTypeFormula}[3]{{\llbracket #1 : #2\rrbracket}_{#3}}
@@ -58,13 +131,9 @@
 
 \newcommand{\Heap}{H}
 
-\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{sfrm}}\,}
-\newcommand{\sfrmphi}{\ensuremath{\vdash_\texttt{sfrm}}\,}
-
 %DEPRECATED
 \newcommand{\true}{\ensuremath{\texttt{true}}}
 \newcommand{\vnull}{\ensuremath{\texttt{null}}}
-\newcommand{\Tint}{\ensuremath{\texttt{int}}}
 \newcommand{\xresult}{\ensuremath{\texttt{result}}}
 \newcommand{\xthis}{\ensuremath{\texttt{this}}}
 \newcommand{\new}{\ensuremath{\texttt{new}~}}
@@ -93,7 +162,6 @@
 \newcommand{\rlabel}[1]{\RightLabel{\quad #1}}
 \newcommand{\dom}{\ensuremath{\textrm{dom}}}
 
-\newcommand{\class}{\ensuremath{\texttt{class}~}}
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
@@ -109,47 +177,11 @@
 \newcommand{\wo}[2]{#1\textbf{[w/o~}#2\textbf{]}} 
 \newcommand{\imp}{\textrm{imp}}
 
-% typewriter stuff
-\newcommand{\ttt}{\texttt}
-
-% expressions
-\newcommand{\ev}[1]{\ttt{#1}}
-\newcommand{\ex}[1]{\ttt{#1}}
-\newcommand{\edot}[2]{\ttt{#1.#2}}
-% formulas
-\newcommand{\phiCons}[2]{\ttt{#1\:*\:#2}}
-\newcommand{\phiFalse}[0]{\ttt{false}}
-\newcommand{\phiTrue}[0]{\ttt{true}}
-\newcommand{\phiEq}[2]{\ttt{(#1 = #2)}}
-\newcommand{\phiNeq}[2]{\ttt{(#1 ≠ #2)}}
-\newcommand{\phiAcc}[2]{\ttt{acc(#1.#2)}}
-% statements
-\newcommand{\sFieldAssig}[3]{\ttt{#1.#2 ≔ #3;}}
-\newcommand{\sAssign}[2]{\ttt{#1 ≔ #2;}}
-\newcommand{\sAlloc}[2]{\ttt{#1 ≔ \new #2;}}
-\newcommand{\sCall}[4]{\ttt{#1 ≔ #2.#3(#4);}}
-\newcommand{\sReturn}[1]{\ttt{return #1;}}
-\newcommand{\sAssert}[1]{\ttt{assert #1;}}
-\newcommand{\sRelease}[1]{\ttt{release #1;}}
-\newcommand{\sDeclare}[2]{\ttt{#1~#2;}}
-\newcommand{\sHold}[2]{\ttt{hold #1~\{ #2 \};}}
-
-% structure
-\newcommand{\method}[6]{\ttt{#1~#2(#3~#4)~#5~\{ #6 \}}}
-\newcommand{\contract}[2]{\ttt{requires {#1}; ensures {#2};}}
-
-\newcommand{\OK}{~\textsf{OK}}
-\newcommand{\OKinC}{~\textsf{OK in}~C}
-
 \newcommand{\goal}{\ensuremath{\textrm{goal}_{\Gamma}}}
 \newcommand{\TappVER}{\ensuremath{\textrm{TappVER}}}
 \newcommand{\GTappVER}{\ensuremath{\grad{\textrm{T}}\textrm{appVER}}}
 
 % dyn
-\newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
-\newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
-\newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
-\newcommand{\evalphi}{\evalphix H \rho A}
 \newcommand{\valphi}[1]{\llbracket #1 \rrbracket}
 
 \newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
@@ -167,35 +199,9 @@
 \pagenumbering{arabic}
 
 \section{Syntax}%%
-\begin{align*}
-\\ &program    	&&::= \ttt{$\overline{cls}$~$\overline{s}$}
-\\ &cls    		&&::= \ttt{\class $C$~\{ $\overline{field}$~$\overline{method}$ \}}
-\\ &field    	&&::= \ttt{$T$~$f$;}
-\\ &method		&&::= \method {$T$} {$m$} {$T$} {$x$} {$contract$} {$\overline{s}$}
-\\ &contract	&&::= \ttt{requires $\phi$;~ensures $\phi$;}
-\\ &T			&&::= \Tint ~|~ C
-\\ &s			&&::= \sFieldAssign {$x$} {$f$} {$y$}
-				  ~|~ \sAssign {$x$} {$e$}
-				  ~|~ \sAlloc {$x$} {$C$}
-				  ~|~ \sCall {$x$} {$y$} {$m$} {$z$}
-\\ & &&
-				  ~|~ \sReturn {$x$}
-				  ~|~ \sAssert {$\phi$}
-				  ~|~ \sRelease {$\phi$}
-				  ~|~ \sDeclare {$T$} {$x$}
-\\ &\phi		&&::= \phiTrue
-                  ~|~ \phiEq {$e$} {$e$}
-				  ~|~ \phiNeq {$e$} {$e$}
-				  ~|~ \phiAcc {$e$} {$f$}
-				  ~|~ \phiCons {$\phi$} {$\phi$}
-\\ &e			&&::= \ev{$v$}
-				  ~|~ \ex{$x$}
-				  ~|~ \edot{$e$}{$f$}
-\\ &x			&&::= \xthis ~|~ \xresult ~|~ \langle other~name \rangle
-\\ &v			&&::= o ~|~ n ~|~ \vnull
-\\ &n			&&\in~~ \mathbb{Z}
-\\ &C, f, m		&&::=  \langle name \rangle
-\\				  
+\input{../../GradVerThesis/data/svl-syntax}
+
+\begin{align*}	  
 \\ &H			&&\in~~ (o \rightharpoonup (C,\overline{(f \rightharpoonup v)}))
 \\ &\rho		&&\in~~ (x \rightharpoonup v)
 \\ &\Gamma		&&\in~~ (x \rightharpoonup T)
@@ -209,10 +215,10 @@ All the rules in the following sections are implicitly parameterized over a $pro
 
 \section{Static semantics}
 \subsection{Expressions ($A_s \sfrme e$)}
-\input{staticExpression}
+\input{../../GradVerThesis/data/autogen/staticExpression}
 
 \subsection{Formulas ($A_s \sfrme \phi$)}
-\input{staticFormula}
+\input{../../GradVerThesis/data/autogen/staticFormula}
 
 \begin{mathpar}
 \inferrule* [Right=WFSepOp]
@@ -267,7 +273,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \end{mathpar}
 
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
-\input{staticSemantics}
+\input{../../GradVerThesis/data/autogen/staticSemantics}
 
 \subsubsection{Notation}
 \input{staticSemanticsNotation}
@@ -300,7 +306,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \end{mathpar}
 
 \subsection{Formulas ($\evalphi \phi$)}
-\input{dynamicFormula}
+\input{../../GradVerThesis/data/autogen/dynamicFormula}
 
 \begin{mathpar}
 \inferrule* [Right=EASepOp]
@@ -356,7 +362,6 @@ Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equir
 
 \subsection{Small-step ($\sstep H S H S$)}
 \input{dynamicSemantics}
-%\input{dynamicSemanticsX}
 
 \section{Gradualization}
 \subsection{Syntax}
