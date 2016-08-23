@@ -105,6 +105,7 @@
 \newcommand{\class}[3]{\ttt{class {#1}~\{ {#2} {#3} \}}}
 \newcommand{\method}[6]{\ttt{{#1}~{#2}({#3}~{#4})~{#5}~\{ {#6} \}}}
 \newcommand{\contract}[2]{\ttt{requires {#1}; ensures {#2};}}
+\newcommand{\field}[2]{\ttt{{#1}~{#2};}}
 %% predicates
 % well-formed
 \newcommand{\OK}{~\predicate{OK}}
@@ -119,6 +120,8 @@
 \newcommand{\evalphi}{\evalphix H \rho A}
 %other
 \newcommand{\writesTo}{\predicate{writesTo}}
+\newcommand{\sType}[3]{#1 \vdash #2 : #3}
+\newcommand{\accFor}[1]{\llbracket #1 \rrbracket}
 
 \newcommand{\thoare}[4]{{#1} \vdash \{{#2}\} {#3} \{{#4}\}}
 
@@ -127,7 +130,6 @@
 
 \newcommand{\hasTypePremise}[3]{[#1 : #2]_{#3}}
 \newcommand{\hasTypeFormula}[3]{{\llbracket #1 : #2\rrbracket}_{#3}}
-\newcommand{\accFor}[1]{\llbracket #1 \rrbracket}
 
 \newcommand{\Heap}{H}
 
@@ -143,13 +145,6 @@
 \newcommand{\acc}{\ensuremath{\texttt{acc}}}
 %DEPRECATED
 
-\newcommand{\fields}{\ensuremath{\textsf{fields}}}
-\newcommand{\mpre}{\ensuremath{\textsf{mpre}}}
-\newcommand{\mpost}{\ensuremath{\textsf{mpost}}}
-\newcommand{\mbody}{\ensuremath{\textsf{mbody}}}
-\newcommand{\mparam}{\ensuremath{\textsf{mparam}}}
-\newcommand{\mrettype}{\ensuremath{\textsf{mrettype}}}
-\newcommand{\mmethod}{\ensuremath{\textsf{mmethod}}}
 
 %\newcommand{\staticFP}[1]{\ensuremath{\texttt{static-footprint}(#1)}}
 %\newcommand{\dynamicFP}[3]{\ensuremath{\texttt{footprint}_{#1,#2}(#3)}}
@@ -188,9 +183,7 @@
 
 \newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
 \newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
-\newcommand{\sstepM}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}} 
-\newcommand{\sstepWS}[4]{\sstepGeneric {#1} {{#2} \cdot S} {} {#3} {{#4} \cdot S}}
-\newcommand{\sstepWSX}[8]{\sstepGeneric {#1} {({#2},{#3},{#4}) \cdot S} {} {#5} {({#6},{#7},{#8}) \cdot S}}
+\newcommand{\ssteps}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}}
 
 \newcommand{\Tfs}{\overline{T}~\overline{f}}
 
@@ -241,36 +234,8 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \\ &\staticFP {\phiCons {$\phi_1$} {$\phi_2$}} 	&&= \staticFP {\phi_1} \cup \staticFP {\phi_2}
 \end{align*}
 
-\newcommand{\sType}[3]{#1 \vdash #2 : #3}
 \subsection{Type ($\sType {\Gamma} {e} {T}$)}
-%\begin{mathpar}
-%\inferrule* [Right=STValue]
-%{~}
-%{\sType {\phi} {\null} {T}}
-%\end{mathpar}
-\begin{mathpar}
-\inferrule* [Right=STValNum]
-{~}
-{\sType {\Gamma} {n} {\Tint}}
-\end{mathpar}
-\begin{mathpar}
-\inferrule* [Right=STValNull]
-{~}
-{\sType {\Gamma} {\vnull} {T}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=STVar]
-{\Gamma(x) = T}
-{\sType {\Gamma} {x} {T}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=STField]
-{ \sType {\Gamma} {e} {C}
-\\ \vdash C.f : T}
-{\sType {\Gamma} {\edot{$e$}{$f$}} {T}}
-\end{mathpar}
+\input{../../GradVerThesis/data/autogen/staticTypeExpression}
 
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
 \input{../../GradVerThesis/data/autogen/staticSemantics}

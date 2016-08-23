@@ -14,9 +14,9 @@ Definition x' := string.
 Inductive x :=
 (*coq2latex: xUserDef #x := #x *)
 | xUserDef : x' -> x
-(*coq2latex: xthis := \xthis *)
+(*coq2latex: xthis := \ethis *)
 | xthis : x
-(*coq2latex: xresult := \xresult *)
+(*coq2latex: xresult := \eresult *)
 | xresult : x.
 Inductive T :=
 (*coq2latex: TPrimitiveInt := \Tint *)
@@ -27,7 +27,7 @@ Inductive T :=
 Inductive vex :=
 (*coq2latex: vn #n := #n *)
 | vn : nat -> vex
-(*coq2latex: vnull := \vnull *)
+(*coq2latex: vnull := \enull *)
 | vnull : vex
 .
 
@@ -38,13 +38,13 @@ Inductive v :=
 | vo : o -> v
 .
 
-(*coq2latex: defaultValue' #T := \texttt{defaultValue}(#T) *)
+(*coq2latex: defaultValue' #T := \defaultValue{$#T$} *)
 Definition defaultValue' (T : T) : vex :=
   match T with
   | TPrimitiveInt => vn 0
   | TClass C => vnull
   end.
-(*coq2latex: defaultValue #T := \texttt{defaultValue}(#T) *)
+(*coq2latex: defaultValue #T := \defaultValue{$#T$} *)
 Definition defaultValue (T : T) : v := ve (defaultValue' T).
 
 Inductive e :=
@@ -84,7 +84,7 @@ Inductive s :=
 (*coq2latex: sHold #h #ss := \sHold {$#h$} {$#ss$} *)
 | sHold : phi -> list s -> s.
 Inductive contract :=
-(*coq2latex: Contract #pre #post := \requires #pre;~\ensures #post; *)
+(*coq2latex: Contract #pre #post := \contract {$#pre$} {$#post$} *)
 | Contract : phi -> phi -> contract.
 Inductive method :=
 (*coq2latex: Method #Tr #m #Tp #xp #c #s := \method {$#Tr$} {$#m$} {$#Tp$} {$#xp$} {$#c$} {$#s$} *)
@@ -388,6 +388,7 @@ Inductive sfrmphi' : A_s -> phi' -> Prop :=
 | WFNEqual : forall A (e_1 e_2 : e), sfrme A e_1 -> sfrme A e_2 -> sfrmphi' A (phiNeq e_1 e_2)
 | WFAcc : forall A e f, sfrme A e -> sfrmphi' A (phiAcc e f)
 .
+(*coq2latex: sfrmphi (@nil A'_s) #e := \sfrmphi #e *)
 (*coq2latex: sfrmphi #A #e := #A \sfrmphi #e *)
 Fixpoint sfrmphi (a : A_s) (p : phi) : Prop :=
   match p with
@@ -480,19 +481,19 @@ Definition phiImplies (p1 p2 : phi) : Prop :=
 
 
 (* static type derivation *)
-(*coq2latex: hasStaticType #G #x #T := #G \vdash #x : #T *)
+(*coq2latex: hasStaticType #G #e #T := \sType #G #e #T *)
 Inductive hasStaticType : Gamma -> e -> T -> Prop :=
-| STValNum : forall p n, 
-  hasStaticType p (ev (vn n)) TPrimitiveInt
-| STValNull : forall p C, 
-  hasStaticType p (ev vnull) (TClass C)
-| STVar : forall p T x, 
-  p x = Some T -> 
-  hasStaticType p (ex x) T
-| STField : forall p e f C T, 
-  hasStaticType p e (TClass C) ->
+| STValNum : forall Gamma(*\*) n, 
+  hasStaticType Gamma (ev (vn n)) TPrimitiveInt
+| STValNull : forall Gamma(*\*) C, 
+  hasStaticType Gamma (ev vnull) (TClass C)
+| STVar : forall Gamma(*\*) T x, 
+  Gamma x = Some T -> 
+  hasStaticType Gamma (ex x) T
+| STField : forall Gamma(*\*) e f C T, 
+  hasStaticType Gamma e (TClass C) ->
   fieldType C f = Some T ->
-  hasStaticType p (edot e f) T
+  hasStaticType Gamma (edot e f) T
 .
 
 (*coq2latex: hasNoStaticType #G #x := #x \not\in \dom(#G) *)
@@ -503,10 +504,13 @@ Definition hasNoStaticType (G : Gamma) (e : e) : Prop :=
 Definition fieldHasType C f T := fieldType C f = Some T.
 
 (* Figure 5: Hoare-based proof rules for core language *)
-(*coq2latex: accListApp #x \overline{f} := \overline{\acc(#x, f_i)} *)
-Definition accListApp (x : x) (f_bar : list f) : phi := 
+(*coq2latex: accInitList #x \overline{\field{$T$}{$f$}} := \overline{\phiCons{\phiAcc {$x$} {$f_i$}}{\phiEq {\edot {$x$} {$f_i$}} {\defaultValue {$T_i$}} }} *)
+Definition accInitList (x : x) (f_bar : list (prod T f)) : phi := 
         map
-        (fun f => phiAcc (ex x) f)
+        (fun f => phiAcc (ex x) (snd f))
+        f_bar ++
+        map
+        (fun f => phiEq (edot (ex x) (snd f)) (ev (defaultValue' (fst f))))
         f_bar.
 
 
@@ -520,7 +524,7 @@ Definition accListApp (x : x) (f_bar : list f) : phi :=
 (*coq2latex: @cons s #p1 (@nil s) := #p1 *)
 (*coq2latex: @cons s #p1 #p2 := #p1 #p2 *)
 
-(*coq2latex: @app A'_d #A1 #A2 := #A1 * #A2 *)
+(*coq2latex: @app A'_d #A1 #A2 := #A1 \cup #A2 *)
 
 (*coq2latex: @pair rho A_d #a #b := #a, #b *)
 (*coq2latex: @pair rho (list A'_d) #a #b := #a, #b *)
@@ -529,7 +533,7 @@ Definition accListApp (x : x) (f_bar : list f) : phi :=
 
 (*hacky: *)
 (*coq2latex: snd cf' := f_i *)
-(*coq2latex: Halloc #o #C #H := #H[#o \mapsto [\overline{f \mapsto \texttt{defaultValue}(T)}]] *)
+(*coq2latex: Halloc #o #C #H := #H[#o \mapsto [\overline{f_i \mapsto \defaultValue{$T_i$}}]] *)
 
 (*coq2latex: FVe #e := FV(#e) *)
 Fixpoint FVe (e : e) : list x :=
@@ -567,19 +571,19 @@ Definition unfoldAcc (e : e) : phi :=
 (*coq2latex: GammaNotSetAt #G #x := #x \not\in \dom(#G) *)
 Definition GammaNotSetAt (G : Gamma) (x : x) : Prop := G x = None.
 
-(*coq2latex: hoare #G #p1 #s #p2 := #G \hoare #p1 #s #p2 *)
+(*coq2latex: hoare #G #p1 #s #p2 := \thoare #G #p1 #s #p2 *)
 Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
-| HAlloc : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{f}*),
+| HAlloc : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{\field{$T$}{$f$}}*),
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     hasStaticType G (ex x) (TClass C) ->
-    fieldsNames C = Some f_bar ->
+    fields C = Some f_bar ->
     hoare
       G
       phi
       [sAlloc x C]
-      (phi' ++ (phiNeq (ex x) (ev vnull) :: accListApp x f_bar))
+      (phi' ++ (phiNeq (ex x) (ev vnull) :: accInitList x f_bar))
 | HFieldAssign : forall G(*\Gamma*) (phi(*\*) : phi) phi'(*\*) (x y : x) (f : f) C T,
     phiImplies phi (phiAcc (ex x) f :: phi') ->
     sfrmphi [] phi' ->
@@ -593,12 +597,12 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
        phiEq (edot (ex x) f) (ex y) :: [])
 | HVarAssign : forall G(*\Gamma*) T phi(*\*) phi'(*\*) (x : x) (e : e),
     phiImplies phi phi' ->
+    phiImplies phi (unfoldAcc e) ->
     sfrmphi [] phi' ->
     NotIn x (FV phi') ->
     NotIn x (FVe e) ->
     hasStaticType G (ex x) T ->
     hasStaticType G e T ->
-    incl (unfoldAcc e) phi' ->
     hoare G phi [sVarAssign x e] (phi' ++ [phiEq (ex x) e])
 | HReturn : forall G(*\Gamma*) phi(*\*) phi'(*\*) (x : x) T,
     phiImplies phi phi' ->
@@ -647,10 +651,10 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi_f
       [sHold phi s]
       (phi_r' ++ phi')
-| HSeq : forall s1(*\overline{s_1}*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
-    hoare G p s1 q ->
+| HSeq : forall s1(*s_1*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
+    hoare G p [s1] q ->
     hoare G q s2 r ->
-    hoare G p (s1 ++ s2) r
+    hoare G p (s1 :: s2) r
 .
 
 
@@ -672,6 +676,9 @@ Definition rhoFrom3 (x1 : x) (v1 : v) (x2 : x) (v2 : v) (x3 : x) (v3 : v) : rho 
 (*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
 Definition HeapNotSetAt (H : H) (o : o) : Prop := H o = None.
 
+(*coq2latex: accListDyn #o \overline{\field{$T$}{$f$}} := \overline{(#o, f_i)} *)
+Definition accListDyn (o : o) (fs : list (prod T f)) : A_d := map (fun cf' => (o, snd cf')) fs.
+
 Definition execState : Set := H * S.
 (*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
 Inductive dynSem : execState -> execState -> Prop :=
@@ -685,11 +692,11 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho e v ->
     rho' = rhoSubst x v rho ->
     dynSem (H, (rho, A, sVarAssign x e :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESAlloc : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs,
+| ESAlloc : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs(*\overline{\field{$T$}{$f$}}*),
     HeapNotSetAt H o ->
     fields C = Some Tfs ->
     rho' = rhoSubst x (vo o) rho ->
-    A' = A ++ map (fun cf' => (o, snd cf')) Tfs ->
+    A' = A ++ accListDyn o Tfs ->
     H' = Halloc o C H ->
     dynSem (H, (rho, A, sAlloc x C :: s_bar) :: S) (H', (rho', A', s_bar) :: S)
 | ESReturn : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (v_x : v),
