@@ -51,6 +51,10 @@
 \setlength{\parindent}{0cm}
 
 
+%% decoration
+\newcommand{\pa}[1]{\ensuremath{{#1}^{\checkmark}}}
+\newcommand{\pb}[1]{\ensuremath{{#1}^{\circ}}}
+
 %% ALIASES
 % fonts
 \newcommand{\std}{\textrm}
@@ -58,22 +62,24 @@
 \newcommand{\tset}{\textsc}
 \newcommand{\predicate}{\textsf}
 % names
-\newcommand{\svl}{\std{SVL}}
-\newcommand{\dvl}{\std{DVL}}
-\newcommand{\gvl}{\std{GVL}}
+\newcommand{\svl}{\std{SVL}\xspace}
+\newcommand{\dvl}{\std{DVL}\xspace}
+\newcommand{\gvl}{\std{GVL}\xspace}
 
 % sets
-\newcommand{\setProgram}{\tset{Program}}
-\newcommand{\setClass}{\tset{Class}}
-\newcommand{\setField}{\tset{Field}}
-\newcommand{\setMethod}{\tset{Method}}
-\newcommand{\setContract}{\tset{Contract}}
-\newcommand{\setType}{\tset{Type}}
-\newcommand{\setStmt}{\tset{Stmt}}
-\newcommand{\setFormula}{\tset{Formula}}
-\newcommand{\setExpr}{\tset{Expr}}
-\newcommand{\setVal}{\tset{Val}}
-\newcommand{\setVar}{\tset{Var}}
+\newcommand{\setProgram}{\tset{Program}\xspace}
+\newcommand{\setClass}{\tset{Class}\xspace}
+\newcommand{\setField}{\tset{Field}\xspace}
+\newcommand{\setMethod}{\tset{Method}\xspace}
+\newcommand{\setContract}{\tset{Contract}\xspace}
+\newcommand{\setType}{\tset{Type}\xspace}
+\newcommand{\setStmt}{\tset{Stmt}\xspace}
+\newcommand{\setFormula}{\tset{Formula}\xspace}
+\newcommand{\setFormulaA}{\tset{SatFormula}\xspace}
+\newcommand{\setFormulaB}{\tset{SfrmFormula}\xspace}
+\newcommand{\setExpr}{\tset{Expr}\xspace}
+\newcommand{\setVal}{\tset{Val}\xspace}
+\newcommand{\setVar}{\tset{Var}\xspace}
 % expressions
 \newcommand{\ev}[1]{\ttt{#1}}
 \newcommand{\ex}[1]{\ttt{#1}}
@@ -111,19 +117,43 @@
 \newcommand{\OK}{~\predicate{OK}}
 \newcommand{\OKinC}{~\predicate{OK in}~C}
 % framing
-\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{sfrm}}\,}
+\newcommand{\sfrme}{\ensuremath{\vdash_\texttt{frm}}\,}
 \newcommand{\sfrmphi}{\ensuremath{\vdash_\texttt{sfrm}}\,}
 % evaluation
 \newcommand{\evalex}[4]{#1,#2 \vdash #3 \Downarrow #4}
 \newcommand{\evale}[2]{H,\rho \vdash #1 \Downarrow #2}
 \newcommand{\evalphix}[4]{#1,#2,#3 \vDash #4}
 \newcommand{\evalphi}{\evalphix H \rho A}
-%other
+% extraction
+\newcommand{\fieldType}{\predicate{fieldType$_p$}}
+\newcommand{\fields}{\predicate{fields$_p$}}
+\newcommand{\mpre}{\predicate{mpre$_p$}}
+\newcommand{\mpost}{\predicate{mpost$_p$}}
+\newcommand{\mmethod}{\predicate{method$_p$}}
+% other
+\newcommand{\dom}{\predicate{dom}}
 \newcommand{\writesTo}{\predicate{writesTo}}
-\newcommand{\sType}[3]{#1 \vdash #2 : #3}
+\newcommand{\sType}[3]{{#1} \vdash {#2} : {#3}}
+\newcommand{\defaultValue}[1]{\predicate{defaultValue(#1)}}
+\newcommand{\defeq}{\overset{\predicate{def}}{=}}
 \newcommand{\accFor}[1]{\llbracket #1 \rrbracket}
-
+% footprint
+\newcommand\floor[1]{\lfloor#1\rfloor}
+\newcommand\ceil[1]{\lceil#1\rceil}
+\newcommand{\staticFP}[1]{\ensuremath{\floor{#1}}}
+\newcommand{\dynamicFP}[3]{\ensuremath{\floor{#3}_{#1,#2}}}
+% static sem
 \newcommand{\thoare}[4]{{#1} \vdash \{{#2}\} {#3} \{{#4}\}}
+\newcommand{\funHoare}{\mathcal{H}}
+\newcommand{\funHoareA}{\mathcal{F}}
+\newcommand{\funHoareApred}{\mathcal{P}}
+\newcommand{\funHoareB}{\mathcal{I}}
+\newcommand{\funHoareBimp}{\mathcal{J}}
+\newcommand{\funHoareC}{\mathcal{M}}
+% dyn sem
+\newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
+\newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
+\newcommand{\ssteps}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}}
 
 
 % OLD:
@@ -149,13 +179,7 @@
 %\newcommand{\staticFP}[1]{\ensuremath{\texttt{static-footprint}(#1)}}
 %\newcommand{\dynamicFP}[3]{\ensuremath{\texttt{footprint}_{#1,#2}(#3)}}
 
-\newcommand\floor[1]{\lfloor#1\rfloor}
-\newcommand\ceil[1]{\lceil#1\rceil}
-\newcommand{\staticFP}[1]{\ensuremath{\floor{#1}}}
-\newcommand{\dynamicFP}[3]{\ensuremath{\floor{#3}_{#1,#2}}}
-
 \newcommand{\rlabel}[1]{\RightLabel{\quad #1}}
-\newcommand{\dom}{\ensuremath{\textrm{dom}}}
 
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
@@ -180,10 +204,6 @@
 \newcommand{\valphi}[1]{\llbracket #1 \rrbracket}
 
 \newcommand{\dType}[4]{#1, #2 \vdash #3 : #4}
-
-\newcommand{\sstepGeneric}[5]{({#1}, {#2}) \rightarrow^{#3} ({#4}, {#5})}
-\newcommand{\sstep}[4]{\sstepGeneric {#1} {#2} {} {#3} {#4}}
-\newcommand{\ssteps}[4]{\sstepGeneric {#1} {#2} * {#3} {#4}}
 
 \newcommand{\Tfs}{\overline{T}~\overline{f}}
 
@@ -240,8 +260,8 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \subsection{Hoare ($\Gamma \hoare {\phi} {\overline s} {\phi}$)}
 \input{../../GradVerThesis/data/autogen/staticSemantics}
 
-\subsubsection{Notation}
-\input{staticSemanticsNotation}
+%\subsubsection{Notation}
+%\input{staticSemanticsNotation}
 
 \subsubsection{Deterministic}
 \input{staticSemanticsDeterm}
@@ -254,7 +274,7 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 \input{../../GradVerThesis/data/svl-sem-dyn-expr}
 
 \subsection{Formulas ($\evalphi \phi$)}
-\input{../../GradVerThesis/data/svl-sem-dyn-form}
+\input{../../GradVerThesis/data/autogen/dynamicFormula}
 
 We give a denotational semantics of formulas as $\valphi {\phi} = \{~ (H,\rho,A) ~|~ \evalphi {\phi} ~\}$
 

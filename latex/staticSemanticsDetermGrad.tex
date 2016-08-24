@@ -66,10 +66,11 @@ Let $\gsc$ behave like $\hsc$ if first operand is static - otherwise its regular
 \begin{mathpar}
 \inferrule* [Right=GHHold]
 {
-\imp(\phi)(\grad{\phi_f}) = \grad{\phi_f'}\\
-\wo {\grad{\phi_f'}} {\staticFP{\phi}} = \grad{\phi_r}\\
-\wo {\grad{\phi_f'}} {\staticFP{\grad{\phi_r}}} = \grad{\phi'}\\
-{\Gamma~} \ghoare {\grad{\phi_r}} {\overline{s}} {\grad {\phi_r'}}
+    \sfrmphi {\phi} \\
+    \imp(\phi)(\grad{\phi_f}) = \grad{\phi_f'}\\
+    \wo {\grad{\phi_f'}} {\staticFP{\phi}} = \grad{\phi_r}\\
+    \wo {\wo {\grad{\phi_f'}} {\staticFP{\grad{\phi_r}}}}{FV(\grad{\phi_f'}) \backslash FV(\grad{\phi})} = \grad{\phi'}\\
+    {\Gamma~} \ghoare {\grad{\phi_r}} {\overline{s}} {\grad {\phi_r'}}
 }
 {{\Gamma~} \ghoare {\grad{\phi_f}} {{\sHold {$\phi$} {${\overline{s}}$}}} {\grad{\phi_r'} \gsc \grad{\phi'}}}
 \end{mathpar}

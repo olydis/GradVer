@@ -194,6 +194,21 @@ Ltac undecb :=
     dec2decb
       in *.
 
+
+Inductive writesTo : x -> s -> Prop :=
+| wtVarAssign : forall x e, writesTo x (sVarAssign x e)
+| wtAlloc : forall x C, writesTo x (sAlloc x C)
+| wtCall : forall x y m z, writesTo x (sCall x y m z)
+| wtReturn : forall x, writesTo xresult (sReturn x)
+| wtDeclare : forall T x, writesTo x (sDeclare T x)
+| wtHold : forall p s ss x, In s ss -> writesTo x s -> writesTo x (sHold p ss)
+.
+
+(*coq2latex: not #p := \neg #p *)
+(*coq2latex: writesToAny #x #s := \writesTo(#x, #s) *)
+Definition writesToAny (xs : list x) (ss : list s) : Prop :=
+  forall x s, In x xs -> In s ss -> ~ writesTo x s.
+
 Definition GammaEmpty : Gamma := fun x => None.
 
 (*coq2latex: GammaSet #x #T #G := #G, #x : #T *)
@@ -644,8 +659,11 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       (sDeclare T x :: s)
       phi'
 | HHold : forall s(*\overline{s}*) G(*\Gamma*) phi_f(*\*) phi_r(*\*) phi(*\*) phi_r'(*\*) phi'(*\*),
+    sfrmphi [] phi ->
     phiImplies phi_f (phi_r ++ phi') ->
     phiImplies phi' phi ->
+    FV phi' = FV phi ->
+    ~ writesToAny (FV phi) s ->
     hoare G phi_r s phi_r' ->
     hoare G 
       phi_f
@@ -765,16 +783,6 @@ Qed.
 Definition newHeap : H := fun _ => None.
 Definition newRho : rho := fun _ => None.
 Definition newAccess : A_d := [].
-
-
-Inductive writesTo : x -> s -> Prop :=
-| wtVarAssign : forall x e, writesTo x (sVarAssign x e)
-| wtAlloc : forall x C, writesTo x (sAlloc x C)
-| wtCall : forall x y m z, writesTo x (sCall x y m z)
-| wtReturn : forall x, writesTo xresult (sReturn x)
-| wtDeclare : forall T x, writesTo x (sDeclare T x)
-.
-
 
 (* ASSUMPTIONS *)
 Definition mWellDefined (C : C) (m : method) := 

@@ -72,9 +72,10 @@ Have $\hsc$ take care of necessary congruent rewriting of $e$ in order to preser
 \begin{mathpar}
 \inferrule* [Right=HHold]
 {
+    \sfrmphi {\phi} \\
 \imp(\phi)(\hat{\phi_f}) = \hat{\phi_f'}\\
 \wo {\hat{\phi_f'}} {\staticFP{\phi}} = \hat{\phi_r}\\
-\wo {\hat{\phi_f'}} {\staticFP{\hat{\phi_r}}} = \hat{\phi'}\\
+\wo {\wo {\hat{\phi_f'}} {\staticFP{\hat{\phi_r}}}}{FV(\hat{\phi_f'}) \backslash FV(\hat{\phi})} = \hat{\phi'}\\
 {\Gamma} \hoare {\hat{\phi_r}} {\overline{s}} {\hat {\phi_r'}}
 }
 {{\Gamma} \hoare {\hat{\phi_f}} {{\sHold {$\phi$} {${\overline{s}}$}}} {\phiCons{$\hat{\phi_r'}$}{$\hat{\phi'}$}}}
