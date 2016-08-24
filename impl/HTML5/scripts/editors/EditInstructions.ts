@@ -246,6 +246,8 @@ export class EditInstructions
         var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
         var dynSuccess = true;
 
+        var scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[] = [];
+
         for (var i = 0; i < statements.length; ++i)
         {
             this.displayPreCond(i, cond);
@@ -263,14 +265,14 @@ export class EditInstructions
             }
 
             var s = statements[i];
-            var errs = this.hoare.check(s, cond, g);
+            var errs = this.hoare.check(s, cond, g, scopePostProcStack);
             if (errs != null)
             {
                 $("#ins" + i).text(errs[0]).addClass("err");
                 return;
             }
 
-            var res = this.hoare.post(s, cond, g);
+            var res = this.hoare.post(s, cond, g, scopePostProcStack);
             dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
             this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
             if (!dynSuccess)
@@ -289,6 +291,9 @@ export class EditInstructions
             if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }
+
+        if (scopePostProcStack.length != 0)
+            $("#ins" + this.statements.length).text("close scope").addClass("err");
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void

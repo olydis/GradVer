@@ -703,7 +703,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESCall : forall underscore2(*\_*) phi H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
+| ESCall : forall underscore2(*\_*) phi(*\*) H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
     evale H rho (ex y) (vo o) ->
     evale H rho (ex z) v ->
     H o = Some (C, underscore) ->

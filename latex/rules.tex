@@ -251,37 +251,10 @@ Conservative approx. of $\phi_1 \implies \phi_2$.
 
 \section{Dynamic semantics}
 \subsection{Expressions ($\evale {e} {v}$)}
-
-\begin{mathpar}
-\inferrule* [Right=EEVar]
-{~}
-{\evale {x} {\rho(x)}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=EEValue]
-{~}
-{\evale {v} {v}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule* [Right=EEAcc]
-{\evale {e} {o}}
-{\evale {e.f} {H(o)(f)}}
-\end{mathpar}
+\input{../../GradVerThesis/data/svl-sem-dyn-expr}
 
 \subsection{Formulas ($\evalphi \phi$)}
-\input{../../GradVerThesis/data/autogen/dynamicFormula}
-
-\begin{mathpar}
-\inferrule* [Right=EASepOp]
-{
-A_1 = A \backslash A_2 \\
-\evalphix H \rho {A_1} {\phi_1} \\
-\evalphix H \rho {A_2} {\phi_2}
-}
-{\evalphi {\phiCons {$\phi_1$} {$\phi_2$}}}
-\end{mathpar}
+\input{../../GradVerThesis/data/svl-sem-dyn-form}
 
 We give a denotational semantics of formulas as $\valphi {\phi} = \{~ (H,\rho,A) ~|~ \evalphi {\phi} ~\}$
 

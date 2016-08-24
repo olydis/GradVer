@@ -50,7 +50,7 @@ export abstract class FormulaPart
         }
         catch(e)
         {
-            console.error("parse error");
+            console.error("parse error", e);
             return new FormulaPartTrue();
         }
     }

@@ -42,7 +42,7 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 return result;
             }
             catch (e) {
-                console.error("parse error");
+                console.error("parse error", e);
                 return new FormulaPartTrue();
             }
         };

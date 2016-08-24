@@ -17,6 +17,10 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var sourceWS = source;
             try {
                 if (!result)
+                    result = StatementHold.parse(source);
+                if (!result)
+                    result = StatementUnhold.parse(source);
+                if (!result)
                     result = StatementComment.parse(source);
                 if (!result)
                     result = StatementCast.parse(source);
@@ -480,6 +484,76 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementComment;
     }(Statement));
     exports.StatementComment = StatementComment;
+    var StatementHold = (function (_super) {
+        __extends(StatementHold, _super);
+        function StatementHold(p) {
+            _super.call(this);
+            this.p = p;
+            if (p == null)
+                throw "null arg";
+        }
+        StatementHold.parse = function (source) {
+            if (source.slice(0, 4) != "hold")
+                return null;
+            source = source.slice(4);
+            if (source.charAt(source.length - 1) == "{")
+                source = source.slice(0, source.length - 1);
+            return new StatementHold(new VerificationFormula_1.VerificationFormula(source));
+        };
+        StatementHold.prototype.toString = function () {
+            return "hold " + this.p + " {";
+        };
+        StatementHold.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            // ESHold
+            if (env.S[env.S.length - 1].ss[0] != this)
+                throw "dispatch failure";
+            if (!this.p.eval(envx))
+                return null;
+            var AA = this.p.footprintDynamic(envx);
+            var Awo = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+            StackEnv_1.topEnv(env).A = AA;
+            env.S.push({
+                r: StackEnv_1.topEnv(env).r,
+                A: Awo,
+                ss: env.S[env.S.length - 1].ss.slice(1)
+            });
+            return env;
+        };
+        return StatementHold;
+    }(Statement));
+    exports.StatementHold = StatementHold;
+    var StatementUnhold = (function (_super) {
+        __extends(StatementUnhold, _super);
+        function StatementUnhold() {
+            _super.call(this);
+        }
+        StatementUnhold.parse = function (source) {
+            if (source != "}")
+                return null;
+            return new StatementUnhold();
+        };
+        StatementUnhold.prototype.toString = function () {
+            return "}";
+        };
+        StatementUnhold.prototype.smallStep = function (env, context) {
+            var envx = StackEnv_1.topEnv(env);
+            env = StackEnv_1.cloneStackEnv(env);
+            // ESHoldFinish
+            if (env.S.pop().ss.shift() != this)
+                throw "dispatch failure";
+            // reset next stack frame
+            var ss = env.S[env.S.length - 1].ss;
+            ss = ss.slice(ss.indexOf(this) + 1);
+            (_a = StackEnv_1.topEnv(env).A).push.apply(_a, envx.A);
+            StackEnv_1.topEnv(env).r = envx.r;
+            return env;
+            var _a;
+        };
+        return StatementUnhold;
+    }(Statement));
+    exports.StatementUnhold = StatementUnhold;
 });
 // export class StatementSugar extends Statement
 // {

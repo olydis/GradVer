@@ -249,6 +249,43 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
                 return pre;
             });
+            this.addHandler("Hold", Statement_1.StatementHold, function (s, g, onErr) {
+                return {
+                    info: s.p,
+                    postGamma: g
+                };
+            }, function (info) { return info; }, function (info, pre, postProcStack) {
+                var frameOff = pre;
+                for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
+                    var fp = _a[_i];
+                    pre = pre.woAcc(fp.e, fp.f);
+                }
+                for (var _b = 0, _c = pre.staticFormula.autoFraming(); _b < _c.length; _b++) {
+                    var fp2 = _c[_b];
+                    frameOff = frameOff.woAcc(fp2.e, fp2.f);
+                }
+                postProcStack.push(function (post) {
+                    for (var _i = 0, _a = frameOff.staticFormula.parts; _i < _a.length; _i++) {
+                        var part = _a[_i];
+                        post = post.append(part);
+                    }
+                    return post;
+                });
+                return pre;
+            });
+            this.addHandler("Unhold", Statement_1.StatementUnhold, function (s, g, onErr, postProcStack) {
+                if (postProcStack.length == 0) {
+                    onErr("no scope to close");
+                    return null;
+                }
+                return {
+                    info: {},
+                    postGamma: g
+                };
+            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre, postProcStack) {
+                var proc = postProcStack.pop();
+                return proc(pre);
+            });
         }
         Hoare.prototype.addHandler = function (rule, SS, 
             // returns null on error
@@ -276,23 +313,26 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             throw "unknown statement type";
         };
         Hoare.prototype.checkMethod = function (g, s, pre, post) {
+            var scopePostProcStack = [];
             s = s.slice();
             s.push(new Statement_1.StatementCast(post));
             for (var _i = 0, s_1 = s; _i < s_1.length; _i++) {
                 var ss = s_1[_i];
-                var err = this.check(ss, pre, g);
+                var err = this.check(ss, pre, g, scopePostProcStack);
                 if (err != null)
                     return ss + " failed check: " + err.join(", ");
-                var res = this.post(ss, pre, g);
+                var res = this.post(ss, pre, g, scopePostProcStack);
                 pre = res.post;
                 g = res.postGamma;
             }
+            if (scopePostProcStack.length != 0)
+                return "scopes not closed";
             return null;
         };
-        Hoare.prototype.check = function (s, pre, g) {
+        Hoare.prototype.check = function (s, pre, g, scopePostProcStack) {
             var rule = this.getRule(s);
             var errs = [];
-            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); });
+            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
             if (res == null)
                 return errs;
             var dyn = rule.checkImplication(res.info);
@@ -301,10 +341,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 return ["could not prove: " + dyn];
             return null;
         };
-        Hoare.prototype.post = function (s, pre, g) {
+        Hoare.prototype.post = function (s, pre, g, scopePostProcStack) {
             var rule = this.getRule(s);
             var errs = [];
-            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); });
+            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
             if (res == null)
                 throw "call check first";
             var dyn = rule.checkImplication(res.info);
@@ -312,7 +352,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             if (pre == null)
                 throw "call check first";
             return {
-                post: rule.checkPost(res.info, pre),
+                post: rule.checkPost(res.info, pre, scopePostProcStack),
                 dyn: dyn,
                 postGamma: res.postGamma
             };

@@ -189,6 +189,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 dynStepInto(); };
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
             var dynSuccess = true;
+            var scopePostProcStack = [];
             for (var i = 0; i < statements.length; ++i) {
                 this.displayPreCond(i, cond);
                 this.displayDynState(i, dynEnv);
@@ -201,12 +202,12 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     return;
                 }
                 var s = statements[i];
-                var errs = this.hoare.check(s, cond, g);
+                var errs = this.hoare.check(s, cond, g, scopePostProcStack);
                 if (errs != null) {
                     $("#ins" + i).text(errs[0]).addClass("err");
                     return;
                 }
-                var res = this.hoare.post(s, cond, g);
+                var res = this.hoare.post(s, cond, g, scopePostProcStack);
                 dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
                 this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
                 if (!dynSuccess)
@@ -222,6 +223,8 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 if (dynSuccess && dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
+            if (scopePostProcStack.length != 0)
+                $("#ins" + this.statements.length).text("close scope").addClass("err");
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;

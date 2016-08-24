@@ -24,6 +24,9 @@ export abstract class Statement
         var sourceWS = source;
         try
         {
+            if (!result) result = StatementHold.parse(source);
+            if (!result) result = StatementUnhold.parse(source);
+
             if (!result) result = StatementComment.parse(source);
             if (!result) result = StatementCast.parse(source);
             source = source.replace(/\s/g, "");
@@ -545,6 +548,89 @@ export class StatementComment extends Statement
         if (env.S[env.S.length - 1].ss.shift() != this)
             throw "dispatch failure";
 
+        return env;
+    }
+}
+
+export class StatementHold extends Statement
+{
+    public constructor(
+        public p: VerificationFormula)
+    {
+        super();
+        if (p == null) throw "null arg";
+    }
+
+    public static parse(source: string): Statement
+    {
+        if (source.slice(0,4) != "hold")
+            return null;
+        source = source.slice(4);
+        if (source.charAt(source.length - 1) == "{")
+            source = source.slice(0, source.length - 1);
+        return new StatementHold(new VerificationFormula(source));
+    }
+
+    public toString(): string
+    {
+        return "hold " + this.p + " {";
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+
+        // ESHold
+        if (env.S[env.S.length - 1].ss[0] != this)
+            throw "dispatch failure";
+
+        if (!this.p.eval(envx))
+            return null;
+
+        var AA = this.p.footprintDynamic(envx);
+        var Awo = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o))
+        topEnv(env).A = AA;
+        env.S.push({
+            r: topEnv(env).r,
+            A: Awo,
+            ss: env.S[env.S.length - 1].ss.slice(1)
+        });
+
+        return env;
+    }
+}
+export class StatementUnhold extends Statement
+{
+    public constructor()
+    {
+        super();
+    }
+
+    public static parse(source: string): Statement
+    {
+        if (source != "}")
+            return null;
+        return new StatementUnhold();
+    }
+
+    public toString(): string
+    {
+        return "}";
+    }
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    {
+        var envx = topEnv(env);
+        env = cloneStackEnv(env);
+
+        // ESHoldFinish
+        if (env.S.pop().ss.shift() != this)
+            throw "dispatch failure";
+
+        // reset next stack frame
+        var ss = env.S[env.S.length - 1].ss;
+        ss = ss.slice(ss.indexOf(this) + 1);
+        topEnv(env).A.push(...envx.A);
+        topEnv(env).r = envx.r;
         return env;
     }
 }
