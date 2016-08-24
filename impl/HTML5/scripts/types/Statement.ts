@@ -38,6 +38,7 @@ export abstract class Statement
             if (!result) result = StatementMemberSet.parse(source);
             if (!result) result = StatementAssign.parse(source);
             if (!result) result = StatementDeclare.parse(sourceWS);
+            if (!result) result = Statement.getNop();
         }
         catch(e)
         {

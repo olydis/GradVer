@@ -41,6 +41,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     result = StatementAssign.parse(source);
                 if (!result)
                     result = StatementDeclare.parse(sourceWS);
+                if (!result)
+                    result = Statement.getNop();
             }
             catch (e) {
                 console.error("parse error");

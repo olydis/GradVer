@@ -49,6 +49,12 @@ export class EditInstructions
         this.updateGUI();
     }
 
+    public loadEx0(): void
+    {
+        this.setInstructions([
+            "assert true;"
+        ]);
+    }
     public loadEx1(): void
     {
         this.setInstructions([
@@ -130,6 +136,21 @@ export class EditInstructions
             "assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)",
             "_ = fc.bar(p);",
             "assert acc(p.y) * (p.y = 0)",
+        ]);
+    }
+    public loadEx6(): void
+    {
+        this.setInstructions([
+            "int i1;",
+            "i1 = 1;",
+            "Point p;",
+            "p = new Point;",
+            "hold acc(p.x) {",
+            "p.y = i1;",
+            "{ ? }",
+            "}",
+            "assert acc(p.x)",
+            "assert acc(p.y)",
         ]);
     }
 
@@ -258,7 +279,7 @@ export class EditInstructions
         var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
         var dynSuccess = true;
 
-        var scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[] = [];
+        var scopePostProcStack: any[] = [];
 
         for (var i = 0; i < statements.length; ++i)
         {

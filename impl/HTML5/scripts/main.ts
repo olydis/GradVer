@@ -297,11 +297,13 @@ $(() =>
         $("#containerHoarePre").append(inputPre.createHTML());
         $("#containerHoarePost").append(inputPost.createHTML());
 
+        $("#btnEx0").click(() => code.loadEx0());
         $("#btnEx1").click(() => code.loadEx1());
         $("#btnEx2").click(() => code.loadEx2());
         $("#btnEx3").click(() => code.loadEx3());
         $("#btnEx4").click(() => code.loadEx4());
         $("#btnEx5").click(() => code.loadEx5());
+        $("#btnEx6").click(() => code.loadEx6());
 
         $("#btnToggleDyn").click(x => $("#containerHoare").toggleClass("showDynamic"));
         $("#btnToggleDyn").mouseenter(x => $("#containerHoare").addClass("showSem"));

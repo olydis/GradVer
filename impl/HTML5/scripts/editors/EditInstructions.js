@@ -38,6 +38,11 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             this.suppressAnalysis = false;
             this.updateGUI();
         };
+        EditInstructions.prototype.loadEx0 = function () {
+            this.setInstructions([
+                "assert true;"
+            ]);
+        };
         EditInstructions.prototype.loadEx1 = function () {
             this.setInstructions([
                 "// ♦ Basics ♦",
@@ -114,6 +119,20 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)",
                 "_ = fc.bar(p);",
                 "assert acc(p.y) * (p.y = 0)",
+            ]);
+        };
+        EditInstructions.prototype.loadEx6 = function () {
+            this.setInstructions([
+                "int i1;",
+                "i1 = 1;",
+                "Point p;",
+                "p = new Point;",
+                "hold acc(p.x) {",
+                "p.y = i1;",
+                "{ ? }",
+                "}",
+                "assert acc(p.x)",
+                "assert acc(p.y)",
             ]);
         };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {

@@ -268,11 +268,13 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             update();
             $("#containerHoarePre").append(inputPre.createHTML());
             $("#containerHoarePost").append(inputPost.createHTML());
+            $("#btnEx0").click(function () { return code.loadEx0(); });
             $("#btnEx1").click(function () { return code.loadEx1(); });
             $("#btnEx2").click(function () { return code.loadEx2(); });
             $("#btnEx3").click(function () { return code.loadEx3(); });
             $("#btnEx4").click(function () { return code.loadEx4(); });
             $("#btnEx5").click(function () { return code.loadEx5(); });
+            $("#btnEx6").click(function () { return code.loadEx6(); });
             $("#btnToggleDyn").click(function (x) { return $("#containerHoare").toggleClass("showDynamic"); });
             $("#btnToggleDyn").mouseenter(function (x) { return $("#containerHoare").addClass("showSem"); });
             $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });
