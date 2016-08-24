@@ -1,4 +1,4 @@
-define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1) {
+define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1, ValueExpression_1) {
     "use strict";
     function splitCell(left, right, cls) {
         if (cls === void 0) { cls = ""; }
@@ -159,6 +159,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var _this = this;
             if (this.suppressAnalysis)
                 return;
+            ValueExpression_1.ValueObject.reset();
             // clear messages
             this.verificationFormulas.forEach(function (x) { return x.text("").attr("title", null); });
             $(".clearMe").text("");
@@ -176,17 +177,22 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     pivotEnv = { H: {}, r: {}, A: [] };
             }
             var dynEnv = { H: pivotEnv.H, S: [{ r: pivotEnv.r, A: pivotEnv.A, ss: statements }] };
-            var dynEnvNextStmt = function () { return dynEnv.S.map(function (x) { return x.ss; }).reverse().filter(function (x) { return x.length > 0; })[0][0]; };
-            var dynStepInto = function () {
+            var dynEnvNextStmt = function () { return dynEnv.S.map(function (x) { return x.ss; }).reverse().filter(function (x) { return x.length > 0; }).concat([[null]])[0][0]; };
+            var dynStepInto = function (untilIdxEx) {
                 if (dynEnv == null)
-                    return;
+                    return false;
                 var stmt = dynEnvNextStmt();
+                if (stmt == null)
+                    return false;
+                if (stmt == statements[untilIdxEx])
+                    return false;
                 //console.log("State: ", printEnv(topEnv(dynEnv)));
                 //console.log("Statement: ", stmt + "");
                 dynEnv = stmt.smallStep(dynEnv, _this.hoare.env);
+                return true;
             };
-            var dynStepOver = function () { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1)
-                dynStepInto(); };
+            var dynStepOver = function (untilIdxEx) { while (dynStepInto(untilIdxEx))
+                ; };
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
             var dynSuccess = true;
             var scopePostProcStack = [];
@@ -215,7 +221,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 cond = res.post;
                 g = res.postGamma;
                 // dyn
-                dynStepOver();
+                dynStepOver(i + 1);
                 if (dynSuccess && dynEnv == null) {
                     $("#ins" + i).text("dynCheck failed within method call").addClass("err");
                     dynSuccess = false;

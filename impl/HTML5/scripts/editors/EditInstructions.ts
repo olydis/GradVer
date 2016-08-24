@@ -12,6 +12,8 @@ import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual"
 import { VerificationFormula, FormulaPart } from "../types/VerificationFormula";
 import { Statement, StatementCast } from "../types/Statement";
 
+import { ValueObject } from "../types/ValueExpression";
+
 function splitCell(left: JQuery, right: JQuery, cls: string = ""): JQuery
 {
     return $("<table>")
@@ -213,6 +215,8 @@ export class EditInstructions
         if (this.suppressAnalysis)
             return;
 
+        ValueObject.reset();
+
         // clear messages
         this.verificationFormulas.forEach(x => x.text("").attr("title", null));
         $(".clearMe").text("");
@@ -233,16 +237,24 @@ export class EditInstructions
                 pivotEnv = { H: {}, r: {}, A: [] };
         }
         var dynEnv: StackEnv = { H: pivotEnv.H, S: [{ r: pivotEnv.r, A: pivotEnv.A, ss: statements }] };
-        var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).reverse().filter(x => x.length > 0)[0][0];
-        var dynStepInto: () => void = () => 
-        { 
-            if (dynEnv == null) return;
+        var dynEnvNextStmt: () => Statement = () => dynEnv.S.map(x => x.ss).reverse().filter(x => x.length > 0).concat([[null]])[0][0];
+        var dynStepInto: (untilIdxEx: number) => void = (untilIdxEx) => 
+        {
+            if (dynEnv == null)
+                return false;
             var stmt = dynEnvNextStmt();
+            if (stmt == null)
+                return false;
+
+            if (stmt == statements[untilIdxEx])
+                return false;
+
             //console.log("State: ", printEnv(topEnv(dynEnv)));
             //console.log("Statement: ", stmt + "");
             dynEnv = stmt.smallStep(dynEnv, this.hoare.env);
+            return true;
         };
-        var dynStepOver: () => void = () => { dynStepInto(); while (dynEnv != null && dynEnv.S.length > 1) dynStepInto(); };
+        var dynStepOver: (untilIdxEx: number) => void = (untilIdxEx) => { while (dynStepInto(untilIdxEx)) ; };
         var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
         var dynSuccess = true;
 
@@ -282,7 +294,7 @@ export class EditInstructions
             g = res.postGamma;
 
             // dyn
-            dynStepOver();
+            dynStepOver(i + 1);
             if (dynSuccess && dynEnv == null)
             {
                 $("#ins" + i).text("dynCheck failed within method call").addClass("err");

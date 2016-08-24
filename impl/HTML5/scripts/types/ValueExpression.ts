@@ -8,6 +8,7 @@ export abstract class Value {
 
 export class ValueObject extends Value {
     private static _uid: number = 0;
+    public static reset(): void { ValueObject._uid = 0; }
 
     constructor(private uid: number = null) {
         super();

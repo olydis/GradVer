@@ -26,14 +26,27 @@ type Ctor<T> = { new(... args: any[]): T };
 type Rule = {
         name: string,
         statementMatch: (s: Statement) => boolean,
-        checkStrucural: (s: Statement, preGamma: Gamma, onErr: (msg: string) => void, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]) => 
+        checkStrucural: (s: Statement, preGamma: Gamma, onErr: (msg: string) => void, 
+            scopeStack: { 
+                    postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
+                    checkInnerStmt: (stmt: Statement) => string
+                 }[]) => 
                 { info: any
                 , postGamma: Gamma },
         checkImplication: (info: any) => 
                 VerificationFormula,
-        checkPost: (info: any, pre: VerificationFormulaGradual, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]) => 
+        checkPost: (info: any, pre: VerificationFormulaGradual, 
+            scopeStack: { 
+                    postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
+                    checkInnerStmt: (stmt: Statement) => string
+                 }[]) => 
                 VerificationFormulaGradual
     };
+
+type ScopeStackItem = { 
+                postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
+                checkInnerStmt: (stmt: Statement) => string
+            };
 
 export class Hoare
 {
@@ -43,14 +56,16 @@ export class Hoare
         rule: string,
         SS: Ctor<S>,
         // returns null on error
-        checkStrucural: (s: S, preGamma: Gamma, onErr: (msg: string) => void, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]) => 
+        checkStrucural: (s: S, preGamma: Gamma, onErr: (msg: string) => void, 
+            scopeStack: ScopeStackItem[]) => 
                 { info: StructuralInfo
                 , postGamma: Gamma },
         // cannot fail
         checkImplication: (info: StructuralInfo) => 
                 VerificationFormula,
         // cannot fail
-        checkPost: (info: StructuralInfo, pre: VerificationFormulaGradual, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]) => 
+        checkPost: (info: StructuralInfo, pre: VerificationFormulaGradual, 
+            scopeStack: ScopeStackItem[]) => 
                 VerificationFormulaGradual
         ): void
     {
@@ -74,7 +89,7 @@ export class Hoare
     }
     public checkMethod(g: Gamma, s: Statement[], pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string
     {
-        var scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[] = [];
+        var scopePostProcStack: ScopeStackItem[] = [];
         s = s.slice();
         s.push(new StatementCast(post));
         for (var ss of s)
@@ -90,8 +105,15 @@ export class Hoare
             return "scopes not closed";
         return null;
     }
-    public check(s: Statement, pre: VerificationFormulaGradual, g: Gamma, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]): string[]
+    public check(s: Statement, pre: VerificationFormulaGradual, g: Gamma, scopePostProcStack: ScopeStackItem[]): string[]
     {
+        for (var scopeItem of scopePostProcStack)
+        {
+            var err = scopeItem.checkInnerStmt(s);
+            if (err != null)
+                return [err];
+        }
+
         var rule = this.getRule(s);
 
         var errs: string[] = [];
@@ -106,7 +128,7 @@ export class Hoare
 
         return null;
     }
-    public post(s: Statement, pre: VerificationFormulaGradual, g: Gamma, scopePostProcStack: ((post: VerificationFormulaGradual) => VerificationFormulaGradual)[]): { post: VerificationFormulaGradual, dyn: VerificationFormula, postGamma: Gamma }
+    public post(s: Statement, pre: VerificationFormulaGradual, g: Gamma, scopePostProcStack: ScopeStackItem[]): { post: VerificationFormulaGradual, dyn: VerificationFormula, postGamma: Gamma }
     {
         var rule = this.getRule(s);
 
@@ -431,6 +453,11 @@ export class Hoare
             });
         this.addHandler<StatementHold, VerificationFormula>("Hold", StatementHold,
             (s, g, onErr) => {
+                if (!s.p.sfrm())
+                {
+                    onErr("framed-off formula must be self-framed");
+                    return;
+                }
                 return {
                     info: s.p,
                     postGamma: g
@@ -439,15 +466,26 @@ export class Hoare
             (info) => info,
             (info, pre, postProcStack) => {
                 var frameOff = pre;
+                var readOnly = info.FV();
                 for (var fp of info.footprintStatic())
                     pre = pre.woAcc(fp.e, fp.f);
                 for (var fp2 of pre.staticFormula.autoFraming())
                     frameOff = frameOff.woAcc(fp2.e, fp2.f);
+                for (var fv of frameOff.staticFormula.FV())
+                    if (readOnly.indexOf(fv) == -1)
+                        frameOff = frameOff.woVar(fv);
                 
-                postProcStack.push(post => {
-                    for (var part of frameOff.staticFormula.parts)
-                        post = post.append(part);
-                    return post;
+                postProcStack.push({ 
+                    postProc: post => {
+                        for (var part of frameOff.staticFormula.parts)
+                            post = post.append(part);
+                        return post;
+                    },
+                    checkInnerStmt: s => {
+                        if (readOnly.some(x => s.writesTo(x)))
+                            return "writes to protected variable";
+                        return null;
+                    }
                 });
                 
                 return pre;
@@ -468,7 +506,7 @@ export class Hoare
             (info) => VerificationFormula.empty(),
             (info, pre, postProcStack) => {
                 var proc = postProcStack.pop();
-                return proc(pre);
+                return proc.postProc(pre);
             });
     }
 

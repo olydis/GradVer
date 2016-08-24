@@ -250,12 +250,17 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 return pre;
             });
             this.addHandler("Hold", Statement_1.StatementHold, function (s, g, onErr) {
+                if (!s.p.sfrm()) {
+                    onErr("framed-off formula must be self-framed");
+                    return;
+                }
                 return {
                     info: s.p,
                     postGamma: g
                 };
             }, function (info) { return info; }, function (info, pre, postProcStack) {
                 var frameOff = pre;
+                var readOnly = info.FV();
                 for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
                     pre = pre.woAcc(fp.e, fp.f);
@@ -264,12 +269,24 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     var fp2 = _c[_b];
                     frameOff = frameOff.woAcc(fp2.e, fp2.f);
                 }
-                postProcStack.push(function (post) {
-                    for (var _i = 0, _a = frameOff.staticFormula.parts; _i < _a.length; _i++) {
-                        var part = _a[_i];
-                        post = post.append(part);
+                for (var _d = 0, _e = frameOff.staticFormula.FV(); _d < _e.length; _d++) {
+                    var fv = _e[_d];
+                    if (readOnly.indexOf(fv) == -1)
+                        frameOff = frameOff.woVar(fv);
+                }
+                postProcStack.push({
+                    postProc: function (post) {
+                        for (var _i = 0, _a = frameOff.staticFormula.parts; _i < _a.length; _i++) {
+                            var part = _a[_i];
+                            post = post.append(part);
+                        }
+                        return post;
+                    },
+                    checkInnerStmt: function (s) {
+                        if (readOnly.some(function (x) { return s.writesTo(x); }))
+                            return "writes to protected variable";
+                        return null;
                     }
-                    return post;
                 });
                 return pre;
             });
@@ -284,7 +301,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 };
             }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre, postProcStack) {
                 var proc = postProcStack.pop();
-                return proc(pre);
+                return proc.postProc(pre);
             });
         }
         Hoare.prototype.addHandler = function (rule, SS, 
@@ -330,6 +347,12 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             return null;
         };
         Hoare.prototype.check = function (s, pre, g, scopePostProcStack) {
+            for (var _i = 0, scopePostProcStack_1 = scopePostProcStack; _i < scopePostProcStack_1.length; _i++) {
+                var scopeItem = scopePostProcStack_1[_i];
+                var err = scopeItem.checkInnerStmt(s);
+                if (err != null)
+                    return [err];
+            }
             var rule = this.getRule(s);
             var errs = [];
             var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); }, scopePostProcStack);

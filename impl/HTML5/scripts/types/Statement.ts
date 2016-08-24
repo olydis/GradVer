@@ -580,21 +580,33 @@ export class StatementHold extends Statement
         var envx = topEnv(env);
         env = cloneStackEnv(env);
 
-        // ESHold
-        if (env.S[env.S.length - 1].ss[0] != this)
-            throw "dispatch failure";
+        var isEntry = env.S[env.S.length - 1].ss.length != 0;
+        if (!isEntry)
+            env.S.pop();
 
-        if (!this.p.eval(envx))
+        if (isEntry)
+        { 
+            // ESHold
+            if (env.S[env.S.length - 1].ss[0] != this)
+                throw "dispatch failure";
+
+            if (!this.p.eval(envx))
+                return null;
+
+            var AA = this.p.footprintDynamic(envx);
+            var Awo = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o))
+            topEnv(env).A = AA;
+            env.S.push({
+                r: topEnv(env).r,
+                A: Awo,
+                ss: env.S[env.S.length - 1].ss.slice(1)
+            });
+        }
+        else
+        {
+            // exit handled by closing curly... so scope not closed if we get here
             return null;
-
-        var AA = this.p.footprintDynamic(envx);
-        var Awo = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o))
-        topEnv(env).A = AA;
-        env.S.push({
-            r: topEnv(env).r,
-            A: Awo,
-            ss: env.S[env.S.length - 1].ss.slice(1)
-        });
+        }
 
         return env;
     }
@@ -628,9 +640,15 @@ export class StatementUnhold extends Statement
 
         // reset next stack frame
         var ss = env.S[env.S.length - 1].ss;
+        var entryStmt = ss[0];
         ss = ss.slice(ss.indexOf(this) + 1);
-        topEnv(env).A.push(...envx.A);
-        topEnv(env).r = envx.r;
+        env.S[env.S.length - 1].ss = ss;
+
+        // update env
+        var envy = topEnv(env);
+        envy.A.push(...envx.A);
+        envy.r = envx.r;
+
         return env;
     }
 }

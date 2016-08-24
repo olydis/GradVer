@@ -506,19 +506,28 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         StatementHold.prototype.smallStep = function (env, context) {
             var envx = StackEnv_1.topEnv(env);
             env = StackEnv_1.cloneStackEnv(env);
-            // ESHold
-            if (env.S[env.S.length - 1].ss[0] != this)
-                throw "dispatch failure";
-            if (!this.p.eval(envx))
+            var isEntry = env.S[env.S.length - 1].ss.length != 0;
+            if (!isEntry)
+                env.S.pop();
+            if (isEntry) {
+                // ESHold
+                if (env.S[env.S.length - 1].ss[0] != this)
+                    throw "dispatch failure";
+                if (!this.p.eval(envx))
+                    return null;
+                var AA = this.p.footprintDynamic(envx);
+                var Awo = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+                StackEnv_1.topEnv(env).A = AA;
+                env.S.push({
+                    r: StackEnv_1.topEnv(env).r,
+                    A: Awo,
+                    ss: env.S[env.S.length - 1].ss.slice(1)
+                });
+            }
+            else {
+                // exit handled by closing curly... so scope not closed if we get here
                 return null;
-            var AA = this.p.footprintDynamic(envx);
-            var Awo = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
-            StackEnv_1.topEnv(env).A = AA;
-            env.S.push({
-                r: StackEnv_1.topEnv(env).r,
-                A: Awo,
-                ss: env.S[env.S.length - 1].ss.slice(1)
-            });
+            }
             return env;
         };
         return StatementHold;
@@ -545,9 +554,13 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 throw "dispatch failure";
             // reset next stack frame
             var ss = env.S[env.S.length - 1].ss;
+            var entryStmt = ss[0];
             ss = ss.slice(ss.indexOf(this) + 1);
-            (_a = StackEnv_1.topEnv(env).A).push.apply(_a, envx.A);
-            StackEnv_1.topEnv(env).r = envx.r;
+            env.S[env.S.length - 1].ss = ss;
+            // update env
+            var envy = StackEnv_1.topEnv(env);
+            (_a = envy.A).push.apply(_a, envx.A);
+            envy.r = envx.r;
             return env;
             var _a;
         };

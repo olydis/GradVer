@@ -20,6 +20,7 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
             if (uid === null)
                 this.uid = ValueObject._uid++;
         }
+        ValueObject.reset = function () { ValueObject._uid = 0; };
         ValueObject.prototype.equalTo = function (other) {
             return other instanceof ValueObject && this.uid == other.uid;
         };
