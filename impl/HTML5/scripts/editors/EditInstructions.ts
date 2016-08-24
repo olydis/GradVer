@@ -305,7 +305,9 @@ export class EditInstructions
                 return;
             }
 
+            var indent = scopePostProcStack.length;
             var res = this.hoare.post(s, cond, g, scopePostProcStack);
+            indent = Math.min(indent, scopePostProcStack.length);
             dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
             this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
             if (!dynSuccess)
@@ -313,6 +315,9 @@ export class EditInstructions
 
             cond = res.post;
             g = res.postGamma;
+
+            if (this.statements[i])
+                this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
 
             // dyn
             dynStepOver(i + 1);

@@ -1,5 +1,5 @@
 import { EditableElement } from "./EditableElement";
-import { Statement } from "../types/Statement";
+import { Statement, StatementComment } from "../types/Statement";
 import { GUIHelpers } from "./GUIHelpers"
 
 export class EditStatement extends EditableElement
@@ -19,8 +19,8 @@ export class EditStatement extends EditableElement
             initialSource,
             (source: string) => {
                 var parsed = Statement.parse(source);
-                this.stmt = parsed || Statement.getNop();
-                var src = parsed ? this.stmt.toString() : "";
+                this.stmt = parsed;
+                var src = this.stmt instanceof StatementComment ? source : this.stmt.toString();
                 var html = $("<span>").text(this.stmt.toString());
                 return {
                     source: src,

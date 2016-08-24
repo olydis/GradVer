@@ -12,6 +12,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             return false;
         };
         Statement.parse = function (source) {
+            var fallBack = new StatementComment(source.trim() == ""
+                ? " write a statement here"
+                : " parse error: " + source);
             var result = null;
             source = source.replace(/;$/, "");
             var sourceWS = source;
@@ -42,16 +45,13 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 if (!result)
                     result = StatementDeclare.parse(sourceWS);
                 if (!result)
-                    result = Statement.getNop();
+                    result = fallBack;
             }
             catch (e) {
                 console.error("parse error");
-                result = Statement.getNop();
+                result = fallBack;
             }
             return result;
-        };
-        Statement.getNop = function () {
-            return new StatementAssert(new VerificationFormula_1.VerificationFormula());
         };
         return Statement;
     }());

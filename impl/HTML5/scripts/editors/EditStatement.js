@@ -13,8 +13,8 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
             var stmtContainer = $("<span>");
             _super.call(this, stmtContainer, initialSource, function (source) {
                 var parsed = Statement_1.Statement.parse(source);
-                _this.stmt = parsed || Statement_1.Statement.getNop();
-                var src = parsed ? _this.stmt.toString() : "";
+                _this.stmt = parsed;
+                var src = _this.stmt instanceof Statement_1.StatementComment ? source : _this.stmt.toString();
                 var html = $("<span>").text(_this.stmt.toString());
                 return {
                     source: src,

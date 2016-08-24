@@ -19,6 +19,9 @@ export abstract class Statement
 
     public static parse(source: string): Statement
     {
+        var fallBack = new StatementComment(source.trim() == "" 
+            ? " write a statement here" 
+            : " parse error: " + source);
         var result: Statement = null;
         source = source.replace(/;$/, "");
         var sourceWS = source;
@@ -38,19 +41,14 @@ export abstract class Statement
             if (!result) result = StatementMemberSet.parse(source);
             if (!result) result = StatementAssign.parse(source);
             if (!result) result = StatementDeclare.parse(sourceWS);
-            if (!result) result = Statement.getNop();
+            if (!result) result = fallBack;
         }
         catch(e)
         {
             console.error("parse error");
-            result = Statement.getNop();
+            result = fallBack;
         }
         return result;
-    }
-
-    public static getNop(): Statement
-    {
-        return new StatementAssert(new VerificationFormula());
     }
 }
 
