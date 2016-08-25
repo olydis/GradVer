@@ -55,6 +55,8 @@
 \newcommand{\pa}[1]{\ensuremath{{#1}^{\checkmark}}}
 \newcommand{\pb}[1]{\ensuremath{{#1}^{\circ}}}
 
+\newcommand{\grad}[1]{\widetilde{#1}}
+
 %% ALIASES
 % fonts
 \newcommand{\std}{\textrm}
@@ -94,6 +96,8 @@
 \newcommand{\phiEq}[2]{\ttt{(#1 = #2)}}
 \newcommand{\phiNeq}[2]{\ttt{(#1 ≠ #2)}}
 \newcommand{\phiAcc}[2]{\ttt{acc(#1.#2)}}
+\newcommand{\qm}{\ttt{?}}
+\newcommand{\withqm}[1]{\ttt{\qm\:*\:$#1$}}
 % statements
 \newcommand{\sFieldAssign}[3]{\ttt{#1.#2 ≔ #3;}}
 \newcommand{\sVarAssign}[2]{\ttt{#1 ≔ #2;}}
@@ -184,9 +188,6 @@
 \newcommand{\requires}{\ensuremath{\texttt{requires}~}}
 \newcommand{\ensures}{\ensuremath{\texttt{ensures}~}}
 
-\newcommand{\grad}[1]{\widetilde{#1}}
-\newcommand{\qm}{\ttt{?}}
-\newcommand{\withqm}[1]{\ttt{\qm\:*\:$#1$}}
 
 \newcommand{\hoare}[3]{\vdash\{#1\}#2\{#3\}}
 \newcommand{\ghoare}[3]{\grad{\vdash}\{#1\}#2\{#3\}}

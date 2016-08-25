@@ -40,7 +40,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx0 = function () {
             this.setInstructions([
-                "assert true;"
+                ""
             ]);
         };
         EditInstructions.prototype.loadEx1 = function () {

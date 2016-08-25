@@ -52,7 +52,7 @@ export class EditInstructions
     public loadEx0(): void
     {
         this.setInstructions([
-            "assert true;"
+            ""
         ]);
     }
     public loadEx1(): void
