@@ -214,17 +214,17 @@
 \section{Formula Syntax}
 %% reasonable: formulas evaluable at runtime
 Checking a formula at runtime, i.e. performing a runtime assertion check, is the integral part of dynamic verification and thus plays a role in gradual verification.
-Formally, a runtime assertion check corresponds to checking, whether a given instantiation of the formulas free variables satisfies the formula, i.e. evaluating a closed formula.
+Formally, a runtime assertion check corresponds to evaluating a closed formula since the environment provides an instantiation of the formula's free variables.
 It is reasonable to demand that this check can be performed in a time polynomial, if not linear to the formula's length (the specifics are up to the language designer, of course).
 
 %% impact on formula syntax: quantification
 Such a requirement effectively restricts the formula syntax.
 For example, a syntax containing universal quantification generally violates above runtime limitations:
 A formula $\forall x_1 \in M, x_2 \in M, ..., x_n \in M. P(x_1, x_2, ..., x_n)$ would require $|M|^n$ steps to evaluate.
-As a result, the runtime is already exponential if $M$ is finite -- and unbounded otherwise.
+As a result, the execution time is already exponential if $M$ is finite -- and unbounded otherwise.
 
 %% impact on formula syntax: still pretty little restriction
-Putting quantification aside and thus the introduction of new variables aside, there are little restrictions to formula syntax, essentially allowing any predicates or operations that can be evaluated in linear/polynomial time.
+Putting quantification (and therefore the introduction of new variables) aside, there are little restrictions to formula syntax, essentially allowing any predicates or operations that can be evaluated in linear/polynomial time.
 This includes equality/inequality relations, arithmetic and even own predicates that might be recursive to some extent.
 
 %% nevertheless: static verification undec.
@@ -245,6 +245,7 @@ Let's assume that our rules for static verification indeed contain an NP-hard pr
 The immediate consequence is that any working verifier would have to realize a conservative approximation of the actual predicate.
 
 Under-approximation: for static guarantees to hold, verifier must under-approximate $P$... blabla
+
 Over-approximation: for (det.) gradual lifting to be ?sound?, it must over-approximate $P$... blabla
 
 
