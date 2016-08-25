@@ -211,6 +211,46 @@
 \begin{document}
 \pagenumbering{arabic}
 
+\section{Lifting, revised}
+Given binary predicate $P$.
+\subsection{Predicate Lifting}
+\begin{displaymath}
+\grad{P}(\grad{a}, \grad{b}) 
+\quad\iff\quad
+\exists a \in \gamma(\grad{a}), b \in \gamma(\grad{b}). P(a, b)
+\quad\iff\quad
+(\gamma(\grad{a}) \times \gamma(\grad{b})) \cap P \neq \emptyset
+\end{displaymath}
+
+\begin{description}
+    \item[“$\Leftarrow$”/Soundness]~\\
+    Required for gradual guarantee.
+    Gradualization (of predicate or arguments) cannot “unsatisfy” the predicate.
+    
+    \item[“$\Rightarrow$”/Optimality]~\\
+    Not required but desirable. Guarantees that there is a chance of satisfying the original predicate.
+\end{description}
+
+\subsection{Functions}
+\begin{displaymath}
+\exists (a, b) \in P. a \in \gamma(\grad{a})
+\quad\implies\quad
+\vec{P}(\grad{a}) = \grad{b}
+\quad\implies\quad
+\forall (a, b) \in P. a \in \gamma(\grad{a}) \implies b \in \gamma(\grad{b})
+\end{displaymath}
+
+\begin{align*}
+&\exists a, b. P(a, b) \\
+\quad\implies\quad
+&\forall \grad{a}. \exists a \in \gamma(\grad{a}), b. P(a, b) \\
+\quad\implies\quad
+&\forall \grad{a}. \exists a \in \gamma(\grad{a}), b \in \gamma(\vec{P}(\grad{a})). P(a, b) \\
+\quad\implies\quad
+&\forall \grad{a}. \grad{P}(\grad{a}, \vec{P}(\grad{a})) \\
+\end{align*}
+
+
 \section{Syntax}%%
 \input{../../GradVerThesis/data/svl-syntax}
 
