@@ -13,12 +13,12 @@ define(["require", "exports", "../types/ValueExpression"], function (require, ex
         container.css("right", "0px");
         container.css("top", "64px");
         container.append(createVisu(env));
-        container.show();
+        container.stop().fadeIn(0);
     }
     exports.showAt = showAt;
     function hide() {
         ensure();
-        //container.hide();
+        container.stop().fadeOut(1000);
     }
     exports.hide = hide;
     function createVisu(env) {

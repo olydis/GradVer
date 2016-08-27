@@ -18,13 +18,13 @@ export function showAt(pos: {x: number, y: number}, env: EvalEnv): void
     container.css("right", "0px");
     container.css("top", "64px");
     container.append(createVisu(env));
-    container.show();
+    container.stop().fadeIn(0);
 }
 
 export function hide(): void
 {
     ensure();
-    //container.hide();
+    container.stop().fadeOut(1000);
 }
 
 function createVisu(env: EvalEnv): JQuery[]
