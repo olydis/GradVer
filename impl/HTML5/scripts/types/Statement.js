@@ -150,7 +150,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var v = this.e.eval(envx);
             if (v == null)
                 return null;
-            StackEnv_1.topEnv(env).r[this.x] = v;
+            var topIdx = env.S.length - 1;
+            env.S[topIdx].r[this.x] = v;
             return env;
         };
         return StatementAssign;
@@ -199,12 +200,13 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var fs = context.fields(this.C);
             if (fs == null)
                 return null;
-            StackEnv_1.topEnv(env).H[o] = { C: this.C, fs: {} };
-            StackEnv_1.topEnv(env).r[this.x] = vo;
+            var topIdx = env.S.length - 1;
+            env.H[o] = { C: this.C, fs: {} };
+            env.S[topIdx].r[this.x] = vo;
             for (var _i = 0, fs_1 = fs; _i < fs_1.length; _i++) {
                 var f = fs_1[_i];
-                StackEnv_1.topEnv(env).H[o].fs[f.name] = f.type.defaultValue().eval(envx);
-                StackEnv_1.topEnv(env).A.push({ o: o, f: f.name });
+                env.H[o].fs[f.name] = f.type.defaultValue().eval(envx);
+                env.S[topIdx].A.push({ o: o, f: f.name });
             }
             return env;
         };
@@ -282,7 +284,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     if (!m.frmPre.eval({ H: envx.H, r: rr, A: envx.A }))
                         return null;
                     var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
-                    StackEnv_1.topEnv(env).A = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+                    var topIdx = env.S.length - 1;
+                    env.S[topIdx].A = env.S[topIdx].A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
                     env.S.push({
                         r: rr,
                         A: AA,
@@ -297,8 +300,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     var vr = new Expression_1.ExpressionX(Expression_1.Expression.getResult()).eval(envx);
                     if (vr == null)
                         return null;
-                    StackEnv_1.topEnv(env).r[this.x] = vr;
-                    (_a = StackEnv_1.topEnv(env).A).push.apply(_a, envx.A);
+                    var topIdx = env.S.length - 1;
+                    env.S[topIdx].r[this.x] = vr;
+                    (_a = env.S[topIdx].A).push.apply(_a, envx.A);
                 }
                 return env;
             }
@@ -336,7 +340,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var v = new Expression_1.ExpressionX(this.x).eval(envx);
             if (v == null)
                 return null;
-            StackEnv_1.topEnv(env).r[Expression_1.Expression.getResult()] = v;
+            var topIdx = env.S.length - 1;
+            env.S[topIdx].r[Expression_1.Expression.getResult()] = v;
             return env;
         };
         return StatementReturn;
@@ -390,7 +395,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             if (!this.assertion.eval(envx))
                 return null;
             var AA = this.assertion.footprintDynamic(envx);
-            StackEnv_1.topEnv(env).A = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+            var topIdx = env.S.length - 1;
+            env.S[topIdx].A = env.S[topIdx].A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
             return env;
         };
         return StatementRelease;
@@ -425,7 +431,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             env = StackEnv_1.cloneStackEnv(env);
             if (env.S[env.S.length - 1].ss.shift() != this)
                 throw "dispatch failure";
-            StackEnv_1.topEnv(env).r[this.x] = this.T.defaultValue().eval(envx);
+            var topIdx = env.S.length - 1;
+            env.S[topIdx].r[this.x] = this.T.defaultValue().eval(envx);
             return env;
         };
         return StatementDeclare;
@@ -518,10 +525,11 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 if (!this.p.eval(envx))
                     return null;
                 var AA = this.p.footprintDynamic(envx);
-                var Awo = StackEnv_1.topEnv(env).A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
-                StackEnv_1.topEnv(env).A = AA;
+                var topIdx = env.S.length - 1;
+                var Awo = env.S[topIdx].A.filter(function (a) { return !AA.some(function (b) { return a.f == b.f && a.o == b.o; }); });
+                env.S[topIdx].A = AA;
                 env.S.push({
-                    r: StackEnv_1.topEnv(env).r,
+                    r: envx.r,
                     A: Awo,
                     ss: env.S[env.S.length - 1].ss.slice(1)
                 });
@@ -560,9 +568,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             ss = ss.slice(ss.indexOf(this) + 1);
             env.S[env.S.length - 1].ss = ss;
             // update env
-            var envy = StackEnv_1.topEnv(env);
-            (_a = envy.A).push.apply(_a, envx.A);
-            envy.r = envx.r;
+            var topIdx = env.S.length - 1;
+            (_a = env.S[topIdx].A).push.apply(_a, envx.A);
+            env.S[topIdx].r = envx.r;
             return env;
             var _a;
         };

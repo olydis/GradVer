@@ -155,6 +155,24 @@ $(() =>
                         // Statement.parse("res.y = this.x;"),
                         // Statement.parse("return res;"),
                     ]
+                },
+                {
+                    name: "clone",
+                    retType: new TypeClass("Point"),
+                    argType: new TypeClass("void"),
+                    argName: "_",
+                    frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                    frmPost: new VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.x * this.y = result.y"),
+                    body: [
+                        Statement.parse("int t;"),
+                        Statement.parse("Point res;"),
+                        Statement.parse("res = new Point;"),
+                        Statement.parse("t = this.x;"),
+                        Statement.parse("res.x = t;"),
+                        Statement.parse("t = this.y;"),
+                        Statement.parse("res.y = t;"),
+                        Statement.parse("return res;"),
+                    ]
                 }
             ]
         },
@@ -304,6 +322,8 @@ $(() =>
         $("#btnEx4").click(() => code.loadEx4());
         $("#btnEx5").click(() => code.loadEx5());
         $("#btnEx6").click(() => code.loadEx6());
+        $("#btnEx7").click(() => code.loadEx7());
+        $("#btnEx8").click(() => code.loadEx8());
 
         $("#btnToggleDyn").click(x => $("#containerHoare").toggleClass("showDynamic"));
         $("#btnToggleDyn").mouseenter(x => $("#containerHoare").addClass("showSem"));

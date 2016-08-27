@@ -1,4 +1,4 @@
-define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1, ValueExpression_1) {
+define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../runtime/EvalEnvVisu", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, EvalEnvVisu_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1, ValueExpression_1) {
     "use strict";
     function splitCell(left, right, cls) {
         if (cls === void 0) { cls = ""; }
@@ -135,6 +135,44 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "assert acc(p.y)",
             ]);
         };
+        EditInstructions.prototype.loadEx7 = function () {
+            this.setInstructions([
+                "int i1;",
+                "i1 = 1;",
+                "int i2;",
+                "i2 = 2;",
+                "Point p;",
+                "Point q;",
+                "p = new Point;",
+                "void _;",
+                "Points ps;",
+                "ps = new Points;",
+                "q := p.clone(_);",
+                "_ = ps.insertHere(q);",
+                "p.x = i1;",
+                "q := p.clone(_);",
+                "_ = ps.insertHere(q);",
+                "p.y = i2;",
+                "q := p.clone(_);",
+                "_ = ps.insertHere(q);",
+                "p = null;",
+                "q = null;",
+            ]);
+        };
+        EditInstructions.prototype.loadEx8 = function () {
+            this.setInstructions([
+                "Point p;",
+                "hold true {",
+                "p := new Point;",
+                "int temp;",
+                "temp := 1;",
+                "p.x := temp;",
+                "temp := 2;",
+                "p.y := temp;",
+                "}",
+                "assert (p.x = 1) * (p.y = 2);",
+            ]);
+        };
         Object.defineProperty(EditInstructions.prototype, "numInstructions", {
             get: function () {
                 return this.statements.length;
@@ -169,8 +207,13 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.displayDynState = function (i, dynEnv) {
             var jqEnv = $("#frm" + i);
-            if (dynEnv != null)
-                jqEnv.text(EvalEnv_1.printEnv(StackEnv_1.topEnv(dynEnv)));
+            if (dynEnv != null) {
+                var top = StackEnv_1.topEnv(dynEnv);
+                jqEnv.text(EvalEnv_1.printEnv(top));
+                jqEnv.parents(".intermediateState").on("mouseenter", function (eo) {
+                    return EvalEnvVisu_1.showAt({ x: eo.clientX, y: eo.clientY }, top);
+                });
+            }
             else
                 jqEnv.text("BLOCKED");
         };
@@ -183,6 +226,8 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             this.verificationFormulas.forEach(function (x) { return x.text("").attr("title", null); });
             $(".clearMe").text("");
             $(".err").removeClass("err");
+            $(".intermediateState").off("mouseenter");
+            $(".intermediateState").off("mouseleave").on("mouseleave", function () { return EvalEnvVisu_1.hide(); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
             statements.push(new Statement_1.StatementCast(this.condPost));
             var g = Gamma_1.GammaNew;
@@ -315,6 +360,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     }
                 })(i);
             this.analyze();
+            //setTimeout(() => this.analyze(), 0);
         };
         return EditInstructions;
     }());

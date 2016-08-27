@@ -129,6 +129,24 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                                 Statement_1.Statement.parse("res.y = t;"),
                                 Statement_1.Statement.parse("return res;"),
                             ]
+                        },
+                        {
+                            name: "clone",
+                            retType: new Type_1.TypeClass("Point"),
+                            argType: new Type_1.TypeClass("void"),
+                            argName: "_",
+                            frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
+                            frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.x * this.y = result.y"),
+                            body: [
+                                Statement_1.Statement.parse("int t;"),
+                                Statement_1.Statement.parse("Point res;"),
+                                Statement_1.Statement.parse("res = new Point;"),
+                                Statement_1.Statement.parse("t = this.x;"),
+                                Statement_1.Statement.parse("res.x = t;"),
+                                Statement_1.Statement.parse("t = this.y;"),
+                                Statement_1.Statement.parse("res.y = t;"),
+                                Statement_1.Statement.parse("return res;"),
+                            ]
                         }
                     ]
                 },
@@ -275,6 +293,8 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             $("#btnEx4").click(function () { return code.loadEx4(); });
             $("#btnEx5").click(function () { return code.loadEx5(); });
             $("#btnEx6").click(function () { return code.loadEx6(); });
+            $("#btnEx7").click(function () { return code.loadEx7(); });
+            $("#btnEx8").click(function () { return code.loadEx8(); });
             $("#btnToggleDyn").click(function (x) { return $("#containerHoare").toggleClass("showDynamic"); });
             $("#btnToggleDyn").mouseenter(function (x) { return $("#containerHoare").addClass("showSem"); });
             $("#btnToggleDyn").mouseleave(function (x) { return $("#containerHoare").removeClass("showSem"); });

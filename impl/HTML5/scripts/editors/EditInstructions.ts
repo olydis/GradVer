@@ -7,6 +7,7 @@ import { Hoare } from "../runtime/Hoare";
 import { StackEnv, topEnv } from "../runtime/StackEnv";
 import { EvalEnv, printEnv } from "../runtime/EvalEnv";
 import { GUIHelpers } from "../GUIHelpers";
+import { showAt as visuShowAt, hide as visuHide } from "../runtime/EvalEnvVisu";
 
 import { VerificationFormulaGradual } from "../types/VerificationFormulaGradual";
 import { VerificationFormula, FormulaPart } from "../types/VerificationFormula";
@@ -153,6 +154,47 @@ export class EditInstructions
             "assert acc(p.y)",
         ]);
     }
+    public loadEx7(): void
+    {
+        this.setInstructions([
+            "int i1;",
+            "i1 = 1;",
+            "int i2;",
+            "i2 = 2;",
+            "Point p;",
+            "Point q;",
+            "p = new Point;",
+            "void _;",
+            "Points ps;",
+            "ps = new Points;",
+            "q := p.clone(_);",
+            "_ = ps.insertHere(q);",
+            "p.x = i1;",
+            "q := p.clone(_);",
+            "_ = ps.insertHere(q);",
+            "p.y = i2;",
+            "q := p.clone(_);",
+            "_ = ps.insertHere(q);",
+            "p = null;",
+            "q = null;",
+        ]);
+    }
+    public loadEx8(): void
+    {
+        this.setInstructions([
+            "Point p;",
+            "hold true {",
+                "p := new Point;",
+                "int temp;",
+                "temp := 1;",
+                "p.x := temp;",
+                "temp := 2;",
+                "p.y := temp;",
+            "}",
+            "assert (p.x = 1) * (p.y = 2);",
+        ]);
+    }
+    
 
     public get numInstructions(): number
     {
@@ -225,7 +267,12 @@ export class EditInstructions
         var jqEnv = $("#frm" + i);
 
         if (dynEnv != null)
-            jqEnv.text(printEnv(topEnv(dynEnv)));
+        {
+            var top = topEnv(dynEnv);
+            jqEnv.text(printEnv(top));
+            jqEnv.parents(".intermediateState").on("mouseenter", eo => 
+                visuShowAt({ x: eo.clientX, y: eo.clientY }, top));
+        }
         else
             jqEnv.text("BLOCKED");
     }
@@ -242,6 +289,8 @@ export class EditInstructions
         this.verificationFormulas.forEach(x => x.text("").attr("title", null));
         $(".clearMe").text("");
         $(".err").removeClass("err");
+        $(".intermediateState").off("mouseenter");
+        $(".intermediateState").off("mouseleave").on("mouseleave", () => visuHide());
 
         var statements = this.statements.map(x => x.getStatement());
         statements.push(new StatementCast(this.condPost));
@@ -422,6 +471,8 @@ export class EditInstructions
                         ));
                 }
             })(i);
+
         this.analyze();
+        //setTimeout(() => this.analyze(), 0);
     }
 }

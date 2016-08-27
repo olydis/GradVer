@@ -161,7 +161,8 @@ export class StatementAssign extends Statement
         if (v == null)
             return null;
 
-        topEnv(env).r[this.x] = v;
+        var topIdx = env.S.length - 1;
+        env.S[topIdx].r[this.x] = v;
         return env;
     }
 }
@@ -217,13 +218,14 @@ export class StatementAlloc extends Statement
         if (fs == null)
             return null;
 
-        topEnv(env).H[o] = { C: this.C, fs: { } };
+        var topIdx = env.S.length - 1;
+        env.H[o] = { C: this.C, fs: { } };
 
-        topEnv(env).r[this.x] = vo;
+        env.S[topIdx].r[this.x] = vo;
         for (var f of fs)
         {
-            topEnv(env).H[o].fs[f.name] = f.type.defaultValue().eval(envx);
-            topEnv(env).A.push({ o: o, f: f.name });
+            env.H[o].fs[f.name] = f.type.defaultValue().eval(envx);
+            env.S[topIdx].A.push({ o: o, f: f.name });
         }
         return env;
     }
@@ -315,7 +317,8 @@ export class StatementCall extends Statement
                     return null;
 
                 var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });
-                topEnv(env).A = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
+                var topIdx = env.S.length - 1;
+                env.S[topIdx].A = env.S[topIdx].A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
                 env.S.push({
                     r: rr,
                     A: AA,
@@ -334,8 +337,9 @@ export class StatementCall extends Statement
                 if (vr == null)
                     return null;
 
-                topEnv(env).r[this.x] = vr;
-                topEnv(env).A.push(...envx.A);
+                var topIdx = env.S.length - 1;
+                env.S[topIdx].r[this.x] = vr;
+                env.S[topIdx].A.push(...envx.A);
             }
 
             return env;
@@ -379,7 +383,8 @@ export class StatementReturn extends Statement
         if (v == null)
             return null;
 
-        topEnv(env).r[Expression.getResult()] = v;
+        var topIdx = env.S.length - 1;
+        env.S[topIdx].r[Expression.getResult()] = v;
         return env;
     }
 }
@@ -439,7 +444,8 @@ export class StatementRelease extends Statement
             return null;
 
         var AA = this.assertion.footprintDynamic(envx);
-        topEnv(env).A = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
+        var topIdx = env.S.length - 1;
+        env.S[topIdx].A = env.S[topIdx].A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o));
         return env;
     }
 }
@@ -478,7 +484,8 @@ export class StatementDeclare extends Statement
         if (env.S[env.S.length - 1].ss.shift() != this)
             throw "dispatch failure";
 
-        topEnv(env).r[this.x] = this.T.defaultValue().eval(envx);
+        var topIdx = env.S.length - 1;
+        env.S[topIdx].r[this.x] = this.T.defaultValue().eval(envx);
         return env;
     }
 }
@@ -593,10 +600,11 @@ export class StatementHold extends Statement
                 return null;
 
             var AA = this.p.footprintDynamic(envx);
-            var Awo = topEnv(env).A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o))
-            topEnv(env).A = AA;
+            var topIdx = env.S.length - 1;
+            var Awo = env.S[topIdx].A.filter(a => !AA.some(b => a.f == b.f && a.o == b.o))
+            env.S[topIdx].A = AA;
             env.S.push({
-                r: topEnv(env).r,
+                r: envx.r,
                 A: Awo,
                 ss: env.S[env.S.length - 1].ss.slice(1)
             });
@@ -644,9 +652,9 @@ export class StatementUnhold extends Statement
         env.S[env.S.length - 1].ss = ss;
 
         // update env
-        var envy = topEnv(env);
-        envy.A.push(...envx.A);
-        envy.r = envx.r;
+        var topIdx = env.S.length - 1;
+        env.S[topIdx].A.push(...envx.A);
+        env.S[topIdx].r = envx.r;
 
         return env;
     }
