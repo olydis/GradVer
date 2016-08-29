@@ -606,7 +606,7 @@ export class StatementHold extends Statement
             env.S.push({
                 r: envx.r,
                 A: Awo,
-                ss: env.S[env.S.length - 1].ss.slice(1)
+                ss: env.S[topIdx].ss.slice(1)
             });
         }
         else

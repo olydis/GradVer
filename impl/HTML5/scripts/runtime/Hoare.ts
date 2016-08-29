@@ -23,30 +23,26 @@ import { Gamma, GammaAdd } from "./Gamma";
 
 type Ctor<T> = { new(... args: any[]): T };
 
+
+type ScopeStackItem = { 
+                postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
+                checkInnerStmt: (stmt: Statement) => string,
+                gamma: Gamma
+            };
+
 type Rule = {
         name: string,
         statementMatch: (s: Statement) => boolean,
         checkStrucural: (s: Statement, preGamma: Gamma, onErr: (msg: string) => void, 
-            scopeStack: { 
-                    postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
-                    checkInnerStmt: (stmt: Statement) => string
-                 }[]) => 
+            scopeStack: ScopeStackItem[]) => 
                 { info: any
                 , postGamma: Gamma },
         checkImplication: (info: any) => 
                 VerificationFormula,
         checkPost: (info: any, pre: VerificationFormulaGradual, 
-            scopeStack: { 
-                    postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
-                    checkInnerStmt: (stmt: Statement) => string
-                 }[]) => 
+            scopeStack: ScopeStackItem[]) => 
                 VerificationFormulaGradual
     };
-
-type ScopeStackItem = { 
-                postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
-                checkInnerStmt: (stmt: Statement) => string
-            };
 
 export class Hoare
 {
@@ -451,7 +447,7 @@ export class Hoare
             (info, pre) => {
                 return pre;
             });
-        this.addHandler<StatementHold, VerificationFormula>("Hold", StatementHold,
+        this.addHandler<StatementHold, { phi: VerificationFormula, gamma: Gamma }>("Hold", StatementHold,
             (s, g, onErr) => {
                 if (!s.p.sfrm())
                 {
@@ -459,15 +455,15 @@ export class Hoare
                     return;
                 }
                 return {
-                    info: s.p,
+                    info: { phi: s.p, gamma: g },
                     postGamma: g
                 };
             },
-            (info) => info,
+            (info) => info.phi,
             (info, pre, postProcStack) => {
                 var frameOff = pre;
-                var readOnly = info.FV();
-                for (var fp of info.footprintStatic())
+                var readOnly = info.phi.FV();
+                for (var fp of info.phi.footprintStatic())
                     pre = pre.woAcc(fp.e, fp.f);
                 for (var fp2 of pre.staticFormula.autoFraming())
                     frameOff = frameOff.woAcc(fp2.e, fp2.f);
@@ -485,7 +481,8 @@ export class Hoare
                         if (readOnly.some(x => s.writesTo(x)))
                             return "writes to protected variable";
                         return null;
-                    }
+                    },
+                    gamma: info.gamma
                 });
                 
                 return pre;
@@ -500,7 +497,7 @@ export class Hoare
 
                 return {
                     info: { },
-                    postGamma: g
+                    postGamma: postProcStack[postProcStack.length - 1].gamma
                 };
             },
             (info) => VerificationFormula.empty(),

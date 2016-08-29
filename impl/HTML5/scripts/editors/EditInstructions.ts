@@ -261,7 +261,8 @@ export class EditInstructions
 
     private displayDynState(
         i: number, 
-        dynEnv: StackEnv
+        dynEnv: StackEnv,
+        gamma: Gamma
         ): void
     {
         var jqEnv = $("#frm" + i);
@@ -271,7 +272,7 @@ export class EditInstructions
             var top = topEnv(dynEnv);
             jqEnv.text(printEnv(top));
             jqEnv.parents(".intermediateState").on("mouseenter", eo => 
-                visuShowAt({ x: eo.clientX, y: eo.clientY }, top));
+                visuShowAt({ x: eo.clientX, y: eo.clientY }, top, gamma));
         }
         else
             jqEnv.text("BLOCKED");
@@ -333,7 +334,7 @@ export class EditInstructions
         for (var i = 0; i < statements.length; ++i)
         {
             this.displayPreCond(i, cond);
-            this.displayDynState(i, dynEnv);
+            this.displayDynState(i, dynEnv, g);
 
             if (!cond.satisfiable())
             {

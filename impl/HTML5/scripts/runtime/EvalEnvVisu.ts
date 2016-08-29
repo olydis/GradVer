@@ -1,4 +1,5 @@
 import { EvalEnv } from "./EvalEnv";
+import { Gamma } from "./Gamma";
 import { Value, ValueObject, ValueExpression } from "../types/ValueExpression";
 
 var container: JQuery = null;
@@ -9,7 +10,7 @@ function ensure()
         container = $("<div>").addClass("evalEnvVisuContainer").hide().appendTo($("body"));
 }
 
-export function showAt(pos: {x: number, y: number}, env: EvalEnv): void
+export function showAt(pos: {x: number, y: number}, env: EvalEnv, g: Gamma): void
 {
     ensure();
     container.text("");
@@ -17,7 +18,7 @@ export function showAt(pos: {x: number, y: number}, env: EvalEnv): void
     // container.css("top", pos.y + "px");
     container.css("right", "0px");
     container.css("top", "64px");
-    container.append(createVisu(env));
+    container.append(createVisu(env, g));
     container.stop().fadeIn(0);
 }
 
@@ -27,7 +28,7 @@ export function hide(): void
     container.stop().fadeOut(1000);
 }
 
-function createVisu(env: EvalEnv): JQuery[]
+function createVisu(env: EvalEnv, g: Gamma): JQuery[]
 {
     // create graph
     var graph: { src: JQuery, o: number }[] = [];
@@ -57,7 +58,11 @@ function createVisu(env: EvalEnv): JQuery[]
     for (var x in env.r)
     {
         var view = $("<table>").addClass("evalEnvVisuObj");
-        view.append($("<tr>")
+        var hasType = g(x) != null;
+        if (hasType)
+            view.append($("<tr>")
+                .append($("<td>").attr("colspan", 2).text(g(x).toString())));
+        view.append($("<tr>").addClass(hasType ? "evalEnvVisuAcc1" : "evalEnvVisuAcc0")
             .append($("<td>").text(x))
             .append($("<td>").append(createValueView(env.r[x]))));
         layers[0].push(view);

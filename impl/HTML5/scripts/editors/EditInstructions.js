@@ -205,13 +205,13 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     .addClass(dynEnv != null ? (dynSuccess ? "dynCheck1" : "dynCheck0") : "")
                     .text(dyn.join(", ")));
         };
-        EditInstructions.prototype.displayDynState = function (i, dynEnv) {
+        EditInstructions.prototype.displayDynState = function (i, dynEnv, gamma) {
             var jqEnv = $("#frm" + i);
             if (dynEnv != null) {
                 var top = StackEnv_1.topEnv(dynEnv);
                 jqEnv.text(EvalEnv_1.printEnv(top));
                 jqEnv.parents(".intermediateState").on("mouseenter", function (eo) {
-                    return EvalEnvVisu_1.showAt({ x: eo.clientX, y: eo.clientY }, top);
+                    return EvalEnvVisu_1.showAt({ x: eo.clientX, y: eo.clientY }, top, gamma);
                 });
             }
             else
@@ -262,7 +262,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var scopePostProcStack = [];
             for (var i = 0; i < statements.length; ++i) {
                 this.displayPreCond(i, cond);
-                this.displayDynState(i, dynEnv);
+                this.displayDynState(i, dynEnv, g);
                 if (!cond.satisfiable()) {
                     $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                     return;

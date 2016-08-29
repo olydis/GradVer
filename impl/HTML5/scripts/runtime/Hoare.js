@@ -255,13 +255,13 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     return;
                 }
                 return {
-                    info: s.p,
+                    info: { phi: s.p, gamma: g },
                     postGamma: g
                 };
-            }, function (info) { return info; }, function (info, pre, postProcStack) {
+            }, function (info) { return info.phi; }, function (info, pre, postProcStack) {
                 var frameOff = pre;
-                var readOnly = info.FV();
-                for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
+                var readOnly = info.phi.FV();
+                for (var _i = 0, _a = info.phi.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
                     pre = pre.woAcc(fp.e, fp.f);
                 }
@@ -286,7 +286,8 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                         if (readOnly.some(function (x) { return s.writesTo(x); }))
                             return "writes to protected variable";
                         return null;
-                    }
+                    },
+                    gamma: info.gamma
                 });
                 return pre;
             });
@@ -297,7 +298,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 }
                 return {
                     info: {},
-                    postGamma: g
+                    postGamma: postProcStack[postProcStack.length - 1].gamma
                 };
             }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre, postProcStack) {
                 var proc = postProcStack.pop();

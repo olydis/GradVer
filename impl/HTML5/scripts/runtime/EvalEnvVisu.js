@@ -5,14 +5,14 @@ define(["require", "exports", "../types/ValueExpression"], function (require, ex
         if (!container)
             container = $("<div>").addClass("evalEnvVisuContainer").hide().appendTo($("body"));
     }
-    function showAt(pos, env) {
+    function showAt(pos, env, g) {
         ensure();
         container.text("");
         // container.css("left", pos.x + "px");
         // container.css("top", pos.y + "px");
         container.css("right", "0px");
         container.css("top", "64px");
-        container.append(createVisu(env));
+        container.append(createVisu(env, g));
         container.stop().fadeIn(0);
     }
     exports.showAt = showAt;
@@ -21,7 +21,7 @@ define(["require", "exports", "../types/ValueExpression"], function (require, ex
         container.stop().fadeOut(1000);
     }
     exports.hide = hide;
-    function createVisu(env) {
+    function createVisu(env, g) {
         // create graph
         var graph = [];
         var reachableObjects = {};
@@ -44,7 +44,11 @@ define(["require", "exports", "../types/ValueExpression"], function (require, ex
         // stack
         for (var x in env.r) {
             var view = $("<table>").addClass("evalEnvVisuObj");
-            view.append($("<tr>")
+            var hasType = g(x) != null;
+            if (hasType)
+                view.append($("<tr>")
+                    .append($("<td>").attr("colspan", 2).text(g(x).toString())));
+            view.append($("<tr>").addClass(hasType ? "evalEnvVisuAcc1" : "evalEnvVisuAcc0")
                 .append($("<td>").text(x))
                 .append($("<td>").append(createValueView(env.r[x]))));
             layers[0].push(view);
