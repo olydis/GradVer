@@ -5,21 +5,65 @@ Import Semantics.
 
 Definition mpt (a b : gphi) : Prop := pincl (gGamma' a) (gGamma' b).
 
-Definition isPredMonotonousInformation (P : phi -> phi -> Prop) : Prop :=
+(* Definition isPredMonotonousInformation (P : phi -> phi -> Prop) : Prop :=
   forall p1 p2 p1x, phiImplies p2 p1
     -> P p1 p1x
-    -> exists p2x, P p2 p2x /\ phiImplies p2x p1x.
-Definition isPredMonotonous (GP : gphi -> gphi -> Prop) : Prop :=
-  forall g1 g2 g1x g2x, mpt g1 g1x -> mpt g2 g2x -> GP g1 g2 -> GP g1x g2x.
-Definition isPredInit
-  (P : phi -> phi -> Prop)
-  (GP : gphi -> gphi -> Prop) : Prop :=
-    forall p1 p2, P p1 p2 -> GP (false, p1) (false, p2).
+    -> exists p2x, P p2 p2x /\ phiImplies p2x p1x. *)
+
+Inductive optPredLifting (P : phi -> phi -> Prop) : gphi -> gphi -> Prop :=
+| OPLintro : forall p1 p2, 
+    P p1 p2 -> 
+    optPredLifting P (false, p1) (false, p2)
+| OPLmon : forall g1 g2 g1x g2x, 
+    mpt g1 g1x -> 
+    mpt g2 g2x -> 
+    optPredLifting P g1 g2 -> 
+    optPredLifting P g1x g2x
+.
+
+Definition optPredLiftingAlt (P : phi -> phi -> Prop) : gphi -> gphi -> Prop :=
+  fun gp1 gp2 => exists p1 p2, gGamma' gp1 p1 /\ gGamma' gp2 p2 /\ P p1 p2.
+
+Lemma optPredLiftingAltEQ : forall P gp1 gp2,
+  optPredLifting P gp1 gp2 <-> optPredLiftingAlt P gp1 gp2.
+Proof.
+  unfold optPredLiftingAlt.
+  split; intros.
+  - induction H.
+    * exists p1.
+      exists p2.
+      cut.
+    * unf.
+      apply H in H2.
+      apply H0 in H3.
+      eex.
+  - unf.
+    apply (OPLmon _ (false, x) (false, x0)); cut;
+    unfold mpt, pincl; intros; unfold gGamma' in H1; 
+    simpl in *; subst; auto.
+Qed.
+
 Definition isPredLifting 
   (P : phi -> phi -> Prop)
   (GP : gphi -> gphi -> Prop) : Prop :=
-    isPredInit P GP /\
-    isPredMonotonous GP.
+    forall gp1 gp2, optPredLifting P gp1 gp2 -> GP gp1 gp2.
+
+(* Inductive optFunLifting (P : phi -> phi -> Prop) : gphi -> gphi -> Prop :=
+| OFLintro : forall p1 p2, 
+    P p1 p2 -> 
+    optPredLifting P (false, p1) (false, p2)
+| OFLmon : forall g1 g2 g1x g2x, 
+    mpt g1 g1x -> 
+    mpt g2 g2x -> 
+    optPredLifting P g1 g2 -> 
+    optPredLifting P g1x g2x
+.
+
+Definition isFunLifting 
+  (P : phi -> phi -> Prop)
+  (GP : gphi -> gphi -> Prop) : Prop :=
+    forall gp1 gp2, optPredLifting P gp1 gp2 -> GP gp1 gp2. *)
+
 
 Definition isFunMonotonous (GF : gphi -> gphi) : Prop :=
   forall g gx, mpt g gx -> mpt (GF g) (GF gx).
@@ -107,13 +151,12 @@ Theorem determSplitWorks : forall P GP,
     P
     (fun gp1 gp2 => exists gp2x, GP gp1 = Some gp2x /\ gphiImplies gp2x (snd gp2)).
 Proof.
-  unfold isHybridLifting, isPredLifting, isPredMonotonousInformation.
+  unfold isHybridLifting, isPredLifting.
   unfold isHybridInit, isPFunMonotonous.
-  unfold isPredInit, isPredMonotonous.
   intros. unf.
-  rename H0 into intr.
-  rename H1 into monp.
-  split; intros.
+  rename H1 into intr.
+  rename H2 into monp.
+  induction H0.
   - apply intr in H. unf. eex.
     simpl.
     exists p2.
@@ -122,9 +165,15 @@ Proof.
       cut.
     * apply phiImpliesRefl.
   - unf.
-    eapply monp in H1; eauto. unf. eex.
+    eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
 Qed.
+
+
+
+
+
+
 
 (* move upwards *)
 Definition swap {T U: Type} (p : prod T U) : prod U T := (snd p, fst p).
