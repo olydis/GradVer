@@ -307,10 +307,11 @@ Given binary predicate $P$.
 All the rules in the following sections are implicitly parameterized over a $program p$ that is well-formed.
 
 \section{Static semantics}
+
 \subsection{Expressions ($A_s \sfrme e$)}
 \input{../../GradVerThesis/data/autogen/staticExpression}
 
-\subsection{Formulas ($A_s \sfrme \phi$)}
+\subsection{Formulas ($A_s \sfrmphi \phi$)}
 \input{../../GradVerThesis/data/autogen/staticFormula}
 
 \begin{mathpar}
@@ -322,17 +323,8 @@ A_s \cup \staticFP {\phi_1} \sfrmphi \phi_2
 {A_s \sfrmphi \phi_1 * \phi_2}
 \end{mathpar}
 
-\subsubsection{Implication ($\phi_1 \dot{\implies} \phi_2$)}
-Conservative approx. of $\phi_1 \implies \phi_2$.
-
 \subsection{Footprint ($\staticFP {\phi} = A_s$)}
-\begin{align*}
- &\staticFP {\phiTrue}    		                &&= \emptyset
-\\ &\staticFP {\phiEq {$e_1$} {$e_2$}}      	&&= \emptyset
-\\ &\staticFP {\phiNeq {$e_1$} {$e_2$}}      	&&= \emptyset
-\\ &\staticFP {\phiAcc {$e$} {$f$}} 	    	&&= \{(e,f)\}
-\\ &\staticFP {\phiCons {$\phi_1$} {$\phi_2$}} 	&&= \staticFP {\phi_1} \cup \staticFP {\phi_2}
-\end{align*}
+\input{../../GradVerThesis/data/svl-sem-stat-fp}
 
 \subsection{Type ($\sType {\Gamma} {e} {T}$)}
 \input{../../GradVerThesis/data/autogen/staticTypeExpression}
@@ -390,13 +382,7 @@ Drawn from def. of entailment in ``A Formal Semantics for Isorecursive and Equir
 \end{align*}
 
 \subsection{Footprint ($\dynamicFP {H} {\rho} {\phi} = A_d$)}
-\begin{align*}
- &\dynamicFP {H} {\rho} {\true}    		&&= \emptyset
-\\ &\dynamicFP {H} {\rho} {e_1 = e_2}     	&&= \emptyset
-\\ &\dynamicFP {H} {\rho} {e_1 \neq e_2}  	&&= \emptyset
-\\ &\dynamicFP {H} {\rho} {\acc(x.f)} 		&&= \{(o,f)\} \text{ where } \evale x o
-\\ &\dynamicFP {H} {\rho} {\phi_1 * \phi_2} &&= \dynamicFP {H} {\rho} {\phi_1} \cup \dynamicFP {H} {\rho} {\phi_2}
-\end{align*}
+\input{../../GradVerThesis/data/svl-sem-dyn-fp}
 
 \subsection{Small-step ($\sstep H S H S$)}
 \input{dynamicSemantics}
