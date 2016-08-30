@@ -3,10 +3,7 @@ Import Semantics.
 
 (* determ split *)
 
-Definition pimpl (a b : pphi) : Prop := forall p, a p -> exists p', b p' /\ phiImplies p p'.
-
 Definition mpt (a b : gphi) : Prop := pincl (gGamma' a) (gGamma' b).
-Definition mptx (a b : gphi) : Prop := pimpl (gGamma' a) (gGamma' b).
 
 Definition isPredMonotonousInformation (P : phi -> phi -> Prop) : Prop :=
   forall p1 p2 p1x, phiImplies p2 p1
@@ -154,6 +151,31 @@ Proof.
   - unf.
     eapply H6 in H3; eauto. unf.
     eex.
+    eapp mptImplies.
+Qed.
+
+Theorem determSplitWorks3 : forall P GP,
+  isHybridLifting P GP ->
+  isPredLifting 
+    P
+    (fun gp1 gp2 => exists gp2x, GP gp1 = Some gp2x /\ gphiImplies gp2x (snd gp2)).
+Proof.
+  unfold isHybridLifting, isPredLifting, isPredMonotonousInformation.
+  unfold isHybridInit, isPFunMonotonous.
+  unfold isPredInit, isPredMonotonous.
+  intros. unf.
+  rename H0 into intr.
+  rename H1 into monp.
+  split; intros.
+  - apply intr in H. unf. eex.
+    simpl.
+    exists p2.
+    split.
+    * apply H1.
+      cut.
+    * apply phiImpliesRefl.
+  - unf.
+    eapply monp in H1; eauto. unf. eex.
     eapp mptImplies.
 Qed.
 
