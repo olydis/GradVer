@@ -3,10 +3,7 @@ Import Semantics.
 
 (* determ split *)
 
-Definition pimpl (a b : pphi) : Prop := forall p, a p -> exists p', b p' /\ phiImplies p p'.
-
 Definition mpt (a b : gphi) : Prop := pincl (gGamma' a) (gGamma' b).
-Definition mptx (a b : gphi) : Prop := pimpl (gGamma' a) (gGamma' b).
 
 Definition isPredMonotonousInformation (P : phi -> phi -> Prop) : Prop :=
   forall p1 p2 p1x, phiImplies p2 p1
