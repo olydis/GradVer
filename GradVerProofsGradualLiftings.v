@@ -62,32 +62,6 @@ Definition isHybridLifting
     isHybridInit P GF /\
     isPFunMonotonous GF.
 
-Theorem determSplitWorks : forall P GP,
-  isHybridLifting P GP ->
-  isPredLifting 
-    (fun p1 p2 => exists p2x, P p1 p2x /\ phiImplies p2x p2)
-    (fun gp1 gp2 => exists gp2x, GP gp1 = Some gp2x /\ gphiImplies gp2x (snd gp2)).
-Proof.
-  unfold isHybridLifting, isPredLifting.
-  unfold isHybridInit, isPFunMonotonous.
-  unfold isPredInit, isPredMonotonous.
-  split; intros.
-  - unf.
-    apply H1 in H0. unf.
-    eex.
-    simpl.
-    unfold gphiImplies.
-    eex.
-    apply H4.
-    cut.
-  - unf.
-    eapply H5 in H2; eauto. unf.
-    eex.
-    unfold gphiImplies in *.
-    unf.
-    eex.
-Admitted.
-
 Lemma mptImplies2 : forall p gp1 gp2,
   mpt gp1 gp2 ->
   good p -> 
@@ -127,34 +101,7 @@ Proof.
   admit.
 Admitted.
 
-Theorem determSplitWorks2 : forall P GP,
-  isPredMonotonousInformation P ->
-  isHybridLifting P GP ->
-  isPredLifting 
-    (fun p1 p2 => exists p1x p2x, phiImplies p1 p1x /\ P p1x p2x /\ phiImplies p2x p2)
-    (fun gp1 gp2 => exists gp2x, GP gp1 = Some gp2x /\ gphiImplies gp2x (snd gp2)).
-Proof.
-  unfold isHybridLifting, isPredLifting, isPredMonotonousInformation.
-  unfold isHybridInit, isPFunMonotonous.
-  unfold isPredInit, isPredMonotonous.
-  split; intros.
-  - unf.
-    eappIn H H1. unf.
-    apply H3 in H1. unf.
-    eex.
-    simpl.
-    exists x1.
-    split.
-    * apply H7.
-      cut.
-    * eapp phiImpliesTrans.
-  - unf.
-    eapply H6 in H3; eauto. unf.
-    eex.
-    eapp mptImplies.
-Qed.
-
-Theorem determSplitWorks3 : forall P GP,
+Theorem determSplitWorks : forall P GP,
   isHybridLifting P GP ->
   isPredLifting 
     P
