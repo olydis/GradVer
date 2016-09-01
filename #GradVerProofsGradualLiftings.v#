@@ -111,10 +111,13 @@ Definition isHybridLifting
     isHybridInit P GF /\
     isPFunMonotonous GF.
 Definition isMptHybridLifting (GF1 GF2 : gphi -> option gphi) : Prop :=
-  forall g g1 g2, 
-    GF1 g = Some g1 ->
-    GF2 g = Some g2 ->
-    mpt g1 g2.
+  forall g, 
+    (GF1 g <> None -> GF2 g <> None)
+    /\
+    (forall g1 g2,
+     (GF1 g = Some g1 ->
+      GF2 g = Some g2 ->
+      mpt g1 g2)).
 Definition isOptHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
@@ -195,7 +198,23 @@ Proof.
   split; intros.
   - eapply determSplitWorks; eauto.
   - unf.
-    
+    apply optPredLiftingAltEQ.
+    unfold optPredLiftingAlt.
+    assert (exists p1 p2, gGamma' gp1 p1 /\ P p1 p2).
+      admit.
+    unf.
+    exists x0.
+    inv H3. unf.
+    exists x2.
+    splau.
+    split. admit.
+    destruct gp2. simpl in *.
+    destruct b.
+    * exists x2.
+      splau.
+      split. unfold gGamma'. simpl. splau. admit.
+      
+    splau.
 Qed.
 
 
