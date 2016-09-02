@@ -106,18 +106,31 @@ Definition isOptPFunLifting
 Definition isHybridInit
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
-    forall p pr,
-      P p pr ->
-      exists pxr, GF (false, p) = Some pxr /\ gphiImplies pxr pr.
-Definition isHybridMonotonous (GF : gphi -> option gphi) : Prop :=
-  forall g gx gr, mpt g gx 
-    -> GF g = Some gr 
-    -> exists gxr, GF gx = Some gxr /\ mpt gr gxr.
+    forall p1 p2 gp1,
+      gGamma' gp1 p1 ->
+      P p1 p2 ->
+      exists gp2, GF gp1 = Some gp2.
+Definition isHybridPres
+  (P : phi -> phi -> Prop)
+  (GF : gphi -> option gphi) : Prop :=
+    forall gp1 gp2,
+      GF gp1 = Some gp2 ->
+      exists p1 p2, gGamma' gp1 p1 /\ gGamma' gp2 p2 /\ P p1 p2.
+Definition isHybridGradGuar
+  (P : phi -> phi -> Prop)
+  (GF : gphi -> option gphi) : Prop :=
+    forall gp1 gp2 p1 p2,
+      GF gp1 = Some gp2 ->
+      P p1 p2 ->
+      gGamma' gp1 p1 ->
+      gphiImplies gp2 p2.
 Definition isHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
     isHybridInit P GF /\
-    isHybridMonotonous GF.
+    isHybridGradGuar P GF /\
+    isPFunMonotonous GF /\
+    isHybridPres P GF.
 Definition isMptHybridLifting (GF1 GF2 : gphi -> option gphi) : Prop :=
   forall g, 
     (GF1 g <> None -> GF2 g <> None)
@@ -178,14 +191,27 @@ Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
     (fun a c => exists b, P1 a b /\ P2 b c)
     (fun s => option_bind GP2 (GP1 s)).
 Proof.
-  split; intros.
+  unfold isHybridLifting.
+  intros. unf.
+  repeat split.
   - repeat intro. unf.
-    apply H in H1.
-    apply H0 in H3.
+    assert (H8' := H8).
+    eapply H3 in H8; eauto. unf.
+    rewrite H9. simpl.
+    eapply H in H6; eauto.
+    
+    assert (H6' := H6).
+    admit.
+  - repeat intro. unf.
+    destruct GP1 eqn: gg1; cut.
+    simpl in *.
+    admit.
+  - repeat intro.
+    destruct GP1 eqn: gg1; cut.
+    simpl in *.
+    eapply H5 in gg1; eauto.
     unf.
-    rewrite H1.
-    simpl.
-    eapply H0 in H3.
+    admit.
 Admitted.
 
 Theorem determSplitWorks : forall P GP,
@@ -197,13 +223,22 @@ Proof.
   unfold isHybridLifting, isPredLifting.
   unfold isHybridInit, isPFunMonotonous.
   intros. unf.
-  rename H1 into intr.
-  rename H2 into monp.
   induction H0.
-  - apply intr in H. unf. eex.
+  - assert (H0' := H0).
+    eapply H1 in H0'.
+    * unf. eex. simpl.
+      eapply H; eauto. cut.
+    * cut.
   - unf.
-    eapply monp in H3; eauto. unf. eex.
+    assert (H7' := H7).
+    apply H4 in H7'. unf.
+    apply H0 in H6.
+    eapply H1 in H6; eauto. unf.
+    eex.
     eapp mptImplies.
+    eapply H2 in H7; eauto.
+    unf.
+    rewrite H7 in H10. inv H10. assumption.
 Qed.
 
 
