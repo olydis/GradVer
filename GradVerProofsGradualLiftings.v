@@ -111,10 +111,13 @@ Definition isHybridLifting
     isHybridInit P GF /\
     isPFunMonotonous GF.
 Definition isMptHybridLifting (GF1 GF2 : gphi -> option gphi) : Prop :=
-  forall g g1 g2, 
-    GF1 g = Some g1 ->
-    GF2 g = Some g2 ->
-    mpt g1 g2.
+  forall g, 
+    (GF1 g <> None -> GF2 g <> None)
+    /\
+    (forall g1 g2,
+     (GF1 g = Some g1 ->
+      GF2 g = Some g2 ->
+      mpt g1 g2)).
 Definition isOptHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
@@ -160,6 +163,38 @@ Proof.
   admit.
 Admitted.
 
+Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
+  isHybridLifting P1 GP1 ->
+  isHybridLifting P2 GP2 ->
+  isHybridLifting 
+    (fun a c => exists b, P1 a b /\ P2 b c)
+    (fun s => option_bind GP2 (GP1 s)).
+Proof.
+  split; intros.
+  - repeat intro. unf.
+    apply H in H1.
+    apply H0 in H3.
+    unf.
+    eapply H0 in H3; eauto.
+    unf.
+    exists x2.
+    split.
+    * rewrite H1.
+      assumption.
+    * repeat intro.
+      apply H6.
+      apply H5.
+      assumption.
+  - repeat intro.
+    destruct GP1 eqn: H3; cut.
+    simpl in *.
+    eapply H in H3; eauto. unf.
+    eapply H0 in H2; eauto. unf.
+    eex.
+    rewrite H3.
+    assumption.
+Qed.
+
 Theorem determSplitWorks : forall P GP,
   isHybridLifting P GP ->
   isPredLifting 
@@ -182,20 +217,6 @@ Proof.
   - unf.
     eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
-Qed.
-
-Theorem determSplitWorksOpt : forall P GP,
-  isOptHybridLifting P GP ->
-  isOptPredLifting 
-    P 
-    (fun gp1 gp2 => exists gp2x, GP gp1 = Some gp2x /\ gphiImplies gp2x (snd gp2)).
-Proof.
-  unfold isOptHybridLifting, isOptPredLifting.
-  intros. unf.
-  split; intros.
-  - eapply determSplitWorks; eauto.
-  - unf.
-    
 Qed.
 
 
