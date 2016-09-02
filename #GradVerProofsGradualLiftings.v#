@@ -108,11 +108,11 @@ Definition isHybridInit
   (GF : gphi -> option gphi) : Prop :=
     forall p pr,
       P p pr ->
-      exists pxr, GF (false, p) = Some pxr /\ mpst (false, pr) pxr.
+      exists pxr, GF (false, p) = Some pxr /\ gphiImplies pxr pr.
 Definition isHybridMonotonous (GF : gphi -> option gphi) : Prop :=
-  forall g gx gr, mpst g gx 
+  forall g gx gr, mpt g gx 
     -> GF g = Some gr 
-    -> exists gxr, GF gx = Some gxr /\ mpst gr gxr.
+    -> exists gxr, GF gx = Some gxr /\ mpt gr gxr.
 Definition isHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
@@ -185,22 +185,8 @@ Proof.
     unf.
     rewrite H1.
     simpl.
-    eapply H0 in H3; eauto. unf.
-    eex.
-    repeat intro.
-    apply H5 in H2. unf.
-    apply H6 in H2. unf.
-    eex.
-    eapp phiImpliesTrans.
-  - repeat intro.
-    destruct GP1 eqn: H3; cut.
-    simpl in *.
-    eapply H in H3; eauto. unf.
-    eapply H0 in H2; eauto. unf.
-    eex.
-    rewrite H3.
-    assumption.
-Qed.
+    eapply H0 in H3.
+Admitted.
 
 Theorem determSplitWorks : forall P GP,
   isHybridLifting P GP ->
@@ -215,12 +201,6 @@ Proof.
   rename H2 into monp.
   induction H0.
   - apply intr in H. unf. eex.
-    simpl.
-    exists p2.
-    split.
-    * apply H1.
-      cut.
-    * apply phiImpliesRefl.
   - unf.
     eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
