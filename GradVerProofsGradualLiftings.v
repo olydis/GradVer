@@ -103,34 +103,23 @@ Definition isOptPFunLifting
     isPFunLifting F GF /\
     forall GFx, isPFunLifting F GFx -> isMptPFunLifting GF GFx.
 
+Definition phiImpliesStrict (p1 p2 : phi) := phiImplies p1 p2 /\ ~ phiImplies p2 p1.
+
+Definition hasNoUniqueImplicator (P : phi -> Prop) (p : phi) :=
+  forall pri, P pri -> phiImpliesStrict pri p -> exists prix, P prix /\ phiImpliesStrict prix pri.
 Definition isHybridInit
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
-    forall p1 p2 gp1,
-      gGamma' gp1 p1 ->
-      P p1 p2 ->
-      exists gp2, GF gp1 = Some gp2.
-Definition isHybridPres
-  (P : phi -> phi -> Prop)
-  (GF : gphi -> option gphi) : Prop :=
-    forall gp1 gp2,
-      GF gp1 = Some gp2 ->
-      exists p1 p2, gGamma' gp1 p1 /\ gGamma' gp2 p2 /\ P p1 p2.
-Definition isHybridGradGuar
-  (P : phi -> phi -> Prop)
-  (GF : gphi -> option gphi) : Prop :=
-    forall gp1 gp2 p1 p2,
-      GF gp1 = Some gp2 ->
-      P p1 p2 ->
-      gGamma' gp1 p1 ->
-      gphiImplies gp2 p2.
+    forall p pr,
+      P p pr ->
+      (exists pxr, GF (false, p) = Some (false, pxr) /\ P p pxr /\
+        (forall prx, P p prx -> phiImplies pxr prx)) (* \/
+      (exists pxr, GF (false, p) = Some pxr /\ mpt (false, pr) pxr) *).
 Definition isHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
     isHybridInit P GF /\
-    isHybridGradGuar P GF /\
-    isPFunMonotonous GF /\
-    isHybridPres P GF.
+    isPFunMonotonous GF.
 Definition isMptHybridLifting (GF1 GF2 : gphi -> option gphi) : Prop :=
   forall g, 
     (GF1 g <> None -> GF2 g <> None)
@@ -184,32 +173,6 @@ Proof.
   admit.
 Admitted.
 
-Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
-  isHybridLifting P1 GP1 ->
-  isHybridLifting P2 GP2 ->
-  isHybridLifting 
-    (fun a c => exists b, P1 a b /\ P2 b c)
-    (fun s => option_bind GP2 (GP1 s)).
-Proof.
-  unfold isHybridLifting.
-  intros. unf.
-  repeat split.
-  - repeat intro. unf.
-    assert (H6' := H6).
-    assert (H8' := H8).
-    admit.
-  - repeat intro. unf.
-    destruct GP1 eqn: gg1; cut.
-    simpl in *.
-    admit.
-  - repeat intro.
-    destruct GP1 eqn: gg1; cut.
-    simpl in *.
-    eapply H5 in gg1; eauto.
-    unf.
-    admit.
-Admitted.
-
 Theorem determSplitWorks : forall P GP,
   isHybridLifting P GP ->
   isPredLifting 
@@ -219,25 +182,62 @@ Proof.
   unfold isHybridLifting, isPredLifting.
   unfold isHybridInit, isPFunMonotonous.
   intros. unf.
+  rename H1 into intr.
+  rename H2 into monp.
   induction H0.
-  - assert (H0' := H0).
-    eapply H1 in H0'.
-    * unf. eex. simpl.
-      eapply H; eauto. cut.
-    * cut.
+  - assert (H' := H).
+    eapply intr in H; cut.
+    (* inv H. *)
+    * unf. eex.
+      simpl.
+      eex.
+    (* * unf. eex.
+      simpl.
+      eex.
+      apply H1.
+      cut. *)
   - unf.
-    assert (H7' := H7).
-    apply H4 in H7'. unf.
-    apply H0 in H6.
-    eapply H1 in H6; eauto. unf.
-    eex.
+    eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
-    eapply H2 in H7; eauto.
-    unf.
-    rewrite H7 in H10. inv H10. assumption.
 Qed.
 
-
+Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
+  isHybridLifting P1 GP1 ->
+  isHybridLifting P2 GP2 ->
+  isHybridLifting 
+    (fun a c => exists b, P1 a b /\ P2 b c)
+    (fun s => option_bind GP2 (GP1 s)).
+Proof.
+  split; intros.
+  - repeat intro. unf.
+    assert (PP1 := H1).
+    assert (PP2 := H3).
+    apply H in H1.
+    unf.
+    rewrite H1. simpl.
+    apply H5 in PP1.
+    assert (exists xx, P2 x0 xx /\ phiImplies xx pr).
+      admit.
+    unf.
+    apply H0 in H4. unf.
+    eex.
+    intros.
+    unf.
+    apply H5 in H8.
+    assert (exists xx, P2 x0 xx /\ phiImplies xx prx).
+      admit.
+    unf.
+    apply H9 in H10.
+    eapp phiImpliesTrans.
+  - repeat intro.
+    destruct GP1 eqn: H3; cut.
+    simpl in *.
+    eapply H in H3; eauto. unf.
+    eapply H0 in H2; eauto. unf.
+    eex.
+    rewrite H3.
+    assumption.
+Qed.
 
 
 
