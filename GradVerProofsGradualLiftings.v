@@ -119,8 +119,7 @@ Definition isHybridMesh
   (GF : gphi -> option gphi) : Prop :=
     forall gp pxr,
       GF gp = Some pxr ->
-      (forall pr' p, gGamma' gp p -> P p pr' -> (exists pr, P p pr /\ gGamma' pxr pr /\ phiImplies pr pr')) /\
-      (forall pr p, gGamma' gp p -> P p pr -> gphiImplies pxr pr).
+      (forall pr p, gGamma' gp p -> P p pr -> exists pr', P p pr' /\ gGamma' pxr pr' /\ phiImplies pr' pr).
 Definition isHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
@@ -196,8 +195,10 @@ Proof.
   - assert (H' := H).
     eapply intr in H; cut. unf.
     eex. simpl.
-    apply mesh in H0. inv H0.
-    eapp H1.
+    apply mesh in H0.
+    apply H0 in H'; cut.
+    unf.
+    eex.
   - unf.
     eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
@@ -221,12 +222,10 @@ Proof.
   assert (mpt x1 gp2).
     eapply H in H5. Focus 2. instantiate (1 := gp1). repeat intro. inv H9. assumption.
     unf. rewrite H5 in H1. inv H1. assumption.
-  apply H in H5. unf.
-  apply H9 in H3; cut.
-  inv H3.
-  exists x2.
+  apply H in H5.
+  apply H5 in H3; cut.
   unf.
-  splau.
+  eex.
   eapp phiImpliesTrans.
 Admitted.
 
@@ -254,44 +253,37 @@ Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
     (fun a c => exists b, P1 a b /\ P2 b c)
     (fun s => option_bind GP2 (GP1 s)).
 Proof.
-  repeat split; intros.
+  split; try split; repeat intro.
   - repeat intro. unf.
     assert (PP1 := H1).
     apply H in H1.
     unf.
     rewrite H2. simpl.
-    apply H in H2. unf.
-    assert (PP1' := PP1).
-    apply H1 in PP1'; cut. unf.
-    apply H4 in PP1; cut.
-    invE PP1 xx. unf.
-    assert (exists xxx, P2 xx xxx /\ phiImplies xxx pr).
+    apply H in H2.
+    apply H2 in PP1; cut. unf.
+    assert (exists xx, P2 x1 xx /\ phiImplies xx pr).
       admit.
     unf.
-    assert (PP2 := H9).
-    apply H0 in H9. unf.
-    inv H0. inv H12.
-    eapply H13 in H10. unf. eex.
-    repeat intro. inv H12. assumption.
+    assert (PP2 := H5).
+    apply H0 in H5. unf.
+    inv H0. inv H9.
+    eapply H10 in H7. unf. eex.
+    repeat intro. inv H9. assumption.
   - destruct GP1 eqn: GP1e; cut.
     simpl in *.
     unf.
     apply H in GP1e.
     apply H0 in H1.
     unf.
-    apply H1 in H3; auto. unf.
-    assert (exists xx, P2 x0 xx /\ phiImplies xx pr').
+    apply GP1e in H3; auto. unf.
+    assert (exists xx, P2 x0 xx /\ phiImplies xx pr).
       admit.
     clear H5.
     unf.
-    apply H4 in H9; auto. unf.
+    apply H1 in H6; auto. unf.
+    assert (phiImplies x2 pr).
+      eapp phiImpliesTrans.
     eex.
-    eapp phiImpliesTrans.
-  - destruct GP1 eqn: GP1e; cut.
-    simpl in *.
-    unf.
-    eapply H in H3; eauto.
-    eapply gphiImpliesMon; eauto.
   - repeat intro.
     destruct GP1 eqn: GP1e; cut.
     simpl in *.
@@ -300,7 +292,7 @@ Proof.
     eex.
     rewrite H4. assumption.
 Admitted.
- 
+
 
 
 
