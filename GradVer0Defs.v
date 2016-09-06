@@ -490,7 +490,7 @@ Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
 .
 
 (* implication on phi *)
-(*coq2latex: phiImplies #a #b := #a \implies #b *)
+(*coq2latex: phiImplies #a #b := \phiImplies #a #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
 

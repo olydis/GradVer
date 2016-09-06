@@ -112,13 +112,20 @@ Definition isHybridInit
   (GF : gphi -> option gphi) : Prop :=
     forall p pr,
       P p pr ->
-      (exists pxr, GF (false, p) = Some (false, pxr) /\ P p pxr /\
-        (forall prx, P p prx -> phiImplies pxr prx)) (* \/
+      (exists pxr, GF (false, p) = Some pxr) (* \/
       (exists pxr, GF (false, p) = Some pxr /\ mpt (false, pr) pxr) *).
+Definition isHybridMesh
+  (P : phi -> phi -> Prop)
+  (GF : gphi -> option gphi) : Prop :=
+    forall gp pxr,
+      GF gp = Some pxr ->
+      (forall pr' p, gGamma' gp p -> P p pr' -> (exists pr, P p pr /\ gGamma' pxr pr /\ phiImplies pr pr')) /\
+      (forall pr p, gGamma' gp p -> P p pr -> gphiImplies pxr pr).
 Definition isHybridLifting 
   (P : phi -> phi -> Prop)
   (GF : gphi -> option gphi) : Prop :=
     isHybridInit P GF /\
+    isHybridMesh P GF /\
     isPFunMonotonous GF.
 Definition isMptHybridLifting (GF1 GF2 : gphi -> option gphi) : Prop :=
   forall g, 
@@ -183,23 +190,62 @@ Proof.
   unfold isHybridInit, isPFunMonotonous.
   intros. unf.
   rename H1 into intr.
-  rename H2 into monp.
+  rename H into mesh.
+  rename H3 into monp.
   induction H0.
   - assert (H' := H).
-    eapply intr in H; cut.
-    (* inv H. *)
-    * unf. eex.
-      simpl.
-      eex.
-    (* * unf. eex.
-      simpl.
-      eex.
-      apply H1.
-      cut. *)
+    eapply intr in H; cut. unf.
+    eex. simpl.
+    apply mesh in H0. inv H0.
+    eapp H1.
   - unf.
     eapply monp in H3; eauto. unf. eex.
     eapp mptImplies.
 Qed.
+
+
+Lemma gphiImpliesMon : forall P DP p1 p2 gp1 gp2,
+  isHybridLifting P DP ->
+  P p1 p2 ->
+  DP gp1 = Some gp2 ->
+  gphiImplies gp1 p1 ->
+  gphiImplies gp2 p2.
+Proof.
+  intros.
+  inv H2. unf.
+  assert (exists p2x, P x p2x /\ phiImplies p2x p2).
+    admit.
+  unf.
+  assert (H3' := H3).
+  apply H in H3'. unf.
+  assert (mpt x1 gp2).
+    eapply H in H5. Focus 2. instantiate (1 := gp1). repeat intro. inv H9. assumption.
+    unf. rewrite H5 in H1. inv H1. assumption.
+  apply H in H5. unf.
+  apply H9 in H3; cut.
+  inv H3.
+  exists x2.
+  unf.
+  splau.
+  eapp phiImpliesTrans.
+Admitted.
+
+(* Lemma phiImpliesMon : forall P DP p1 p2 gp1 gp2,
+  isHybridLifting P DP ->
+  P p1 p2 ->
+  DP gp1 = Some gp2 ->
+  phiImplies p1 (snd gp1) ->
+  phiImplies p2 (snd gp2).
+Proof.
+  intros.
+  assert (H0' := H0).
+  apply H in H0'. unf.
+  
+  destruct gp1. simpl in *.
+  destruct b.
+  - admit.
+  - 
+Admitted. *)
 
 Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
   isHybridLifting P1 GP1 ->
@@ -208,37 +254,53 @@ Lemma hybridLiftingComp : forall P1 P2 GP1 GP2,
     (fun a c => exists b, P1 a b /\ P2 b c)
     (fun s => option_bind GP2 (GP1 s)).
 Proof.
-  split; intros.
+  repeat split; intros.
   - repeat intro. unf.
     assert (PP1 := H1).
-    assert (PP2 := H3).
     apply H in H1.
     unf.
-    rewrite H1. simpl.
-    apply H5 in PP1.
-    assert (exists xx, P2 x0 xx /\ phiImplies xx pr).
+    rewrite H2. simpl.
+    apply H in H2. unf.
+    assert (PP1' := PP1).
+    apply H1 in PP1'; cut. unf.
+    apply H4 in PP1; cut.
+    invE PP1 xx. unf.
+    assert (exists xxx, P2 xx xxx /\ phiImplies xxx pr).
       admit.
     unf.
-    apply H0 in H4. unf.
-    eex.
-    intros.
-    unf.
-    apply H5 in H8.
-    assert (exists xx, P2 x0 xx /\ phiImplies xx prx).
-      admit.
-    unf.
-    apply H9 in H10.
-    eapp phiImpliesTrans.
-  - repeat intro.
-    destruct GP1 eqn: H3; cut.
+    assert (PP2 := H9).
+    apply H0 in H9. unf.
+    inv H0. inv H12.
+    eapply H13 in H10. unf. eex.
+    repeat intro. inv H12. assumption.
+  - destruct GP1 eqn: GP1e; cut.
     simpl in *.
-    eapply H in H3; eauto. unf.
+    unf.
+    apply H in GP1e.
+    apply H0 in H1.
+    unf.
+    apply H1 in H3; auto. unf.
+    assert (exists xx, P2 x0 xx /\ phiImplies xx pr').
+      admit.
+    clear H5.
+    unf.
+    apply H4 in H9; auto. unf.
+    eex.
+    eapp phiImpliesTrans.
+  - destruct GP1 eqn: GP1e; cut.
+    simpl in *.
+    unf.
+    eapply H in H3; eauto.
+    eapply gphiImpliesMon; eauto.
+  - repeat intro.
+    destruct GP1 eqn: GP1e; cut.
+    simpl in *.
+    eapply H in GP1e; eauto. unf.
     eapply H0 in H2; eauto. unf.
     eex.
-    rewrite H3.
-    assumption.
-Qed.
-
+    rewrite H4. assumption.
+Admitted.
+ 
 
 
 
