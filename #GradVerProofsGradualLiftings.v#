@@ -297,6 +297,13 @@ Admitted.
 
 
 
+
+
+
+
+
+
+
 (* move upwards *)
 Definition swap {T U: Type} (p : prod T U) : prod U T := (snd p, fst p).
   

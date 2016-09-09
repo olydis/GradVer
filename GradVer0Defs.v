@@ -65,6 +65,8 @@ Inductive phi' :=
 | phiAcc : e -> f -> phi'.
 Definition phi := list phi'.
 Inductive s :=
+(*coq2latex: sSkip := \sSkip *)
+| sSkip : s
 (*coq2latex: sFieldAssign #x #f #y := \sFieldAssign {$#x$} {$#f$} {$#y$} *)
 | sFieldAssign : x -> f -> x -> s
 (*coq2latex: sVarAssign #x #e := \sVarAssign {$#x$} {$#e$} *)
@@ -490,7 +492,7 @@ Inductive evalphi : H -> rho -> A_d -> phi -> Prop :=
 .
 
 (* implication on phi *)
-(*coq2latex: phiImplies #a #b := #a \implies #b *)
+(*coq2latex: phiImplies #a #b := \phiImplies #a #b *)
 Definition phiImplies (p1 p2 : phi) : Prop :=
   forall h r a, evalphi h r a p1 -> evalphi h r a p2.
 
@@ -588,6 +590,12 @@ Definition GammaNotSetAt (G : Gamma) (x : x) : Prop := G x = None.
 
 (*coq2latex: hoare #G #p1 #s #p2 := \thoare #G #p1 #s #p2 *)
 Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
+| HSkip : forall G(*\Gamma*) phi(*\*),
+    hoare
+      G
+      phi
+      [sSkip]
+      phi
 | HAlloc : forall G(*\Gamma*) phi(*\*) phi'(*\*) x (C : C) f_bar(*\overline{\field{$T$}{$f$}}*),
     phiImplies phi phi' ->
     sfrmphi [] phi' ->
@@ -648,7 +656,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
     phiImplies phi (phi_r ++ phi') ->
     sfrmphi [] phi' ->
     hoare G phi [sRelease phi_r] phi'
-| HDeclare : forall s(*\overline{s}*) G(*\Gamma*) phi(*\*) phi'(*\*) x T,
+| HDeclare : forall s(*s*) G(*\Gamma*) phi(*\*) phi'(*\*) x T,
     GammaNotSetAt G x ->
     hoare (GammaSet x T G)
       (phiEq (ex x) (ev (defaultValue' T)) :: phi)
@@ -658,7 +666,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi
       (sDeclare T x :: s)
       phi'
-| HHold : forall s(*\overline{s}*) G(*\Gamma*) phi_f(*\*) phi_r(*\*) phi(*\*) phi_r'(*\*) phi'(*\*),
+| HHold : forall s(*s*) G(*\Gamma*) phi_f(*\*) phi_r(*\*) phi(*\*) phi_r'(*\*) phi'(*\*),
     sfrmphi [] phi ->
     phiImplies phi_f (phi_r ++ phi') ->
     phiImplies phi' phi ->
@@ -700,28 +708,30 @@ Definition accListDyn (o : o) (fs : list (prod T f)) : A_d := map (fun cf' => (o
 Definition execState : Set := H * S.
 (*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
 Inductive dynSem : execState -> execState -> Prop :=
-| ESFieldAssign : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) (x y : x) (v_y : v) (o : o) (f : f),
+| ESSkip : forall H (S : S) (s_bar(*s*) : list s) (A : A_d) rho(*\*),
+    dynSem (H, (rho, A, sSkip :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
+| ESFieldAssign : forall H H' (S : S) (s_bar(*s*) : list s) (A : A_d) rho(*\*) (x y : x) (v_y : v) (o : o) (f : f),
     evale H rho (ex x) (vo o) ->
     evale H rho (ex y) v_y ->
     In (o, f) A ->
     H' = HSubst o f v_y H ->
     dynSem (H, (rho, A, sFieldAssign x f y :: s_bar) :: S) (H', (rho, A, s_bar) :: S)
-| ESVarAssign : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (e : e) (v : v),
+| ESVarAssign : forall H (S : S) (s_bar(*s*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (e : e) (v : v),
     evale H rho e v ->
     rho' = rhoSubst x v rho ->
     dynSem (H, (rho, A, sVarAssign x e :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESAlloc : forall H H' (S : S) (s_bar(*\overline{s}*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs(*\overline{\field{$T$}{$f$}}*),
+| ESAlloc : forall H H' (S : S) (s_bar(*s*) : list s) (A A' : A_d) rho(*\*) rho'(*\*) (x : x) (o : o) (C : C) Tfs(*\overline{\field{$T$}{$f$}}*),
     HeapNotSetAt H o ->
     fields C = Some Tfs ->
     rho' = rhoSubst x (vo o) rho ->
     A' = A ++ accListDyn o Tfs ->
     H' = Halloc o C H ->
     dynSem (H, (rho, A, sAlloc x C :: s_bar) :: S) (H', (rho', A', s_bar) :: S)
-| ESReturn : forall H (S : S) (s_bar(*\overline{s}*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (v_x : v),
+| ESReturn : forall H (S : S) (s_bar(*s*) : list s) (A : A_d) rho(*\*) rho'(*\*) (x : x) (v_x : v),
     evale H rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESCall : forall underscore2(*\_*) phi(*\*) H (S : S) (s_bar(*\overline{s}*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
+| ESCall : forall underscore2(*\_*) phi(*\*) H (S : S) (s_bar(*s*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
     evale H rho (ex y) (vo o) ->
     evale H rho (ex z) v ->
     H o = Some (C, underscore) ->
@@ -730,7 +740,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi H rho' A phi ->
     A' = footprint H rho' phi ->
     dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESCallFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*\overline{s}*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
+| ESCallFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*s*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
     evale H rho (ex y) (vo o) ->
     H o = Some (C, underscore) ->
     mpost C m = Some phi ->
@@ -738,21 +748,21 @@ Inductive dynSem : execState -> execState -> Prop :=
     A'' = footprint H rho' phi ->
     evale H rho' (ex xresult) v_r ->
     dynSem (H, (rho', A', []) :: (rho, A, sCall x y m z :: s_bar) :: S) (H, (rhoSubst x v_r rho, A ++ A'', s_bar) :: S)
-| ESAssert : forall H rho(*\*) A phi(*\*) s_bar(*\overline{s}*) S,
+| ESAssert : forall H rho(*\*) A phi(*\*) s_bar(*s*) S,
     evalphi H rho A phi ->
     dynSem (H, (rho, A, sAssert phi :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
-| ESRelease : forall H rho(*\*) A A' phi(*\*) s_bar(*\overline{s}*) S,
+| ESRelease : forall H rho(*\*) A A' phi(*\*) s_bar(*s*) S,
     evalphi H rho A phi ->
     A' = Aexcept A (footprint H rho phi) ->
     dynSem (H, (rho, A, sRelease phi :: s_bar) :: S) (H, (rho, A', s_bar) :: S)
-| ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*\overline{s}*) S T x,
+| ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*s*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
     dynSem (H, (rho, A, sDeclare T x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESHold : forall H rho(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*\overline{s}*) S,
+| ESHold : forall H rho(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*s*) S,
     evalphi H rho A phi ->
     A' = footprint H rho phi ->
     dynSem (H, (rho, A, sHold phi s :: s_bar) :: S) (H, (rho, Aexcept A A', s) :: (rho, A', sHold phi s :: s_bar) :: S)
-| ESHoldFinish : forall H rho(*\*) rho'(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*\overline{s}*) S,
+| ESHoldFinish : forall H rho(*\*) rho'(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*s*) S,
     dynSem (H, (rho', A', []) :: (rho, A, sHold phi s :: s_bar) :: S) (H, (rho', A ++ A', s_bar) :: S)
 .
 
