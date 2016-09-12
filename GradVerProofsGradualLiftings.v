@@ -47,6 +47,62 @@ Proof.
     simpl in *; subst; auto.
 Qed.
 
+Definition funcLifting (P : phi -> phi) (GP : gphi -> gphi) : Prop :=
+  (forall p, gGamma' (GP (false, p)) (P p)) /\
+  (forall gp1 gp2, mpt gp1 gp2 -> mpt (GP gp1) (GP gp2)).
+
+Definition mptFunc (GP1 GP2 : gphi -> gphi) : Prop :=
+  forall gp, mpt (GP1 gp) (GP2 gp).
+
+Definition optFuncLifting (P : phi -> phi) (GP : gphi -> gphi) : Prop :=
+    minWith (funcLifting P) mptFunc GP.
+
+Definition optFuncLiftingAlt (P : phi -> phi) (GP : gphi -> gphi) : Prop :=
+    forall gp, gAlpha (fun p => exists p', gGamma' gp p' /\ P p' = p) (GP gp).
+
+Lemma optFuncLiftingAltEQ : forall P GP,
+  optFuncLifting P GP <-> optFuncLiftingAlt P GP.
+Proof.
+  split; intros.
+  - inv H.
+    repeat intro.
+    split.
+    * admit.
+    * admit.
+    * repeat intro.
+      unf.
+      subst.
+      inv H0.
+      eapply H3. Focus 2. apply H2.
+      repeat intro.
+      inv H0.
+      assumption.
+    * intros.
+      repeat intro.
+      eapply H1 in H3.
+      Focus 2.
+        instantiate (1 := (fun x => gp')).
+        split; intros; cut.
+        apply H2. eex.
+      admit.
+      admit.
+  - unfold optFuncLiftingAlt in H.
+    split.
+    * eca; intros.
+      + specialize (H (false, p0)).
+        inv H.
+        apply H2.
+        eex.
+      + pose proof (H gp1).
+        pose proof (H gp2).
+        inv H1. inv H2.
+        apply H6. admit.
+        repeat intro. apply H8.
+        unf. subst.
+        apply H0 in H2.
+        eex.
+Qed.
+
 Definition isOptPredLifting 
   (P : phi -> phi -> Prop)
   (GP : gphi -> gphi -> Prop) : Prop :=
@@ -292,6 +348,13 @@ Proof.
     eex.
     rewrite H4. assumption.
 Admitted.
+
+
+
+
+
+
+
 
 
 
