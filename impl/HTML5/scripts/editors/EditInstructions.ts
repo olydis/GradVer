@@ -292,6 +292,7 @@ export class EditInstructions
         $(".err").removeClass("err");
         $(".intermediateState").off("mouseenter");
         $(".intermediateState").off("mouseleave").on("mouseleave", () => visuHide());
+        this.statements.forEach(s => s.stmtContainer.css("margin-left", "0px"));
 
         var statements = this.statements.map(x => x.getStatement());
         statements.push(new StatementCast(this.condPost));

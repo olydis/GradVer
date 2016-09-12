@@ -228,6 +228,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             $(".err").removeClass("err");
             $(".intermediateState").off("mouseenter");
             $(".intermediateState").off("mouseleave").on("mouseleave", function () { return EvalEnvVisu_1.hide(); });
+            this.statements.forEach(function (s) { return s.stmtContainer.css("margin-left", "0px"); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
             statements.push(new Statement_1.StatementCast(this.condPost));
             var g = Gamma_1.GammaNew;
