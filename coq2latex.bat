@@ -30,4 +30,9 @@
     | ..\coq2latex\project\coq2latex\bin\Debug\coq2latex.exe Semantics.dynSem^
     > ..\GradVerThesis\data\autogen\dynamicSemantics.tex
 
+((echo Set Printing Depth 2. Load GradVer0Defs. Set Printing All. Set Printing Width 2097151. Set Printing Depth 100. Print writesTo. Quit.^
+    | C:\Users\Johannes\AppData\Roaming\Coq\bin\coqtop.exe) && type GradVer0Defs.v)^
+    | ..\coq2latex\project\coq2latex\bin\Debug\coq2latex.exe writesTo^
+    > ..\GradVerThesis\data\autogen\writesTo.tex
+
 GOTO:EOF

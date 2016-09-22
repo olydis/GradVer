@@ -197,6 +197,7 @@ Ltac undecb :=
       in *.
 
 
+(*coq2latex: writesTo #x #s := \writesTo(#x, #s) *)
 Inductive writesTo : x -> s -> Prop :=
 | wtVarAssign : forall x e, writesTo x (sVarAssign x e)
 | wtAlloc : forall x C, writesTo x (sAlloc x C)
@@ -232,7 +233,7 @@ Parameter p : program.
 Definition classes : list cls := match p with Program clss _ => clss end.
 Definition class (C' : C) : option cls :=
     find (fun class => match class with Cls C'' _ _ => C_decb C'' C' end) classes.
-(*coq2latex: fields #C := \fields(#C) *)
+(*coq2latex: fields #C := \fields{#C} *)
 Definition fields (C' : C) : option (list (T * f)) :=
   match class C' with
   | None => None
@@ -256,7 +257,7 @@ Definition fieldType (C' : C) (f' : f) : option T :=
     end
   end.
 Definition allMethods : list method := flat_map (fun cl => match cl with Cls _ _ x => x end) classes.
-(*coq2latex: mmethod #C #m := \mmethod(#C, #m) *)
+(*coq2latex: mmethod #C #m := \mmethod{#C, #m} *)
 Definition mmethod (C' : C) (m' : m) : option method :=
   match class C' with
   | None => None
@@ -270,12 +271,12 @@ Definition mcontract (C' : C) (m' : m) : option contract :=
   option_map
     (fun me => match me with Method _ _ _ _ contr _ => contr end)
     (mmethod C' m').
-(*coq2latex: mpre #C #m := \mpre(#C, #m) *)
+(*coq2latex: mpre #C #m := \mpre{#C, #m} *)
 Definition mpre (C' : C) (m' : m) : option phi :=
   option_map
     (fun contr => match contr with Contract res _ => res end)
     (mcontract C' m').
-(*coq2latex: mpost #C #m := \mpost(#C, #m) *)
+(*coq2latex: mpost #C #m := \mpost{#C, #m} *)
 Definition mpost (C' : C) (m' : m) : option phi :=
   option_map
     (fun contr => match contr with Contract _ res => res end)
@@ -513,7 +514,7 @@ Inductive hasStaticType : Gamma -> e -> T -> Prop :=
   hasStaticType Gamma (edot e f) T
 .
 
-(*coq2latex: hasNoStaticType #G #x := #x \not\in \dom(#G) *)
+(*coq2latex: hasNoStaticType #G #x := #x \not\in \dom{#G} *)
 Definition hasNoStaticType (G : Gamma) (e : e) : Prop :=
   ~ exists T, hasStaticType G e T.
 
@@ -537,9 +538,9 @@ Definition accInitList (x : x) (f_bar : list (prod T f)) : phi :=
 (*coq2latex: @cons phi' #p1 (@nil phi') := \ensuremath{#p1} *)
 (*coq2latex: @cons phi' #p1 #p2 := \phiCons{$#p1$}{$#p2$} *)
 
-(*coq2latex: @app s #p1 #p2 := #p1\ttt{;} #p2 *)
+(*coq2latex: @app s #p1 #p2 := \sSeq{$#p1$}{$#p2$} *)
 (*coq2latex: @cons s #p1 (@nil s) := #p1 *)
-(*coq2latex: @cons s #p1 #p2 := #p1 #p2 *)
+(*coq2latex: @cons s #p1 #p2 := \sSeq{$#p1$}{$#p2$} *)
 
 (*coq2latex: @app A'_d #A1 #A2 := #A1 \cup #A2 *)
 
@@ -552,7 +553,7 @@ Definition accInitList (x : x) (f_bar : list (prod T f)) : phi :=
 (*coq2latex: snd cf' := f_i *)
 (*coq2latex: Halloc #o #C #H := #H[#o \mapsto [\overline{f_i \mapsto \defaultValue{$T_i$}}]] *)
 
-(*coq2latex: FVe #e := FV(#e) *)
+(*coq2latex: FVe #e := \FV(#e) *)
 Fixpoint FVe (e : e) : list x :=
   match e with
   | ev v => []
@@ -585,7 +586,7 @@ Definition unfoldAcc (e : e) : phi :=
   | _ => []
   end.
 
-(*coq2latex: GammaNotSetAt #G #x := #x \not\in \dom(#G) *)
+(*coq2latex: GammaNotSetAt #G #x := #x \not\in \dom{#G} *)
 Definition GammaNotSetAt (G : Gamma) (x : x) : Prop := G x = None.
 
 (*coq2latex: hoare #G #p1 #s #p2 := \thoare #G #p1 #s #p2 *)
@@ -637,7 +638,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi 
       [sReturn x]
       (phi' ++ phiEq (ex xresult) (ex x) :: [])
-| HCall : forall G(*\Gamma*) underscore(*\_*) phi(*\phi*) phi_p(*\*) phi'(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
+| HCall : forall G(*\Gamma*) underscore(*\usc*) phi(*\phi*) phi_p(*\*) phi'(*\*) phi_q(*\*) T_r T_p (C : C) (m : m) z (z' : x) x y phi_post(*\phi_{post}*) phi_pre(*\phi_{pre}*),
     hasStaticType G (ex y) (TClass C) ->
     mmethod C m = Some (Method T_r m T_p z (Contract phi_pre phi_post) underscore) ->
     hasStaticType G (ex x) T_r ->
@@ -677,7 +678,7 @@ Inductive hoare : Gamma -> phi -> list s -> phi -> Prop :=
       phi_f
       [sHold phi s]
       (phi_r' ++ phi')
-| HSeq : forall s1(*s_1*) s2(*\overline{s_2}*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
+| HSeq : forall s1(*s_1*) s2(*s_2*) G(*\Gamma*) p(*\phi_p*) q(*\phi_q*) r(*\phi_r*),
     hoare G p [s1] q ->
     hoare G q s2 r ->
     hoare G p (s1 :: s2) r
@@ -699,14 +700,14 @@ Definition rhoFrom3 (x1 : x) (v1 : v) (x2 : x) (v2 : v) (x3 : x) (v3 : v) : rho 
            (if x_decb rx x2 then Some v2 else
            (if x_decb rx x3 then Some v3 else None)).
 
-(*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom(#H) *)
+(*coq2latex: HeapNotSetAt #H #o := #o \not\in \dom{#H} *)
 Definition HeapNotSetAt (H : H) (o : o) : Prop := H o = None.
 
 (*coq2latex: accListDyn #o \overline{\field{$T$}{$f$}} := \overline{(#o, f_i)} *)
 Definition accListDyn (o : o) (fs : list (prod T f)) : A_d := map (fun cf' => (o, snd cf')) fs.
 
 Definition execState : Set := H * S.
-(*coq2latex: dynSem #s1 #s2 := #s1 \rightarrow #s2 *)
+(*coq2latex: dynSem #s1 #s2 := \sstep #s1 #s2 *)
 Inductive dynSem : execState -> execState -> Prop :=
 | ESSkip : forall H (S : S) (s_bar(*s*) : list s) (A : A_d) rho(*\*),
     dynSem (H, (rho, A, sSkip :: s_bar) :: S) (H, (rho, A, s_bar) :: S)
@@ -731,7 +732,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evale H rho (ex x) v_x ->
     rho' = rhoSubst xresult v_x rho ->
     dynSem (H, (rho, A, sReturn x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESCall : forall underscore2(*\_*) phi(*\*) H (S : S) (s_bar(*s*) r_bar(*\overline{r}*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\_*),
+| ESCall : forall underscore2(*\usc*) phi(*\*) H (S : S) (s_bar(*s*) r_bar(*r*) : list s) (A A' : A_d) T T_r rho(*\*) rho'(*\*) w (x y z : x) (v : v) (m : m) (o : o) (C : C) underscore(*\usc*),
     evale H rho (ex y) (vo o) ->
     evale H rho (ex z) v ->
     H o = Some (C, underscore) ->
@@ -740,7 +741,7 @@ Inductive dynSem : execState -> execState -> Prop :=
     evalphi H rho' A phi ->
     A' = footprint H rho' phi ->
     dynSem (H, (rho, A, sCall x y m z :: s_bar) :: S) (H, (rho', A', r_bar) :: (rho, Aexcept A A', sCall x y m z :: s_bar) :: S)
-| ESCallFinish : forall underscore(*\_*) o phi(*\*) H (S : S) (s_bar(*s*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
+| ESCallFinish : forall underscore(*\usc*) o phi(*\*) H (S : S) (s_bar(*s*) : list s) (A A' A'' : A_d) rho(*\*) rho'(*\*) (x : x) z (m : m) y (C : C) v_r,
     evale H rho (ex y) (vo o) ->
     H o = Some (C, underscore) ->
     mpost C m = Some phi ->
@@ -758,11 +759,11 @@ Inductive dynSem : execState -> execState -> Prop :=
 | ESDeclare : forall H rho(*\*) rho'(*\*) A s_bar(*s*) S T x,
     rho' = rhoSubst x (defaultValue T) rho ->
     dynSem (H, (rho, A, sDeclare T x :: s_bar) :: S) (H, (rho', A, s_bar) :: S)
-| ESHold : forall H rho(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*s*) S,
+| ESHold : forall H rho(*\*) s(*s'*) phi(*\*) A A' s_bar(*s*) S,
     evalphi H rho A phi ->
     A' = footprint H rho phi ->
     dynSem (H, (rho, A, sHold phi s :: s_bar) :: S) (H, (rho, Aexcept A A', s) :: (rho, A', sHold phi s :: s_bar) :: S)
-| ESHoldFinish : forall H rho(*\*) rho'(*\*) s(*\overline{s'}*) phi(*\*) A A' s_bar(*s*) S,
+| ESHoldFinish : forall H rho(*\*) rho'(*\*) s(*s'*) phi(*\*) A A' s_bar(*s*) S,
     dynSem (H, (rho', A', []) :: (rho, A, sHold phi s :: s_bar) :: S) (H, (rho', A ++ A', s_bar) :: S)
 .
 
@@ -877,6 +878,7 @@ End Semantics.
 (*coq2latex: @existT #_ #_ #T #v := {#v}_{#T} *)
 (*coq2latex: @eq #_ #a #b := #a = #b *)
 (*coq2latex: @pair #_ #_ #a #b := (#a, #b) *)
+(*coq2latex: @nil s := \sSkip *)
 (*coq2latex: @nil #_ := \emptyset *)
 (*coq2latex: @In #_ #x #xs := #x \in #xs *)
 

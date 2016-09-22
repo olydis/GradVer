@@ -9,6 +9,56 @@ Definition pimpl (pa pb : pphi) : Prop :=
 Definition mpt (a b : gphi) : Prop := pincl (gGamma' a) (gGamma' b).
 Definition mpst (a b : gphi) : Prop := pimpl (gGamma' a) (gGamma' b).
 
+Definition env := prod H (prod rho A_d).
+Definition evalgphi (H : H) (rho : rho) (A : A_d) (gp : gphi) : Prop := exists p, gGamma' gp p /\ evalphi H rho A p.
+Definition genvs (gp : gphi) : (env -> Prop) := fun e => (evalgphi (fst e) (fst (snd e)) (snd (snd e)) gp).
+Definition envIncl (a b : env -> Prop) : Prop := forall e, a e -> b e.
+
+(* connection mpt, envs, ... *)
+Lemma mpt_gencs : forall g1 g2,
+  mpt g1 g2 ->
+  envIncl (genvs g1) (genvs g2).
+Proof.
+  repeat intro.
+  unfold genvs, evalgphi in *.
+  unf.
+  apply H in H0.
+  eex.
+Qed.
+
+Lemma gencs_mpt : forall p1 g2,
+  good p1 ->
+  envIncl (genvs (false, p1)) (genvs g2) ->
+  (exists p2, g2 = (true, p2) /\ mpt (false, p1) g2) \/
+  (exists p2, g2 = (false, p2) /\ phiImplies p1 p2).
+Proof.
+  repeat intro.
+  unfold envIncl, genvs, evalgphi in *.
+  destruct g2.
+  destruct b.
+  - apply or_introl.
+    exists p0. splau.
+    repeat intro.
+    inv H1.
+    simpl.
+    eca.
+    repeat intro.
+    specialize (H0 (h, (r, a))).
+    lapply H0; intros; cut.
+    unf. simpl in *.
+    inv H2.
+    eapp H5.
+  - apply or_intror.
+    eex.
+    repeat intro.
+    specialize (H0 (h, (r, a))).
+    lapply H0; intros; cut.
+    unf. simpl in *.
+    inv H2.
+    eapp H4.
+Qed.
+
+
 (* Definition isPredMonotonousInformation (P : phi -> phi -> Prop) : Prop :=
   forall p1 p2 p1x, phiImplies p2 p1
     -> P p1 p1x
