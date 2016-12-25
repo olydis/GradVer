@@ -1,0 +1,340 @@
+/*:root
+{
+    --main-color: gray;
+    --text-color-onmain: white;
+    --back-color: white;
+    --back-color-container: white;
+    --text-color-intermediate-inactive: #eee;
+    --text-color-intermediate-active: #999;
+    --text-color-check0: red;
+    --text-color-check1: green;
+    --back-color-hint-ins: #F8FFF8;
+    --back-color-hint-del: #FFF8F8;
+
+    --text-color-button: black;
+    --back-color-button: white;
+    --border-color-button: #333;
+    --text-color-button-hover: black;
+    --back-color-button-hover: #ddd;
+    --border-color-button-hover: #444;
+
+    --text-color-error: red;
+}*/
+:root
+{
+    /*KIT main: #009581*/
+    /*CMU main: #C41E3A*/
+    --main-color: #990033;
+    --main-color: #009581;
+    --text-color-onmain: white;
+    --back-color: white;
+    --back-color-container: white;
+    --text-color-intermediate-inactive: #eee;
+    --text-color-intermediate-active: #999;
+    --text-color-check0: red;
+    --text-color-check1: green;
+    --back-color-hint-ins: #F8FFF8;
+    --back-color-hint-del: #FFF8F8;
+
+    --text-color-button: black;
+    --back-color-button: white;
+    --border-color-button: #333;
+    --text-color-button-hover: black;
+    --back-color-button-hover: #ddd;
+    --border-color-button-hover: #444;
+
+    --text-color-error: red;
+}
+
+body
+{
+    background-color: var(--back-color);
+    font-family: sans-serif;
+}
+
+h1
+{
+    background-color: var(--main-color);
+    color: var(--text-color-onmain);
+    /*font-weight: bold;*/
+    padding: 8px;
+    padding-left: 16px;
+    box-shadow: 0 0 8px var(--main-color);
+}
+
+input
+{
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    border: none;
+
+    width: 100%;
+	box-shadow: 0 0 2px var(--main-color), 
+                0 0 2px var(--main-color) inset;
+    outline: none;
+}
+
+.overlay
+{
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+
+    background: rgba(0,0,0,0.5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.roundedContainer
+{
+    background-color: var(--back-color-container);
+    overflow: hidden;
+
+    border-radius: 8px;
+    border: 1px solid var(--main-color);
+    padding: 0;
+    margin: 30px 60px;
+}
+
+.clickable
+{
+    cursor: pointer;
+}
+
+#codeContainer
+{
+    font-family: monospace;
+    font-size: 18px;
+}
+
+.instructionVerForm
+{
+    font-family: monospace;
+    font-size: 18px;
+    display: block;
+    width: 100%;
+    /*height: 1.5em;*/
+    line-height: 1.5em;
+
+    /*color: gray;*/
+    font-weight: bold;
+}
+.intermediateState
+{
+    font-family: monospace;
+    font-size: 12px;
+    display: block;
+    width: 100%;
+    /*height: 1.5em;*/
+    /*font-style: italic;*/
+    color: var(--text-color-intermediate-inactive);
+}
+.intermediateState:hover, .showSem .intermediateState
+{
+    color: var(--text-color-intermediate-active);
+}
+.dynCheck::before
+{
+    content: "dyn check: ";
+}
+.dynCheck
+{
+    font-weight: bold;
+}
+.showDynamic .dynCheck0
+{
+    color: var(--text-color-check0);
+}
+.showDynamic .dynCheck1
+{
+    color: var(--text-color-check1);
+}
+
+.instructionTable
+{
+    font-family: monospace;
+    width: 100%;
+    white-space: nowrap;
+}
+.instructionTable > tbody > tr:nth-child(odd)
+{
+    line-height: 24px;
+    height: 24px;
+}
+.instructionTable > tbody > tr:nth-child(even)
+{
+    line-height: 27px;
+    height: 27px;
+}
+.instructionTable > tbody > tr > td:nth-child(1)
+{
+    width: 20px;
+}
+.instructionTable > tbody > tr > td:nth-child(2)
+{
+    width: auto;
+    padding-left: 8px;
+}
+.instructionTable > tbody > tr > td:nth-child(3)
+{
+    width: auto;
+}
+
+.instructionTable > tbody > tr:nth-child(odd) > td:nth-child(1):hover ~ td
+{
+    background: var(--back-color-hint-ins);
+}
+.instructionTable > tbody > tr:nth-child(even) > td:nth-child(1):hover ~ td
+{
+    background: var(--back-color-hint-del);
+}
+
+table.splitStmtDyn
+{
+    width: 100%;
+}
+table.splitStmtDyn > tbody > tr > td:first-child
+{
+    width: auto;
+}
+table.splitStmtDyn > tbody > tr > td:last-child
+{
+    width: 1px;
+    padding-right: 16px;
+}
+
+table.splitStaticDynamic
+{
+    width: 100%;
+}
+table.splitStaticDynamic > tbody > tr > td:first-child
+{
+    display: initial;
+}
+table.splitStaticDynamic > tbody > tr > td:last-child
+{
+    display: none;
+}
+.showDynamic table.splitStaticDynamic > tbody > tr > td:first-child
+{
+    display: none;
+}
+.showDynamic table.splitStaticDynamic > tbody > tr > td:last-child
+{
+    display: initial;
+}
+
+.instructionStatement
+{
+    font-family: monospace;
+    font-size: 18px;
+    display: block;
+    width: 100%;
+    /*height: 1.5em;*/
+    line-height: 1.5em;
+}
+
+#btnToggleDyn:after
+{
+    content: "static";
+}
+.showDynamic #btnToggleDyn:after
+{
+    content: "dynamic";
+}
+
+.containerTable
+{
+    width: 100%;
+}
+.containerTable > tbody > tr > td
+{
+    padding-right: 16px;
+    padding-left: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    vertical-align: middle;
+}
+.containerTable > tbody > tr
+{
+    height: 35px;
+}
+.containerTable > tbody > tr > td:first-child
+{
+    width: 70px;
+    font-size: 0.8em;
+    color: var(--main-color);
+    border-right: 1px solid var(--main-color);
+}
+.containerTable > tbody > tr > td:last-child
+{
+    padding-left: 8px;
+}
+
+.derived
+{
+    font-style: italic;
+    padding-left: 16px;
+}
+
+.rightFloat
+{
+    float: right;
+    height: 50%;
+    margin-left: 4px;
+}
+.button
+{
+    color: var(--text-color-button);
+    background: var(--back-color-button);
+    border: 1px solid var(--border-color-button);
+
+    display: inline-block;
+
+    cursor: pointer;
+    border-radius: 100%;
+
+    width: 1em;
+    height: 1em;
+    line-height: 0.9em;
+    text-align: center;
+}
+.button:hover
+{
+    color: var(--text-color-button-hover);
+    background: var(--back-color-button-hover);
+    border: 1px solid var(--border-color-button-hover);
+}
+
+.buttonAutohide
+{
+    opacity: 0.1;
+    font-size: 1.3em;
+}
+.buttonAutohide:hover
+{
+    opacity: 1;
+}
+
+.err
+{
+    color: var(--text-color-error);
+}
+
+#containerHoareContext
+{
+    white-space: pre;
+    font-family: monospace;
+    padding: 16px;
+}
+
+#containerSyntax
+{
+    padding: 10px;
+    text-align: center;
+}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Gradual Verification Playground</title>
+        <link rel="stylesheet" type="text/css" href="style/reset.css">
+        <link rel="stylesheet" type="text/css" href="style/main.css">
+        <link rel="stylesheet" type="text/css" href="style/envVisu.css">
+        <script src='scripts/jquery-1.11.3.min.js'></script>
+        <script src="scripts/require.js" data-main="scripts/main"></script>
+    </head>
+    <body>
+        <div id="containerHoare" class="roundedContainerNOT">
+            <h1><span style="font-weight: bold;">Gradual Verification Playground</span>
+                <span style="padding-left: 100px">
+                    displayed semantics:
+                    <span id="btnToggleDyn" class="button" style="line-height: 30px; width: 70px; height: 30px; font-size: 10pt; border-radius: 15px;"></span>
+                </span>
+                <span style="float: right;">
+                    examples:
+                    <span id="btnEx0" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">X</span>
+                    <span id="btnEx1" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">1</span>
+                    <span id="btnEx2" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">2</span>
+                    <span id="btnEx3" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">3</span>
+                    <span id="btnEx4" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">4</span>
+                    <span id="btnEx5" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">5</span>
+                    <span id="btnEx6" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">6</span>
+                    <span id="btnEx7" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">7</span>
+                    <span id="btnEx8" class="button" style="line-height: 30px; width: 30px; height: 30px; font-size: 10pt;">8</span>
+                </span>
+            </h1>
+            <table class="containerTable">
+                <tr><td>Precondition</td><td id="containerHoarePre"></td></tr>
+                <tr><td>Code</td><td id="containerHoareCode"></td></tr>
+                <tr><td>Postcondition</td><td id="containerHoarePost"></td></tr>
+            </table>
+
+            <h1><br>Syntax</h1>
+            <div id="containerSyntax">
+                <img src="syntax.png" style="width: 900px;">
+            </div>
+
+            <h1><br>Context (the classes you can instantiate and use)</h1>
+            <div id="containerHoareContext">
+            </div>
+        </div>
+
+<!--        
+        <br/>
+        <div id="containerProps" class="roundedContainer">
+            <h1>General Properties</h1>
+            <table class="containerTable">
+                <tr><td>Formula</td><td id="containerPropsInput"></td></tr>
+                
+                <tr><td class="derived">satisfiable</td><td id="containerPropsOutSat"></td></tr>
+                <tr><td class="derived">self-framed</td><td id="containerPropsOutSfrm"></td></tr>
+                <tr><td class="derived">normalized</td><td id="containerPropsOutNorm" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerWoVar" class="roundedContainer">
+            <h1>Without Variable</h1>
+            <table class="containerTable">
+                <tr><td>Formula</td><td id="containerWoVarInput"></td></tr>
+                <tr><td>Variable</td><td><input id="containerWoVarInputVar" class="instructionVerForm" value="x"></input></td></tr>
+                
+                <tr><td class="derived">Result</td><td id="containerWoVarOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerWoAcc" class="roundedContainer">
+            <h1>Without Access</h1>
+            <table class="containerTable">
+                <tr><td>Formula</td><td id="containerWoAccInput"></td></tr>
+                <tr><td>Access</td><td><input id="containerWoAccInputAcc" class="instructionVerForm" value="a.f"></input></td></tr>
+                
+                <tr><td class="derived">Result</td><td id="containerWoAccOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerImplies" class="roundedContainer">
+            <h1>Implication</h1>
+            <table class="containerTable">
+                <tr><td>Formula A</td><td id="containerImpliesInputA"></td></tr>
+                <tr><td>Formula B</td><td id="containerImpliesInputB"></td></tr>
+
+                <tr><td class="derived">A ⇒ B</td><td id="containerImpliesOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <div id="containerSup" class="roundedContainer">
+            <h1>Gradual Supremum (experimental)</h1>
+            <table class="containerTable">
+                <tr><td>Formula A</td><td id="containerSupInputA"></td></tr>
+                <tr><td>Formula B</td><td id="containerSupInputB"></td></tr>
+
+                <tr><td class="derived">A ⊔ B</td><td id="containerSupOutput" class="instructionVerForm"></td></tr>
+            </table>
+        </div>
+        <br/>
+        <br/>
+        <p id="controls" style="text-align: center; font-size: 20pt; font-weight: bold">
+            <span id="btnTESTS" class="button" style="padding: 10px; border-radius: 25px; width: 200px;">run tests</span>
+        </p>-->
+    </body>
+</html>

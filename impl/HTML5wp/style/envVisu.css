@@ -1,0 +1,61 @@
+.evalEnvVisuContainer
+{
+    position: fixed;
+    background-color: var(--back-color);
+    margin: 32px;
+    padding: 16px;
+    box-shadow: 0 0 8px 0px var(--main-color), 0 0 100px 5px var(--back-color);
+}
+.evalEnvVisuContainer > table > tbody > tr > td
+{
+    padding: 16px;
+}
+.evalEnvVisuContainer > table > tbody > tr:last-child
+{
+    font-family: monospace;
+    text-align: center;
+}
+
+.evalEnvVisuContainer > canvas
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+}
+
+.evalEnvVisuVal
+{
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    width: 30px;
+}
+
+.evalEnvVisuObj
+{
+    width: 100%;
+    margin-bottom: 16px;
+}
+.evalEnvVisuObj > tbody > tr
+{
+    border: 1px solid black;
+}
+.evalEnvVisuObj > tbody > tr > td:first-child
+{
+    background-color: #eee;
+}
+.evalEnvVisuObj > tbody > tr > td
+{
+    padding: 8px;
+}
+.evalEnvVisuAcc0
+{
+    background-color: #fdd;
+}
+.evalEnvVisuAcc1
+{
+    background-color: #dfd;
+}

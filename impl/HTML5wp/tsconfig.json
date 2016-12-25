@@ -1,0 +1,10 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "jsx": "preserve",
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "target": "es5",
+        "module": "amd"
+    }
+}
