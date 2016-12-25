@@ -59,16 +59,17 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementMemberSet = (function (_super) {
         __extends(StatementMemberSet, _super);
         function StatementMemberSet(x, f, y) {
-            _super.call(this);
-            this.x = x;
-            this.f = f;
-            this.y = y;
+            var _this = _super.call(this) || this;
+            _this.x = x;
+            _this.f = f;
+            _this.y = y;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(f))
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(y))
                 throw "null arg";
+            return _this;
         }
         StatementMemberSet.parse = function (source) {
             var eqIndex = source.indexOf(":=");
@@ -115,13 +116,14 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementAssign = (function (_super) {
         __extends(StatementAssign, _super);
         function StatementAssign(x, e) {
-            _super.call(this);
-            this.x = x;
-            this.e = e;
+            var _this = _super.call(this) || this;
+            _this.x = x;
+            _this.e = e;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
             if (e == null)
                 throw "null arg";
+            return _this;
         }
         StatementAssign.prototype.writesTo = function (x) {
             return this.x == x;
@@ -160,13 +162,14 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementAlloc = (function (_super) {
         __extends(StatementAlloc, _super);
         function StatementAlloc(x, C) {
-            _super.call(this);
-            this.x = x;
-            this.C = C;
+            var _this = _super.call(this) || this;
+            _this.x = x;
+            _this.C = C;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(C))
                 throw "null arg";
+            return _this;
         }
         StatementAlloc.prototype.writesTo = function (x) {
             return this.x == x;
@@ -216,11 +219,11 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementCall = (function (_super) {
         __extends(StatementCall, _super);
         function StatementCall(x, y, m, z) {
-            _super.call(this);
-            this.x = x;
-            this.y = y;
-            this.m = m;
-            this.z = z;
+            var _this = _super.call(this) || this;
+            _this.x = x;
+            _this.y = y;
+            _this.m = m;
+            _this.z = z;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(y))
@@ -229,6 +232,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(z))
                 throw "null arg";
+            return _this;
         }
         StatementCall.prototype.writesTo = function (x) {
             return this.x == x;
@@ -316,10 +320,11 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementReturn = (function (_super) {
         __extends(StatementReturn, _super);
         function StatementReturn(x) {
-            _super.call(this);
-            this.x = x;
+            var _this = _super.call(this) || this;
+            _this.x = x;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
+            return _this;
         }
         StatementReturn.prototype.writesTo = function (x) {
             return Expression_1.Expression.getResult() == x;
@@ -350,8 +355,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementAssert = (function (_super) {
         __extends(StatementAssert, _super);
         function StatementAssert(assertion) {
-            _super.call(this);
-            this.assertion = assertion;
+            var _this = _super.call(this) || this;
+            _this.assertion = assertion;
+            return _this;
         }
         StatementAssert.parse = function (source) {
             if (source.substr(0, 6) != "assert")
@@ -376,8 +382,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementRelease = (function (_super) {
         __extends(StatementRelease, _super);
         function StatementRelease(assertion) {
-            _super.call(this);
-            this.assertion = assertion;
+            var _this = _super.call(this) || this;
+            _this.assertion = assertion;
+            return _this;
         }
         StatementRelease.parse = function (source) {
             if (source.substr(0, 7) != "release")
@@ -405,11 +412,12 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementDeclare = (function (_super) {
         __extends(StatementDeclare, _super);
         function StatementDeclare(T, x) {
-            _super.call(this);
-            this.T = T;
-            this.x = x;
+            var _this = _super.call(this) || this;
+            _this.T = T;
+            _this.x = x;
             if (!Expression_1.Expression.isValidX(x))
                 throw "null arg";
+            return _this;
         }
         StatementDeclare.prototype.writesTo = function (x) {
             return this.x == x;
@@ -442,8 +450,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementCast = (function (_super) {
         __extends(StatementCast, _super);
         function StatementCast(T) {
-            _super.call(this);
-            this.T = T;
+            var _this = _super.call(this) || this;
+            _this.T = T;
+            return _this;
         }
         StatementCast.parse = function (source) {
             source = source.trim();
@@ -469,8 +478,9 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementComment = (function (_super) {
         __extends(StatementComment, _super);
         function StatementComment(comment) {
-            _super.call(this);
-            this.comment = comment;
+            var _this = _super.call(this) || this;
+            _this.comment = comment;
+            return _this;
         }
         StatementComment.parse = function (source) {
             source = source.trim();
@@ -496,10 +506,11 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementHold = (function (_super) {
         __extends(StatementHold, _super);
         function StatementHold(p) {
-            _super.call(this);
-            this.p = p;
+            var _this = _super.call(this) || this;
+            _this.p = p;
             if (p == null)
                 throw "null arg";
+            return _this;
         }
         StatementHold.parse = function (source) {
             if (source.slice(0, 4) != "hold")
@@ -546,7 +557,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     var StatementUnhold = (function (_super) {
         __extends(StatementUnhold, _super);
         function StatementUnhold() {
-            _super.call(this);
+            return _super.call(this) || this;
         }
         StatementUnhold.parse = function (source) {
             if (source != "}")

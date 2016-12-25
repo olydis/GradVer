@@ -10,8 +10,8 @@ export class EditableElement
     public constructor(
         private container: JQuery, 
         protected source: string,
-        private render: (source: string) => { source: string, html: JQuery },
-        private onChange: () => void,
+        private render: (source: string, tthis: any) => { source: string, html: JQuery },
+        private onChange: (tthis: any) => void,
         private editMode: boolean = false
     )
     {
@@ -56,9 +56,9 @@ export class EditableElement
 
     public rerender(): void
     {
-        var rendered = this.render(this.source);
+        var rendered = this.render(this.source, this);
         this.source = rendered.source;
         this.container.text("").append(rendered.html);
-        this.onChange();
+        this.onChange(this);
     }
 }

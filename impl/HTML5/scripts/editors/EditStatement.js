@@ -8,20 +8,21 @@ define(["require", "exports", "./EditableElement", "../types/Statement"], functi
     var EditStatement = (function (_super) {
         __extends(EditStatement, _super);
         function EditStatement(initialSource, onChange) {
-            var _this = this;
             if (initialSource === void 0) { initialSource = ""; }
+            var _this;
             var stmtContainer = $("<span>");
-            _super.call(this, stmtContainer, initialSource, function (source) {
+            _this = _super.call(this, stmtContainer, initialSource, function (source, tthis) {
                 var parsed = Statement_1.Statement.parse(source);
-                _this.stmt = parsed;
-                var src = _this.stmt instanceof Statement_1.StatementComment ? source : _this.stmt.toString();
-                var html = $("<span>").text(_this.stmt.toString());
+                tthis.stmt = parsed;
+                var src = tthis.stmt instanceof Statement_1.StatementComment ? source : tthis.stmt.toString();
+                var html = $("<span>").text(tthis.stmt.toString());
                 return {
                     source: src,
                     html: html
                 };
-            }, function () { return onChange(); });
-            this.stmtContainer = stmtContainer;
+            }, function () { return onChange(); }) || this;
+            _this.stmtContainer = stmtContainer;
+            return _this;
         }
         EditStatement.prototype.createHTML = function () {
             var _this = this;

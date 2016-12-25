@@ -124,7 +124,8 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             return ineq.map(function (a) {
                 return {
                     v1: a.v1 == vo ? v : a.v1,
-                    v2: a.v2 == vo ? v : a.v2 };
+                    v2: a.v2 == vo ? v : a.v2
+                };
             });
         };
         NormalizedEnv.prototype.expressionDfs = function (e, seen, todo) {

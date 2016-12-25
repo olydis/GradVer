@@ -8,18 +8,18 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
     var EditVerificationFormula = (function (_super) {
         __extends(EditVerificationFormula, _super);
         function EditVerificationFormula(initialSource, onChange) {
-            var _this = this;
             if (initialSource === void 0) { initialSource = ""; }
             if (onChange === void 0) { onChange = function () { }; }
+            var _this;
             var formulaContainer = $("<span>");
-            _super.call(this, formulaContainer, initialSource, function (source) {
-                _this.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
-                var src = _this.verForm.toString();
+            _this = _super.call(this, formulaContainer, initialSource, function (source, tthis) {
+                tthis.verForm = new VerificationFormulaGradual_1.VerificationFormulaGradual(source);
+                var src = tthis.verForm.toString();
                 var html = $("<span>").text(src);
-                // if (!this.verForm.sfrm())
+                // if (!tthis.verForm.sfrm())
                 //     html.addClass("errSfrm");
                 // // DEBUG: normalized data
-                // var phi = this.verForm.staticFormula;
+                // var phi = tthis.verForm.staticFormula;
                 // if (!phi.satisfiable())
                 //     html.addClass("errFalse");
                 // // DEBUG end
@@ -27,8 +27,9 @@ define(["require", "exports", "./EditableElement", "../types/VerificationFormula
                     source: src,
                     html: html
                 };
-            }, function () { return onChange(_this.verForm); });
-            this.formulaContainer = formulaContainer;
+            }, function (tthis) { return onChange(tthis.verForm); }) || this;
+            _this.formulaContainer = formulaContainer;
+            return _this;
         }
         EditVerificationFormula.prototype.createHTML = function () {
             var _this = this;

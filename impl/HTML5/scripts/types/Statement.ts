@@ -97,7 +97,7 @@ export class StatementMemberSet extends Statement
         var o = new ExpressionX(this.x).eval(envx);
         if (o instanceof ValueObject)
         {
-            if (!envx.A.some(a => a.o == o.UID && a.f == this.f))
+            if (!envx.A.some(a => a.o == (o as ValueObject).UID && a.f == this.f))
                 return null;
 
             var v = new ExpressionX(this.y).eval(envx);

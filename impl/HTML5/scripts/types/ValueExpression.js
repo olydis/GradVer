@@ -15,10 +15,11 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         __extends(ValueObject, _super);
         function ValueObject(uid) {
             if (uid === void 0) { uid = null; }
-            _super.call(this);
-            this.uid = uid;
+            var _this = _super.call(this) || this;
+            _this.uid = uid;
             if (uid === null)
-                this.uid = ValueObject._uid++;
+                _this.uid = ValueObject._uid++;
+            return _this;
         }
         ValueObject.reset = function () { ValueObject._uid = 0; };
         ValueObject.prototype.equalTo = function (other) {
@@ -32,14 +33,14 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         ValueObject.prototype.toString = function () {
             return "<" + this.uid + ">";
         };
-        ValueObject._uid = 0;
         return ValueObject;
     }(Value));
+    ValueObject._uid = 0;
     exports.ValueObject = ValueObject;
     var ValueExpression = (function (_super) {
         __extends(ValueExpression, _super);
         function ValueExpression() {
-            _super.apply(this, arguments);
+            return _super.apply(this, arguments) || this;
         }
         ValueExpression.parse = function (source) {
             source = source.replace(/\s/g, "");
@@ -62,11 +63,12 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     var ValueExpressionN = (function (_super) {
         __extends(ValueExpressionN, _super);
         function ValueExpressionN(n) {
-            _super.call(this);
-            this.n = n;
+            var _this = _super.call(this) || this;
+            _this.n = n;
             if (n == null)
                 throw "null arg";
-            this.n = Math.round(this.n);
+            _this.n = Math.round(_this.n);
+            return _this;
         }
         ValueExpressionN.parse = function (source) {
             var n = parseInt(source);
@@ -89,7 +91,7 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     var ValueExpressionNull = (function (_super) {
         __extends(ValueExpressionNull, _super);
         function ValueExpressionNull() {
-            _super.apply(this, arguments);
+            return _super.apply(this, arguments) || this;
         }
         ValueExpressionNull.parse = function (source) {
             return source.toLocaleLowerCase() == "null"

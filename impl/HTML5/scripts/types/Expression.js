@@ -52,10 +52,11 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
     var ExpressionV = (function (_super) {
         __extends(ExpressionV, _super);
         function ExpressionV(v) {
-            _super.call(this);
-            this.v = v;
+            var _this = _super.call(this) || this;
+            _this.v = v;
             if (v == null)
                 throw "null arg";
+            return _this;
         }
         ExpressionV.parse = function (source) {
             var vex = ValueExpression_1.ValueExpression.parse(source);
@@ -88,10 +89,11 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
     var ExpressionX = (function (_super) {
         __extends(ExpressionX, _super);
         function ExpressionX(x) {
-            _super.call(this);
-            this.x = x;
+            var _this = _super.call(this) || this;
+            _this.x = x;
             if (!Expression.isValidX(x))
                 throw "null arg";
+            return _this;
         }
         ExpressionX.parse = function (source) {
             return Expression.isValidX(source)
@@ -123,13 +125,14 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
     var ExpressionDot = (function (_super) {
         __extends(ExpressionDot, _super);
         function ExpressionDot(e, f) {
-            _super.call(this);
-            this.e = e;
-            this.f = f;
+            var _this = _super.call(this) || this;
+            _this.e = e;
+            _this.f = f;
             if (e == null)
                 throw "null arg";
             if (!Expression.isValidX(f))
                 throw "null arg";
+            return _this;
         }
         ExpressionDot.parse = function (source) {
             var dotIndex = source.lastIndexOf(".");

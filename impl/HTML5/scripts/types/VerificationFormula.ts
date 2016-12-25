@@ -274,7 +274,7 @@ export class FormulaPartAcc extends FormulaPart
     public eval(env: EvalEnv): boolean { 
         var v = this.e.eval(env);
         if (v instanceof ValueObject)
-            return env.A.some(a => a.o == v.UID && a.f == this.f);
+            return env.A.some(a => a.o == (v as ValueObject).UID && a.f == this.f);
         return false; 
     }
 }
