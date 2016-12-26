@@ -186,17 +186,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         EditInstructions.prototype.displayPreCond = function (i, cond) {
             this.verificationFormulas[i].text("").append(cond.norm().toString());
         };
-        EditInstructions.prototype.displayDynCond = function (i, cond, dynF, dynEnv, dynSuccess) {
-            // dynamic check minimization
-            var condClassic = cond.staticFormula.snorm();
-            var condx = cond.staticFormula
-                .autoFraming()
-                .map(function (x) { return new VerificationFormula_1.VerificationFormula(null, [x].concat(condClassic.parts)); });
-            condx.push(cond.staticFormula);
-            var dyn = dynF.autoFramedChecks(condx);
-            if (dyn.some(function (x) { return !x.satisfiable(); })) {
-                throw "shouldn't have happened";
-            }
+        EditInstructions.prototype.displayDynCond = function (i, cond, dyn, dynEnv, dynSuccess) {
             // output
             var jqDyn = $("#ins" + i);
             if (dyn.length > 0)
@@ -231,10 +221,10 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             this.statements.forEach(function (s) { return s.stmtContainer.css("margin-left", "0px"); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
             var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
-            if (statRes[0] != null) {
-                console.log(statRes[0]);
-                return;
-            }
+            // errs
+            statRes.forEach(function (sr) { return sr.error = sr.error != null ? sr.error :
+                (sr.wlp == null ? "instruction cannot meet postcondition" :
+                    (sr.residual == null ? "should not have happened" : null)); });
             statements.push(new Statement_1.StatementCast(this.condPost));
             var pivotEnv;
             {
@@ -265,9 +255,14 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var dynSuccess = true;
             var scopePostProcStack = [];
             for (var i = 0; i < statements.length; ++i) {
-                var cond = statRes[3][i];
+                console.log(JSON.stringify(statRes[i]));
+                if (statRes[i].error != null) {
+                    $("#ins" + i).text(statRes[i].error).addClass("err");
+                    continue;
+                }
+                var cond = statRes[i].wlp;
                 this.displayPreCond(i, cond);
-                this.displayDynState(i, dynEnv, statRes[2][i]);
+                this.displayDynState(i, dynEnv, statRes[i].g);
                 if (!cond.satisfiable()) {
                     $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                     return;
@@ -276,17 +271,10 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     $("#ins" + i).text("pre-condition malformed: not self-framed").addClass("err");
                     return;
                 }
-                var s = statements[i];
-                // var errs = this.hoare.check(s, cond, g, scopePostProcStack);
-                // if (errs != null)
-                // {
-                //     $("#ins" + i).text(errs[0]).addClass("err");
-                //     return;
-                // }
                 var indent = scopePostProcStack.length;
-                var res = statRes[1][i].staticFormula; //this.hoare.post(s, cond, g, scopePostProcStack);
+                var res = statRes[i].residual; //this.hoare.post(s, cond, g, scopePostProcStack);
                 indent = Math.min(indent, scopePostProcStack.length);
-                dynSuccess = dynSuccess && dynCheckDyn(res);
+                dynSuccess = dynSuccess && res.every(function (r) { return dynCheckDyn(r); });
                 this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
                 if (!dynSuccess)
                     dynEnv = null;

@@ -25,25 +25,16 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                // cannot say that target is null
-                if (!post.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull())).satisfiable())
-                    return null;
-                // cannot say anything about a field (TODO: not perfect! doesn't prevent (in)equalities with other vars)
+                var pre = post.woVar(info.ex.x);
+                // remodel
+                var xpost = pre.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull()));
                 for (var _i = 0, _a = info.fs; _i < _a.length; _i++) {
                     var f = _a[_i];
-                    if (!post.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, f.name), Expression_1.Expression.getNull())).satisfiable())
-                        return null;
+                    xpost = xpost.append(new VerificationFormula_1.FormulaPartAcc(info.ex, f.name));
                 }
-                if (!post.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, f.name), Expression_1.Expression.getZero())).satisfiable())
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
                     return null;
-                return post.woVar(info.ex.x);
-            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
-                pre = pre.woVar(info.ex.x);
-                pre = pre.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull()));
-                for (var _i = 0, _a = info.fs; _i < _a.length; _i++) {
-                    var f = _a[_i];
-                    pre = pre.append(new VerificationFormula_1.FormulaPartAcc(info.ex, f.name));
-                }
                 return pre;
             });
             this.addHandler("FieldAssign", Statement_1.StatementMemberSet, function (s, g, onErr) {
@@ -74,15 +65,14 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 onErr(ex + " not declared (as class type)");
                 return null;
             }, function (info, post) {
-                // cannot say anything but ...
-                if (!post.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, info.f), info.ey)).satisfiable())
+                var pre = post;
+                pre = pre.subste(new Expression_1.ExpressionDot(info.ex, info.f), info.ey);
+                pre = pre.woAcc(info.ex, info.f).append(new VerificationFormula_1.FormulaPartAcc(info.ex, info.f));
+                // remodel
+                var xpost = pre.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, info.f), info.ey));
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
                     return null;
-                return post.woAcc(info.ex, info.f).append(new VerificationFormula_1.FormulaPartAcc(info.ex, info.f));
-            }, function (info) { return new VerificationFormula_1.FormulaPartAcc(info.ex, info.f).asFormula(); }, function (info, pre) {
-                pre = pre.woAcc(info.ex, info.f);
-                pre = pre.append(new VerificationFormula_1.FormulaPartAcc(info.ex, info.f));
-                pre = pre.append(new VerificationFormula_1.FormulaPartNeq(info.ex, Expression_1.Expression.getNull()));
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(new Expression_1.ExpressionDot(info.ex, info.f), info.ey));
                 return pre;
             });
             this.addHandler("VarAssign", Statement_1.StatementAssign, function (s, g, onErr) {
@@ -109,19 +99,17 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                // cannot say anything but ...
-                if (!post.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.e)).satisfiable())
-                    return null;
-                post = post.woVar(info.ex.x);
+                var pre = post.subste(info.ex, info.e);
                 for (var _i = 0, _a = info.e.necessaryFraming().map(function (x) { return new VerificationFormula_1.FormulaPartAcc(x.e, x.f); }); _i < _a.length; _i++) {
                     var frm = _a[_i];
-                    if (!post.implies(frm.asFormula()))
-                        post = post.append(frm);
-                }
-                return post;
-            }, function (info) { return new VerificationFormula_1.VerificationFormula(null, info.e.necessaryFraming().slice(0, 1).map(function (a) { return new VerificationFormula_1.FormulaPartAcc(a.e, a.f); })); }, function (info, pre) {
-                pre = pre.woVar(info.ex.x);
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.e));
+                    if (!pre.implies(frm.asFormula()))
+                        pre = pre.append(frm);
+                } // TODO: verify that order is right...
+                // remodel
+                var xpost = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.e));
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
+                    return null;
                 return pre;
             });
             this.addHandler("Return", Statement_1.StatementReturn, function (s, g, onErr) {
@@ -145,13 +133,12 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                // cannot say anything but ...
-                if (!post.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.er)).satisfiable())
+                var pre = post.woVar(Expression_1.Expression.getResult());
+                // remodel
+                var xpost = pre.append(new VerificationFormula_1.FormulaPartEq(info.er, info.ex));
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
                     return null;
-                return post.woVar(Expression_1.Expression.getResult());
-            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
-                pre = pre.woVar(Expression_1.Expression.getResult());
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.er, info.ex));
                 return pre;
             });
             this.addHandler("Call", Statement_1.StatementCall, function (s, g, onErr) {
@@ -212,25 +199,6 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 // cannot say anything but ...
                 // TODO
                 return post.woVar(info.x);
-            }, function (info) { return info.pre.append(info.ynn).staticFormula; }, function (info, pre) {
-                pre = pre.woVar(info.x);
-                if (info.pre.gradual)
-                    for (var _i = 0, _a = pre.staticFormula.autoFraming(); _i < _a.length; _i++) {
-                        var fp1 = _a[_i];
-                        pre = pre.woAcc(fp1.e, fp1.f);
-                    }
-                else
-                    for (var _b = 0, _c = info.pre.staticFormula.footprintStatic(); _b < _c.length; _b++) {
-                        var fp2 = _c[_b];
-                        pre = pre.woAcc(fp2.e, fp2.f);
-                    }
-                for (var _d = 0, _e = info.post.staticFormula.parts; _d < _e.length; _d++) {
-                    var p_part = _e[_d];
-                    pre = pre.append(p_part);
-                }
-                // gradualness of info.post and info.pre
-                pre = VerificationFormulaGradual_1.VerificationFormulaGradual.create(info.pre.gradual || info.post.gradual || pre.gradual, pre.staticFormula);
-                return pre;
             });
             this.addHandler("Assert", Statement_1.StatementAssert, function (s, g, onErr) {
                 return {
@@ -239,8 +207,6 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 };
             }, function (info, post) {
                 return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
-            }, function (info) { return info; }, function (info, pre) {
-                return pre;
             });
             this.addHandler("Release", Statement_1.StatementRelease, function (s, g, onErr) {
                 return {
@@ -248,16 +214,16 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                // cannot say anything but ...
-                var removed = info.footprintStatic();
-                if (removed.map(function (acc) { return post.implies(new VerificationFormula_1.FormulaPartAcc(acc.e, acc.f).asFormula()); }).some(function (nec) { return nec != null && nec.norm().staticFormula.isEmpty(); }))
-                    return null;
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
-            }, function (info) { return info; }, function (info, pre) {
+                var pre = VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
+                // remodel
+                var xpost = pre;
                 for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
-                    pre = pre.woAcc(fp.e, fp.f);
+                    xpost = xpost.woAcc(fp.e, fp.f);
                 }
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
+                    return null;
                 return pre;
             });
             this.addHandler("Declare", Statement_1.StatementDeclare, function (s, g, onErr) {
@@ -275,13 +241,12 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: Gamma_1.GammaAdd(s.x, s.T, g)
                 };
             }, function (info, post) {
-                // cannot say anything but ...
-                if (!post.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.T.defaultValue())).satisfiable())
+                var pre = post.woVar(info.ex.x);
+                // remodel
+                var xpost = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.T.defaultValue()));
+                // cannot say more than xpost
+                if (!xpost.impliesFully(post.staticFormula))
                     return null;
-                return post.woVar(info.ex.x);
-            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
-                pre = pre.woVar(info.ex.x);
-                pre = pre.append(new VerificationFormula_1.FormulaPartEq(info.ex, info.T.defaultValue()));
                 return pre;
             });
             this.addHandler("Cast", Statement_1.StatementCast, function (s, g, onErr) {
@@ -290,12 +255,9 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                if (!post.satisfiable())
-                    return null;
+                // must have chance of implying the postcondnition
                 if (info.implies(post.staticFormula) == null)
                     return null;
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.create(info.gradual, VerificationFormula_1.VerificationFormula.empty());
-            }, function (info) { return info.staticFormula; }, function (info, pre) {
                 return info;
             });
             this.addHandler("Comment", Statement_1.StatementComment, function (s, g, onErr) {
@@ -305,8 +267,6 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 };
             }, function (info, post) {
                 return post;
-            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre) {
-                return pre;
             });
             this.addHandler("Hold", Statement_1.StatementHold, function (s, g, onErr) {
                 if (!s.p.sfrm()) {
@@ -319,38 +279,6 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 };
             }, function (info, post) {
                 return post; // TODO
-            }, function (info) { return info.phi; }, function (info, pre, postProcStack) {
-                var frameOff = pre;
-                var readOnly = info.phi.FV();
-                for (var _i = 0, _a = info.phi.footprintStatic(); _i < _a.length; _i++) {
-                    var fp = _a[_i];
-                    pre = pre.woAcc(fp.e, fp.f);
-                }
-                for (var _b = 0, _c = pre.staticFormula.autoFraming(); _b < _c.length; _b++) {
-                    var fp2 = _c[_b];
-                    frameOff = frameOff.woAcc(fp2.e, fp2.f);
-                }
-                for (var _d = 0, _e = frameOff.staticFormula.FV(); _d < _e.length; _d++) {
-                    var fv = _e[_d];
-                    if (readOnly.indexOf(fv) == -1)
-                        frameOff = frameOff.woVar(fv);
-                }
-                postProcStack.push({
-                    postProc: function (post) {
-                        for (var _i = 0, _a = frameOff.staticFormula.parts; _i < _a.length; _i++) {
-                            var part = _a[_i];
-                            post = post.append(part);
-                        }
-                        return post;
-                    },
-                    checkInnerStmt: function (s) {
-                        if (readOnly.some(function (x) { return s.writesTo(x); }))
-                            return "writes to protected variable";
-                        return null;
-                    },
-                    gamma: info.gamma
-                });
-                return pre;
             });
             this.addHandler("Unhold", Statement_1.StatementUnhold, function (s, g, onErr, postProcStack) {
                 if (postProcStack.length == 0) {
@@ -363,29 +291,20 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 };
             }, function (info, post) {
                 return post; // TODO
-            }, function (info) { return VerificationFormula_1.VerificationFormula.empty(); }, function (info, pre, postProcStack) {
-                var proc = postProcStack.pop();
-                return proc.postProc(pre);
             });
         }
         Hoare.prototype.addHandler = function (rule, SS, 
             // returns null on error
             checkStrucural, 
             // cannot fail
-            wlp, 
-            // cannot fail
-            checkImplication, 
-            // cannot fail
-            checkPost) {
+            wlp) {
             var y = Statement_1.StatementAlloc;
             var x;
             this.ruleHandlers.push({
                 name: rule,
                 statementMatch: function (s) { return s instanceof SS; },
                 checkStrucural: checkStrucural,
-                wlp: wlp,
-                checkImplication: checkImplication,
-                checkPost: checkPost
+                wlp: wlp
             });
         };
         Hoare.prototype.getRule = function (s) {
@@ -396,95 +315,49 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             }
             throw "unknown statement type";
         };
-        Hoare.prototype.checkMethod2 = function (g, s, pre, post) {
-            var scopePostProcStack = [];
-            s = s.slice();
-            s.push(new Statement_1.StatementCast(post));
-            for (var _i = 0, s_1 = s; _i < s_1.length; _i++) {
-                var ss = s_1[_i];
-                var err = this.check(ss, pre, g, scopePostProcStack);
-                if (err != null)
-                    return ss + " failed check: " + err.join(", ");
-                var res = this.post(ss, pre, g, scopePostProcStack);
-                pre = res.post;
-                g = res.postGamma;
-            }
-            if (scopePostProcStack.length != 0)
-                return "scopes not closed";
-            return null;
-        };
-        Hoare.prototype.check = function (s, pre, g, scopePostProcStack) {
-            for (var _i = 0, scopePostProcStack_1 = scopePostProcStack; _i < scopePostProcStack_1.length; _i++) {
-                var scopeItem = scopePostProcStack_1[_i];
-                var err = scopeItem.checkInnerStmt(s);
-                if (err != null)
-                    return [err];
-            }
-            var rule = this.getRule(s);
-            var errs = [];
-            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
-            if (res == null)
-                return errs;
-            var dyn = rule.checkImplication(res.info);
-            var prex = pre.implies(dyn);
-            if (prex == null)
-                return ["could not prove: " + dyn];
-            return null;
-        };
-        Hoare.prototype.post = function (s, pre, g, scopePostProcStack) {
-            var rule = this.getRule(s);
-            var errs = [];
-            var res = rule.checkStrucural(s, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
-            if (res == null)
-                throw "call check first";
-            var dyn = rule.checkImplication(res.info);
-            pre = pre.implies(dyn);
-            if (pre == null)
-                throw "call check first";
-            return {
-                post: rule.checkPost(res.info, pre, scopePostProcStack),
-                dyn: dyn,
-                postGamma: res.postGamma
-            };
-        };
         Hoare.prototype.checkMethod = function (g, s, pre, post) {
             var scopePostProcStack = [];
             s = s.slice();
             s.push(new Statement_1.StatementCast(post));
+            var result = [];
             var infos = [];
-            var gs = [g];
-            for (var _i = 0, s_2 = s; _i < s_2.length; _i++) {
-                var ss = s_2[_i];
-                for (var _a = 0, scopePostProcStack_2 = scopePostProcStack; _a < scopePostProcStack_2.length; _a++) {
-                    var scopeItem = scopePostProcStack_2[_a];
+            result.push({ g: g, wlp: null, residual: null, error: null });
+            for (var _i = 0, s_1 = s; _i < s_1.length; _i++) {
+                var ss = s_1[_i];
+                var error = null;
+                for (var _a = 0, scopePostProcStack_1 = scopePostProcStack; _a < scopePostProcStack_1.length; _a++) {
+                    var scopeItem = scopePostProcStack_1[_a];
                     var err = scopeItem.checkInnerStmt(ss);
                     if (err != null)
-                        return [ss + " failed check: " + errs.join(", "), null, null, null];
+                        error = ss + " failed check: " + err;
                 }
-                var rule = this.getRule(ss);
-                var errs = [];
-                var res = rule.checkStrucural(ss, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
-                if (res == null)
-                    return [ss + " failed check: " + errs.join(", "), null, null, null];
-                infos.push(res.info);
+                if (error == null) {
+                    var rule = this.getRule(ss);
+                    var errs = [];
+                    var res = rule.checkStrucural(ss, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
+                    if (res == null)
+                        error = ss + " failed check: " + errs.join(", ");
+                }
+                infos.push(res == null ? null : res.info);
                 g = res.postGamma;
-                gs.push(g);
+                result.push({ g: g, wlp: null, residual: null, error: error });
             }
             if (scopePostProcStack.length != 0)
-                return ["scopes not closed", null, null, null];
-            var checks = new Array(s.length);
-            var posts = [post];
-            for (var i = s.length - 1; i >= 0; --i) {
+                result[0].error = "scopes not closed";
+            else {
+                result[s.length].wlp = post;
+                for (var i = s.length - 1; i >= 0; --i) {
+                    if (post != null)
+                        post = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
+                    result[i + 1].residual = post != null
+                        ? [] // TODO: residuals?
+                        : [];
+                    result[i].wlp = post;
+                }
                 if (post != null)
-                    post = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
-                // TODO: errs?
-                checks[i] = post == null /*something else*/ ? null : VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, VerificationFormula_1.VerificationFormula.empty());
-                posts.unshift(post);
+                    result[0].residual = pre.impliesRemaindors(post.staticFormula);
             }
-            var firstCheck = post == null ? null : pre.implies(post.staticFormula);
-            if (firstCheck == null)
-                return ["precondition does not imply WLP", null, null, null];
-            return [null, [firstCheck].concat(checks), gs, posts];
+            return result;
         };
         return Hoare;
     }());

@@ -10,7 +10,18 @@ import { ExecutionEnvironment } from "../runtime/ExecutionEnvironment";
 
 export abstract class Expression
 {
-    public abstract substs(m: (x: string) => string): Expression;
+    public substs(m: (x: string) => string): Expression
+    {
+        if (this instanceof ExpressionX)
+            return new ExpressionX(m(this.x));
+        var frm = this.necessaryFraming();
+        if (frm.length > 0)
+        {
+            var x = (frm.filter(x => x.e instanceof ExpressionX)[0].e as ExpressionX).x;
+            return this.subste(new ExpressionX(x), new ExpressionX(m(x)));
+        }
+        return this;
+    }
     public subste(a: Expression, b: Expression): Expression
     {
         if (Expression.eq(a, this))
@@ -84,10 +95,6 @@ export class ExpressionV extends Expression
         return this.v.toString();
     }
 
-    public substs(m: (x: string) => string): Expression
-    {
-        return this;
-    }
     public sfrm(fp: FootprintStatic): boolean
     {
         return true;
@@ -127,10 +134,6 @@ export class ExpressionX extends Expression
         return this.x;
     }
 
-    public substs(m: (x: string) => string): Expression
-    {
-        return new ExpressionX(m(this.x));
-    }
     public sfrm(fp: FootprintStatic): boolean
     {
         return true;
@@ -178,10 +181,6 @@ export class ExpressionDot extends Expression
         return this.e.toString() + "." + this.f;
     }
 
-    public substs(m: (x: string) => string): Expression
-    {
-        return new ExpressionDot(this.e.substs(m), this.f);
-    }
     public sfrm(fp: FootprintStatic): boolean
     {
         return this.e.sfrm(fp)

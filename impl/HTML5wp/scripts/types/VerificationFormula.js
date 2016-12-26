@@ -76,6 +76,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartTrue.prototype.substs = function (m) {
             return this;
         };
+        FormulaPartTrue.prototype.subste = function (a, b) {
+            return this;
+        };
         FormulaPartTrue.prototype.sfrm = function (fp) {
             return true;
         };
@@ -117,6 +120,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         };
         FormulaPartEq.prototype.substs = function (m) {
             return new FormulaPartEq(this.e1.substs(m), this.e2.substs(m));
+        };
+        FormulaPartEq.prototype.subste = function (a, b) {
+            return new FormulaPartEq(this.e1.subste(a, b), this.e2.subste(a, b));
         };
         FormulaPartEq.prototype.sfrm = function (fp) {
             return this.e1.sfrm(fp)
@@ -175,6 +181,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         FormulaPartNeq.prototype.substs = function (m) {
             return new FormulaPartNeq(this.e1.substs(m), this.e2.substs(m));
         };
+        FormulaPartNeq.prototype.subste = function (a, b) {
+            return new FormulaPartNeq(this.e1.subste(a, b), this.e2.subste(a, b));
+        };
         FormulaPartNeq.prototype.sfrm = function (fp) {
             return this.e1.sfrm(fp)
                 && this.e2.sfrm(fp);
@@ -229,6 +238,9 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         };
         FormulaPartAcc.prototype.substs = function (m) {
             return new FormulaPartAcc(this.e.substs(m), this.f);
+        };
+        FormulaPartAcc.prototype.subste = function (a, b) {
+            return new FormulaPartAcc(this.e.subste(a, b), this.f);
         };
         FormulaPartAcc.prototype.footprintStatic = function () {
             return [{ e: this.e, f: this.f }];
@@ -296,6 +308,11 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
         VerificationFormula.prototype.substs = function (m) {
             var frm = new VerificationFormula();
             frm.parts = this.parts.map(function (part) { return part.substs(m); });
+            return frm;
+        };
+        VerificationFormula.prototype.subste = function (a, b) {
+            var frm = new VerificationFormula();
+            frm.parts = this.parts.map(function (part) { return part.subste(a, b); });
             return frm;
         };
         VerificationFormula.prototype.sfrm = function (fp) {

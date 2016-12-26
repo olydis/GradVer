@@ -8,6 +8,16 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
     var Expression = (function () {
         function Expression() {
         }
+        Expression.prototype.substs = function (m) {
+            if (this instanceof ExpressionX)
+                return new ExpressionX(m(this.x));
+            var frm = this.necessaryFraming();
+            if (frm.length > 0) {
+                var x = frm.filter(function (x) { return x.e instanceof ExpressionX; })[0].e.x;
+                return this.subste(new ExpressionX(x), new ExpressionX(m(x)));
+            }
+            return this;
+        };
         Expression.prototype.subste = function (a, b) {
             if (Expression.eq(a, this))
                 return b;
@@ -67,9 +77,6 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         ExpressionV.prototype.toString = function () {
             return this.v.toString();
         };
-        ExpressionV.prototype.substs = function (m) {
-            return this;
-        };
         ExpressionV.prototype.sfrm = function (fp) {
             return true;
         };
@@ -102,9 +109,6 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         };
         ExpressionX.prototype.toString = function () {
             return this.x;
-        };
-        ExpressionX.prototype.substs = function (m) {
-            return new ExpressionX(m(this.x));
         };
         ExpressionX.prototype.sfrm = function (fp) {
             return true;
@@ -146,9 +150,6 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         };
         ExpressionDot.prototype.toString = function () {
             return this.e.toString() + "." + this.f;
-        };
-        ExpressionDot.prototype.substs = function (m) {
-            return new ExpressionDot(this.e.substs(m), this.f);
         };
         ExpressionDot.prototype.sfrm = function (fp) {
             var _this = this;

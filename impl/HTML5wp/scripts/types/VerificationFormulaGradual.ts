@@ -93,6 +93,13 @@ export class VerificationFormulaGradual
         frm.staticFormula = this.staticFormula.substs(m);
         return frm;
     }
+    public subste(a: Expression, b: Expression): VerificationFormulaGradual
+    {
+        var frm = new VerificationFormulaGradual();
+        frm.gradual = this.gradual;
+        frm.staticFormula = this.staticFormula.subste(a, b);
+        return frm;
+    }
 
     public createNormalizedEnv(): NormalizedEnv
     {
@@ -151,11 +158,32 @@ export class VerificationFormulaGradual
         }
     }
 
+    public impliesRemaindors(phi: VerificationFormula): VerificationFormula[]
+    {
+        var condClassic = this.staticFormula.snorm();
+        var condx = this.staticFormula
+            .autoFraming()
+            .map(x => new VerificationFormula(null, (<FormulaPart[]>[x]).concat(condClassic.parts)));
+        condx.push(this.staticFormula);
+        return phi.autoFramedChecks(condx);
+    }
+
+    public impliesFully(phi: VerificationFormula): boolean
+    {
+        var rem = this.impliesRemaindors(phi);
+        return rem.length == 0;
+    }
+
     public eval(env: EvalEnv): boolean
     {
         var frm = this.staticFormula.autoFraming();
         if (!this.staticFormula.eval(env))
             return false;
         return frm.every(acc => acc.eval(env));
+    }
+
+    public static eq(a: VerificationFormulaGradual, b: VerificationFormulaGradual)
+    {
+        return JSON.stringify(a) == JSON.stringify(b);
     }
 }

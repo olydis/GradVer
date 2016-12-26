@@ -1,4 +1,4 @@
-import { Expression, ExpressionDot } from "./Expression";
+import { Expression, ExpressionDot, ExpressionX } from "./Expression";
 import { ValueObject } from "./ValueExpression";
 import { Type } from "./Type";
 import { FootprintStatic, FootprintDynamic } from "./Footprint";
@@ -9,6 +9,7 @@ export abstract class FormulaPart
 {
     public abstract toString(): string;
     public abstract substs(m: (x: string) => string): FormulaPart;
+    public abstract subste(a: Expression, b: Expression): FormulaPart;
     public footprintStatic(): FootprintStatic
     {
         return [];
@@ -85,6 +86,10 @@ export class FormulaPartTrue extends FormulaPart
     {
         return this;
     }
+    public subste(a: Expression, b: Expression): FormulaPart
+    {
+        return this;
+    }
     public sfrm(fp: FootprintStatic): boolean
     {
         return true;
@@ -131,6 +136,11 @@ export class FormulaPartEq extends FormulaPart
     {
         return new FormulaPartEq(this.e1.substs(m), this.e2.substs(m));
     }
+    public subste(a: Expression, b: Expression): FormulaPart
+    {
+        return new FormulaPartEq(this.e1.subste(a, b), this.e2.subste(a, b));
+    }
+
     public sfrm(fp: FootprintStatic): boolean
     {
         return this.e1.sfrm(fp)
@@ -191,6 +201,11 @@ export class FormulaPartNeq extends FormulaPart
     {
         return new FormulaPartNeq(this.e1.substs(m), this.e2.substs(m));
     }
+    public subste(a: Expression, b: Expression): FormulaPart
+    {
+        return new FormulaPartNeq(this.e1.subste(a, b), this.e2.subste(a, b));
+    }
+
     public sfrm(fp: FootprintStatic): boolean
     {
         return this.e1.sfrm(fp)
@@ -250,6 +265,11 @@ export class FormulaPartAcc extends FormulaPart
     {
         return new FormulaPartAcc(this.e.substs(m), this.f);
     }
+    public subste(a: Expression, b: Expression): FormulaPart
+    {
+        return new FormulaPartAcc(this.e.subste(a, b), this.f);
+    }
+    
     public footprintStatic(): FootprintStatic
     {
         return [{ e: this.e, f: this.f }];
@@ -331,6 +351,12 @@ export class VerificationFormula
     {
         var frm = new VerificationFormula();
         frm.parts = this.parts.map(part => part.substs(m));
+        return frm;
+    }
+    public subste(a: Expression, b: Expression): VerificationFormula
+    {
+        var frm = new VerificationFormula();
+        frm.parts = this.parts.map(part => part.subste(a, b));
         return frm;
     }
     public sfrm(fp: FootprintStatic = []): boolean

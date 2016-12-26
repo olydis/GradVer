@@ -71,6 +71,12 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
             frm.staticFormula = this.staticFormula.substs(m);
             return frm;
         };
+        VerificationFormulaGradual.prototype.subste = function (a, b) {
+            var frm = new VerificationFormulaGradual();
+            frm.gradual = this.gradual;
+            frm.staticFormula = this.staticFormula.subste(a, b);
+            return frm;
+        };
         VerificationFormulaGradual.prototype.createNormalizedEnv = function () {
             var env = this.staticFormula.createNormalizedEnv();
             for (var _i = 0, _a = this.staticFormula.autoFraming(); _i < _a.length; _i++) {
@@ -116,11 +122,26 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                 return VerificationFormulaGradual.create(false, sf);
             }
         };
+        VerificationFormulaGradual.prototype.impliesRemaindors = function (phi) {
+            var condClassic = this.staticFormula.snorm();
+            var condx = this.staticFormula
+                .autoFraming()
+                .map(function (x) { return new VerificationFormula_1.VerificationFormula(null, [x].concat(condClassic.parts)); });
+            condx.push(this.staticFormula);
+            return phi.autoFramedChecks(condx);
+        };
+        VerificationFormulaGradual.prototype.impliesFully = function (phi) {
+            var rem = this.impliesRemaindors(phi);
+            return rem.length == 0;
+        };
         VerificationFormulaGradual.prototype.eval = function (env) {
             var frm = this.staticFormula.autoFraming();
             if (!this.staticFormula.eval(env))
                 return false;
             return frm.every(function (acc) { return acc.eval(env); });
+        };
+        VerificationFormulaGradual.eq = function (a, b) {
+            return JSON.stringify(a) == JSON.stringify(b);
         };
         return VerificationFormulaGradual;
     }());

@@ -234,22 +234,10 @@ export class EditInstructions
     private displayDynCond(
         i: number, 
         cond: VerificationFormulaGradual, 
-        dynF: VerificationFormula,
+        dyn: VerificationFormula[],
         dynEnv: StackEnv, 
         dynSuccess: boolean): void
     {
-        // dynamic check minimization
-        var condClassic = cond.staticFormula.snorm();
-        var condx = cond.staticFormula
-            .autoFraming()
-            .map(x => new VerificationFormula(null, (<FormulaPart[]>[x]).concat(condClassic.parts)));
-        condx.push(cond.staticFormula);
-        var dyn = dynF.autoFramedChecks(condx);
-        if (dyn.some(x => !x.satisfiable()))
-        {
-            throw "shouldn't have happened";
-        }
-
         // output
         var jqDyn = $("#ins" + i);
         if (dyn.length > 0)
@@ -296,11 +284,11 @@ export class EditInstructions
 
         var statements = this.statements.map(x => x.getStatement());
         var statRes = this.hoare.checkMethod(GammaNew, statements, this.condPre, this.condPost);
-        if (statRes[0] != null)
-        {
-            console.log(statRes[0]);
-            return;
-        }
+        // errs
+        statRes.forEach(sr => sr.error = sr.error != null ? sr.error : 
+        (sr.wlp == null ? "instruction cannot meet postcondition" : 
+        (sr.residual == null ? "should not have happened" : null)));
+
         statements.push(new StatementCast(this.condPost));
 
         var pivotEnv: EvalEnv;
@@ -337,9 +325,16 @@ export class EditInstructions
 
         for (var i = 0; i < statements.length; ++i)
         {
-            var cond = statRes[3][i];
+            console.log(JSON.stringify(statRes[i]));
+            if (statRes[i].error != null)
+            {
+                $("#ins" + i).text(statRes[i].error).addClass("err");
+                continue;
+            }
+
+            var cond = statRes[i].wlp;
             this.displayPreCond(i, cond);
-            this.displayDynState(i, dynEnv, statRes[2][i]);
+            this.displayDynState(i, dynEnv, statRes[i].g);
 
             if (!cond.satisfiable())
             {
@@ -352,18 +347,10 @@ export class EditInstructions
                 return;
             }
 
-            var s = statements[i];
-            // var errs = this.hoare.check(s, cond, g, scopePostProcStack);
-            // if (errs != null)
-            // {
-            //     $("#ins" + i).text(errs[0]).addClass("err");
-            //     return;
-            // }
-
             var indent = scopePostProcStack.length;
-            var res = statRes[1][i].staticFormula;//this.hoare.post(s, cond, g, scopePostProcStack);
+            var res = statRes[i].residual;//this.hoare.post(s, cond, g, scopePostProcStack);
             indent = Math.min(indent, scopePostProcStack.length);
-            dynSuccess = dynSuccess && dynCheckDyn(res);
+            dynSuccess = dynSuccess && res.every(r => dynCheckDyn(r));
             this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
             if (!dynSuccess)
                 dynEnv = null;
