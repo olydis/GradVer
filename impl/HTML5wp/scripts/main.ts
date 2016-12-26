@@ -23,7 +23,7 @@ function unique<T>(list: T[]): boolean
 function wellFormedProgram(p: Program, hoare: Hoare): string
 {
     var res: string = null;
-    if (res == null) res = hoare.checkMethod(GammaNew, p.main, new VerificationFormulaGradual("true"), new VerificationFormulaGradual("true"));
+    if (res == null) res = hoare.checkMethod(GammaNew, p.main, new VerificationFormulaGradual("true"), new VerificationFormulaGradual("true"))[0];
     if (res == null) res = p.classes.map(c => wellFormedClass(c, hoare)).filter(x => x != null)[0];
     return res;
 }
@@ -47,7 +47,7 @@ function wellFormedMethod(c: Class, m: Method, hoare: Hoare): string
     if (res == null) res = hoare.checkMethod(
         GammaAdd(m.argName, m.argType, 
         GammaAdd(Expression.getThis(), new TypeClass(c.name), 
-        GammaAdd(Expression.getResult(), m.retType, GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost);
+        GammaAdd(Expression.getResult(), m.retType, GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost)[0];
     if (res == null) res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
     if (res == null) res = m.frmPost.sfrm() ? null : "postcondition not self-framed: " + m.frmPost;
     if (res == null) res = m.body.filter(s => s.writesTo(m.argName)).map(s => s + " writes to " + m.argName)[0];

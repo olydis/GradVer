@@ -9,7 +9,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
     function wellFormedProgram(p, hoare) {
         var res = null;
         if (res == null)
-            res = hoare.checkMethod(Gamma_1.GammaNew, p.main, new VerificationFormulaGradual_1.VerificationFormulaGradual("true"), new VerificationFormulaGradual_1.VerificationFormulaGradual("true"));
+            res = hoare.checkMethod(Gamma_1.GammaNew, p.main, new VerificationFormulaGradual_1.VerificationFormulaGradual("true"), new VerificationFormulaGradual_1.VerificationFormulaGradual("true"))[0];
         if (res == null)
             res = p.classes.map(function (c) { return wellFormedClass(c, hoare); }).filter(function (x) { return x != null; })[0];
         return res;
@@ -34,7 +34,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
             res = m.frmPost.staticFormula.FV().every(function (x) { return x == m.argName || x == Expression_1.Expression.getThis() || x == Expression_1.Expression.getResult(); })
                 ? null : "postcodiction contains unknown variables: " + m.frmPost;
         if (res == null)
-            res = hoare.checkMethod(Gamma_1.GammaAdd(m.argName, m.argType, Gamma_1.GammaAdd(Expression_1.Expression.getThis(), new Type_1.TypeClass(c.name), Gamma_1.GammaAdd(Expression_1.Expression.getResult(), m.retType, Gamma_1.GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost);
+            res = hoare.checkMethod(Gamma_1.GammaAdd(m.argName, m.argType, Gamma_1.GammaAdd(Expression_1.Expression.getThis(), new Type_1.TypeClass(c.name), Gamma_1.GammaAdd(Expression_1.Expression.getResult(), m.retType, Gamma_1.GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost)[0];
         if (res == null)
             res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
         if (res == null)

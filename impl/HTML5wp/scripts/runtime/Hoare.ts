@@ -91,7 +91,7 @@ export class Hoare
                 return rule;
         throw "unknown statement type";
     }
-    public checkMethod(g: Gamma, s: Statement[], pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string
+    public checkMethod2(g: Gamma, s: Statement[], pre: VerificationFormulaGradual, post: VerificationFormulaGradual): string
     {
         var scopePostProcStack: ScopeStackItem[] = [];
         s = s.slice();
@@ -151,6 +151,54 @@ export class Hoare
             dyn: dyn,
             postGamma: res.postGamma
         };
+    }
+    public checkMethod(g: Gamma, s: Statement[], pre: VerificationFormulaGradual, post: VerificationFormulaGradual)
+        : [string, VerificationFormulaGradual[], Gamma[], VerificationFormulaGradual[]]
+    {
+        var scopePostProcStack: ScopeStackItem[] = [];
+        s = s.slice();
+        s.push(new StatementCast(post));
+        var infos: any[] = [];
+        var gs = [g];
+        for (var ss of s)
+        {
+            for (var scopeItem of scopePostProcStack)
+            {
+                var err = scopeItem.checkInnerStmt(ss);
+                if (err != null)
+                    return [ss + " failed check: " + errs.join(", "), null, null, null];
+            }
+
+            var rule = this.getRule(ss);
+
+            var errs: string[] = [];
+            var res = rule.checkStrucural(ss, g, msg => errs.push(msg), scopePostProcStack);
+            if (res == null) 
+                return [ss + " failed check: " + errs.join(", "), null, null, null];
+
+            infos.push(res.info);
+            g = res.postGamma;
+            gs.push(g);
+        }
+        if (scopePostProcStack.length != 0)
+            return ["scopes not closed", null, null, null];
+
+        var checks = new Array<VerificationFormulaGradual>(s.length);
+        var posts = [post];
+        for (var i = s.length - 1; i >= 0; --i)
+        {
+            if (post != null)
+                post = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
+            // TODO: errs?
+            checks[i] = post == null /*something else*/ ? null : VerificationFormulaGradual.create(false, VerificationFormula.empty());
+            posts.unshift(post);
+        }
+
+        var firstCheck = post == null ? null : pre.implies(post.staticFormula);
+        if (firstCheck == null)
+            return ["precondition does not imply WLP", null, null, null];
+
+        return [null, [firstCheck, ...checks], gs, posts];
     }
 
     constructor(public env: ExecutionEnvironment) {
@@ -437,7 +485,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return VerificationFormulaGradual.infimum(post, VerificationFormulaGradual.create(true, info));
+                return VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
             },
             (info) => info,
             (info, pre) => {
@@ -456,7 +504,7 @@ export class Hoare
                 if (removed.map(acc => post.implies(new FormulaPartAcc(acc.e, acc.f).asFormula())).some(nec => nec != null && nec.norm().staticFormula.isEmpty()))
                     return null;
 
-                return VerificationFormulaGradual.infimum(post, VerificationFormulaGradual.create(true, info));
+                return VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
             },
             (info) => info,
             (info, pre) => {

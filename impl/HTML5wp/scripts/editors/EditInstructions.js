@@ -230,9 +230,12 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             $(".intermediateState").off("mouseleave").on("mouseleave", function () { return EvalEnvVisu_1.hide(); });
             this.statements.forEach(function (s) { return s.stmtContainer.css("margin-left", "0px"); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
+            var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
+            if (statRes[0] != null) {
+                console.log(statRes[0]);
+                return;
+            }
             statements.push(new Statement_1.StatementCast(this.condPost));
-            var g = Gamma_1.GammaNew;
-            var cond = this.condPre;
             var pivotEnv;
             {
                 var nenv = this.condPre.createNormalizedEnv();
@@ -262,8 +265,9 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var dynSuccess = true;
             var scopePostProcStack = [];
             for (var i = 0; i < statements.length; ++i) {
+                var cond = statRes[3][i];
                 this.displayPreCond(i, cond);
-                this.displayDynState(i, dynEnv, g);
+                this.displayDynState(i, dynEnv, statRes[2][i]);
                 if (!cond.satisfiable()) {
                     $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
                     return;
@@ -273,20 +277,19 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     return;
                 }
                 var s = statements[i];
-                var errs = this.hoare.check(s, cond, g, scopePostProcStack);
-                if (errs != null) {
-                    $("#ins" + i).text(errs[0]).addClass("err");
-                    return;
-                }
+                // var errs = this.hoare.check(s, cond, g, scopePostProcStack);
+                // if (errs != null)
+                // {
+                //     $("#ins" + i).text(errs[0]).addClass("err");
+                //     return;
+                // }
                 var indent = scopePostProcStack.length;
-                var res = this.hoare.post(s, cond, g, scopePostProcStack);
+                var res = statRes[1][i].staticFormula; //this.hoare.post(s, cond, g, scopePostProcStack);
                 indent = Math.min(indent, scopePostProcStack.length);
-                dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
-                this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
+                dynSuccess = dynSuccess && dynCheckDyn(res);
+                this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
                 if (!dynSuccess)
                     dynEnv = null;
-                cond = res.post;
-                g = res.postGamma;
                 if (this.statements[i])
                     this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
                 // dyn

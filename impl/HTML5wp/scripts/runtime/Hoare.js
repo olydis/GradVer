@@ -238,7 +238,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(post, VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
+                return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
             }, function (info) { return info; }, function (info, pre) {
                 return pre;
             });
@@ -252,7 +252,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 var removed = info.footprintStatic();
                 if (removed.map(function (acc) { return post.implies(new VerificationFormula_1.FormulaPartAcc(acc.e, acc.f).asFormula()); }).some(function (nec) { return nec != null && nec.norm().staticFormula.isEmpty(); }))
                     return null;
-                return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(post, VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
+                return VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
             }, function (info) { return info; }, function (info, pre) {
                 for (var _i = 0, _a = info.footprintStatic(); _i < _a.length; _i++) {
                     var fp = _a[_i];
@@ -396,7 +396,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             }
             throw "unknown statement type";
         };
-        Hoare.prototype.checkMethod = function (g, s, pre, post) {
+        Hoare.prototype.checkMethod2 = function (g, s, pre, post) {
             var scopePostProcStack = [];
             s = s.slice();
             s.push(new Statement_1.StatementCast(post));
@@ -446,6 +446,45 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 dyn: dyn,
                 postGamma: res.postGamma
             };
+        };
+        Hoare.prototype.checkMethod = function (g, s, pre, post) {
+            var scopePostProcStack = [];
+            s = s.slice();
+            s.push(new Statement_1.StatementCast(post));
+            var infos = [];
+            var gs = [g];
+            for (var _i = 0, s_2 = s; _i < s_2.length; _i++) {
+                var ss = s_2[_i];
+                for (var _a = 0, scopePostProcStack_2 = scopePostProcStack; _a < scopePostProcStack_2.length; _a++) {
+                    var scopeItem = scopePostProcStack_2[_a];
+                    var err = scopeItem.checkInnerStmt(ss);
+                    if (err != null)
+                        return [ss + " failed check: " + errs.join(", "), null, null, null];
+                }
+                var rule = this.getRule(ss);
+                var errs = [];
+                var res = rule.checkStrucural(ss, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
+                if (res == null)
+                    return [ss + " failed check: " + errs.join(", "), null, null, null];
+                infos.push(res.info);
+                g = res.postGamma;
+                gs.push(g);
+            }
+            if (scopePostProcStack.length != 0)
+                return ["scopes not closed", null, null, null];
+            var checks = new Array(s.length);
+            var posts = [post];
+            for (var i = s.length - 1; i >= 0; --i) {
+                if (post != null)
+                    post = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
+                // TODO: errs?
+                checks[i] = post == null /*something else*/ ? null : VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, VerificationFormula_1.VerificationFormula.empty());
+                posts.unshift(post);
+            }
+            var firstCheck = post == null ? null : pre.implies(post.staticFormula);
+            if (firstCheck == null)
+                return ["precondition does not imply WLP", null, null, null];
+            return [null, [firstCheck].concat(checks), gs, posts];
         };
         return Hoare;
     }());

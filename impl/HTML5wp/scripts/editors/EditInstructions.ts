@@ -295,10 +295,13 @@ export class EditInstructions
         this.statements.forEach(s => s.stmtContainer.css("margin-left", "0px"));
 
         var statements = this.statements.map(x => x.getStatement());
+        var statRes = this.hoare.checkMethod(GammaNew, statements, this.condPre, this.condPost);
+        if (statRes[0] != null)
+        {
+            console.log(statRes[0]);
+            return;
+        }
         statements.push(new StatementCast(this.condPost));
-
-        var g = GammaNew;
-        var cond = this.condPre;
 
         var pivotEnv: EvalEnv;
         {
@@ -334,8 +337,9 @@ export class EditInstructions
 
         for (var i = 0; i < statements.length; ++i)
         {
+            var cond = statRes[3][i];
             this.displayPreCond(i, cond);
-            this.displayDynState(i, dynEnv, g);
+            this.displayDynState(i, dynEnv, statRes[2][i]);
 
             if (!cond.satisfiable())
             {
@@ -349,23 +353,20 @@ export class EditInstructions
             }
 
             var s = statements[i];
-            var errs = this.hoare.check(s, cond, g, scopePostProcStack);
-            if (errs != null)
-            {
-                $("#ins" + i).text(errs[0]).addClass("err");
-                return;
-            }
+            // var errs = this.hoare.check(s, cond, g, scopePostProcStack);
+            // if (errs != null)
+            // {
+            //     $("#ins" + i).text(errs[0]).addClass("err");
+            //     return;
+            // }
 
             var indent = scopePostProcStack.length;
-            var res = this.hoare.post(s, cond, g, scopePostProcStack);
+            var res = statRes[1][i].staticFormula;//this.hoare.post(s, cond, g, scopePostProcStack);
             indent = Math.min(indent, scopePostProcStack.length);
-            dynSuccess = dynSuccess && dynCheckDyn(res.dyn);
-            this.displayDynCond(i, cond, res.dyn, dynEnv, dynSuccess);
+            dynSuccess = dynSuccess && dynCheckDyn(res);
+            this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
             if (!dynSuccess)
                 dynEnv = null;
-
-            cond = res.post;
-            g = res.postGamma;
 
             if (this.statements[i])
                 this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
