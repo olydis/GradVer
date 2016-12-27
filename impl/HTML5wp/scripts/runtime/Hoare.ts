@@ -39,7 +39,7 @@ type Rule = {
                 , postGamma: Gamma },
         wlp: (info: any, post: VerificationFormulaGradual, 
             scopeStack: ScopeStackItem[]) => 
-                VerificationFormulaGradual
+                [VerificationFormulaGradual, VerificationFormula[]]
     };
 
 export class Hoare
@@ -57,7 +57,7 @@ export class Hoare
         // cannot fail
         wlp: (info: StructuralInfo, post: VerificationFormulaGradual, 
             scopeStack: ScopeStackItem[]) => 
-                VerificationFormulaGradual
+                [VerificationFormulaGradual, VerificationFormula[]]
         ): void
     {
         var y = StatementAlloc;
@@ -117,10 +117,15 @@ export class Hoare
             result[s.length].wlp = post;
             for (var i = s.length - 1; i >= 0; --i)
             {
+                var residual: VerificationFormula[] = [];
                 if (post != null)
-                    post = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
+                {
+                    var ress = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
+                    post = ress == null ? null : ress[0];
+                    residual = ress == null ? [] : ress[1];
+                }
                 result[i + 1].residual = post != null 
-                    ? []  // TODO: residuals?
+                    ? residual
                     : [];
                 result[i].wlp = post;
             }
@@ -169,10 +174,10 @@ export class Hoare
                     xpost = xpost.append(new FormulaPartAcc(info.ex, f.name));
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementMemberSet, { ex: ExpressionX, ey: ExpressionX, f: string }>("FieldAssign", StatementMemberSet,
             (s, g, onErr) => {
@@ -217,10 +222,10 @@ export class Hoare
                 var xpost = pre.append(new FormulaPartEq(new ExpressionDot(info.ex, info.f), info.ey));
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementAssign, { ex: ExpressionX, e: Expression }>("VarAssign", StatementAssign,
             (s, g, onErr) => {
@@ -262,10 +267,10 @@ export class Hoare
                 var xpost = pre.append(new FormulaPartEq(info.ex, info.e));
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementReturn, { ex: Expression, er: Expression }>("Return", StatementReturn,
             (s, g, onErr) => {
@@ -300,10 +305,10 @@ export class Hoare
                 var xpost = pre.append(new FormulaPartEq(info.er, info.ex));
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementCall, { pre: VerificationFormulaGradual, post: VerificationFormulaGradual, ynn: FormulaPart, x: string }>("Call", StatementCall,
             (s, g, onErr) => {
@@ -372,32 +377,42 @@ export class Hoare
                 return null;
             },
             (info, post) => {
-                // cannot say anything but ...
-                // TODO
+                var pre = post.woVar(info.x);
+                // framed off part
+                if (info.post.gradual)
+                    pre = VerificationFormulaGradual.qm();
+                else
+                    for (var acc of post.staticFormula.footprintStatic())
+                        pre = pre.woAcc(acc.e, acc.f);
+                // pre
+                if (info.pre.gradual)
+                    pre.gradual = true;
+                for (var prep of info.pre.staticFormula.parts)
+                    pre.staticFormula = pre.staticFormula.append(prep);
+                pre.staticFormula = pre.staticFormula.append(info.ynn);
 
-                return post.woVar(info.x);
-            }
-            // ,
-            // (info) => info.pre.append(info.ynn).staticFormula,
-            // (info, pre) => {
-            //     pre = pre.woVar(info.x);
-            //     if (info.pre.gradual)
-            //         for (var fp1 of pre.staticFormula.autoFraming())
-            //             pre = pre.woAcc(fp1.e, fp1.f);
-            //     else
-            //         for (var fp2 of info.pre.staticFormula.footprintStatic())
-            //             pre = pre.woAcc(fp2.e, fp2.f);
-            //     for (var p_part of info.post.staticFormula.parts)
-            //         pre = pre.append(p_part);
+                // remodel
+                var xpost = pre.woVar(info.x);
+                if (info.pre.gradual)
+                    for (var fp1 of xpost.staticFormula.autoFraming())
+                        xpost = xpost.woAcc(fp1.e, fp1.f);
+                else
+                    for (var fp2 of info.pre.staticFormula.footprintStatic())
+                        xpost = xpost.woAcc(fp2.e, fp2.f);
+                for (var p_part of info.post.staticFormula.parts)
+                    xpost = xpost.append(p_part);
 
-            //     // gradualness of info.post and info.pre
-            //     pre = VerificationFormulaGradual.create(
-            //         info.pre.gradual || info.post.gradual || pre.gradual, 
-            //         pre.staticFormula);
+                // gradualness of info.post and info.pre
+                xpost = VerificationFormulaGradual.create(
+                    info.pre.gradual || info.post.gradual || xpost.gradual, 
+                    xpost.staticFormula);
 
-            //     return pre;
-            // }
-            );
+                // cannot say more than xpost
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
+                    return null;
+
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
+            });
         this.addHandler<StatementAssert, VerificationFormula>("Assert", StatementAssert,
             (s, g, onErr) => {
                 return {
@@ -406,7 +421,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
+                return [VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info)), []];
             });
         this.addHandler<StatementRelease, VerificationFormula>("Release", StatementRelease,
             (s, g, onErr) => {
@@ -417,6 +432,8 @@ export class Hoare
             },
             (info, post) => {
                 var pre = VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
+                if (pre == null)
+                    return null;
 
                 // remodel
                 var xpost = pre;
@@ -424,10 +441,10 @@ export class Hoare
                     xpost = xpost.woAcc(fp.e, fp.f);
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementDeclare, { ex: ExpressionX, T: Type }>("Declare", StatementDeclare,
             (s, g, onErr) => {
@@ -454,10 +471,10 @@ export class Hoare
                 var xpost = pre.append(new FormulaPartEq(info.ex, info.T.defaultValue()));
 
                 // cannot say more than xpost
-                if (!xpost.impliesFully(post.staticFormula))
+                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
                     return null;
 
-                return pre;
+                return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementCast, VerificationFormulaGradual>("Cast", StatementCast,
             (s, g, onErr) => {
@@ -468,10 +485,10 @@ export class Hoare
             },
             (info, post) => {
                 // must have chance of implying the postcondnition
-                if (info.implies(post.staticFormula) == null)
+                if (!info.satisfiable() || null == info.implies(post.staticFormula))
                     return null;
 
-                return info;
+                return [info, info.impliesRemaindors(post.staticFormula)];
             });
         this.addHandler<StatementComment, { }>("Comment", StatementComment,
             (s, g, onErr) => {
@@ -481,7 +498,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return post;
+                return [post, []];
             });
         this.addHandler<StatementHold, { phi: VerificationFormula, gamma: Gamma }>("Hold", StatementHold,
             (s, g, onErr) => {
@@ -496,7 +513,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return post; // TODO
+                return [post, []]; // TODO
             }
             // ,
             // (info) => info.phi,
@@ -542,7 +559,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return post; // TODO
+                return [post, []]; // TODO
             }
             // ,
             // (info) => VerificationFormula.empty(),

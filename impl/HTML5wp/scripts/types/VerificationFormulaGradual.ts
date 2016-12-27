@@ -182,8 +182,12 @@ export class VerificationFormulaGradual
         return frm.every(acc => acc.eval(env));
     }
 
-    public static eq(a: VerificationFormulaGradual, b: VerificationFormulaGradual)
+    public static eq(a: VerificationFormulaGradual, b: VerificationFormulaGradual): boolean
     {
         return JSON.stringify(a) == JSON.stringify(b);
+    }
+    public static qm(): VerificationFormulaGradual
+    {
+        return VerificationFormulaGradual.create(true, VerificationFormula.empty());
     }
 }

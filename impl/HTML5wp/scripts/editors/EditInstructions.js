@@ -258,6 +258,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 console.log(JSON.stringify(statRes[i]));
                 if (statRes[i].error != null) {
                     $("#ins" + i).text(statRes[i].error).addClass("err");
+                    dynSuccess = false;
                     continue;
                 }
                 var cond = statRes[i].wlp;
@@ -332,23 +333,23 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var n = this.numInstructions;
             for (var i = 0; i <= n; ++i)
                 (function (i) {
+                    if (i == 0) {
+                        var tr = $("<tr>").appendTo(table);
+                        tr.append($("<td>"));
+                        tr.append($("<td>").append(splitCell($("<span>"), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
+                    }
+                    else {
+                        var tr = $("<tr>").appendTo(table);
+                        tr.append($("<td>").append(createButton("-").click(function () { return _this.removeInstruction(i - 1); })));
+                        tr.append($("<td>").append(splitCell(_this.statements[i - 1]
+                            .createHTML()
+                            .keydown(function (eo) { if (eo.which == 13)
+                            _this.selectInstruction(i); }), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
+                    }
                     {
                         var tr = $("<tr>").appendTo(table);
                         tr.append($("<td>").append(createButton("+").click(function () { return _this.insertInstruction(i); })));
                         tr.append($("<td>").append(splitCell(_this.verificationFormulas[i], $("<span>").attr("id", "frm" + i).addClass("clearMe"), "splitStaticDynamic")).addClass("intermediateState"));
-                    }
-                    if (i != n) {
-                        var tr = $("<tr>").appendTo(table);
-                        tr.append($("<td>").append(createButton("-").click(function () { return _this.removeInstruction(i); })));
-                        tr.append($("<td>").append(splitCell(_this.statements[i]
-                            .createHTML()
-                            .keydown(function (eo) { if (eo.which == 13)
-                            _this.selectInstruction(i + 1); }), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
-                    }
-                    else {
-                        var tr = $("<tr>").appendTo(table);
-                        tr.append($("<td>"));
-                        tr.append($("<td>").append(splitCell($("<span>"), $("<span>").attr("id", "ins" + i).addClass("clearMe"), "splitStmtDyn")));
                     }
                 })(i);
             this.analyze();

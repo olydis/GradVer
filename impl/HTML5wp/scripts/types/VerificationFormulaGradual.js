@@ -143,6 +143,9 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
         VerificationFormulaGradual.eq = function (a, b) {
             return JSON.stringify(a) == JSON.stringify(b);
         };
+        VerificationFormulaGradual.qm = function () {
+            return VerificationFormulaGradual.create(true, VerificationFormula_1.VerificationFormula.empty());
+        };
         return VerificationFormulaGradual;
     }());
     exports.VerificationFormulaGradual = VerificationFormulaGradual;
