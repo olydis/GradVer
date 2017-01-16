@@ -189,7 +189,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         EditInstructions.prototype.displayDynCond = function (i, cond, dyn, dynEnv, dynSuccess) {
             // output
             var jqDyn = $("#ins" + i);
-            if (dyn.length > 0)
+            if (dyn.length > 0 && jqDyn.text() == "")
                 jqDyn.append($("<span>")
                     .addClass("dynCheck")
                     .addClass(dynEnv != null ? (dynSuccess ? "dynCheck1" : "dynCheck0") : "")
@@ -223,7 +223,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
             // errs
             statRes.forEach(function (sr) { return sr.error = sr.error != null ? sr.error :
-                (sr.wlp == null ? "instruction cannot meet postcondition" :
+                (sr.wlp == null ? "verification failed (WLP undefined)" :
                     (sr.residual == null ? "should not have happened" : null)); });
             statements.push(new Statement_1.StatementCast(this.condPost));
             var pivotEnv;
@@ -254,10 +254,12 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
             var dynSuccess = true;
             var scopePostProcStack = [];
+            if (statRes[0].wlp != null && this.condPre.implies(statRes[0].wlp.staticFormula) == null)
+                $("#ins0").text("verification failed (precondition does not imply WLP)").addClass("err");
             for (var i = 0; i < statements.length; ++i) {
                 console.log(JSON.stringify(statRes[i]));
                 if (statRes[i].error != null) {
-                    $("#ins" + i).text(statRes[i].error).addClass("err");
+                    $("#ins" + (i + 1)).text(statRes[i].error).addClass("err");
                     dynSuccess = false;
                     continue;
                 }

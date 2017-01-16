@@ -242,7 +242,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                     postGamma: g
                 };
             }, function (info, post) {
-                return [VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info)), []];
+                var inf = VerificationFormulaGradual_1.VerificationFormulaGradual.infimum(VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual_1.VerificationFormulaGradual.create(true, info));
+                if (!post.gradual && inf.staticFormula.autoFraming().length == 0)
+                    inf.gradual = false;
+                return [inf, []];
             });
             this.addHandler("Release", Statement_1.StatementRelease, function (s, g, onErr) {
                 return {
@@ -384,6 +387,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 result[0].error = "scopes not closed";
             else {
                 result[s.length].wlp = post;
+                result[s.length].residual = [];
                 for (var i = s.length - 1; i >= 0; --i) {
                     var residual = [];
                     if (post != null) {
@@ -391,7 +395,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                         post = ress == null ? null : ress[0];
                         residual = ress == null ? [] : ress[1];
                     }
-                    result[i + 1].residual = post != null
+                    result[i].residual = post != null
                         ? residual
                         : [];
                     result[i].wlp = post;

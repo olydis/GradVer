@@ -115,6 +115,7 @@ export class Hoare
         else
         {
             result[s.length].wlp = post;
+            result[s.length].residual = [];
             for (var i = s.length - 1; i >= 0; --i)
             {
                 var residual: VerificationFormula[] = [];
@@ -124,7 +125,7 @@ export class Hoare
                     post = ress == null ? null : ress[0];
                     residual = ress == null ? [] : ress[1];
                 }
-                result[i + 1].residual = post != null 
+                result[i].residual = post != null 
                     ? residual
                     : [];
                 result[i].wlp = post;
@@ -421,7 +422,10 @@ export class Hoare
                 };
             },
             (info, post) => {
-                return [VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info)), []];
+                var inf = VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
+                if (!post.gradual && inf.staticFormula.autoFraming().length == 0)
+                    inf.gradual = false;
+                return [inf, []];
             });
         this.addHandler<StatementRelease, VerificationFormula>("Release", StatementRelease,
             (s, g, onErr) => {
