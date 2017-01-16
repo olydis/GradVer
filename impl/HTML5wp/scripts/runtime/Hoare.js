@@ -357,52 +357,65 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             throw "unknown statement type";
         };
         Hoare.prototype.checkMethod = function (g, s, pre, post) {
-            var scopePostProcStack = [];
             s = s.slice();
-            s.push(new Statement_1.StatementCast(post));
-            var result = [];
+            var scopePostProcStack = [];
             var infos = [];
-            result.push({ g: g, wlp: null, residual: null, error: null });
+            var result = [];
+            // init
+            result.push({ g: g, wlp: null, residual: [], error: null, scopeStack: [] });
             for (var _i = 0, s_1 = s; _i < s_1.length; _i++) {
                 var ss = s_1[_i];
-                var error = null;
+                result.push({ g: null /*of +*/, wlp: null /*of - below*/, residual: [] /*of - above*/, error: null /*of - above*/, scopeStack: [] /*of +*/ });
+            }
+            // structural check and parse
+            for (var i = 0; i < s.length; ++i) {
+                var ss = s[i];
+                // nested stuff checking
                 for (var _a = 0, scopePostProcStack_1 = scopePostProcStack; _a < scopePostProcStack_1.length; _a++) {
                     var scopeItem = scopePostProcStack_1[_a];
                     var err = scopeItem.checkInnerStmt(ss);
-                    if (err != null)
-                        error = ss + " failed check: " + err;
-                }
-                if (error == null) {
-                    var rule = this.getRule(ss);
-                    var errs = [];
-                    var res = rule.checkStrucural(ss, g, function (msg) { return errs.push(msg); }, scopePostProcStack);
-                    if (res == null)
-                        error = ss + " failed check: " + errs.join(", ");
-                }
-                infos.push(res == null ? null : res.info);
-                g = res.postGamma;
-                result.push({ g: g, wlp: null, residual: null, error: error });
-            }
-            if (scopePostProcStack.length != 0)
-                result[0].error = "scopes not closed";
-            else {
-                result[s.length].wlp = post;
-                result[s.length].residual = [];
-                for (var i = s.length - 1; i >= 0; --i) {
-                    var residual = [];
-                    if (post != null) {
-                        var ress = this.getRule(s[i]).wlp(infos[i], post, scopePostProcStack);
-                        post = ress == null ? null : ress[0];
-                        residual = ress == null ? [] : ress[1];
+                    if (err != null) {
+                        result[i + 1].error = ss + " failed check: " + err;
+                        return result;
                     }
-                    result[i].residual = post != null
-                        ? residual
-                        : [];
-                    result[i].wlp = post;
                 }
-                if (post != null)
-                    result[0].residual = pre.impliesRemaindors(post.staticFormula);
+                // parse & check structure
+                var rule = this.getRule(ss);
+                var errs = [];
+                var res = rule.checkStrucural(ss, result[i].g, function (msg) { return errs.push(msg); }, scopePostProcStack);
+                if (res == null) {
+                    result[i + 1].error = ss + " failed check: " + errs.join(", ");
+                    return result;
+                }
+                infos.push(res.info);
+                result[i + 1].g = res.postGamma;
+                result[i + 1].scopeStack = scopePostProcStack.slice();
             }
+            // scopes closed?
+            if (scopePostProcStack.length != 0) {
+                result[0].error = "scopes not closed";
+                return result;
+            }
+            // WLP
+            result[s.length].wlp = post;
+            for (var i = s.length - 1; i >= 0; --i) {
+                var residual = [];
+                if (post != null) {
+                    var ress = this.getRule(s[i]).wlp(infos[i], post, result[i].scopeStack);
+                    if (ress == null || ress[0] == null || !ress[0].satisfiable() || !ress[0].sfrm()) {
+                        result[i + 1].error = "verification failed (WLP undefined)";
+                        return result;
+                    }
+                    post = ress[0];
+                    residual = ress[1];
+                }
+                result[i + 1].residual = residual;
+                result[i].wlp = post;
+            }
+            // valid
+            result[0].residual = pre.impliesRemaindors(post.staticFormula);
+            if (result[0].residual == null)
+                result[0].error = "verification failed (precondition does not imply WLP)";
             return result;
         };
         return Hoare;

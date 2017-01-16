@@ -1,4 +1,4 @@
-define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../runtime/EvalEnvVisu", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/Statement", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, EvalEnvVisu_1, VerificationFormulaGradual_1, VerificationFormula_1, Statement_1, ValueExpression_1) {
+define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../runtime/EvalEnvVisu", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, EvalEnvVisu_1, VerificationFormulaGradual_1, VerificationFormula_1, ValueExpression_1) {
     "use strict";
     function splitCell(left, right, cls) {
         if (cls === void 0) { cls = ""; }
@@ -221,12 +221,6 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             $(".instructionStatement").removeClass("stmtFramed").removeClass("stmtUnframed");
             this.statements.forEach(function (s) { return s.stmtContainer.css("margin-left", "0px"); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
-            var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
-            // errs
-            statRes.forEach(function (sr) { return sr.error = sr.error != null ? sr.error :
-                (sr.wlp == null ? "verification failed (WLP undefined)" :
-                    (sr.residual == null ? "should not have happened" : null)); });
-            statements.push(new Statement_1.StatementCast(this.condPost));
             var pivotEnv;
             {
                 var nenv = this.condPre.createNormalizedEnv();
@@ -254,52 +248,42 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 ; };
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
             var dynSuccess = true;
-            var scopePostProcStack = [];
-            if (statRes[0].wlp != null && this.condPre.implies(statRes[0].wlp.staticFormula) == null)
-                $("#ins0").text("verification failed (precondition does not imply WLP)").addClass("err");
-            var stmtFramed = true; // it's the main method... !this.condPre.gradual;
+            // static ver.
+            var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
+            // render static results
+            for (var i = 0; i <= statements.length; ++i) {
+                if (statRes[i].error != null)
+                    $("#ins" + i).text(statRes[i].error).addClass("err");
+                if (statRes[i].wlp != null)
+                    this.displayPreCond(i, statRes[i].wlp);
+            }
             for (var i = 0; i < statements.length; ++i) {
-                $("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
-                console.log(JSON.stringify(statRes[i]));
-                if (statRes[i].error != null) {
-                    $("#ins" + (i + 1)).text(statRes[i].error).addClass("err");
-                    dynSuccess = false;
-                    continue;
-                }
-                var cond = statRes[i].wlp;
-                this.displayPreCond(i, cond);
+                var indent = Math.min(statRes[i].scopeStack.length, statRes[i + 1].scopeStack.length);
+                if (this.statements[i + 1])
+                    this.statements[i + 1].stmtContainer.css("margin-left", (indent * 30) + "px");
+            }
+            var stmtFramed = !this.condPre.gradual;
+            for (var i = 0; i < statements.length && statRes[i + 1].error == null && statRes[i].error == null && statRes[i + 1].wlp != null; ++i) {
+                //$("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
+                console.log(i + " " + JSON.stringify(statRes[i]));
+                var cond = statRes[i + 1].wlp;
                 this.displayDynState(i, dynEnv, statRes[i].g);
-                if (!cond.satisfiable()) {
-                    $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
-                    return;
-                }
-                if (!cond.sfrm()) {
-                    $("#ins" + i).text("pre-condition malformed: not self-framed").addClass("err");
-                    return;
-                }
-                var indent = scopePostProcStack.length;
                 var res = statRes[i].residual; //this.hoare.post(s, cond, g, scopePostProcStack);
-                indent = Math.min(indent, scopePostProcStack.length);
                 dynSuccess = dynSuccess && res.every(function (r) { return dynCheckDyn(r); });
                 this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
-                if (!dynSuccess)
+                if (!dynSuccess) {
                     dynEnv = null;
-                if (this.statements[i]) {
-                    this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
-                    if (this.statements)
-                        ;
+                    break;
                 }
                 // dyn
                 dynStepOver(i + 1);
-                if (dynSuccess && dynEnv == null) {
+                if (dynEnv == null) {
                     $("#ins" + i).text("dynCheck failed within method call").addClass("err");
-                    dynSuccess = false;
+                    break;
                 }
-                if (dynSuccess && dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
+                if (dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
-            if (scopePostProcStack.length != 0)
-                $("#ins" + this.statements.length).text("close scope").addClass("err");
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;
