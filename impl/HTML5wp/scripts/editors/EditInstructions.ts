@@ -280,6 +280,7 @@ export class EditInstructions
         $(".err").removeClass("err");
         $(".intermediateState").off("mouseenter");
         $(".intermediateState").off("mouseleave").on("mouseleave", () => visuHide());
+        $(".instructionStatement").removeClass("stmtFramed").removeClass("stmtUnframed");
         this.statements.forEach(s => s.stmtContainer.css("margin-left", "0px"));
 
         var statements = this.statements.map(x => x.getStatement());
@@ -326,8 +327,10 @@ export class EditInstructions
         if (statRes[0].wlp != null && this.condPre.implies(statRes[0].wlp.staticFormula) == null)
             $("#ins0").text("verification failed (precondition does not imply WLP)").addClass("err");
 
+        var stmtFramed = true; // it's the main method... !this.condPre.gradual;
         for (var i = 0; i < statements.length; ++i)
         {
+            $("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
             console.log(JSON.stringify(statRes[i]));
             if (statRes[i].error != null)
             {
@@ -360,7 +363,10 @@ export class EditInstructions
                 dynEnv = null;
 
             if (this.statements[i])
+            {
                 this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
+                if (this.statements)
+            }
 
             // dyn
             dynStepOver(i + 1);

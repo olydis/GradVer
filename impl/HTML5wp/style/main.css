@@ -46,6 +46,15 @@
     --text-color-error: red;
 }
 
+.stmtFramed
+{
+    color: blue;
+}
+.stmtUnframed
+{
+    color: darkred;
+}
+
 body
 {
     background-color: var(--back-color);
