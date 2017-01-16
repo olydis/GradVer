@@ -280,16 +280,10 @@ export class EditInstructions
         $(".err").removeClass("err");
         $(".intermediateState").off("mouseenter");
         $(".intermediateState").off("mouseleave").on("mouseleave", () => visuHide());
+        $(".instructionStatement").removeClass("stmtFramed").removeClass("stmtUnframed");
         this.statements.forEach(s => s.stmtContainer.css("margin-left", "0px"));
 
         var statements = this.statements.map(x => x.getStatement());
-        var statRes = this.hoare.checkMethod(GammaNew, statements, this.condPre, this.condPost);
-        // errs
-        statRes.forEach(sr => sr.error = sr.error != null ? sr.error : 
-            (sr.wlp == null ? "verification failed (WLP undefined)" : 
-            (sr.residual == null ? "should not have happened" : null)));
-
-        statements.push(new StatementCast(this.condPost));
 
         var pivotEnv: EvalEnv;
         {
@@ -321,60 +315,52 @@ export class EditInstructions
         var dynCheckDyn: (frm: VerificationFormula) => boolean = frm => dynEnv != null && frm.eval(topEnv(dynEnv));
         var dynSuccess = true;
 
-        var scopePostProcStack: any[] = [];
+        // static ver.
+        var statRes = this.hoare.checkMethod(GammaNew, statements, this.condPre, this.condPost);
 
-        if (statRes[0].wlp != null && this.condPre.implies(statRes[0].wlp.staticFormula) == null)
-            $("#ins0").text("verification failed (precondition does not imply WLP)").addClass("err");
-
+        // render static results
+        for (var i = 0; i <= statements.length; ++i)
+        {
+            if (statRes[i].error != null)
+                $("#ins" + i).text(statRes[i].error).addClass("err");
+            if (statRes[i].wlp != null)
+                this.displayPreCond(i, statRes[i].wlp);
+        }
         for (var i = 0; i < statements.length; ++i)
         {
-            console.log(JSON.stringify(statRes[i]));
-            if (statRes[i].error != null)
-            {
-                $("#ins" + (i + 1)).text(statRes[i].error).addClass("err");
-                dynSuccess = false;
-                continue;
-            }
+            var indent = Math.min(statRes[i].scopeStack.length, statRes[i + 1].scopeStack.length);
+            if (this.statements[i + 1])
+                this.statements[i + 1].stmtContainer.css("margin-left", (indent * 30) + "px");
+        }
 
-            var cond = statRes[i].wlp;
-            this.displayPreCond(i, cond);
+        var stmtFramed = !this.condPre.gradual;
+        for (var i = 0; i < statements.length && statRes[i + 1].error == null && statRes[i].error == null && statRes[i + 1].wlp != null; ++i)
+        {
+            //$("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
+            console.log(i + " " + JSON.stringify(statRes[i]));
+
+            var cond = statRes[i + 1].wlp;
             this.displayDynState(i, dynEnv, statRes[i].g);
 
-            if (!cond.satisfiable())
-            {
-                $("#ins" + i).text("pre-condition malformed: not satisfiable").addClass("err");
-                return;
-            }
-            if (!cond.sfrm())
-            {
-                $("#ins" + i).text("pre-condition malformed: not self-framed").addClass("err");
-                return;
-            }
-
-            var indent = scopePostProcStack.length;
             var res = statRes[i].residual;//this.hoare.post(s, cond, g, scopePostProcStack);
-            indent = Math.min(indent, scopePostProcStack.length);
             dynSuccess = dynSuccess && res.every(r => dynCheckDyn(r));
             this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
             if (!dynSuccess)
+            {
                 dynEnv = null;
-
-            if (this.statements[i])
-                this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
+                break;
+            }
 
             // dyn
             dynStepOver(i + 1);
-            if (dynSuccess && dynEnv == null)
+            if (dynEnv == null)
             {
                 $("#ins" + i).text("dynCheck failed within method call").addClass("err");
-                dynSuccess = false
+                break;
             }
-            if (dynSuccess && dynEnv != null && !cond.eval(topEnv(dynEnv)))
+            if (dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }
-
-        if (scopePostProcStack.length != 0)
-            $("#ins" + this.statements.length).text("close scope").addClass("err");
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void
