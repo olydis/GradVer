@@ -72,6 +72,9 @@ export class EditInstructions
     {
         this.setInstructions([
             "// ♦ Fun with infinite linked list ♦",
+            "// • the recursive data structure introduces ambiguous framing",
+            "// • causing a (static) WLP to be undefined (no unique max. formula exists)",
+            "// • play with imprecise casts or an imprecise postcondition to resolve",
             "int i1;",
             "i1 := 1;",
             "int i2;",
@@ -86,7 +89,9 @@ export class EditInstructions
             "ps.t = ps;",
             "Point q;",
             "q = ps.t.t.t.t.h;",
-            "assert (q.x = 1) * (q.y = 2);"
+            "assert (q.x = 1) * (q.y = 2);",
+            "// { ? } this cast will overcome the syntax limitations of precise fomulas",
+            "// ...without introducing any runtime checks or an imprecise method contract!"
         ]);
     }
     public loadEx3(): void
@@ -353,7 +358,7 @@ export class EditInstructions
                 dynStepOver(i);
                 if (dynEnv == null)
                 {
-                    $("#ins" + i).text("dynCheck failed within method call").addClass("err");
+                    $("#ins" + (i - 1)).text("dyn check failed within method call").addClass("err");
                     break;
                 }
             }
