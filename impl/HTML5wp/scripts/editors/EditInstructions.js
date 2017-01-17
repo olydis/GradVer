@@ -186,13 +186,12 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         EditInstructions.prototype.displayPreCond = function (i, cond) {
             this.verificationFormulas[i].text("").append(cond.norm().toString());
         };
-        EditInstructions.prototype.displayDynCond = function (i, cond, dyn, dynEnv, dynSuccess) {
+        EditInstructions.prototype.displayDynCond = function (i, dyn) {
             // output
             var jqDyn = $("#ins" + i);
             if (dyn.length > 0 && jqDyn.text() == "")
                 jqDyn.append($("<span>")
                     .addClass("dynCheck")
-                    .addClass(dynEnv != null ? (dynSuccess ? "dynCheck1" : "dynCheck0") : "")
                     .text(dyn.join(", ")));
         };
         EditInstructions.prototype.displayDynState = function (i, dynEnv, gamma) {
@@ -247,44 +246,45 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             var dynStepOver = function (untilIdxEx) { while (dynStepInto(untilIdxEx))
                 ; };
             var dynCheckDyn = function (frm) { return dynEnv != null && frm.eval(StackEnv_1.topEnv(dynEnv)); };
-            var dynSuccess = true;
             // static ver.
             var statRes = this.hoare.checkMethod(Gamma_1.GammaNew, statements, this.condPre, this.condPost);
+            var failure = statRes.some(function (x) { return x.error != null; });
             // render static results
+            //var stmtFramed = !this.condPre.gradual;
             for (var i = 0; i <= statements.length; ++i) {
+                //$("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
+                console.log(i + " " + JSON.stringify(statRes[i]));
                 if (statRes[i].error != null)
                     $("#ins" + i).text(statRes[i].error).addClass("err");
                 if (statRes[i].wlp != null)
                     this.displayPreCond(i, statRes[i].wlp);
+                this.displayDynCond(i, statRes[i].residual);
             }
             for (var i = 0; i < statements.length; ++i) {
                 var indent = Math.min(statRes[i].scopeStack.length, statRes[i + 1].scopeStack.length);
                 if (this.statements[i + 1])
                     this.statements[i + 1].stmtContainer.css("margin-left", (indent * 30) + "px");
             }
-            var stmtFramed = !this.condPre.gradual;
-            for (var i = 0; i < statements.length && statRes[i + 1].error == null && statRes[i].error == null && statRes[i + 1].wlp != null; ++i) {
-                //$("#ins" + i).addClass(stmtFramed ? "stmtFramed" : "stmtUnframed");
-                console.log(i + " " + JSON.stringify(statRes[i]));
-                var cond = statRes[i + 1].wlp;
-                this.displayDynState(i, dynEnv, statRes[i].g);
-                var res = statRes[i].residual; //this.hoare.post(s, cond, g, scopePostProcStack);
-                dynSuccess = dynSuccess && res.every(function (r) { return dynCheckDyn(r); });
-                this.displayDynCond(i, cond, res, dynEnv, dynSuccess);
+            var dynSuccess = !failure;
+            for (var i = 0; dynSuccess && i <= statements.length; ++i) {
+                this.displayDynState(i - 1, dynEnv, statRes[i].g);
+                var res = statRes[i].residual;
+                dynSuccess = dynSuccess && statRes[i].residual.every(function (r) { return dynCheckDyn(r); });
+                $("#ins" + i + " .dynCheck").addClass(dynSuccess ? "dynCheck1" : "dynCheck0");
                 if (!dynSuccess) {
                     dynEnv = null;
+                    this.displayDynState(i, null, statRes[i].g); // display BLOCKED
                     break;
                 }
-                // dyn
-                dynStepOver(i + 1);
-                if (dynEnv == null) {
-                    $("#ins" + i).text("dynCheck failed within method call").addClass("err");
-                    break;
+                if (i > 0) {
+                    // step
+                    dynStepOver(i);
+                    if (dynEnv == null) {
+                        $("#ins" + i).text("dynCheck failed within method call").addClass("err");
+                        break;
+                    }
                 }
-                if (dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
-                    throw "preservation broke";
             }
-            this.displayDynState(statements.length, dynEnv, statRes[statements.length].g);
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;
