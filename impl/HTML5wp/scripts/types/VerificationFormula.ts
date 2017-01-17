@@ -534,4 +534,29 @@ export class VerificationFormula
             ? VerificationFormula.getFalse()
             : env.createFormula();
     }
+
+    public dominators(): VerificationFormula[]
+    {
+        var result: VerificationFormula[] = [this.snorm()];
+        var fp = this.autoFraming();
+        for (var i = 0; i < fp.length; ++i)
+            for (var j = i + 1; j < fp.length; ++j)
+            {
+                if (fp[i].f != fp[j].f)
+                    continue;
+                result = result.map(x => x.append(new FormulaPartEq(fp[i].e, fp[j].e))).concat
+                        (result.map(x => x.append(new FormulaPartNeq(fp[i].e, fp[j].e))));
+            }
+        result = result.map(f => f.norm());
+        result = result.map(f => new VerificationFormula(null, (f.autoFraming() as FormulaPart[]).concat(f.parts)))
+        result = result.map(f => f.norm());
+        return result.filter(f => f.satisfiable());
+    }
+
+    public static nonSepAnd(a: VerificationFormula, b: VerificationFormula): VerificationFormula
+    {
+        var inf = VerificationFormula.intersect(a.snorm(), b.snorm());
+        var doms = inf.dominators();
+        return doms.length == 1 ? doms[0] : null;
+    }
 }

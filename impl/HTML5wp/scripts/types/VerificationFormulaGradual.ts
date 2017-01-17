@@ -59,7 +59,17 @@ export class VerificationFormulaGradual
             else
                 return null;
 
-        return VerificationFormulaGradual.create(true, new VerificationFormula(null, a.norm().staticFormula.parts.concat(b.norm().staticFormula.parts)));
+        return VerificationFormulaGradual.create(true, new VerificationFormula(null, a.staticFormula.snorm().parts.concat(b.staticFormula.snorm().parts)).snorm());
+    }
+
+    public static nonSepAnd(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual
+    {
+        if (!a.gradual && !b.gradual)
+        {
+            var nsa = VerificationFormula.nonSepAnd(a.staticFormula, b.staticFormula);
+            return nsa == null ? null : VerificationFormulaGradual.create(false, nsa);
+        }
+        return VerificationFormulaGradual.create(true, new VerificationFormula(null, a.staticFormula.snorm().parts.concat(b.staticFormula.snorm().parts)).snorm());
     }
 
     public constructor(

@@ -361,6 +361,7 @@ export class EditInstructions
             if (dynEnv != null && !cond.eval(topEnv(dynEnv)))
                 throw "preservation broke";
         }
+        this.displayDynState(statements.length, dynEnv, statRes[statements.length].g);
     }
 
     public updateConditions(pre: VerificationFormulaGradual, post: VerificationFormulaGradual): void

@@ -54,7 +54,14 @@ define(["require", "exports", "./VerificationFormula"], function (require, expor
                     return b;
                 else
                     return null;
-            return VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, a.norm().staticFormula.parts.concat(b.norm().staticFormula.parts)));
+            return VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, a.staticFormula.snorm().parts.concat(b.staticFormula.snorm().parts)).snorm());
+        };
+        VerificationFormulaGradual.nonSepAnd = function (a, b) {
+            if (!a.gradual && !b.gradual) {
+                var nsa = VerificationFormula_1.VerificationFormula.nonSepAnd(a.staticFormula, b.staticFormula);
+                return nsa == null ? null : VerificationFormulaGradual.create(false, nsa);
+            }
+            return VerificationFormulaGradual.create(true, new VerificationFormula_1.VerificationFormula(null, a.staticFormula.snorm().parts.concat(b.staticFormula.snorm().parts)).snorm());
         };
         VerificationFormulaGradual.prototype.toString = function () {
             if (this.staticFormula.isEmpty() && this.gradual)

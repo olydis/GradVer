@@ -101,7 +101,7 @@ export class Hoare
                 var err = scopeItem.checkInnerStmt(ss);
                 if (err != null)
                 {
-                    result[i + 1].error = ss + " failed check: " + err;
+                    result[i + 1].error = "ill-formed: " + err;
                     return result;
                 }
             }
@@ -112,7 +112,7 @@ export class Hoare
             var res = rule.checkStrucural(ss, result[i].g, msg => errs.push(msg), scopePostProcStack);
             if (res == null) 
             {
-                result[i + 1].error = ss + " failed check: " + errs.join(", ");
+                result[i + 1].error = "ill-formed: " + errs.join(", ");
                 return result;
             }
 
@@ -150,8 +150,9 @@ export class Hoare
         }
 
         // valid
-        result[0].residual = pre.impliesRemaindors(post.staticFormula);
-        if (result[0].residual == null)
+        if (pre.implies(post.staticFormula) != null)
+            result[0].residual = pre.impliesRemaindors(post.staticFormula);
+        else
             result[0].error = "verification failed (precondition does not imply WLP)";
 
         return result;
@@ -441,10 +442,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                var inf = VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
-                if (!post.gradual && inf.staticFormula.autoFraming().length == 0)
-                    inf.gradual = false;
-                return [inf, []];
+                return [VerificationFormulaGradual.nonSepAnd(post, VerificationFormulaGradual.create(false, info)), []];
             });
         this.addHandler<StatementRelease, VerificationFormula>("Release", StatementRelease,
             (s, g, onErr) => {
@@ -454,7 +452,7 @@ export class Hoare
                 };
             },
             (info, post) => {
-                var pre = VerificationFormulaGradual.infimum(VerificationFormulaGradual.create(true, post.staticFormula), VerificationFormulaGradual.create(true, info));
+                var pre = VerificationFormulaGradual.nonSepAnd(post, VerificationFormulaGradual.create(false, info));
                 if (pre == null)
                     return null;
 
@@ -464,7 +462,7 @@ export class Hoare
                     xpost = xpost.woAcc(fp.e, fp.f);
 
                 // cannot say more than xpost
-                if (!pre.satisfiable() || null == xpost.implies(post.staticFormula))
+                if (!pre.satisfiable() || !xpost.impliesFully(post.staticFormula))
                     return null;
 
                 return [pre, xpost.impliesRemaindors(post.staticFormula)];

@@ -284,6 +284,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 if (dynEnv != null && !cond.eval(StackEnv_1.topEnv(dynEnv)))
                     throw "preservation broke";
             }
+            this.displayDynState(statements.length, dynEnv, statRes[statements.length].g);
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {
             this.condPre = pre;
