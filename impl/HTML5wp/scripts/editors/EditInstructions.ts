@@ -152,8 +152,9 @@ export class EditInstructions
             "Point p;",
             "p = new Point;",
             "hold acc(p.x) {",
-            "p.y = i1;",
             "{ ? }",
+            "p.x = i1;",
+            "// nice try",
             "}",
             "assert acc(p.x)",
             "assert acc(p.y)",
@@ -162,6 +163,7 @@ export class EditInstructions
     public loadEx7(): void
     {
         this.setInstructions([
+            "// some fun with the state visualization",
             "int i1;",
             "i1 = 1;",
             "int i2;",
@@ -187,6 +189,7 @@ export class EditInstructions
     public loadEx8(): void
     {
         this.setInstructions([
+            "// misusing `hold` to scope variables",
             "Point p;",
             "hold true {",
                 "p := new Point;",
@@ -283,6 +286,7 @@ export class EditInstructions
         $(".intermediateState").off("mouseleave").on("mouseleave", () => visuHide());
         $(".instructionStatement").removeClass("stmtFramed").removeClass("stmtUnframed");
         this.statements.forEach(s => s.stmtContainer.css("margin-left", "0px"));
+        this.verificationFormulas.forEach(s => s.parent().parent().parent().parent().css("margin-left", "0px"));
 
         var statements = this.statements.map(x => x.getStatement());
 
@@ -330,19 +334,19 @@ export class EditInstructions
                 this.displayPreCond(i, statRes[i].wlp);
             this.displayDynCond(i, statRes[i].residual);
         }
+        // indentation
+        for (var i = 0; i <= statements.length; ++i)
+            this.verificationFormulas[i].parent().parent().parent().parent().css("margin-left", (statRes[i].scopeStack.length * 30) + "px");
         for (var i = 0; i < statements.length; ++i)
         {
             var indent = Math.min(statRes[i].scopeStack.length, statRes[i + 1].scopeStack.length);
-            if (this.statements[i + 1])
-                this.statements[i + 1].stmtContainer.css("margin-left", (indent * 30) + "px");
+            if (this.statements[i])
+                this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
         }
 
         var dynSuccess = !failure;
         for (var i = 0; dynSuccess && i <= statements.length; ++i)
         {
-            this.displayDynState(i - 1, dynEnv, statRes[i].g);
-
-            var res = statRes[i].residual;
             dynSuccess = dynSuccess && statRes[i].residual.every(r => dynCheckDyn(r));
             $(`#ins${i} .dynCheck`).addClass(dynSuccess ? "dynCheck1" : "dynCheck0");
             if (!dynSuccess)
@@ -362,6 +366,7 @@ export class EditInstructions
                     break;
                 }
             }
+            this.displayDynState(i, dynEnv, statRes[i].g);
         }
     }
 

@@ -306,28 +306,59 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             }, function (info, post) {
                 return [post, []];
             });
-            this.addHandler("Hold", Statement_1.StatementHold, function (s, g, onErr) {
+            this.addHandler("Hold", Statement_1.StatementHold, function (s, g, onErr, scopeStack) {
                 if (!s.p.sfrm()) {
                     onErr("framed-off formula must be self-framed");
                     return null;
                 }
+                var readOnly = s.p.FV();
+                scopeStack.push({
+                    gamma: g,
+                    checkInnerStmt: function (s) {
+                        if (readOnly.some(function (x) { return s.writesTo(x); }))
+                            return "writes to protected variable";
+                        return null;
+                    },
+                    postProc: s.p
+                });
                 return {
                     info: { phi: s.p, gamma: g },
                     postGamma: g
                 };
             }, function (info, post) {
-                return [post, []]; // TODO
+                var pre = VerificationFormulaGradual_1.VerificationFormulaGradual.nonSepAnd(post, VerificationFormulaGradual_1.VerificationFormulaGradual.create(false, info.phi));
+                if (pre == null)
+                    return null;
+                // remodel
+                var xpost = pre;
+                for (var _i = 0, _a = info.phi.footprintStatic(); _i < _a.length; _i++) {
+                    var fp = _a[_i];
+                    xpost = xpost.woAcc(fp.e, fp.f);
+                }
+                // cannot say more than xpost
+                if (!pre.satisfiable() || !xpost.impliesFully(post.staticFormula))
+                    return null;
+                return [pre, []];
             });
             this.addHandler("Unhold", Statement_1.StatementUnhold, function (s, g, onErr, postProcStack) {
                 if (postProcStack.length == 0) {
                     onErr("no scope to close");
                     return null;
                 }
+                var top = postProcStack.pop();
                 return {
-                    info: {},
-                    postGamma: postProcStack[postProcStack.length - 1].gamma
+                    info: top.postProc,
+                    postGamma: top.gamma
                 };
             }, function (info, post) {
+                var framedOff = info;
+                var readOnly = info.FV();
+                for (var _i = 0, _a = framedOff.footprintStatic(); _i < _a.length; _i++) {
+                    var fp = _a[_i];
+                    post = post.woAcc(fp.e, fp.f);
+                }
+                // for (var fv of readOnly)
+                //     post = post.woVar(fv);
                 return [post, []]; // TODO
             });
         }

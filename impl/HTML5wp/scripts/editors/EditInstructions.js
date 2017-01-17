@@ -133,8 +133,9 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "Point p;",
                 "p = new Point;",
                 "hold acc(p.x) {",
-                "p.y = i1;",
                 "{ ? }",
+                "p.x = i1;",
+                "// nice try",
                 "}",
                 "assert acc(p.x)",
                 "assert acc(p.y)",
@@ -142,6 +143,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx7 = function () {
             this.setInstructions([
+                "// some fun with the state visualization",
                 "int i1;",
                 "i1 = 1;",
                 "int i2;",
@@ -166,6 +168,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx8 = function () {
             this.setInstructions([
+                "// misusing `hold` to scope variables",
                 "Point p;",
                 "hold true {",
                 "p := new Point;",
@@ -224,6 +227,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             $(".intermediateState").off("mouseleave").on("mouseleave", function () { return EvalEnvVisu_1.hide(); });
             $(".instructionStatement").removeClass("stmtFramed").removeClass("stmtUnframed");
             this.statements.forEach(function (s) { return s.stmtContainer.css("margin-left", "0px"); });
+            this.verificationFormulas.forEach(function (s) { return s.parent().parent().parent().parent().css("margin-left", "0px"); });
             var statements = this.statements.map(function (x) { return x.getStatement(); });
             var pivotEnv;
             {
@@ -265,15 +269,16 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                     this.displayPreCond(i, statRes[i].wlp);
                 this.displayDynCond(i, statRes[i].residual);
             }
+            // indentation
+            for (var i = 0; i <= statements.length; ++i)
+                this.verificationFormulas[i].parent().parent().parent().parent().css("margin-left", (statRes[i].scopeStack.length * 30) + "px");
             for (var i = 0; i < statements.length; ++i) {
                 var indent = Math.min(statRes[i].scopeStack.length, statRes[i + 1].scopeStack.length);
-                if (this.statements[i + 1])
-                    this.statements[i + 1].stmtContainer.css("margin-left", (indent * 30) + "px");
+                if (this.statements[i])
+                    this.statements[i].stmtContainer.css("margin-left", (indent * 30) + "px");
             }
             var dynSuccess = !failure;
             for (var i = 0; dynSuccess && i <= statements.length; ++i) {
-                this.displayDynState(i - 1, dynEnv, statRes[i].g);
-                var res = statRes[i].residual;
                 dynSuccess = dynSuccess && statRes[i].residual.every(function (r) { return dynCheckDyn(r); });
                 $("#ins" + i + " .dynCheck").addClass(dynSuccess ? "dynCheck1" : "dynCheck0");
                 if (!dynSuccess) {
@@ -289,6 +294,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                         break;
                     }
                 }
+                this.displayDynState(i, dynEnv, statRes[i].g);
             }
         };
         EditInstructions.prototype.updateConditions = function (pre, post) {

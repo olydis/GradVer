@@ -25,7 +25,7 @@ type Ctor<T> = { new(... args: any[]): T };
 
 
 type ScopeStackItem = { 
-                postProc: (post: VerificationFormulaGradual) => VerificationFormulaGradual,
+                postProc: VerificationFormula,
                 checkInnerStmt: (stmt: Statement) => string,
                 gamma: Gamma
             };
@@ -522,51 +522,45 @@ export class Hoare
                 return [post, []];
             });
         this.addHandler<StatementHold, { phi: VerificationFormula, gamma: Gamma }>("Hold", StatementHold,
-            (s, g, onErr) => {
+            (s, g, onErr, scopeStack) => {
                 if (!s.p.sfrm())
                 {
                     onErr("framed-off formula must be self-framed");
                     return null;
                 }
+                var readOnly = s.p.FV();
+                scopeStack.push({
+                    gamma:g,
+                    checkInnerStmt: s => {
+                        if (readOnly.some(x => s.writesTo(x)))
+                            return "writes to protected variable";
+                        return null;
+                    },
+                    postProc: s.p
+                });
                 return {
                     info: { phi: s.p, gamma: g },
                     postGamma: g
                 };
             },
             (info, post) => {
-                return [post, []]; // TODO
+                var pre = VerificationFormulaGradual.nonSepAnd(post, VerificationFormulaGradual.create(false, info.phi));
+                if (pre == null)
+                    return null;
+
+                // remodel
+                var xpost = pre;
+                for (var fp of info.phi.footprintStatic())
+                    xpost = xpost.woAcc(fp.e, fp.f);
+
+                // cannot say more than xpost
+                if (!pre.satisfiable() || !xpost.impliesFully(post.staticFormula))
+                    return null;
+
+                return [pre, []];
             }
-            // ,
-            // (info) => info.phi,
-            // (info, pre, postProcStack) => {
-            //     var frameOff = pre;
-            //     var readOnly = info.phi.FV();
-            //     for (var fp of info.phi.footprintStatic())
-            //         pre = pre.woAcc(fp.e, fp.f);
-            //     for (var fp2 of pre.staticFormula.autoFraming())
-            //         frameOff = frameOff.woAcc(fp2.e, fp2.f);
-            //     for (var fv of frameOff.staticFormula.FV())
-            //         if (readOnly.indexOf(fv) == -1)
-            //             frameOff = frameOff.woVar(fv);
-                
-            //     postProcStack.push({ 
-            //         postProc: post => {
-            //             for (var part of frameOff.staticFormula.parts)
-            //                 post = post.append(part);
-            //             return post;
-            //         },
-            //         checkInnerStmt: s => {
-            //             if (readOnly.some(x => s.writesTo(x)))
-            //                 return "writes to protected variable";
-            //             return null;
-            //         },
-            //         gamma: info.gamma
-            //     });
-                
-            //     return pre;
-            // }
             );
-        this.addHandler<StatementUnhold, { }>("Unhold", StatementUnhold,
+        this.addHandler<StatementUnhold, VerificationFormula>("Unhold", StatementUnhold,
             (s, g, onErr, postProcStack) => {
                 if (postProcStack.length == 0)
                 {
@@ -574,12 +568,21 @@ export class Hoare
                     return null;
                 }
 
+                var top = postProcStack.pop();
+
                 return {
-                    info: { },
-                    postGamma: postProcStack[postProcStack.length - 1].gamma
+                    info: top.postProc,
+                    postGamma: top.gamma
                 };
             },
             (info, post) => {
+                var framedOff = info;
+                var readOnly = info.FV();
+                for (var fp of framedOff.footprintStatic())
+                    post = post.woAcc(fp.e, fp.f);
+                // for (var fv of readOnly)
+                //     post = post.woVar(fv);
+
                 return [post, []]; // TODO
             }
             // ,
