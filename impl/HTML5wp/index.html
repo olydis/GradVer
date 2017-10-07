@@ -13,7 +13,7 @@
             {
                 var modal = $('#myModal');
                 $("#closeModal").click(function() { modal.css("display", "none"); });
-                window.onclick = function(event) { if (event.target == modal) modal.css("display", "none"); };
+                window.onclick = function(event) { if (event.target == modal[0]) modal.css("display", "none"); };
             });
         </script>
         <!--end dialog-->
