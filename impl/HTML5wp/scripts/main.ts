@@ -40,18 +40,30 @@ function wellFormedMethod(c: Class, m: Method, hoare: Hoare): string
     var augmentPre = new FormulaPartNeq(new ExpressionX(Expression.getThis()), Expression.getNull());
 
     var res: string = null;
-    if (res == null) res = m.frmPre.staticFormula.FV().every(x => x == m.argName || x == Expression.getThis())
-                                ? null : "precodiction contains unknown variables: " + m.frmPre;
-    if (res == null) res = m.frmPost.staticFormula.FV().every(x => x == m.argName || x == Expression.getThis() || x == Expression.getResult())
-                                ? null : "postcodiction contains unknown variables: " + m.frmPost;
-    if (res == null) res = hoare.checkMethod(
-        GammaAdd(m.argName, m.argType, 
-        GammaAdd(Expression.getThis(), new TypeClass(c.name), 
-        GammaAdd(Expression.getResult(), m.retType, GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost)
-        .map(x => x.error).filter(x => x != null)[0];
+    if (res == null) res = m.frmPre.staticFormula.FV().every(x => m.args.some(a => a.name === x) || x == Expression.getThis())
+        ? null : "precodiction contains unknown variables: " + m.frmPre;
+    if (res == null) res = m.frmPost.staticFormula.FV().every(x => m.args.some(a => a.name === x) || x == Expression.getThis() || x == Expression.getResult())
+        ? null : "postcodiction contains unknown variables: " + m.frmPost;
+    if (res == null) {
+        let gamma = 
+            GammaAdd(Expression.getThis(), new TypeClass(c.name), 
+            GammaAdd(Expression.getResult(), m.retType, GammaNew));
+        for (const a of m.args)
+            gamma = GammaAdd(a.name, a.type, gamma);
+        res = hoare.checkMethod(gamma, m.body, m.frmPre.append(augmentPre), m.frmPost)
+            .map(x => x.error).filter(x => x != null)[0];
+    }
     if (res == null) res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
     if (res == null) res = m.frmPost.sfrm() ? null : "postcondition not self-framed: " + m.frmPost;
-    if (res == null) res = m.body.filter(s => s.writesTo(m.argName)).map(s => s + " writes to " + m.argName)[0];
+    if (res == null) {
+        for (const instr of m.body) {
+            for (const arg of m.args) {
+                if (instr.writesTo(arg.name)) res = instr + " writes to " + arg.name;
+                if (res != null) break;                
+            }
+            if (res != null) break;
+        }
+    }
     return res;
 }
 
@@ -112,8 +124,7 @@ $(() =>
                 {
                     name: "swapXYweak",
                     retType: new TypeClass("Point"),
-                    argType: new TypeClass("void"),
-                    argName: "_",
+                    args: [],
                     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                     frmPost: new VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                     body: [
@@ -136,8 +147,7 @@ $(() =>
                 {
                     name: "swapXYstrong",
                     retType: new TypeClass("Point"),
-                    argType: new TypeClass("void"),
-                    argName: "_",
+                    args: [],
                     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                     frmPost: new VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                     body: [
@@ -160,8 +170,7 @@ $(() =>
                 {
                     name: "clone",
                     retType: new TypeClass("Point"),
-                    argType: new TypeClass("void"),
-                    argName: "_",
+                    args: [],
                     frmPre: new VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                     frmPost: new VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.x * this.y = result.y"),
                     body: [
@@ -193,8 +202,7 @@ $(() =>
                 {
                     name: "insertAfter",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("Point"),
-                    argName: "p",
+                    args: [{ name: "p", type: new TypeClass("Point") }],
                     frmPre: new VerificationFormulaGradual("acc(this.t)"),
                     frmPost: new VerificationFormulaGradual("acc(this.t) * acc(this.t.h) * acc(this.t.t)"),
                     body: [
@@ -210,8 +218,7 @@ $(() =>
                 {
                     name: "insertHere",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("Point"),
-                    argName: "p",
+                    args: [{ name: "p", type: new TypeClass("Point") }],
                     frmPre: new VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
                     frmPost: new VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
                     body: [
@@ -236,8 +243,7 @@ $(() =>
                 {
                     name: "baz",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("Point"),
-                    argName: "p",
+                    args: [{ name: "p", type: new TypeClass("Point") }],
                     frmPre: new VerificationFormulaGradual("?"),
                     frmPost: new VerificationFormulaGradual("?"),
                     body: [
@@ -250,8 +256,7 @@ $(() =>
                 {
                     name: "bar",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("Point"),
-                    argName: "p",
+                    args: [{ name: "p", type: new TypeClass("Point") }],
                     frmPre: new VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
                     frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                     body: [
@@ -262,8 +267,7 @@ $(() =>
                 {
                     name: "barg",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("Point"),
-                    argName: "p",
+                    args: [{ name: "p", type: new TypeClass("Point") }],
                     frmPre: new VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
                     frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                     body: [
@@ -274,8 +278,7 @@ $(() =>
                 {
                     name: "foo",
                     retType: new TypeClass("void"),
-                    argType: new TypeClass("void"),
-                    argName: "__",
+                    args: [],
                     frmPre: new VerificationFormulaGradual("true"),
                     frmPost: new VerificationFormulaGradual("true"),
                     body: [

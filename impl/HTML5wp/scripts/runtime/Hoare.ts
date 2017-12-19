@@ -335,12 +335,12 @@ export class Hoare
             (s, g, onErr) => {
                 var ex = new ExpressionX(s.x);
                 var ey = new ExpressionX(s.y);
-                var ez = new ExpressionX(s.z);
+                var ezs = s.z.map(z => new ExpressionX(z));
                 var exT = ex.getType(env, g);
                 var eyT = ey.getType(env, g);
-                var ezT = ez.getType(env, g);
+                var ezTs = ezs.map(z => z.getType(env, g));
 
-                if (s.x == s.y || s.x == s.z)
+                if (s.x == s.y || s.z.some(z => z === s.x))
                 {
                     onErr("LHS not to appear in RHS");
                     return null;
@@ -360,25 +360,35 @@ export class Hoare
                         onErr("type mismatch: " + m.retType + " <-> " + exT);
                         return null;
                     }
-                    if (!m.argType.compatibleWith(ezT))
+                    if (m.args.length !== ezTs.length)
                     {
-                        onErr("type mismatch: " + m.argType + " <-> " + ezT);
+                        onErr("argument count mismatch: expected " + m.args.length + " but provided " + ezTs.length);
                         return null;
+                    }
+                    for (let i = 0; i < m.args.length; ++i)
+                    {
+                        if (!m.args[i].type.compatibleWith(ezTs[i]))
+                        {
+                            onErr("type mismatch: " + m.args[i].type + " <-> " + ezTs[i]);
+                            return null;
+                        }
                     }
 
                     var p_pre = m.frmPre.substs(xx => {
                         if (xx == Expression.getThis())
                             return s.y;
-                        if (xx == m.argName)
-                            return s.z;
+                        for (let i = 0; i < m.args.length; ++i)
+                            if (xx == m.args[i].name)
+                                return s.z[i];
                         return xx;
                     });
 
                     var p_post = m.frmPost.substs(xx => {
                         if (xx == Expression.getThis())
                             return s.y;
-                        if (xx == m.argName)
-                            return s.z;
+                        for (let i = 0; i < m.args.length; ++i)
+                            if (xx == m.args[i].name)
+                                return s.z[i];
                         if (xx == Expression.getResult())
                             return s.x;
                         return xx;

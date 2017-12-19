@@ -236,7 +236,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(m))
                 throw "null arg";
-            if (!Expression_1.Expression.isValidX(z))
+            if (z.some(function (z) { return !Expression_1.Expression.isValidX(z); }))
                 throw "null arg";
             return _this;
         }
@@ -261,10 +261,10 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 return null;
             var m = call.substr(0, braceIndex);
             var z = call.substr(braceIndex + 1).replace(")", "");
-            return new StatementCall(x, y, m, z);
+            return new StatementCall(x, y, m, z.split(",").filter(function (z) { return z; }));
         };
         StatementCall.prototype.toString = function () {
-            return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
+            return this.x + " := " + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
         };
         StatementCall.prototype.smallStep = function (env, context) {
             var envx = StackEnv_1.topEnv(env);
@@ -284,13 +284,15 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 if (isEntry) {
                     if (env.S[env.S.length - 1].ss[0] != this)
                         throw "dispatch failure";
-                    var v = new Expression_1.ExpressionX(this.z).eval(envx);
-                    if (v == null)
-                        return null;
                     var rr = {};
                     rr[Expression_1.Expression.getResult()] = m.retType.defaultValue().eval(envx);
                     rr[Expression_1.Expression.getThis()] = vo;
-                    rr[m.argName] = v;
+                    for (var i = 0; i < Math.min(); ++i) {
+                        var v = new Expression_1.ExpressionX(this.z[i]).eval(envx);
+                        if (v == null)
+                            return null;
+                        rr[m.args[i].name] = v;
+                    }
                     if (!m.frmPre.eval({ H: envx.H, r: rr, A: envx.A }))
                         return null;
                     var AA = m.frmPre.gradual ? envx.A : m.frmPre.staticFormula.footprintDynamic({ H: envx.H, r: rr, A: envx.A });

@@ -237,13 +237,13 @@ export class StatementCall extends Statement
         public x: string,
         public y: string,
         public m: string,
-        public z: string)
+        public z: string[])
     {
         super();
         if (!Expression.isValidX(x)) throw "null arg";
         if (!Expression.isValidX(y)) throw "null arg";
         if (!Expression.isValidX(m)) throw "null arg";
-        if (!Expression.isValidX(z)) throw "null arg";
+        if (z.some(z => !Expression.isValidX(z))) throw "null arg";
     }
     public writesTo(x: string): boolean
     {
@@ -270,12 +270,12 @@ export class StatementCall extends Statement
         var m = call.substr(0, braceIndex);
         var z = call.substr(braceIndex + 1).replace(")", "");
 
-        return new StatementCall(x, y, m, z);
+        return new StatementCall(x, y, m, z.split(",").filter(z => z));
     }
 
     public toString(): string
     {
-        return this.x + " := " + this.y + "." + this.m + "(" + this.z + ");";
+        return this.x + " := " + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
     }
     public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
     {
@@ -304,14 +304,16 @@ export class StatementCall extends Statement
                 if (env.S[env.S.length - 1].ss[0] != this)
                     throw "dispatch failure";
 
-                var v = new ExpressionX(this.z).eval(envx);
-                if (v == null)
-                    return null;
 
                 var rr: Rho = {};
                 rr[Expression.getResult()] = m.retType.defaultValue().eval(envx);
                 rr[Expression.getThis()] = vo;
-                rr[m.argName] = v;
+                for (let i = 0; i < Math.min(); ++i) {
+                    var v = new ExpressionX(this.z[i]).eval(envx);
+                    if (v == null)
+                        return null;
+                    rr[m.args[i].name] = v;
+                }
 
                 if (!m.frmPre.eval({ H: envx.H, r: rr, A: envx.A }))
                     return null;

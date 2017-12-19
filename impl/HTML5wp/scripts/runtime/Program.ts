@@ -12,8 +12,7 @@ export interface Method
 {
     retType: Type;
     name: string;
-    argType: Type;
-    argName: string;
+    args: { type: Type, name: string }[];
     frmPre: VerificationFormulaGradual;
     frmPost: VerificationFormulaGradual;
     body: Statement[];
@@ -52,7 +51,7 @@ function printField(f: Field): string
 
 function printMethod(m: Method): string
 {
-    var res = m.retType + " " + m.name + "(" + m.argType + " " + m.argName + ")";
+    var res = m.retType + " " + m.name + "(" + m.args.map(a => a.type + " " + a.name).join(", ") + ")";
     res += "\n    requires " + m.frmPre + ";"
     res += "\n    ensures  " + m.frmPost + ";"
     res += "\n{\n";

@@ -29,20 +29,38 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
         var augmentPre = new VerificationFormula_1.FormulaPartNeq(new Expression_1.ExpressionX(Expression_1.Expression.getThis()), Expression_1.Expression.getNull());
         var res = null;
         if (res == null)
-            res = m.frmPre.staticFormula.FV().every(function (x) { return x == m.argName || x == Expression_1.Expression.getThis(); })
+            res = m.frmPre.staticFormula.FV().every(function (x) { return m.args.some(function (a) { return a.name === x; }) || x == Expression_1.Expression.getThis(); })
                 ? null : "precodiction contains unknown variables: " + m.frmPre;
         if (res == null)
-            res = m.frmPost.staticFormula.FV().every(function (x) { return x == m.argName || x == Expression_1.Expression.getThis() || x == Expression_1.Expression.getResult(); })
+            res = m.frmPost.staticFormula.FV().every(function (x) { return m.args.some(function (a) { return a.name === x; }) || x == Expression_1.Expression.getThis() || x == Expression_1.Expression.getResult(); })
                 ? null : "postcodiction contains unknown variables: " + m.frmPost;
-        if (res == null)
-            res = hoare.checkMethod(Gamma_1.GammaAdd(m.argName, m.argType, Gamma_1.GammaAdd(Expression_1.Expression.getThis(), new Type_1.TypeClass(c.name), Gamma_1.GammaAdd(Expression_1.Expression.getResult(), m.retType, Gamma_1.GammaNew))), m.body, m.frmPre.append(augmentPre), m.frmPost)
+        if (res == null) {
+            var gamma = Gamma_1.GammaAdd(Expression_1.Expression.getThis(), new Type_1.TypeClass(c.name), Gamma_1.GammaAdd(Expression_1.Expression.getResult(), m.retType, Gamma_1.GammaNew));
+            for (var _i = 0, _a = m.args; _i < _a.length; _i++) {
+                var a = _a[_i];
+                gamma = Gamma_1.GammaAdd(a.name, a.type, gamma);
+            }
+            res = hoare.checkMethod(gamma, m.body, m.frmPre.append(augmentPre), m.frmPost)
                 .map(function (x) { return x.error; }).filter(function (x) { return x != null; })[0];
+        }
         if (res == null)
             res = m.frmPre.sfrm() ? null : "precondition not self-framed: " + m.frmPre;
         if (res == null)
             res = m.frmPost.sfrm() ? null : "postcondition not self-framed: " + m.frmPost;
-        if (res == null)
-            res = m.body.filter(function (s) { return s.writesTo(m.argName); }).map(function (s) { return s + " writes to " + m.argName; })[0];
+        if (res == null) {
+            for (var _b = 0, _c = m.body; _b < _c.length; _b++) {
+                var instr = _c[_b];
+                for (var _d = 0, _e = m.args; _d < _e.length; _d++) {
+                    var arg = _e[_d];
+                    if (instr.writesTo(arg.name))
+                        res = instr + " writes to " + arg.name;
+                    if (res != null)
+                        break;
+                }
+                if (res != null)
+                    break;
+            }
+        }
         return res;
     }
     $(function () {
@@ -99,8 +117,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "swapXYweak",
                             retType: new Type_1.TypeClass("Point"),
-                            argType: new Type_1.TypeClass("void"),
-                            argName: "_",
+                            args: [],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                             body: [
@@ -117,8 +134,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "swapXYstrong",
                             retType: new Type_1.TypeClass("Point"),
-                            argType: new Type_1.TypeClass("void"),
-                            argName: "_",
+                            args: [],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.y * this.y = result.x"),
                             body: [
@@ -135,8 +151,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "clone",
                             retType: new Type_1.TypeClass("Point"),
-                            argType: new Type_1.TypeClass("void"),
-                            argName: "_",
+                            args: [],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.x) * acc(this.y)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(this.x) * acc(this.y) * acc(result.x) * acc(result.y) * this.x = result.x * this.y = result.y"),
                             body: [
@@ -168,8 +183,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "insertAfter",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("Point"),
-                            argName: "p",
+                            args: [{ name: "p", type: new Type_1.TypeClass("Point") }],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.t)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.t) * acc(this.t.h) * acc(this.t.t)"),
                             body: [
@@ -185,8 +199,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "insertHere",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("Point"),
-                            argName: "p",
+                            args: [{ name: "p", type: new Type_1.TypeClass("Point") }],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(this.h) * acc(this.t)"),
                             body: [
@@ -211,8 +224,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "baz",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("Point"),
-                            argName: "p",
+                            args: [{ name: "p", type: new Type_1.TypeClass("Point") }],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("?"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("?"),
                             body: [
@@ -225,8 +237,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "bar",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("Point"),
-                            argName: "p",
+                            args: [{ name: "p", type: new Type_1.TypeClass("Point") }],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                             body: [
@@ -237,8 +248,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "barg",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("Point"),
-                            argName: "p",
+                            args: [{ name: "p", type: new Type_1.TypeClass("Point") }],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                             body: [
@@ -249,8 +259,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                         {
                             name: "foo",
                             retType: new Type_1.TypeClass("void"),
-                            argType: new Type_1.TypeClass("void"),
-                            argName: "__",
+                            args: [],
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
                             body: [

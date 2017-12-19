@@ -145,11 +145,11 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
             this.addHandler("Call", Statement_1.StatementCall, function (s, g, onErr) {
                 var ex = new Expression_1.ExpressionX(s.x);
                 var ey = new Expression_1.ExpressionX(s.y);
-                var ez = new Expression_1.ExpressionX(s.z);
+                var ezs = s.z.map(function (z) { return new Expression_1.ExpressionX(z); });
                 var exT = ex.getType(env, g);
                 var eyT = ey.getType(env, g);
-                var ezT = ez.getType(env, g);
-                if (s.x == s.y || s.x == s.z) {
+                var ezTs = ezs.map(function (z) { return z.getType(env, g); });
+                if (s.x == s.y || s.z.some(function (z) { return z === s.x; })) {
                     onErr("LHS not to appear in RHS");
                     return null;
                 }
@@ -164,22 +164,30 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                         onErr("type mismatch: " + m.retType + " <-> " + exT);
                         return null;
                     }
-                    if (!m.argType.compatibleWith(ezT)) {
-                        onErr("type mismatch: " + m.argType + " <-> " + ezT);
+                    if (m.args.length !== ezTs.length) {
+                        onErr("argument count mismatch: expected " + m.args.length + " but provided " + ezTs.length);
                         return null;
+                    }
+                    for (var i = 0; i < m.args.length; ++i) {
+                        if (!m.args[i].type.compatibleWith(ezTs[i])) {
+                            onErr("type mismatch: " + m.args[i].type + " <-> " + ezTs[i]);
+                            return null;
+                        }
                     }
                     var p_pre = m.frmPre.substs(function (xx) {
                         if (xx == Expression_1.Expression.getThis())
                             return s.y;
-                        if (xx == m.argName)
-                            return s.z;
+                        for (var i = 0; i < m.args.length; ++i)
+                            if (xx == m.args[i].name)
+                                return s.z[i];
                         return xx;
                     });
                     var p_post = m.frmPost.substs(function (xx) {
                         if (xx == Expression_1.Expression.getThis())
                             return s.y;
-                        if (xx == m.argName)
-                            return s.z;
+                        for (var i = 0; i < m.args.length; ++i)
+                            if (xx == m.args[i].name)
+                                return s.z[i];
                         if (xx == Expression_1.Expression.getResult())
                             return s.x;
                         return xx;

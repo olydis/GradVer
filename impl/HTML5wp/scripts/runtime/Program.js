@@ -15,7 +15,7 @@ define(["require", "exports"], function (require, exports) {
         return f.type + " " + f.name + ";";
     }
     function printMethod(m) {
-        var res = m.retType + " " + m.name + "(" + m.argType + " " + m.argName + ")";
+        var res = m.retType + " " + m.name + "(" + m.args.map(function (a) { return a.type + " " + a.name; }).join(", ") + ")";
         res += "\n    requires " + m.frmPre + ";";
         res += "\n    ensures  " + m.frmPost + ";";
         res += "\n{\n";
