@@ -166,7 +166,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         };
         EditInstructions.prototype.loadEx8 = function () {
             this.setInstructions([
-                "// misusing `hold` to scope variables",
+                "// `hold` as a scope",
                 "Point p;",
                 "hold true {",
                 "p := new Point;",
