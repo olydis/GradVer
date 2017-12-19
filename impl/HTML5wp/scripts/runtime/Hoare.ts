@@ -413,7 +413,7 @@ export class Hoare
                 if (info.post.gradual)
                     pre = VerificationFormulaGradual.qm();
                 else
-                    for (var acc of post.staticFormula.footprintStatic())
+                    for (var acc of info.post.staticFormula.footprintStatic())
                         pre = pre.woAcc(acc.e, acc.f);
                 // pre
                 if (info.pre.gradual)

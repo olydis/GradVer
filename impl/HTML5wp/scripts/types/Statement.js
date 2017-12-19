@@ -22,7 +22,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                 ? " write a statement here"
                 : " parse error: " + source);
             var result = null;
-            source = source.replace(/;$/, "");
+            source = source.replace(/;\s*$/, "");
             var sourceWS = source;
             try {
                 if (!result)
@@ -287,7 +287,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     var rr = {};
                     rr[Expression_1.Expression.getResult()] = m.retType.defaultValue().eval(envx);
                     rr[Expression_1.Expression.getThis()] = vo;
-                    for (var i = 0; i < Math.min(); ++i) {
+                    for (var i = 0; i < m.args.length; ++i) {
                         var v = new Expression_1.ExpressionX(this.z[i]).eval(envx);
                         if (v == null)
                             return null;

@@ -210,7 +210,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 if (info.post.gradual)
                     pre = VerificationFormulaGradual_1.VerificationFormulaGradual.qm();
                 else
-                    for (var _i = 0, _a = post.staticFormula.footprintStatic(); _i < _a.length; _i++) {
+                    for (var _i = 0, _a = info.post.staticFormula.footprintStatic(); _i < _a.length; _i++) {
                         var acc = _a[_i];
                         pre = pre.woAcc(acc.e, acc.f);
                     }

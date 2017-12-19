@@ -83,7 +83,6 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
         EditInstructions.prototype.loadEx3 = function () {
             this.setInstructions([
                 "// ♦ Method call ♦",
-                "void v;",
                 "int x;",
                 "int y;",
                 "x := 3;",
@@ -94,12 +93,12 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "p.y := y;",
                 "Point q;",
                 "// • Due to syntax limitations, 'swapXYweak' has a weak static postcondition",
-                "q := p.swapXYweak(v);",
+                "q := p.swapXYweak();",
                 "// • As a result, the following assertion cannot be proved statically",
                 "assert (p.x = 3) * (p.y = 4) * (q.x = 4) * (q.y = 3);",
                 "// • Gradualization to the rescue! Two choices:",
                 "//     - use 'swapXYstrong', it has a gradual postcondition",
-                "//     - gradualize the call site (introduce '?' via cast or as precondition)"
+                "//     - gradualize the call site (introduce '?' via cast)"
             ]);
         };
         EditInstructions.prototype.loadEx4 = function () {
@@ -155,13 +154,13 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
                 "void _;",
                 "Points ps;",
                 "ps = new Points;",
-                "q := p.clone(_);",
+                "q := p.clone();",
                 "_ = ps.insertHere(q);",
                 "p.x = i1;",
-                "q := p.clone(_);",
+                "q := p.clone();",
                 "_ = ps.insertHere(q);",
                 "p.y = i2;",
-                "q := p.clone(_);",
+                "q := p.clone();",
                 "_ = ps.insertHere(q);",
                 "p = null;",
                 "q = null;",

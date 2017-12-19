@@ -23,7 +23,7 @@ export abstract class Statement
             ? " write a statement here" 
             : " parse error: " + source);
         var result: Statement = null;
-        source = source.replace(/;$/, "");
+        source = source.replace(/;\s*$/, "");
         var sourceWS = source;
         try
         {
@@ -308,7 +308,7 @@ export class StatementCall extends Statement
                 var rr: Rho = {};
                 rr[Expression.getResult()] = m.retType.defaultValue().eval(envx);
                 rr[Expression.getThis()] = vo;
-                for (let i = 0; i < Math.min(); ++i) {
+                for (let i = 0; i < m.args.length; ++i) {
                     var v = new ExpressionX(this.z[i]).eval(envx);
                     if (v == null)
                         return null;
