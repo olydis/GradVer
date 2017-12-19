@@ -1,5 +1,6 @@
 define(["require", "exports", "./EvalEnv"], function (require, exports, EvalEnv_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function cloneStackEntry(se) {
         return {
             r: EvalEnv_1.cloneRho(se.r),

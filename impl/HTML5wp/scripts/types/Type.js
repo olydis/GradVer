@@ -1,11 +1,17 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports", "./Expression"], function (require, exports, Expression_1) {
     "use strict";
-    var Type = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Type = /** @class */ (function () {
         function Type() {
         }
         Type.parse = function (source) {
@@ -57,10 +63,10 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         return Type;
     }());
     exports.Type = Type;
-    var TypePrimitiveInt = (function (_super) {
+    var TypePrimitiveInt = /** @class */ (function (_super) {
         __extends(TypePrimitiveInt, _super);
         function TypePrimitiveInt() {
-            return _super.apply(this, arguments) || this;
+            return _super !== null && _super.apply(this, arguments) || this;
         }
         TypePrimitiveInt.parse = function (source) {
             return source.toLocaleLowerCase() == "int"
@@ -79,7 +85,7 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
         return TypePrimitiveInt;
     }(Type));
     exports.TypePrimitiveInt = TypePrimitiveInt;
-    var TypeClass = (function (_super) {
+    var TypeClass = /** @class */ (function (_super) {
         __extends(TypeClass, _super);
         function TypeClass(C) {
             var _this = _super.call(this) || this;

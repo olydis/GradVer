@@ -1,6 +1,7 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
-    var EditableElement = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var EditableElement = /** @class */ (function () {
         function EditableElement(container, source, render, onChange, editMode) {
             if (editMode === void 0) { editMode = false; }
             this.container = container;
@@ -50,8 +51,8 @@ define(["require", "exports"], function (require, exports) {
             this.container.text("").append(rendered.html);
             this.onChange(this);
         };
+        EditableElement.elems = [];
         return EditableElement;
     }());
-    EditableElement.elems = [];
     exports.EditableElement = EditableElement;
 });

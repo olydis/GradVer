@@ -1,9 +1,20 @@
 define(["require", "exports", "./TestWoAcc", "./TestWoAcc", "./TestWoAcc"], function (require, exports, TestWoAcc_1, TestWoAcc_2, TestWoAcc_3) {
     "use strict";
-    var testProcs = [null,
-        TestWoAcc_1.testWoAccWorks,
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var testProcs = [null
+        // , testWoVarPreserveSat
+        // , testWoVarMonotonic
+        // , testWoVarPreserveSat
+        // , testWoVarPreserveSfrm
+        ,
+        TestWoAcc_1.testWoAccWorks
+        // , testWoAccMonotonic
+        ,
         TestWoAcc_2.testWoAccPreserveSat,
         TestWoAcc_3.testWoAccPreserveSfrm
+        // , testSupImplies
+        // , testSupComm
+        // , testSupAssoc
     ];
     function testAll(iters) {
         if (iters === void 0) { iters = 10000; }

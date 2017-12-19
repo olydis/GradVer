@@ -1,5 +1,6 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function indent(amount) {
         var prefix = "";
         for (var i = 0; i < amount; ++i)

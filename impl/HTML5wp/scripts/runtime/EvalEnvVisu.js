@@ -1,5 +1,6 @@
 define(["require", "exports", "../types/ValueExpression"], function (require, exports, ValueExpression_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var container = null;
     function ensure() {
         if (!container)

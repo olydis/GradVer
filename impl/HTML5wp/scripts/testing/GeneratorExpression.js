@@ -1,5 +1,6 @@
 define(["require", "exports", "../types/Expression", "../types/ValueExpression"], function (require, exports, Expression_1, ValueExpression_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var fields = ["f", "g"];
     var variables = ["a", "b", "c"];
     var values = [0, 1, 2];

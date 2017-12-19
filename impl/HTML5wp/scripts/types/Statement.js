@@ -1,11 +1,17 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGradual", "./Type", "./Expression", "../runtime/StackEnv", "./ValueExpression"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Type_1, Expression_1, StackEnv_1, ValueExpression_1) {
     "use strict";
-    var Statement = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Statement = /** @class */ (function () {
         function Statement() {
         }
         Statement.prototype.writesTo = function (x) {
@@ -56,7 +62,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return Statement;
     }());
     exports.Statement = Statement;
-    var StatementMemberSet = (function (_super) {
+    var StatementMemberSet = /** @class */ (function (_super) {
         __extends(StatementMemberSet, _super);
         function StatementMemberSet(x, f, y) {
             var _this = _super.call(this) || this;
@@ -113,7 +119,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementMemberSet;
     }(Statement));
     exports.StatementMemberSet = StatementMemberSet;
-    var StatementAssign = (function (_super) {
+    var StatementAssign = /** @class */ (function (_super) {
         __extends(StatementAssign, _super);
         function StatementAssign(x, e) {
             var _this = _super.call(this) || this;
@@ -159,7 +165,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementAssign;
     }(Statement));
     exports.StatementAssign = StatementAssign;
-    var StatementAlloc = (function (_super) {
+    var StatementAlloc = /** @class */ (function (_super) {
         __extends(StatementAlloc, _super);
         function StatementAlloc(x, C) {
             var _this = _super.call(this) || this;
@@ -216,7 +222,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementAlloc;
     }(Statement));
     exports.StatementAlloc = StatementAlloc;
-    var StatementCall = (function (_super) {
+    var StatementCall = /** @class */ (function (_super) {
         __extends(StatementCall, _super);
         function StatementCall(x, y, m, z) {
             var _this = _super.call(this) || this;
@@ -317,7 +323,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementCall;
     }(Statement));
     exports.StatementCall = StatementCall;
-    var StatementReturn = (function (_super) {
+    var StatementReturn = /** @class */ (function (_super) {
         __extends(StatementReturn, _super);
         function StatementReturn(x) {
             var _this = _super.call(this) || this;
@@ -352,7 +358,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementReturn;
     }(Statement));
     exports.StatementReturn = StatementReturn;
-    var StatementAssert = (function (_super) {
+    var StatementAssert = /** @class */ (function (_super) {
         __extends(StatementAssert, _super);
         function StatementAssert(assertion) {
             var _this = _super.call(this) || this;
@@ -379,7 +385,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementAssert;
     }(Statement));
     exports.StatementAssert = StatementAssert;
-    var StatementRelease = (function (_super) {
+    var StatementRelease = /** @class */ (function (_super) {
         __extends(StatementRelease, _super);
         function StatementRelease(assertion) {
             var _this = _super.call(this) || this;
@@ -409,7 +415,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementRelease;
     }(Statement));
     exports.StatementRelease = StatementRelease;
-    var StatementDeclare = (function (_super) {
+    var StatementDeclare = /** @class */ (function (_super) {
         __extends(StatementDeclare, _super);
         function StatementDeclare(T, x) {
             var _this = _super.call(this) || this;
@@ -447,7 +453,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
     }(Statement));
     exports.StatementDeclare = StatementDeclare;
     // EXTENSIONS
-    var StatementCast = (function (_super) {
+    var StatementCast = /** @class */ (function (_super) {
         __extends(StatementCast, _super);
         function StatementCast(T) {
             var _this = _super.call(this) || this;
@@ -475,7 +481,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementCast;
     }(Statement));
     exports.StatementCast = StatementCast;
-    var StatementComment = (function (_super) {
+    var StatementComment = /** @class */ (function (_super) {
         __extends(StatementComment, _super);
         function StatementComment(comment) {
             var _this = _super.call(this) || this;
@@ -503,7 +509,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementComment;
     }(Statement));
     exports.StatementComment = StatementComment;
-    var StatementHold = (function (_super) {
+    var StatementHold = /** @class */ (function (_super) {
         __extends(StatementHold, _super);
         function StatementHold(p) {
             var _this = _super.call(this) || this;
@@ -554,7 +560,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
         return StatementHold;
     }(Statement));
     exports.StatementHold = StatementHold;
-    var StatementUnhold = (function (_super) {
+    var StatementUnhold = /** @class */ (function (_super) {
         __extends(StatementUnhold, _super);
         function StatementUnhold() {
             return _super.call(this) || this;

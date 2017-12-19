@@ -1,11 +1,17 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports", "./ValueExpression", "./Type"], function (require, exports, ValueExpression_1, Type_1) {
     "use strict";
-    var Expression = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Expression = /** @class */ (function () {
         function Expression() {
         }
         Expression.prototype.substs = function (m) {
@@ -59,7 +65,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         return Expression;
     }());
     exports.Expression = Expression;
-    var ExpressionV = (function (_super) {
+    var ExpressionV = /** @class */ (function (_super) {
         __extends(ExpressionV, _super);
         function ExpressionV(v) {
             var _this = _super.call(this) || this;
@@ -93,7 +99,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         return ExpressionV;
     }(Expression));
     exports.ExpressionV = ExpressionV;
-    var ExpressionX = (function (_super) {
+    var ExpressionX = /** @class */ (function (_super) {
         __extends(ExpressionX, _super);
         function ExpressionX(x) {
             var _this = _super.call(this) || this;
@@ -126,7 +132,7 @@ define(["require", "exports", "./ValueExpression", "./Type"], function (require,
         return ExpressionX;
     }(Expression));
     exports.ExpressionX = ExpressionX;
-    var ExpressionDot = (function (_super) {
+    var ExpressionDot = /** @class */ (function (_super) {
         __extends(ExpressionDot, _super);
         function ExpressionDot(e, f) {
             var _this = _super.call(this) || this;

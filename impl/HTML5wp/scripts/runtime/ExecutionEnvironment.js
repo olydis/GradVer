@@ -1,6 +1,7 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
-    var ExecutionEnvironment = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var ExecutionEnvironment = /** @class */ (function () {
         function ExecutionEnvironment(program) {
             this.program = program;
         }

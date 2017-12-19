@@ -1,17 +1,23 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports", "./Type"], function (require, exports, Type_1) {
     "use strict";
-    var Value = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Value = /** @class */ (function () {
         function Value() {
         }
         return Value;
     }());
     exports.Value = Value;
-    var ValueObject = (function (_super) {
+    var ValueObject = /** @class */ (function (_super) {
         __extends(ValueObject, _super);
         function ValueObject(uid) {
             if (uid === void 0) { uid = null; }
@@ -33,14 +39,14 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         ValueObject.prototype.toString = function () {
             return "<" + this.uid + ">";
         };
+        ValueObject._uid = 0;
         return ValueObject;
     }(Value));
-    ValueObject._uid = 0;
     exports.ValueObject = ValueObject;
-    var ValueExpression = (function (_super) {
+    var ValueExpression = /** @class */ (function (_super) {
         __extends(ValueExpression, _super);
         function ValueExpression() {
-            return _super.apply(this, arguments) || this;
+            return _super !== null && _super.apply(this, arguments) || this;
         }
         ValueExpression.parse = function (source) {
             source = source.replace(/\s/g, "");
@@ -60,7 +66,7 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         return ValueExpression;
     }(Value));
     exports.ValueExpression = ValueExpression;
-    var ValueExpressionN = (function (_super) {
+    var ValueExpressionN = /** @class */ (function (_super) {
         __extends(ValueExpressionN, _super);
         function ValueExpressionN(n) {
             var _this = _super.call(this) || this;
@@ -88,10 +94,10 @@ define(["require", "exports", "./Type"], function (require, exports, Type_1) {
         return ValueExpressionN;
     }(ValueExpression));
     exports.ValueExpressionN = ValueExpressionN;
-    var ValueExpressionNull = (function (_super) {
+    var ValueExpressionNull = /** @class */ (function (_super) {
         __extends(ValueExpressionNull, _super);
         function ValueExpressionNull() {
-            return _super.apply(this, arguments) || this;
+            return _super !== null && _super.apply(this, arguments) || this;
         }
         ValueExpressionNull.parse = function (source) {
             return source.toLocaleLowerCase() == "null"

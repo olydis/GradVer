@@ -1,6 +1,7 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
-    var GUIHelpers = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var GUIHelpers = /** @class */ (function () {
         function GUIHelpers() {
         }
         GUIHelpers.createList = function (items) {

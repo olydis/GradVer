@@ -1,5 +1,6 @@
 define(["require", "exports", "../types/Expression", "../types/ValueExpression", "../types/VerificationFormula"], function (require, exports, Expression_1, ValueExpression_1, VerificationFormula_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function printHeapEntry(Hentry) {
         var fs = Object.getOwnPropertyNames(Hentry);
         return "{" + fs.map(function (f) { return f + "=" + Hentry[f]; }).join(",") + "}";
@@ -60,7 +61,7 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             A: cloneAccess(env.A) };
     }
     exports.cloneEvalEnv = cloneEvalEnv;
-    var NormalizedEnv = (function () {
+    var NormalizedEnv = /** @class */ (function () {
         function NormalizedEnv(ineq, env) {
             if (ineq === void 0) { ineq = []; }
             if (env === void 0) { env = { H: {}, r: {}, A: [] }; }

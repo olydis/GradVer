@@ -1,5 +1,6 @@
 define(["require", "exports", "./GeneratorExpression", "../types/VerificationFormula"], function (require, exports, GeneratorExpression_1, VerificationFormula_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function generateFormulaPartAcc(seed) {
         var res = GeneratorExpression_1.generateExpressionDot(seed);
         return {

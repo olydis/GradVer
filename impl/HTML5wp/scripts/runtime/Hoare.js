@@ -1,6 +1,7 @@
 define(["require", "exports", "../types/VerificationFormula", "../types/VerificationFormulaGradual", "../types/Statement", "../types/Type", "../types/Expression", "./Gamma"], function (require, exports, VerificationFormula_1, VerificationFormulaGradual_1, Statement_1, Type_1, Expression_1, Gamma_1) {
     "use strict";
-    var Hoare = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Hoare = /** @class */ (function () {
         function Hoare(env) {
             var _this = this;
             this.env = env;
@@ -360,7 +361,14 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 // for (var fv of readOnly)
                 //     post = post.woVar(fv);
                 return [post, []]; // TODO
-            });
+            }
+            // ,
+            // (info) => VerificationFormula.empty(),
+            // (info, pre, postProcStack) => {
+            //     var proc = postProcStack.pop();
+            //     return proc.postProc(pre);
+            // }
+            );
         }
         Hoare.prototype.addHandler = function (rule, SS, 
             // returns null on error

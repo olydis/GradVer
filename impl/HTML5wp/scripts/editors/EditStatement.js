@@ -1,15 +1,21 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define(["require", "exports", "./EditableElement", "../types/Statement"], function (require, exports, EditableElement_1, Statement_1) {
     "use strict";
-    var EditStatement = (function (_super) {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var EditStatement = /** @class */ (function (_super) {
         __extends(EditStatement, _super);
         function EditStatement(initialSource, onChange) {
             if (initialSource === void 0) { initialSource = ""; }
-            var _this;
+            var _this = this;
             var stmtContainer = $("<span>");
             _this = _super.call(this, stmtContainer, initialSource, function (source, tthis) {
                 var parsed = Statement_1.Statement.parse(source);

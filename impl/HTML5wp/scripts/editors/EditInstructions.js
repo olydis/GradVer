@@ -1,5 +1,6 @@
 define(["require", "exports", "./EditStatement", "./EditableElement", "../runtime/Gamma", "../runtime/StackEnv", "../runtime/EvalEnv", "../runtime/EvalEnvVisu", "../types/VerificationFormulaGradual", "../types/VerificationFormula", "../types/ValueExpression"], function (require, exports, EditStatement_1, EditableElement_1, Gamma_1, StackEnv_1, EvalEnv_1, EvalEnvVisu_1, VerificationFormulaGradual_1, VerificationFormula_1, ValueExpression_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function splitCell(left, right, cls) {
         if (cls === void 0) { cls = ""; }
         return $("<table>")
@@ -8,7 +9,7 @@ define(["require", "exports", "./EditStatement", "./EditableElement", "../runtim
             .append($("<td>").append(left))
             .append($("<td>").append(right)));
     }
-    var EditInstructions = (function () {
+    var EditInstructions = /** @class */ (function () {
         function EditInstructions(container, hoare) {
             this.container = container;
             this.hoare = hoare;

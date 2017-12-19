@@ -1,6 +1,7 @@
 define(["require", "exports", "./VerificationFormula"], function (require, exports, VerificationFormula_1) {
     "use strict";
-    var VerificationFormulaGradual = (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var VerificationFormulaGradual = /** @class */ (function () {
         function VerificationFormulaGradual(source) {
             if (source === void 0) { source = "?"; }
             source = source.trim();

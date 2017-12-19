@@ -1,5 +1,6 @@
 define(["require", "exports", "../types/VerificationFormula", "./Random", "./GeneratorFormula"], function (require, exports, VerificationFormula_1, Random_1, GeneratorFormula_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function testWoVarMonotonic() {
         var p1 = VerificationFormula_1.VerificationFormula.getFalse();
         var p2 = VerificationFormula_1.VerificationFormula.getFalse();

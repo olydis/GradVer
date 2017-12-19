@@ -1,5 +1,6 @@
 define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerificationFormula", "./editors/EditableElement", "./runtime/ExecutionEnvironment", "./types/Expression", "./runtime/Hoare", "./runtime/Gamma", "./runtime/Program", "./testing/MainTest", "./types/VerificationFormulaGradual", "./types/Type", "./types/Statement", "./types/VerificationFormula"], function (require, exports, EditInstructions_1, EditVerificationFormula_1, EditableElement_1, ExecutionEnvironment_1, Expression_1, Hoare_1, Gamma_1, Program_1, MainTest_1, VerificationFormulaGradual_1, Type_1, Statement_1, VerificationFormula_1) {
     "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     function unique(list) {
         for (var i = 0; i < list.length; ++i)
             if (list.indexOf(list[i], i + 1) != -1)
