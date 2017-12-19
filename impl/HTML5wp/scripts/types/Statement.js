@@ -230,7 +230,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             _this.y = y;
             _this.m = m;
             _this.z = z;
-            if (!Expression_1.Expression.isValidX(x))
+            if (x !== null && !Expression_1.Expression.isValidX(x))
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(y))
                 throw "null arg";
@@ -247,10 +247,17 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var eqIndex = source.indexOf(":=");
             if (eqIndex == -1)
                 eqIndex = source.indexOf("=");
-            if (eqIndex == -1)
-                return null;
-            var x = source.substr(0, eqIndex);
-            var b = source.substr(eqIndex + 1).replace(/=/g, "");
+            var x;
+            var b;
+            if (eqIndex == -1) {
+                // store result nowhere
+                x = null;
+                b = source;
+            }
+            else {
+                x = source.substr(0, eqIndex);
+                b = source.substr(eqIndex + 1).replace(/=/g, "");
+            }
             var dotIndex = b.lastIndexOf(".");
             if (dotIndex == -1)
                 return null;
@@ -264,7 +271,7 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             return new StatementCall(x, y, m, z.split(",").filter(function (z) { return z; }));
         };
         StatementCall.prototype.toString = function () {
-            return this.x + " := " + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
+            return (this.x === null ? "" : this.x + " := ") + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
         };
         StatementCall.prototype.smallStep = function (env, context) {
             var envx = StackEnv_1.topEnv(env);
@@ -313,7 +320,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
                     if (vr == null)
                         return null;
                     var topIdx = env.S.length - 1;
-                    env.S[topIdx].r[this.x] = vr;
+                    if (this.x !== null)
+                        env.S[topIdx].r[this.x] = vr;
                     (_a = env.S[topIdx].A).push.apply(_a, envx.A);
                 }
                 return env;
@@ -579,7 +587,8 @@ define(["require", "exports", "./VerificationFormula", "./VerificationFormulaGra
             var envx = StackEnv_1.topEnv(env);
             env = StackEnv_1.cloneStackEnv(env);
             // ESHoldFinish
-            if (env.S.pop().ss.shift() != this)
+            var top = env.S.pop();
+            if (top === undefined || top.ss.shift() != this)
                 throw "dispatch failure";
             // reset next stack frame
             var ss = env.S[env.S.length - 1].ss;

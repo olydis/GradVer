@@ -363,6 +363,8 @@ define(["require", "exports", "../types/Expression", "../types/ValueExpression",
             var todo = [{ v1: v1, v2: v2 }];
             while (todo.length > 0) {
                 var job = todo.pop();
+                if (job === undefined)
+                    throw "unreachable";
                 var mergeRes = res.merge(job.v1, job.v2);
                 if (!mergeRes)
                     return null;

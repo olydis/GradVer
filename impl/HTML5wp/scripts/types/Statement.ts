@@ -10,19 +10,19 @@ import { ValueObject } from "./ValueExpression";
 export abstract class Statement
 {
     abstract toString(): string;
-    public abstract smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv;
+    public abstract smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null;
 
     public writesTo(x: string): boolean
     {
         return false;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var fallBack = new StatementComment(source.trim() == "" 
             ? " write a statement here" 
             : " parse error: " + source);
-        var result: Statement = null;
+        var result: Statement | null = null;
         source = source.replace(/;\s*$/, "");
         var sourceWS = source;
         try
@@ -65,7 +65,7 @@ export class StatementMemberSet extends Statement
         if (!Expression.isValidX(y)) throw "null arg";
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var eqIndex = source.indexOf(":=");
         if (eqIndex == -1) eqIndex = source.indexOf("=");
@@ -87,7 +87,7 @@ export class StatementMemberSet extends Statement
     {
         return this.x + "." + this.f + " := " + this.y + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -130,7 +130,7 @@ export class StatementAssign extends Statement
         return this.x == x;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var eqIndex = source.indexOf(":=");
         if (eqIndex == -1) eqIndex = source.indexOf("=");
@@ -150,7 +150,7 @@ export class StatementAssign extends Statement
     {
         return this.x + " := " + this.e.toString() + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -182,7 +182,7 @@ export class StatementAlloc extends Statement
         return this.x == x;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var eqIndex = source.indexOf(":=");
         if (eqIndex == -1) eqIndex = source.indexOf("=");
@@ -201,7 +201,7 @@ export class StatementAlloc extends Statement
     {
         return this.x + " := new " + this.C + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -234,13 +234,13 @@ export class StatementAlloc extends Statement
 export class StatementCall extends Statement
 {
     public constructor(
-        public x: string,
+        public x: string | null,
         public y: string,
         public m: string,
         public z: string[])
     {
         super();
-        if (!Expression.isValidX(x)) throw "null arg";
+        if (x !== null && !Expression.isValidX(x)) throw "null arg";
         if (!Expression.isValidX(y)) throw "null arg";
         if (!Expression.isValidX(m)) throw "null arg";
         if (z.some(z => !Expression.isValidX(z))) throw "null arg";
@@ -250,14 +250,23 @@ export class StatementCall extends Statement
         return this.x == x;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var eqIndex = source.indexOf(":=");
         if (eqIndex == -1) eqIndex = source.indexOf("=");
-        if (eqIndex == -1) return null;
-
-        var x = source.substr(0, eqIndex);
-        var b = source.substr(eqIndex + 1).replace(/=/g, "");
+        let x: string | null;
+        let b: string;
+        if (eqIndex == -1)
+        {
+            // store result nowhere
+            x = null;
+            b = source;
+        }
+        else
+        {
+            x = source.substr(0, eqIndex);
+            b = source.substr(eqIndex + 1).replace(/=/g, "");
+        }
 
         var dotIndex = b.lastIndexOf(".");
         if (dotIndex == -1)
@@ -275,9 +284,9 @@ export class StatementCall extends Statement
 
     public toString(): string
     {
-        return this.x + " := " + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
+        return (this.x === null ? "" : this.x + " := ") + this.y + "." + this.m + "(" + this.z.join(", ") + ");";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -340,7 +349,7 @@ export class StatementCall extends Statement
                     return null;
 
                 var topIdx = env.S.length - 1;
-                env.S[topIdx].r[this.x] = vr;
+                if (this.x !== null) env.S[topIdx].r[this.x] = vr;
                 env.S[topIdx].A.push(...envx.A);
             }
 
@@ -363,7 +372,7 @@ export class StatementReturn extends Statement
         return Expression.getResult() == x;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         if (source.substr(0, 6) != "return")
             return null;
@@ -374,7 +383,7 @@ export class StatementReturn extends Statement
     {
         return "return " + this.x + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -395,7 +404,7 @@ export class StatementAssert extends Statement
 {
     public constructor(public assertion: VerificationFormula) { super(); }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         if (source.substr(0, 6) != "assert")
             return null;
@@ -406,7 +415,7 @@ export class StatementAssert extends Statement
     {
         return "assert " + this.assertion.toString() + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -424,7 +433,7 @@ export class StatementRelease extends Statement
 {
     public constructor(public assertion: VerificationFormula) { super(); }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         if (source.substr(0, 7) != "release")
             return null;
@@ -435,7 +444,7 @@ export class StatementRelease extends Statement
     {
         return "release " + this.assertion.toString() + ";";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -466,7 +475,7 @@ export class StatementDeclare extends Statement
         return this.x == x;
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         var srcParts = source.trim().split(" ");
         if (srcParts.length != 2) return null;
@@ -502,7 +511,7 @@ export class StatementCast extends Statement
         super();
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         source = source.trim();
         if (source.charAt(0) != '{')
@@ -535,7 +544,7 @@ export class StatementComment extends Statement
         super();
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         source = source.trim();
         if (source.charAt(0) != '/')
@@ -569,7 +578,7 @@ export class StatementHold extends Statement
         if (p == null) throw "null arg";
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         if (source.slice(0,4) != "hold")
             return null;
@@ -583,7 +592,7 @@ export class StatementHold extends Statement
     {
         return "hold " + this.p + " {";
     }
-    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv
+    public smallStep(env: StackEnv, context: ExecutionEnvironment): StackEnv | null
     {
         var envx = topEnv(env);
         env = cloneStackEnv(env);
@@ -627,7 +636,7 @@ export class StatementUnhold extends Statement
         super();
     }
 
-    public static parse(source: string): Statement
+    public static parse(source: string): Statement | null
     {
         if (source != "}")
             return null;
@@ -644,7 +653,8 @@ export class StatementUnhold extends Statement
         env = cloneStackEnv(env);
 
         // ESHoldFinish
-        if (env.S.pop().ss.shift() != this)
+        const top = env.S.pop();
+        if (top === undefined || top.ss.shift() != this)
             throw "dispatch failure";
 
         // reset next stack frame

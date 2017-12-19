@@ -34,14 +34,14 @@ export abstract class FormulaPart
             FormulaPartEq,
         ];
     }
-    public static parse(source: string): FormulaPart
+    public static parse(source: string): FormulaPart | null
     {
         source = source.replace(/\s/g, "");
         source = source.replace(/\(/g, "");
         source = source.replace(/\)/g, "");
         try
         {
-            var result: FormulaPart = null;
+            var result: FormulaPart | null = null;
             for (var sub of FormulaPart.subs)
             {
                 if (result) break;
@@ -71,7 +71,7 @@ export abstract class FormulaPart
 
 export class FormulaPartTrue extends FormulaPart
 {
-    public static parse(source: string): FormulaPart
+    public static parse(source: string): FormulaPart | null
     {
         return source.toLowerCase() == "true"
             ? new FormulaPartTrue()
@@ -114,7 +114,7 @@ export class FormulaPartEq extends FormulaPart
         if (e2 == null) throw "null arg";
     }
 
-    public static parse(source: string): FormulaPart
+    public static parse(source: string): FormulaPart | null
     {
         var eqIndex = source.indexOf("=");
         if (eqIndex == -1) return null;
@@ -170,7 +170,7 @@ export class FormulaPartNeq extends FormulaPart
         if (e2 == null) throw "null arg";
     }
 
-    public static parse(source: string): FormulaPart
+    public static parse(source: string): FormulaPart | null
     {
         if (source == "false")
             return new FormulaPartNeq(Expression.getNull(), Expression.getNull());
@@ -241,7 +241,7 @@ export class FormulaPartAcc extends FormulaPart
         if (!Expression.isValidX(f)) throw "null arg";
     }
 
-    public static parse(source: string): FormulaPart
+    public static parse(source: string): FormulaPart | null
     {
         if (source.substr(0, 3) != "acc") return null;
         source = source.substr(3);
@@ -324,7 +324,7 @@ export class VerificationFormula
     }
 
     public constructor(
-        source: string = null,
+        source: string | null = null,
         public parts: FormulaPart[] = []
     )
     {
@@ -333,7 +333,7 @@ export class VerificationFormula
             this.parts = [];
             source = source.trim();
             if (source != "")
-                this.parts = source.split("*").map(FormulaPart.parse).filter(part => part != null);
+                this.parts = source.split("*").map(FormulaPart.parse).filter(part => part !== null) as FormulaPart[];
         }
     }
 
@@ -433,7 +433,7 @@ export class VerificationFormula
         return parts.concat(partsAcc).map(x => new VerificationFormula(null, [x]));
     }
     
-    public envImpliedBy(env: NormalizedEnv): boolean
+    public envImpliedBy(env: NormalizedEnv | null): boolean
     {
         if (env == null)
             return true;
@@ -443,11 +443,11 @@ export class VerificationFormula
     }
     public FV(): string[] 
     {
-        return this.parts.reduce((a, b) => a.concat(b.FV()), []);
+        return this.parts.reduce<string[]>((a, b) => a.concat(b.FV()), []);
     }
-    public createNormalizedEnv(): NormalizedEnv
+    public createNormalizedEnv(): NormalizedEnv | null
     {
-        var env = NormalizedEnv.create();
+        var env: NormalizedEnv | null = NormalizedEnv.create();
         for (var part of this.parts)
             env = env ? part.envAdd(env) : null;
         return env;
@@ -457,14 +457,14 @@ export class VerificationFormula
         return this.createNormalizedEnv() != null;
     }
     // partial function "imp" of PDF!
-    public implies(phi: VerificationFormula): VerificationFormula
+    public implies(phi: VerificationFormula): VerificationFormula | null
     {
         return phi.envImpliedBy(this.createNormalizedEnv())
             ? this
             : null;
     }
 
-    public impliedEqualities(): FormulaPartEq[]
+    public impliedEqualities(): FormulaPartEq[] | null
     {
         var nenv = this.createNormalizedEnv();
         return nenv == null
@@ -472,7 +472,7 @@ export class VerificationFormula
             : nenv.impliedEqualities().map(x => new FormulaPartEq(x.e1, x.e2));
     }
 
-    public impliedInequalities(): FormulaPartNeq[]
+    public impliedInequalities(): FormulaPartNeq[] | null
     {
         var nenv = this.createNormalizedEnv();
         return nenv == null
@@ -553,7 +553,7 @@ export class VerificationFormula
         return result.filter(f => f.satisfiable());
     }
 
-    public static nonSepAnd(a: VerificationFormula, b: VerificationFormula): VerificationFormula
+    public static nonSepAnd(a: VerificationFormula, b: VerificationFormula): VerificationFormula | null
     {
         var inf = VerificationFormula.intersect(a.snorm(), b.snorm());
         var doms = inf.dominators();

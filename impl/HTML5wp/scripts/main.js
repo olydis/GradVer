@@ -241,8 +241,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                             body: [
-                                Statement_1.Statement.parse("void _;"),
-                                Statement_1.Statement.parse("_ = this.baz(p);")
+                                Statement_1.Statement.parse("this.baz(p);")
                             ]
                         },
                         {
@@ -252,8 +251,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                             body: [
-                                Statement_1.Statement.parse("void _;"),
-                                Statement_1.Statement.parse("_ = this.baz(p);")
+                                Statement_1.Statement.parse("this.baz(p);")
                             ]
                         },
                         {
@@ -263,14 +261,13 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             frmPre: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
                             frmPost: new VerificationFormulaGradual_1.VerificationFormulaGradual("true"),
                             body: [
-                                Statement_1.Statement.parse("void _;"),
                                 Statement_1.Statement.parse("int i0;"),
                                 Statement_1.Statement.parse("Point p;"),
                                 Statement_1.Statement.parse("p = new Point;"),
                                 Statement_1.Statement.parse("p.x = i0;"),
                                 Statement_1.Statement.parse("p.y = i0;"),
                                 Statement_1.Statement.parse("assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)"),
-                                Statement_1.Statement.parse("_ = this.bar(p);"),
+                                Statement_1.Statement.parse("this.bar(p);"),
                                 Statement_1.Statement.parse("assert acc(p.y) * (p.y = 0)"),
                             ]
                         }

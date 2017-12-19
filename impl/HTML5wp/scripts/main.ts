@@ -260,8 +260,7 @@ $(() =>
                     frmPre: new VerificationFormulaGradual("acc(p.x) * (p.x != -1)"),
                     frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                     body: [
-                        Statement.parse("void _;"),
-                        Statement.parse("_ = this.baz(p);")
+                        Statement.parse("this.baz(p);")
                     ]
                 },
                 {
@@ -271,8 +270,7 @@ $(() =>
                     frmPre: new VerificationFormulaGradual("? * acc(p.x) * (p.x != -1)"),
                     frmPost: new VerificationFormulaGradual("acc(p.x) * (p.x == -1)"),
                     body: [
-                        Statement.parse("void _;"),
-                        Statement.parse("_ = this.baz(p);")
+                        Statement.parse("this.baz(p);")
                     ]
                 },
                 {
@@ -282,14 +280,13 @@ $(() =>
                     frmPre: new VerificationFormulaGradual("true"),
                     frmPost: new VerificationFormulaGradual("true"),
                     body: [
-                        Statement.parse("void _;"),
                         Statement.parse("int i0;"),
                         Statement.parse("Point p;"),
                         Statement.parse("p = new Point;"),
                         Statement.parse("p.x = i0;"),
                         Statement.parse("p.y = i0;"),
                         Statement.parse("assert acc(p.y) * (p.y = 0) * acc(p.x) * (p.x = 0)"),
-                        Statement.parse("_ = this.bar(p);"),
+                        Statement.parse("this.bar(p);"),
                         Statement.parse("assert acc(p.y) * (p.y = 0)"),
                     ]
                 }

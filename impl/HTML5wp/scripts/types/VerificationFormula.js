@@ -284,7 +284,7 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
                 this.parts = [];
                 source = source.trim();
                 if (source != "")
-                    this.parts = source.split("*").map(FormulaPart.parse).filter(function (part) { return part != null; });
+                    this.parts = source.split("*").map(FormulaPart.parse).filter(function (part) { return part !== null; });
             }
         }
         VerificationFormula.getFalse = function () {

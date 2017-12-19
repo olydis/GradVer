@@ -143,10 +143,10 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 return [pre, xpost.impliesRemaindors(post.staticFormula)];
             });
             this.addHandler("Call", Statement_1.StatementCall, function (s, g, onErr) {
-                var ex = new Expression_1.ExpressionX(s.x);
+                var ex = s.x === null ? null : new Expression_1.ExpressionX(s.x);
                 var ey = new Expression_1.ExpressionX(s.y);
                 var ezs = s.z.map(function (z) { return new Expression_1.ExpressionX(z); });
-                var exT = ex.getType(env, g);
+                var exT = ex === null ? null : ex.getType(env, g);
                 var eyT = ey.getType(env, g);
                 var ezTs = ezs.map(function (z) { return z.getType(env, g); });
                 if (s.x == s.y || s.z.some(function (z) { return z === s.x; })) {
@@ -160,7 +160,7 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                         onErr("method not found");
                         return null;
                     }
-                    if (!m.retType.compatibleWith(exT)) {
+                    if (exT !== null && !m.retType.compatibleWith(exT)) {
                         onErr("type mismatch: " + m.retType + " <-> " + exT);
                         return null;
                     }
@@ -205,7 +205,9 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 onErr(ey + " not declared (as class type)");
                 return null;
             }, function (info, post) {
-                var pre = post.woVar(info.x);
+                var pre = post;
+                if (info.x !== null)
+                    pre = pre.woVar(info.x);
                 // framed off part
                 if (info.post.gradual)
                     pre = VerificationFormulaGradual_1.VerificationFormulaGradual.qm();
@@ -223,7 +225,9 @@ define(["require", "exports", "../types/VerificationFormula", "../types/Verifica
                 }
                 pre.staticFormula = pre.staticFormula.append(info.ynn);
                 // remodel
-                var xpost = pre.woVar(info.x);
+                var xpost = pre;
+                if (info.x !== null)
+                    xpost = xpost.woVar(info.x);
                 if (info.pre.gradual)
                     for (var _d = 0, _e = xpost.staticFormula.autoFraming(); _d < _e.length; _d++) {
                         var fp1 = _e[_d];

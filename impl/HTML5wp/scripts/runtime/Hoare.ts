@@ -333,10 +333,10 @@ export class Hoare
             });
         this.addHandler<StatementCall, { pre: VerificationFormulaGradual, post: VerificationFormulaGradual, ynn: FormulaPart, x: string }>("Call", StatementCall,
             (s, g, onErr) => {
-                var ex = new ExpressionX(s.x);
+                var ex = s.x === null ? null : new ExpressionX(s.x);
                 var ey = new ExpressionX(s.y);
                 var ezs = s.z.map(z => new ExpressionX(z));
-                var exT = ex.getType(env, g);
+                var exT = ex === null ? null : ex.getType(env, g);
                 var eyT = ey.getType(env, g);
                 var ezTs = ezs.map(z => z.getType(env, g));
 
@@ -355,7 +355,7 @@ export class Hoare
                         onErr("method not found");
                         return null;
                     }
-                    if (!m.retType.compatibleWith(exT))
+                    if (exT !== null && !m.retType.compatibleWith(exT))
                     {
                         onErr("type mismatch: " + m.retType + " <-> " + exT);
                         return null;
@@ -408,7 +408,8 @@ export class Hoare
                 return null;
             },
             (info, post) => {
-                var pre = post.woVar(info.x);
+                let pre = post;
+                if (info.x !== null) pre = pre.woVar(info.x);
                 // framed off part
                 if (info.post.gradual)
                     pre = VerificationFormulaGradual.qm();
@@ -423,7 +424,8 @@ export class Hoare
                 pre.staticFormula = pre.staticFormula.append(info.ynn);
 
                 // remodel
-                var xpost = pre.woVar(info.x);
+                var xpost = pre;
+                if (info.x !== null) xpost = xpost.woVar(info.x);
                 if (info.pre.gradual)
                     for (var fp1 of xpost.staticFormula.autoFraming())
                         xpost = xpost.woAcc(fp1.e, fp1.f);

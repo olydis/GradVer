@@ -10,7 +10,7 @@ import { VerificationFormula,
 export type ValuePair = {v1: Value, v2: Value};
 
 export type HeapEntryMap = { [f: string]: Value };
-export type HeapEntry = { C: string, fs: HeapEntryMap };
+export type HeapEntry = { C: string | null, fs: HeapEntryMap };
 export type Heap = { [o: number]: HeapEntry };
 export type Rho = { [x: string]: Value };
 
@@ -84,7 +84,7 @@ export function cloneEvalEnv(env: EvalEnv): EvalEnv
 export class NormalizedEnv {
     public static create(
         ineq: ValuePair[] = [],
-        env: EvalEnv = { H: {}, r: {}, A: [] }): NormalizedEnv
+        env: EvalEnv = { H: {}, r: {}, A: [] }): NormalizedEnv | null
     {
         var result = new NormalizedEnv(ineq, env);
         return result.getConsistent() ? result : null;
@@ -101,7 +101,7 @@ export class NormalizedEnv {
         }
         return res;
     }
-    private static mergeObjHeap(o: number, v: Value, H: Heap): { H: Heap, todo: ValuePair[] }
+    private static mergeObjHeap(o: number, v: Value, H: Heap): { H: Heap, todo: ValuePair[] } | null
     {
         H = cloneHeap(H);
         var HEntry = H[o];
@@ -134,7 +134,7 @@ export class NormalizedEnv {
         }
         return H;
     }
-    private static mergeObjAccess(o: number, v: Value, A: FootprintDynamic): FootprintDynamic
+    private static mergeObjAccess(o: number, v: Value, A: FootprintDynamic): FootprintDynamic | null
     {
         if (v instanceof ValueObject)
             return A.map(a => {return { o: a.o == o ? v.UID : a.o, f: a.f }});
@@ -189,7 +189,7 @@ export class NormalizedEnv {
         });
         return reachableObjects;
     }
-    private getNameableObjects_cache: { [o: number]: Expression[] } = null;
+    private getNameableObjects_cache: { [o: number]: Expression[] } | null = null;
     private getNameableObjects(): { [o: number]: Expression[] }
     {
         if (this.getNameableObjects_cache) return this.getNameableObjects_cache;
@@ -251,7 +251,7 @@ export class NormalizedEnv {
             if (objs[acc.o])
                 parts.push(new FormulaPartAcc(objs[acc.o][0], acc.f));
         // ineq
-        var getExpression: (v: Value) => Expression = (v: Value) => {
+        var getExpression: (v: Value) => Expression | null = (v: Value) => {
             if (v instanceof ValueExpression)
                 return new ExpressionV(v);
             if (v instanceof ValueObject)
@@ -334,7 +334,7 @@ export class NormalizedEnv {
         return this.getConsistentAcc() && this.getConsistentIneq();
     }
 
-    private ensure(e: Expression): NormalizedEnv
+    private ensure(e: Expression): NormalizedEnv | null
     {
         if (e.eval(this.env)) return this;
 
@@ -367,7 +367,7 @@ export class NormalizedEnv {
         throw "wat";
     }
 
-    private addAccV(v: Value, f: string): NormalizedEnv
+    private addAccV(v: Value, f: string): NormalizedEnv | null
     {
         if (v instanceof ValueObject)
         {
@@ -378,11 +378,11 @@ export class NormalizedEnv {
         }
         return null;
     }
-    private addIneqV(v1: Value, v2: Value): NormalizedEnv
+    private addIneqV(v1: Value, v2: Value): NormalizedEnv | null
     {
         return NormalizedEnv.create(this.ineq.concat([{v1: v1, v2: v2}]), this.env);
     }
-    private mergeObj(o: ValueObject, v: Value): { env: NormalizedEnv, todo: ValuePair[] }
+    private mergeObj(o: ValueObject, v: Value): { env: NormalizedEnv, todo: ValuePair[] } | null
     {
         var ineq = NormalizedEnv.mergeObjIneq(o, v, this.ineq);
         var acc = NormalizedEnv.mergeObjAccess(o.UID, v, this.env.A);
@@ -399,7 +399,7 @@ export class NormalizedEnv {
             ? { env: env, todo: Htodo.todo }
             : null;
     }
-    private merge(v1: Value, v2: Value): { env: NormalizedEnv, todo: ValuePair[] }
+    private merge(v1: Value, v2: Value): { env: NormalizedEnv, todo: ValuePair[] } | null
     {
         if (v1.equalTo(v2))
             return { env: this, todo: [] };
@@ -410,13 +410,14 @@ export class NormalizedEnv {
         return null;
     }
 
-    private addEqV(v1: Value, v2: Value): NormalizedEnv
+    private addEqV(v1: Value, v2: Value): NormalizedEnv | null
     {
         var res: NormalizedEnv = this;
         var todo: ValuePair[] = [{v1: v1, v2: v2}];
         while (todo.length > 0)
         {
             var job = todo.pop();
+            if (job === undefined) throw "unreachable";
             var mergeRes = res.merge(job.v1, job.v2);
             if (!mergeRes) return null;
             res = mergeRes.env;
@@ -425,14 +426,14 @@ export class NormalizedEnv {
         return res;
     }
 
-    public addAcc(e: Expression, f: string): NormalizedEnv
+    public addAcc(e: Expression, f: string): NormalizedEnv | null
     {
         var env = this.ensure(new ExpressionDot(e, f));
         if (!env) return null;
         return env.addAccV(e.eval(env.env), f);
     }
 
-    public addIneq(e1: Expression, e2: Expression): NormalizedEnv
+    public addIneq(e1: Expression, e2: Expression): NormalizedEnv | null
     {
         var env = this.ensure(e1);
         if (!env) return null;
@@ -441,7 +442,7 @@ export class NormalizedEnv {
         return env.addIneqV(e1.eval(env.env), e2.eval(env.env));
     }
 
-    public addEq(e1: Expression, e2: Expression): NormalizedEnv
+    public addEq(e1: Expression, e2: Expression): NormalizedEnv | null
     {
         var env = this.ensure(e1);
         if (!env) return null;
@@ -454,9 +455,9 @@ export class NormalizedEnv {
     {
         var env = cloneEvalEnv(this.env);
         delete env.r[x];
-        return NormalizedEnv.create(this.ineq, env);
+        return NormalizedEnv.create(this.ineq, env) as NormalizedEnv;
     }
-    private createExpression(o: number): Expression
+    private createExpression(o: number): Expression | null
     {
         // collect reachable objects
         var reachableObjects: {e: Expression, o: number}[] = [];
@@ -486,7 +487,7 @@ export class NormalizedEnv {
             delete he.fs[f]; // failing monotonicity: acc(x.f) => x <> 1     but not anymore after applying [w/o x.f]
             //if (he.fs[f] !== undefined)
             //    he.fs[f] = new ValueObject();
-        return NormalizedEnv.create(ineq, env);
+        return NormalizedEnv.create(ineq, env) as NormalizedEnv;
     }
     public woAcc(e: Expression, f: string): NormalizedEnv
     {

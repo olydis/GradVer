@@ -16,7 +16,7 @@ export class VerificationFormulaGradual
         return res;
     }
 
-    public static supremum(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual
+    public static supremum(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual | null
     {
         if (!a.gradual || !b.gradual)
             return null;
@@ -41,7 +41,7 @@ export class VerificationFormulaGradual
         return res.norm();
     }
 
-    public static infimum(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual
+    public static infimum(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual | null
     {
         if (!a.gradual && !b.gradual)
             if (a.staticFormula.implies(b.staticFormula) && b.staticFormula.implies(a.staticFormula))
@@ -62,7 +62,7 @@ export class VerificationFormulaGradual
         return VerificationFormulaGradual.create(true, new VerificationFormula(null, a.staticFormula.snorm().parts.concat(b.staticFormula.snorm().parts)).snorm());
     }
 
-    public static nonSepAnd(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual
+    public static nonSepAnd(a: VerificationFormulaGradual, b: VerificationFormulaGradual): VerificationFormulaGradual | null
     {
         if (!a.gradual && !b.gradual)
         {
@@ -113,7 +113,7 @@ export class VerificationFormulaGradual
 
     public createNormalizedEnv(): NormalizedEnv
     {
-        var env = this.staticFormula.createNormalizedEnv();
+        var env = this.staticFormula.createNormalizedEnv() as NormalizedEnv;
         for (var acc of this.staticFormula.autoFraming())
             env = acc.envAdd(env) || env;
         return env;
@@ -144,7 +144,7 @@ export class VerificationFormulaGradual
         return VerificationFormulaGradual.create(this.gradual, this.staticFormula.append(part));
     }
 
-    public implies(phi: VerificationFormula): VerificationFormulaGradual
+    public implies(phi: VerificationFormula): VerificationFormulaGradual | null
     {
         if (this.gradual)
         {
