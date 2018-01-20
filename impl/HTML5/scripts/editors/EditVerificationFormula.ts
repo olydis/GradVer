@@ -16,14 +16,14 @@ export class EditVerificationFormula extends EditableElement
         super(
             formulaContainer,
             initialSource,
-            (source: string, tthis: EditVerificationFormula) => {
-                tthis.verForm = new VerificationFormulaGradual(source);
-                var src = tthis.verForm.toString()
+            (source: string) => {
+                this.verForm = new VerificationFormulaGradual(source);
+                var src = this.verForm.toString()
                 var html = $("<span>").text(src);
-                // if (!tthis.verForm.sfrm())
+                // if (!this.verForm.sfrm())
                 //     html.addClass("errSfrm");
                 // // DEBUG: normalized data
-                // var phi = tthis.verForm.staticFormula;
+                // var phi = this.verForm.staticFormula;
                 // if (!phi.satisfiable())
                 //     html.addClass("errFalse");
                 // // DEBUG end
@@ -32,7 +32,7 @@ export class EditVerificationFormula extends EditableElement
                     html: html
                 };
             },
-            (tthis: EditVerificationFormula) => onChange(tthis.verForm)
+            () => onChange(this.verForm)
         );
 
         this.formulaContainer = formulaContainer;

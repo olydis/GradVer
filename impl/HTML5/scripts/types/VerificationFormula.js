@@ -63,7 +63,7 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
     var FormulaPartTrue = (function (_super) {
         __extends(FormulaPartTrue, _super);
         function FormulaPartTrue() {
-            return _super.apply(this, arguments) || this;
+            _super.apply(this, arguments);
         }
         FormulaPartTrue.parse = function (source) {
             return source.toLowerCase() == "true"
@@ -91,14 +91,13 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
     var FormulaPartEq = (function (_super) {
         __extends(FormulaPartEq, _super);
         function FormulaPartEq(e1, e2) {
-            var _this = _super.call(this) || this;
-            _this.e1 = e1;
-            _this.e2 = e2;
+            _super.call(this);
+            this.e1 = e1;
+            this.e2 = e2;
             if (e1 == null)
                 throw "null arg";
             if (e2 == null)
                 throw "null arg";
-            return _this;
         }
         FormulaPartEq.parse = function (source) {
             var eqIndex = source.indexOf("=");
@@ -138,14 +137,13 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
     var FormulaPartNeq = (function (_super) {
         __extends(FormulaPartNeq, _super);
         function FormulaPartNeq(e1, e2) {
-            var _this = _super.call(this) || this;
-            _this.e1 = e1;
-            _this.e2 = e2;
+            _super.call(this);
+            this.e1 = e1;
+            this.e2 = e2;
             if (e1 == null)
                 throw "null arg";
             if (e2 == null)
                 throw "null arg";
-            return _this;
         }
         FormulaPartNeq.parse = function (source) {
             if (source == "false")
@@ -200,14 +198,13 @@ define(["require", "exports", "./Expression", "./ValueExpression", "../runtime/E
     var FormulaPartAcc = (function (_super) {
         __extends(FormulaPartAcc, _super);
         function FormulaPartAcc(e, f) {
-            var _this = _super.call(this) || this;
-            _this.e = e;
-            _this.f = f;
+            _super.call(this);
+            this.e = e;
+            this.f = f;
             if (e == null)
                 throw "null arg";
             if (!Expression_1.Expression.isValidX(f))
                 throw "null arg";
-            return _this;
         }
         FormulaPartAcc.parse = function (source) {
             if (source.substr(0, 3) != "acc")

@@ -264,8 +264,7 @@ define(["require", "exports", "./editors/EditInstructions", "./editors/EditVerif
                             ]
                         }
                     ]
-                }
-            ],
+                }],
             main: []
         };
         var env = new ExecutionEnvironment_1.ExecutionEnvironment(program);

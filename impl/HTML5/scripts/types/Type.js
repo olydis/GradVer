@@ -60,7 +60,7 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
     var TypePrimitiveInt = (function (_super) {
         __extends(TypePrimitiveInt, _super);
         function TypePrimitiveInt() {
-            return _super.apply(this, arguments) || this;
+            _super.apply(this, arguments);
         }
         TypePrimitiveInt.parse = function (source) {
             return source.toLocaleLowerCase() == "int"
@@ -82,11 +82,10 @@ define(["require", "exports", "./Expression"], function (require, exports, Expre
     var TypeClass = (function (_super) {
         __extends(TypeClass, _super);
         function TypeClass(C) {
-            var _this = _super.call(this) || this;
-            _this.C = C;
+            _super.call(this);
+            this.C = C;
             if (!Expression_1.Expression.isValidX(C))
                 throw "null arg";
-            return _this;
         }
         TypeClass.parse = function (source) {
             if (source == "")

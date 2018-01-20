@@ -1,6 +1,6 @@
 import { EditableElement } from "./EditableElement";
 import { Statement, StatementComment } from "../types/Statement";
-import { GUIHelpers } from "../GUIHelpers"
+import { GUIHelpers } from "./GUIHelpers"
 
 export class EditStatement extends EditableElement
 {
@@ -17,11 +17,11 @@ export class EditStatement extends EditableElement
         super(
             stmtContainer,
             initialSource,
-            (source: string, tthis: EditStatement) => {
+            (source: string) => {
                 var parsed = Statement.parse(source);
-                tthis.stmt = parsed;
-                var src = tthis.stmt instanceof StatementComment ? source : tthis.stmt.toString();
-                var html = $("<span>").text(tthis.stmt.toString());
+                this.stmt = parsed;
+                var src = this.stmt instanceof StatementComment ? source : this.stmt.toString();
+                var html = $("<span>").text(this.stmt.toString());
                 return {
                     source: src,
                     html: html

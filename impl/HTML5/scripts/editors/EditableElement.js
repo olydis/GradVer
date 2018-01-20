@@ -45,13 +45,13 @@ define(["require", "exports"], function (require, exports) {
             }
         };
         EditableElement.prototype.rerender = function () {
-            var rendered = this.render(this.source, this);
+            var rendered = this.render(this.source);
             this.source = rendered.source;
             this.container.text("").append(rendered.html);
-            this.onChange(this);
+            this.onChange();
         };
+        EditableElement.elems = [];
         return EditableElement;
     }());
-    EditableElement.elems = [];
     exports.EditableElement = EditableElement;
 });
